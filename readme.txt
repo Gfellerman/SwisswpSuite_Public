@@ -121,4 +121,4 @@ SwissWPSuite connects to external services only when explicitly triggered by use
 
 No background telemetry, no tracking, no data collection without user action.
 
-See the full Privacy Policy at: https://swisswpsuite.ai/privacy-policy
+See the full Privacy Policy at: https://www.swisswpsecure.com/privacy-policy

@@ -82,7 +82,7 @@ No data is sent without user-initiated action. See [PRIVACY_POLICY.md](PRIVACY_P
 
 ## Support
 
-- Website: [https://swisswpsuite.ai](https://swisswpsuite.ai)
+- Website: [https://www.swisswpsecure.com](https://www.swisswpsecure.com)
 - Support: [https://www.swisswpsecure.com](https://www.swisswpsecure.com)
 - Email: info@swisswpsecure.com
 
