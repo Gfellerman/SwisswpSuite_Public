@@ -90,24 +90,21 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 = 2.9.18.0 =
-* WAF: Command injection detection (33 patterns), XXE injection detection (12 patterns), Base64 decode layer
-* WAF: XML-RPC multicall amplification blocking, path traversal hardening with encoded bypass protection
-* WAF: Critical namespace bypass fix — query string injection can no longer disable the entire firewall
-* WAF: Simulation mode no longer triggers IP bans
-* Identity hash upgraded from MD5 to SHA-256 with automatic migration
-* Sentinel: WordPress version security gate, PHP XXE config check, known-vulnerable plugin detection (5 CVEs)
-* Fixed: php://input stream exhaustion causing silent bypass of XXE and multicall checks
+* Firewall: New command injection, XXE injection, and encoding bypass protection (Pro)
+* Firewall: XML-RPC brute force amplification blocking (Pro)
+* Firewall: Improved path traversal protection with advanced encoding detection (all tiers)
+* Firewall: Fixed a bypass vulnerability and improved simulation mode reliability
+* Stronger site identity verification with automatic migration for existing sites
+* Security scanner: WordPress version alerts, PHP security checks, vulnerable plugin detection
+* Improved reliability of firewall checks on JSON API requests
 
 = 2.9.17.0 =
-* Security hardening: 10/10 security posture achieved
-* AI proxy payload scrubbing — prevents cost amplification attacks
-* Per-license AI rate limiting (30 requests/min per key)
-* Payment warning banner — users see amber notification when payment fails
-* Dead letter queue for failed Stripe webhooks
-* Graceful shutdown prevents token loss during deployments
-* HTTPS enforcement at application level
-* IPv6 SSRF protection for sync endpoints
-* Exact Set-based feature matching replaces substring matching
+* AI features hardened with request validation and rate limiting
+* HTTPS enforcement strengthened with HSTS preload
+* Improved SSRF protection including IPv6 addresses
+* Payment warning banner when payment issues detected
+* Sensitive credentials fully masked in all logs
+* Improved payment event reliability
 
 = 2.9.16.0 =
 * License lifecycle hardening — atomic domain locking, subscription-scoped billing, payment failure handling

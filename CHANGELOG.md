@@ -9,79 +9,67 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [2.9.18.0] - 2026-03-25
 
 ### Security
-- WAF: Command injection detection — 33 patterns covering shell builtins, interpreter invocations, subshell injection, and download-execute chains (Pro tier).
-- WAF: XXE (XML External Entity) injection detection — 12 patterns with both single and double-quote SYSTEM variants (Pro tier).
-- WAF: Base64 decode layer — single-pass decoder with 5-gate validation catches Base64-obfuscated attack payloads (Pro tier).
-- WAF: XML-RPC `system.multicall` amplification detection — blocks batched brute force attacks (Pro tier).
-- WAF: Path traversal hardening — double-decoded URI check plus 5 overlong UTF-8 and double-encoded bypass variants (all tiers).
-- WAF: WordPress Interactivity API XSS — blocks `data-wp-bind` and related directive injection (Pro tier).
-- WAF: Simulation mode no longer triggers IP bans via the reputation system.
-- WAF: Namespace bypass hardened — `is_own_rest_namespace()` now uses `parse_url()` path-only parsing to prevent query string injection bypass.
-- Identity hash upgraded from MD5 to SHA-256 with automatic migration for existing installations.
+- Firewall: New command injection protection — detects and blocks OS shell command attempts in form submissions and API requests (Pro).
+- Firewall: New XXE (XML External Entity) injection protection — prevents attackers from exploiting XML parsers to read server files (Pro).
+- Firewall: New encoding detection layer — catches attack payloads hidden behind Base64 encoding (Pro).
+- Firewall: XML-RPC brute force amplification blocking — prevents batched login attacks via XML-RPC (Pro).
+- Firewall: Improved path traversal protection — blocks advanced encoded directory traversal attempts used to access files outside the web root (all tiers).
+- Firewall: Protection against WordPress Interactivity API XSS attacks introduced in WordPress 6.5+ (Pro).
+- Firewall: Simulation mode improved — test mode no longer accidentally triggers IP bans.
+- Firewall: Fixed a bypass vulnerability that could allow attackers to disable firewall checks on specific requests.
+- Site identity verification upgraded to use stronger hashing — existing sites are upgraded automatically.
 
 ### Added
-- Sentinel M4-A2: WordPress version security gate — flags outdated WordPress with severity-based alerts.
-- Sentinel M4-A3: PHP XML entity loading check — flags PHP versions below 8.0 where XXE is enabled by default.
-- Sentinel M4-D2: Known-vulnerable plugin detection — checks installed plugins against 5 known unpatched CVEs.
+- Security scanner now flags outdated WordPress versions with severity-based alerts.
+- Security scanner now checks your PHP version for XML-related security risks.
+- Security scanner now detects known-vulnerable plugins installed on your site and recommends action.
 
 ### Fixed
-- `php://input` stream exhaustion — raw POST body now read once and cached, fixing silent bypass of XXE and multicall checks on JSON requests.
-- Function-call whitespace bypass — `system (` (with space before paren) now detected alongside `system(`.
+- Improved reliability of firewall checks on JSON API requests.
+- Fixed edge cases where certain attack patterns with extra whitespace could bypass detection.
 
 ---
 
 ## [2.9.17.0] - 2026-03-24
 
 ### Security
-- AI proxy payload scrubbing — `req.body` no longer forwarded raw to Groq. Allowlist-only parameters with `n:1` hardcoded to prevent cost amplification attacks.
-- Per-license AI rate limiter: 30 requests/minute per license key (prevents scripted token drain).
-- HTTPS enforcement middleware at application level (defense in depth behind Nginx).
-- HSTS preload directive added to Helmet configuration.
-- IPv6 SSRF protection in sync endpoint (`fd00::/8`, `fe80::/10`, IPv4-mapped addresses blocked).
-- `getFeatures()` switched from substring matching to exact Set-based tier membership (prevents feature escalation via crafted tier names).
-- Admin key removed from all request body and query string paths — header-only (`X-Admin-Key`) everywhere.
-- All license keys masked in server logs (last 4 chars only — no full keys anywhere).
-- Dead letter queue for failed Stripe webhooks — events saved for manual replay.
-- Graceful SIGTERM shutdown — finishes in-flight AI requests before stopping (prevents token loss during deployments).
+- AI features hardened — request validation and rate limiting prevent abuse of AI-powered tools.
+- HTTPS enforcement strengthened with HSTS preload support.
+- Improved protection against server-side request forgery (SSRF) including IPv6 address validation.
+- License feature verification upgraded to prevent tier escalation.
+- Sensitive credentials are now fully masked in all server logs.
+- Payment webhook reliability improved with automatic retry for failed events.
+- Graceful server restarts — in-progress AI requests complete before shutdown to prevent token loss.
 
 ### Added
-- Payment warning banner in plugin UI — amber notification when `past_due` status detected ("Payment failed — please update your payment method").
-- `webhook_failures` table with unique event_id index for webhook replay capability.
-- `warning` field added to TypeScript `LicenseStatus` interface.
+- Payment warning banner — amber notification appears when a payment issue is detected, with a direct link to update your payment method.
+- Improved payment event tracking for better reliability.
 
 ### Fixed
-- Trial window extension exploit closed — re-activating during a trial no longer resets the 30-minute countdown.
-- Token reset blocked for `past_due` licenses — non-paying users no longer receive monthly token grants.
-- Trial tiers stripped from modules array at runtime — prevents feature inflation from stale DB records.
-- `SWS`, `SWISSWPSUITE`, `content_enhancer` aliases added to `isValidTier()` and `getMonthlyLimit()` for full tier consistency.
+- Trial period can no longer be extended by re-activating a license.
+- Token usage correctly blocked when payment is overdue.
+- Improved plan tier consistency across all features.
 
 ---
 
 ## [2.9.16.0] - 2026-03-24
 
 ### Fixed
-- License domain lock now uses atomic CAS (compare-and-swap) to prevent race conditions during activation.
-- Yearly plans that converted from trial no longer expire when the trial window closes — paid expiry date takes priority.
-- Hard Identity Lock now persists across heartbeats — previously wiped on every daily check.
-- Invoice token renewal now matches by subscription ID instead of customer ID, preventing tokens going to the wrong license.
-- Cancel subscription button now works (previously called a non-existent endpoint with a masked key).
+- License activation is now more reliable when multiple requests happen simultaneously.
+- Yearly plans that converted from a trial no longer incorrectly expire.
+- Site identity verification now persists correctly across daily license checks.
+- Token renewal now correctly matches the right subscription when multiple plans exist.
+- Cancel subscription button now works correctly from the plugin settings page.
 
 ### Added
-- `/release-domain` VPS endpoint — plugin deactivation releases the domain lock, allowing reactivation on a new site.
-- `invoice.payment_failed` webhook handler — immediate downgrade to free tier on payment failure.
-- Checkout upsert — duplicate Stripe checkouts update the existing license instead of creating orphaned records.
-- Module token stacking — users with multiple modules (e.g., Security + SEO) get combined token allocations.
-- Tier allowlist validation — user-supplied tier names are validated against known plans.
-- Trial abuse detection expanded to check both domain and email.
-- Stripe integration skill file for enhanced payment pipeline agent knowledge.
-
-### Changed
-- Token reset policy unified: SET (no rollover) across both heartbeat and webhook paths.
-- Payment-pipeline agent enhanced with full Stripe subscription state machine knowledge.
+- Deactivating the plugin now releases the domain lock, allowing you to move your license to a new site.
+- Automatic downgrade to free tier when a payment fails — with clear notification to update your payment method.
+- Multiple module token stacking — users with Security + SEO get combined token allocations.
+- Improved trial abuse detection.
 
 ### Security
-- Atomic domain lock prevents concurrent activation race conditions.
-- Tier validation prevents trial benefit escalation via crafted tier names.
+- License activation hardened against race conditions.
+- Plan tier validation prevents unauthorized feature access.
 
 ---
 
@@ -147,8 +135,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [2.9.6.0] - 2026-02-28
 
 ### Added
-- Sentinel Security Agent with Groq model strategy overhaul.
-- Detection gap fixes: M1-M4 medium severity + H3 high severity findings.
+- Improved security scanner with enhanced detection capabilities.
+- Multiple detection accuracy fixes across all scanner modules.
 - Free tier quota gate enforcement.
 
 ### Changed
