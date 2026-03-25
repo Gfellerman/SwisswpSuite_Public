@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.15.0
+Stable tag: 2.9.18.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,34 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.18.0 =
+* WAF: Command injection detection (33 patterns), XXE injection detection (12 patterns), Base64 decode layer
+* WAF: XML-RPC multicall amplification blocking, path traversal hardening with encoded bypass protection
+* WAF: Critical namespace bypass fix — query string injection can no longer disable the entire firewall
+* WAF: Simulation mode no longer triggers IP bans
+* Identity hash upgraded from MD5 to SHA-256 with automatic migration
+* Sentinel: WordPress version security gate, PHP XXE config check, known-vulnerable plugin detection (5 CVEs)
+* Fixed: php://input stream exhaustion causing silent bypass of XXE and multicall checks
+
+= 2.9.17.0 =
+* Security hardening: 10/10 security posture achieved
+* AI proxy payload scrubbing — prevents cost amplification attacks
+* Per-license AI rate limiting (30 requests/min per key)
+* Payment warning banner — users see amber notification when payment fails
+* Dead letter queue for failed Stripe webhooks
+* Graceful shutdown prevents token loss during deployments
+* HTTPS enforcement at application level
+* IPv6 SSRF protection for sync endpoints
+* Exact Set-based feature matching replaces substring matching
+
+= 2.9.16.0 =
+* License lifecycle hardening — atomic domain locking, subscription-scoped billing, payment failure handling
+* Cancel subscription button now works from the plugin settings
+* Domain lock is released when deactivating the plugin, allowing reactivation on a new site
+* Token stacking for multi-module subscriptions — each module adds its own token allocation
+* Trial abuse prevention improved with email-based deduplication
+* Expiry logic fixed for yearly plans that converted from trial
 
 = 2.9.15.0 =
 * Migration engine rewrite — improved reliability and data integrity during site transfers
