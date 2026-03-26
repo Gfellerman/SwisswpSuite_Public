@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.18.0
+Stable tag: 2.9.20.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,41 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.20.4 =
+* Fixed: 2FA QR codes now scannable — added missing alignment patterns, fixed data interleaving, corrected character count
+* Fixed: 2FA QR code display enlarged from 160px to 200px for easier scanning
+* Improved: Cloud storage provider reliability (B2, Dropbox, FTP, GDrive, S3)
+* Improved: New tick-based backup engine with better scheduling
+* Improved: Refreshed Cloud Storage, License Manager, and Backup UI panels
+
+= 2.9.20.2 =
+* Fixed: Cloudflare 524 timeout no longer kills backup process (ignore_user_abort)
+* Fixed: Sentinel heartbeat timeout increased to 10 min for large archives
+* Fixed: Archiver now excludes LiteSpeed cache, upgrade files, debug.log — smaller backups
+
+= 2.9.20.1 =
+* Fixed: Sentinel now syncs failure status to automation records — no more permanent "running" zombies
+* Fixed: Stale-running watchdog auto-resets automations stuck over 2 hours
+* Fixed: Cancel button now available for automation backups
+* Fixed: Manual and automation backup retention enforced on list load
+
+= 2.9.20.0 =
+* Cloud Backup: cURL timeouts on all upload methods across all 5 cloud providers — prevents hangs
+* Cloud Backup: Improved retry logic for S3, B2, Dropbox, and FTP with exponential backoff
+* Cloud Backup: Real error messages from cloud providers shown in automation status
+* Cloud Backup: Sentinel heartbeats during uploads — no more false stuck-job kills
+* Cloud Backup: Circuit breaker stops endless restart loops (3 strikes)
+* Cloud Backup: Cancel button works during cloud upload with server-side cleanup
+* Cloud Backup: Orphan file detection and one-click cleanup
+* Cloud Backup: Backup list shows storage location (Local, Google Drive, S3, etc.)
+
+= 2.9.19.0 =
+* Cloud Backup: One-click Google Drive connection — no Google OAuth app setup needed
+* Cloud Backup: Dropbox one-click connection ready (pending Dropbox production approval)
+* Cloud Backup: VPS OAuth proxy auto-detection for fresh installs
+* Cloud Backup: Fixed self-hosted OAuth redirects to correct admin page
+* Cloud Backup: Self-hosted flow now explicitly stores connection mode
 
 = 2.9.18.0 =
 * Firewall: New command injection, XXE injection, and encoding bypass protection (Pro)

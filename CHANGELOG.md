@@ -6,6 +6,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.20.4] - 2026-03-26
+
+### Fixed
+- 2FA: QR code generator now produces scannable QR codes — added missing alignment patterns, fixed data codeword interleaving, and corrected character count indicator for higher QR versions.
+- 2FA: QR code display increased from 160px to 200px for easier phone scanning.
+
+### Improved
+- Cloud Backup: Enhanced cloud storage provider reliability (B2, Dropbox, FTP, GDrive, S3) with improved error handling and timeout management.
+- Backup: New tick-based backup engine with improved scheduling and progress tracking.
+- Frontend: Refreshed Cloud Storage, License Manager, and Backup UI panels.
+
+---
+
+## [2.9.20.2] - 2026-03-26
+
+### Fixed
+- Backup: Added `ignore_user_abort(true)` to manual backup endpoint — Cloudflare 524 timeout no longer kills the PHP process mid-backup.
+- Backup: Sentinel heartbeat timeout increased from 5 to 10 minutes — stops false stuck-job detection during large archive creation.
+- Backup: Added archiver excludes for LiteSpeed cache, upgrade temp files, and debug.log — reduces backup size significantly on sites with LiteSpeed.
+
+---
+
+## [2.9.20.1] - 2026-03-26
+
+### Fixed
+- Cloud Backup: Sentinel watchdog now syncs failure status back to automation records — prevents permanent "running" zombie state.
+- Cloud Backup: Stale-running watchdog auto-resets automations stuck in "running" for over 2 hours.
+- Cloud Backup: Added Cancel button for automation backups (previously only worked for manual backups).
+- Cloud Backup: Added 'cancelled' to automation status allowlist — shows "Cancelled" instead of "Failed" on user cancel.
+- Cloud Backup: Manual backup retention enforced (keeps last 10) — old manual backups no longer accumulate forever.
+- Cloud Backup: Automation backup retention now enforced on list load — catches failed-upload leftovers that exceeded retention.
+
+---
+
+## [2.9.20.0] - 2026-03-25
+
+### Improved
+- Cloud Backup: cURL timeouts added to all upload methods across all 5 cloud providers — prevents indefinite hangs.
+- Cloud Backup: Upload retry logic improved for S3, B2, Dropbox, and FTP with exponential backoff.
+- Cloud Backup: Real error messages from cloud providers shown in automation status instead of generic failures.
+- Cloud Backup: Sentinel watchdog receives heartbeat updates during uploads — no longer kills legitimate long-running transfers.
+- Cloud Backup: Circuit breaker stops endless restart loops after 3 consecutive stuck uploads.
+- Cloud Backup: Cancel button works during cloud upload phase with server-side session cleanup.
+- Cloud Backup: Orphan file detection and one-click cleanup for files left by deleted automations.
+- Cloud Backup: Backup list shows storage location (Local, Google Drive, S3, Dropbox, FTP, B2).
+- Cloud Backup: Backblaze B2 part size optimized from 100 MB to 25 MB for better memory usage.
+- Cloud Backup: Dropbox and FTP upload timeouts extended for slow shared hosting connections.
+
+---
+
+## [2.9.19.0] - 2026-03-25
+
+### Improved
+- Cloud Backup: Google Drive one-click connection — users no longer need to create their own Google OAuth app. Connect with a single click via SwissWPSuite servers.
+- Cloud Backup: Dropbox one-click connection ready — activates automatically when Dropbox production approval is granted.
+- Cloud Backup: Status endpoints now detect VPS OAuth proxy availability for fresh installs.
+- Cloud Backup: Fixed self-hosted OAuth callbacks redirecting to wrong admin page.
+- Cloud Backup: Fixed variable shadowing in OAuth callback URL cleanup.
+- Cloud Backup: Self-hosted OAuth flow now explicitly stores connection mode for reliable status reporting.
+
+---
+
 ## [2.9.18.0] - 2026-03-25
 
 ### Security
