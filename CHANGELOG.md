@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.20.6] - 2026-03-27
+
+### Fixed
+- 2FA: Replaced buggy custom PHP QR code generator with battle-tested `qrcode.react` library — QR codes now render perfectly and are reliably scannable by all authenticator apps.
+
+---
+
 ## [2.9.20.5] - 2026-03-27
 
 ### Fixed

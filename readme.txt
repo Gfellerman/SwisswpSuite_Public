@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.20.5
+Stable tag: 2.9.20.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,9 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.20.6 =
+* Fixed: 2FA QR code now uses proven qrcode.react library — reliably scannable by all authenticator apps
 
 = 2.9.20.5 =
 * Fixed: 2FA QR code spec tables corrected — all versions had wrong data codeword counts and block structures
