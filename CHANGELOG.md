@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.22.1] - 2026-03-27
+
+### Security
+- Converted all SQL string interpolation to `$wpdb->prepare()` or `esc_sql()` across REST API endpoints — eliminates copy-paste risk and removes all `phpcs:ignore` suppressions.
+- Replaced 8 `die()` calls in backup stream handler with proper `echo` + `exit` pattern and added resource cleanup (`fclose()`) in exception handler to prevent orphaned file locks.
+- Fixed `perform_log_analysis()` SQL interpolation in security class.
+
+### Fixed
+- Added missing `code` and `file_path` fields to `SentinelLayer1Finding` TypeScript interface — resolves 2 pre-existing `tsc` type errors.
+
+---
+
 ## [2.9.22.0] - 2026-03-27
 
 ### Added
