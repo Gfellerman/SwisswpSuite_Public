@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.21.1
+Stable tag: 2.9.21.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,12 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.21.2 =
+* Security: AI scanner now sees active defenses (WAF, 2FA, login protection) — no more inflated severity
+* Security: L1 malware content signatures anchored with word boundaries — fewer false positives
+* Security: L2 AI verifies L1 findings before building attack chains — stops false positive cascade
+* Security: Grade calculation accounts for active protections — protected sites get accurate grades
 
 = 2.9.21.1 =
 * Fixed: Sentinel no longer flags Webpack hashes as malware (c99/r57 false positives)

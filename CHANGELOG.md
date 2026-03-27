@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.21.2] - 2026-03-27
+
+### Security
+- Sentinel: Fixed critical contract bug — active defenses (WAF, Login Safeguard, 2FA, Cloudflare) now visible to AI scanner. Previously the AI always saw empty protections, inflating all severity levels.
+- Sentinel L1: Added word boundaries to malware content signatures — prevents false positives in minified JavaScript.
+- Sentinel L1: Removed dead hex content signature that could match legitimate code.
+- Sentinel L2: AI prompt now verifies L1 findings before building attack chains — stops false positive cascade.
+- Sentinel L2: Info-level findings (license.txt, readme.html) excluded from attack chain generation.
+- Sentinel L2: Grade calculation now accounts for active protections — all-BLOCKED chains yield minimum grade C.
+
+---
+
 ## [2.9.21.1] - 2026-03-27
 
 ### Fixed
