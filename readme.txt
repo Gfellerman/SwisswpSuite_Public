@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.21.2
+Stable tag: 2.9.22.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,17 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.22.0 =
+* Backup: Backup Set metadata layer — groups multi-file backups into logical sets
+* Backup: Set-based retention replaces file-level retention for automated backups
+* Backup: Grouped backup list with expand/collapse, scope badges, cloud badges
+* Backup: Set-based restore (DB-first ordering) and delete (local + cloud)
+* Backup: Legacy backup migration — existing files converted to sets on first load
+* Backup: Cancel flag path fix — cancel now works reliably with the chunked engine
+* Backup: Stale tick lock recovery (5-min TTL) prevents stuck backups
+* Backup: Orphan scanner detects engine files without set records
+* Backup: Sentinel heartbeat injection for automated backup watchdog
 
 = 2.9.21.2 =
 * Security: AI scanner now sees active defenses (WAF, 2FA, login protection) — no more inflated severity

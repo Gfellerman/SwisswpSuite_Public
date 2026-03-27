@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.22.0] - 2026-03-27
+
+### Added
+- Backup Set metadata layer — groups all ZIP files from a single backup into one logical "set" stored in `wp_options`.
+- Set-based retention — automated backups now prune by sets (keep N newest sets) instead of individual files.
+- Set-based restore endpoint — restores all files in a set in correct order (database first).
+- Set-based delete endpoint — removes all local and cloud files plus the set record.
+- Grouped backup list UI — sets display as expandable rows with scope badges, cloud badges, duration, and file count.
+- Legacy migration — existing backup files are automatically converted to set records on first list load.
+- Orphan scanner detects engine-format ZIP files that have no matching set record.
+- Cancel UX — progress bar turns amber and shows "Stopping backup..." during cancellation.
+
+### Fixed
+- Cancel flag path mismatch — API endpoint was writing to the wrong directory; cancel now works reliably with the chunked engine.
+- Stale tick lock recovery — locks older than 5 minutes are automatically released, preventing permanently stuck backups.
+- Sentinel heartbeat injection — automated backups now pass the Sentinel instance to the engine for watchdog progress signals.
+
+---
+
 ## [2.9.21.2] - 2026-03-27
 
 ### Security
