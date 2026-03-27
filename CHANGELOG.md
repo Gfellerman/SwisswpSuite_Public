@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.20.7] - 2026-03-27
+
+### Improved
+- 2FA: Account identifier now uses site domain instead of user email — each site shows distinctly in authenticator apps when managing multiple WordPress sites.
+- Security Hub: Added "Set up Two-Factor Authentication" link in the Login Safeguard card — direct navigation to Settings > Security tab.
+- Settings: Tab deep-linking support (`?tab=security`) for direct navigation from other pages.
+
+---
+
 ## [2.9.20.6] - 2026-03-27
 
 ### Fixed

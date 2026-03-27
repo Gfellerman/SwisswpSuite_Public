@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.20.6
+Stable tag: 2.9.20.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,11 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.20.7 =
+* Improved: 2FA now shows site domain in authenticator app instead of email — distinguishes multiple sites
+* Improved: "Set up 2FA" link added to Security Hub Login Safeguard card
+* Improved: Settings page supports direct tab linking via URL parameter
 
 = 2.9.20.6 =
 * Fixed: 2FA QR code now uses proven qrcode.react library — reliably scannable by all authenticator apps
