@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.20.7
+Stable tag: 2.9.20.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,10 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.20.8 =
+* Security: Sentinel L2 AI scanner now validates CVE findings against installed plugin versions — eliminates false positives
+* Security: Fixed version range operator bug in CVE comparison logic (strict vs inclusive bounds)
 
 = 2.9.20.7 =
 * Improved: 2FA now shows site domain in authenticator app instead of email — distinguishes multiple sites

@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.20.8] - 2026-03-27
+
+### Security
+- Sentinel L2: 3-layer defense-in-depth for CVE false-positive elimination — AI prompt version rules, VPS-side deterministic validation, PHP-side `version_compare()` catch.
+- Sentinel L2: Fixed min-bound operator bug — `> X.Y.Z` (strict) was incorrectly treated as `>= X.Y.Z` (inclusive) in both PHP and JS version range parsing.
+- Sentinel L2: Enriched `site_context` with structured plugin inventory (name, version, slug, active status) for accurate version comparison.
+
+---
+
 ## [2.9.20.7] - 2026-03-27
 
 ### Improved
