@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.20.8
+Stable tag: 2.9.21.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,19 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.21.1 =
+* Fixed: Sentinel no longer flags Webpack hashes as malware (c99/r57 false positives)
+* Fixed: Scan error toasts now show actual error (rate limit, auth) instead of "check your connection"
+
+= 2.9.21.0 =
+* Major: Complete backup engine rewrite — chunked multi-tick architecture for shared hosting
+* Resumable cloud uploads (Google Drive, S3, Dropbox, B2) across multiple ticks
+* Progressive progress bar with phase labels, percentage, and ETA
+* ZIP splitting for large sites (plugins, themes, uploads categories)
+* Self-chaining dispatcher with 5-minute health check recovery
+* Cancel works immediately — checked between every tick
+* LiteSpeed noabort rules auto-added for reliable background processing
 
 = 2.9.20.8 =
 * Security: Sentinel L2 AI scanner now validates CVE findings against installed plugin versions — eliminates false positives

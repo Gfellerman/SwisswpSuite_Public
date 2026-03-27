@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.21.1] - 2026-03-27
+
+### Fixed
+- Sentinel L1: Malware filename patterns now use word boundaries — prevents false positives when Webpack/Vite content hashes accidentally contain webshell substrings (e.g. `c99` inside `4b0c992fe7d6`).
+- Security Hub: Scan error toasts now show the actual error message (e.g. rate limit) instead of misleading "check your connection."
+
+---
+
+## [2.9.21.0] - 2026-03-27
+
+### Major
+- Backup: Complete rewrite of backup engine — new chunked multi-tick architecture that works reliably on Hostinger, LiteSpeed, and Cloudflare.
+- Backup: Each backup tick completes in under 60 seconds, surviving all hosting timeout limits.
+- Backup: Resumable cloud uploads — Google Drive, S3, Dropbox, B2 sessions persist across ticks.
+- Backup: Progressive progress bar with phase labels, percentage, and ETA.
+- Backup: ZIP splitting for sites over 400MB — split by category (plugins, themes, uploads).
+- Backup: Self-chaining tick dispatcher with 5-minute health check recovery.
+- Backup: Cancel button works immediately — checked between every tick.
+- Backup: 100MB per-file size cap prevents memory exhaustion on large media files.
+- Backup: LiteSpeed noabort/noconntimeout rules auto-added for reliable background processing.
+
+---
+
 ## [2.9.20.8] - 2026-03-27
 
 ### Security
