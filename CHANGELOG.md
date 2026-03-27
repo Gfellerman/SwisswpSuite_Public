@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.23.0] - 2026-03-27
+
+### Security
+- Geo-blocking bypass token now uses HMAC derivation (IP + time-window bound) instead of static token — database read access alone no longer sufficient to bypass geo-blocking.
+- Sync push handler now scans `post_content`, `post_content_filtered`, and `meta_input` for embedded PHP webshell patterns (14 literal-match signatures).
+- Expanded sync meta redaction blocklist with 6 additional credential patterns (`private_key`, `jwt`, `bearer`, `encryption_key`, `aws_key`, `signing_key`).
+- SQL import pre-scan now detects `DELIMITER` statements (stored procedure indicator) and blocks them — WordPress backups never contain these.
+- Extended SQL pre-scan window for large buffers — catches dangerous keywords (`GRANT`, `REVOKE`, `CREATE PROCEDURE`, `INTO OUTFILE`) pushed past the 200-character preamble by comment padding.
+
+### Fixed
+- Geo-blocking API now rate-limited to 30 lookups/minute with fail-closed circuit breaker (5 consecutive failures activates 10-minute cooldown) — prevents API exhaustion attacks.
+- Concurrency lock `is_held()` now fails closed — if the lock file exists but cannot be read, assumes locked instead of unlocked.
+- Backup tick time budget now uses CPU time (`getrusage()`) when available instead of wall-clock — prevents premature yield on I/O-throttled shared hosting.
+- Backup tick lock acquisition now always checks lock age before attempting acquisition — eliminates TOCTTOU race window between concurrent ticks.
+- VPS license expiry cron now uses PostgreSQL advisory lock to prevent concurrent execution.
+- VPS logger now outputs structured JSON in production (pino-pretty only in development).
+
+### Added
+- VPS admin key recovery endpoint (`POST /v1/admin/recover`) with bcrypt-hashed recovery key and hourly rate limiting — prevents permanent lockout if `.env` is lost.
+
+---
+
 ## [2.9.22.1] - 2026-03-27
 
 ### Security

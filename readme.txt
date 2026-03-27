@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.22.1
+Stable tag: 2.9.23.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,19 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.23.0 =
+* Security: Geo-bypass token now HMAC-derived (IP + time-window bound)
+* Security: Sync push scans post_content for webshell patterns (14 signatures)
+* Security: Expanded sync meta redaction blocklist (+6 credential patterns)
+* Security: SQL import pre-scan blocks DELIMITER statements and extended scan window
+* Fixed: Geo API rate-limited (30/min) with fail-closed circuit breaker
+* Fixed: Concurrency lock fails closed when lock file unreadable
+* Fixed: Backup tick uses CPU time budget instead of wall-clock
+* Fixed: Backup tick lock deterministic stale recovery
+* Fixed: VPS license cron advisory lock prevents concurrent runs
+* Fixed: VPS logger outputs structured JSON in production
+* Added: VPS admin key recovery endpoint
 
 = 2.9.22.1 =
 * Security: Converted all SQL string interpolation to $wpdb->prepare() or esc_sql()
