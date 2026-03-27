@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.20.5] - 2026-03-27
+
+### Fixed
+- 2FA: Corrected all QR code spec lookup tables (data codewords, block structure, capacity) — every version had wrong values, making all generated QR codes undecodable.
+
+---
+
 ## [2.9.20.4] - 2026-03-26
 
 ### Fixed
