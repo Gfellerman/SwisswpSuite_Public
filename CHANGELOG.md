@@ -6,6 +6,90 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.24.2] - 2026-03-28
+
+### Security
+- PBKDF2 iterations upgraded from 10,000 to 310,000 (OWASP 2023 minimum) with backward-compatible version header migration
+- WAF Basic tier now decodes HTML entities before pattern matching — closes entity-encoded XSS/SQLi bypass
+- WAF now inspects uploaded filenames and MIME types from $_FILES for malicious patterns
+- XML-RPC multicall check decodes HTML numeric entities (&#115;ystem.multicall bypass closed)
+
+### Fixed
+- Undefined `$new_path` in `run_url_replace()` — path-based search-replace was silently broken
+- SEO rate-limit retry now capped at 5 attempts with exponential backoff (60s → 960s) — prevents infinite ghost loop
+- Sitemap generation: replaced `get_posts(-1)` with paginated WP_Query (200/page) — prevents OOM on large sites
+- Dual SEO prompts consolidated into `SwissWPSuite_Groq::build_seo_prompt()` single source of truth
+- Duplicate cron closures on `swisswpsuite_daily_sentinel_scan` merged into single callback
+- WooCommerce price context restored in single-item SEO prompt path
+
+### Changed
+- 49 occurrences of `text-[10px]` replaced with WCAG AA compliant `text-xs` (12px) across 11 UI files
+- Dead `layer1_only` removed from TypeScript `scan_type` union — narrowed to match backend output
+- Removed dead `const VERSION` from encryption class (replaced by `ENCRYPTION_VERSION_1`/`ENCRYPTION_VERSION_2`)
+
+---
+
+## [2.9.24.1] - 2026-03-28
+
+### Fixed
+- **ROOT CAUSE:** Added COMMIT before every `return 'partial'` in receiver SQL parser — `SET autocommit=0` without COMMIT caused MySQL ROLLBACK on connection close, silently losing all queries per chunk (caused 8/12 missing tables on InfinityFree).
+- Reconnect handler now re-applies full import preamble (FK_CHECKS=0, UNIQUE_CHECKS=0, AUTOCOMMIT=0) after every mid-import reconnection.
+- Single-row INSERTs exceeding 80% of max_allowed_packet now skipped with logging instead of killing the connection.
+- Time budget reduced from 20s to 12s default, multiplier 0.6 to 0.5 for restrictive hosts (InfinityFree 10s server-enforced kill).
+- `receiver_save_state()` return value now checked — returns HTTP 507 on disk-full/unwritable.
+- Search-replace COMMIT failure now detected with reconnect + retry (previously lost UPDATEs silently).
+- Search-replace UPDATE failures now logged with table name and PK (previously completely silent).
+- SET sql_mode/FK_CHECKS/UNIQUE_CHECKS/AUTOCOMMIT failures now logged (previously silent @ suppression).
+- Periodic COMMIT (every 500 queries) failure now triggers reconnect + preamble re-application.
+- Buffer carry-over guard: >2MB skips file read to parse existing; >5MB emergency skip.
+- Block comments preceding SQL (`/* comment */ INSERT...`) now stripped and executed instead of silently dropped.
+- Added `utf8mb4_0900_ai_ci` (MySQL 8.0+ default) to collation replacement adapter.
+
+---
+
+## [2.9.24.0] - 2026-03-28
+
+### Fixed
+- Mode B receiver: SQL parser now tracks comment states (line comments, block comments) to prevent false statement splits on semicolons inside comments.
+- Mode B receiver: recursive file download converted to iterative loop, preventing stack overflow on large ZIP transfers.
+- Mode B receiver: search-replace resume path now runs plugin deactivation and theme switch safety nets (previously skipped, causing WordPress fatal errors).
+- Mode B receiver: connection-alive check added before post-import safety-net queries to prevent silent failures after long search-replace passes.
+- Mode B receiver: HTTP 410 response with JSON body on script expiry (previously returned empty 200).
+- Mode A import: foreign key checks and unique checks now disabled during bulk import for up to 1000x InnoDB performance improvement.
+- Mode A import: comment state tracking added to SQL parser (mirrors Mode B fix).
+- Mode A import: DEFINER clause stripping now handles all 3 MySQL syntaxes (backtick, single-quote, unquoted) and applied to execution query (not just inspection copy).
+- Mode A import: plugins token rotation now uses dedicated storage keys (previously fell through to SQL keys, causing multi-chunk plugin downloads to fail).
+- Mode A import: download counter is now per-type (sql/theme/media/plugins) so large SQL downloads no longer exhaust the budget for subsequent asset downloads.
+- Mode A import: max_allowed_packet value now persisted across chunks (previously fell back to 1MB default on resume).
+- JSON-escaped URL search-replace added for Elementor _elementor_data and Gutenberg block attributes (both Mode A and Mode B).
+- Source table prefix auto-detection from SQL dump with two-phase confirmation (candidate from CREATE TABLE + verification from second core table).
+- Table prefix meta_key remap (wp_capabilities, wp_user_level, wp_user_roles) after prefix change, preventing admin lockout.
+- Array keys now included in recursive serialization-safe search-replace (previously only values were replaced).
+- wp_commentmeta table added to post-import search-replace pass.
+- generate_passport() API endpoint now returns proper WP_Error when no export exists.
+
+### Security
+- wp-config.php generated with 0440 permissions (was 0644) — no longer world-readable on shared hosting.
+- HMAC signature verification now applied to all download URLs (theme, plugin, media), not just SQL.
+- SET PASSWORD and SET ROLE added to SQL import blocklist.
+- Table prefix re-validated after credential decryption (defense-in-depth against encryption key compromise).
+- DEFINER clauses stripped from CREATE VIEW/TRIGGER/PROCEDURE to prevent privilege escalation errors.
+- State file and SQL temp file now cleaned up during self-destruct.
+- register_shutdown_function() safety net ensures receiver deletion even if cleanup crashes.
+- Wordfence auto_prepend_file stripped from .user.ini during migration (hardcoded source-server paths cause fatal errors).
+- Object-cache.php and advanced-cache.php removed post-import (source-site cache drop-ins crash destination).
+
+### Added
+- Performance preamble for SQL import: SET foreign_key_checks=0, unique_checks=0, autocommit=0 with periodic COMMIT.
+- Idempotency guard prevents double-start race condition on migration.
+- State log capped at 200 entries to prevent state file bloat on large imports.
+- New domain validation prevents migration without domain replacement.
+- CURLOPT_FOLLOWLOCATION enabled for WordPress core downloads (handles CDN redirects).
+- mysqli_ping() replaced with $conn->query('DO 1') for PHP 8.4 forward-compatibility.
+- max_allowed_packet pre-check before query execution with automatic INSERT splitting.
+
+---
+
 ## [2.9.23.0] - 2026-03-27
 
 ### Security

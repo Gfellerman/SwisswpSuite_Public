@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.23.0
+Stable tag: 2.9.24.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,38 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.24.2 =
+* Security: PBKDF2 iterations upgraded from 10K to 310K (OWASP 2023 compliance) with backward-compatible version header
+* Security: WAF Basic tier now decodes HTML entities before pattern matching (prevents entity-encoded XSS/SQLi bypass)
+* Security: WAF now scans uploaded filenames and MIME types for malicious patterns
+* Security: XML-RPC multicall check decodes HTML numeric entities before matching
+* Fixed: Undefined $new_path in URL search-replace endpoint (path replacement was silently broken)
+* Fixed: SEO rate-limit retry now has 5-attempt cap with exponential backoff (prevents infinite re-processing)
+* Fixed: Sitemap pagination — replaced get_posts(-1) with paginated WP_Query to prevent OOM on large sites
+* Fixed: Dual SEO prompts consolidated into single source of truth (eliminates prompt drift)
+* Fixed: Duplicate cron closures on daily sentinel scan merged into one
+* Accessibility: All text-[10px] replaced with WCAG AA compliant text-xs (12px) across 11 UI files
+* Code quality: Dead TypeScript union member removed, scan_type narrowed to match backend
+
+= 2.9.24.1 =
+* Fixed: ROOT CAUSE — added COMMIT before every partial return in SQL parser (caused 8/12 missing tables)
+* Fixed: Reconnect handler re-applies full import preamble (FK_CHECKS, UNIQUE_CHECKS, AUTOCOMMIT)
+* Fixed: Oversized single-row INSERT skip, time budget reduction, buffer carry-over guard
+* Fixed: Return value checks on save_state, SR COMMIT, SR UPDATE, SET session queries, periodic COMMIT
+* Fixed: Block comment preceded SQL no longer silently dropped
+* Fixed: Added utf8mb4_0900_ai_ci collation replacement for MySQL 8.0+ source databases
+
+= 2.9.24.0 =
+* Fixed: 28-fix migration engine overhaul — SQL parser, search-replace, and receiver template hardened
+* Fixed: SQL parser now tracks comment states, preventing false statement splits
+* Fixed: Recursive download replaced with iterative loop (prevents stack overflow)
+* Fixed: Performance preamble (FK_CHECKS, UNIQUE_CHECKS, AUTOCOMMIT) for 10-1000x faster imports
+* Fixed: JSON-escaped URL replacement for Elementor and Gutenberg data
+* Fixed: Plugins token rotation, per-type download counters, DEFINER clause stripping
+* Security: wp-config.php permissions 0440, HMAC verification on all downloads, SET PASSWORD blocked
+* Security: State + SQL temp files cleaned on self-destruct, shutdown function safety net
+* Added: Source table prefix auto-detection, multisite prefix support, table prefix meta_key remap
 
 = 2.9.23.0 =
 * Security: Geo-bypass token now HMAC-derived (IP + time-window bound)
