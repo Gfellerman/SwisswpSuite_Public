@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.26.8] - 2026-03-31
+
+### Fixed
+- SEO Enhance — automatic retry on Groq JSON validation failures (stochastic ~5-10% base rate)
+- SEO Enhance ~50% failure — simplified prompt to be compatible with Groq JSON mode
+- Root cause: strict character constraints ("BETWEEN 30 AND 60", "MUST be", "CRITICAL") conflicted with JSON validation
+- JSON parse failures from control characters in AI responses — automatic sanitization added
+- Removed incompatible JSON mode parameter that caused API rejection on content rewrite
+- Enhanced diagnostic logging for empty AI responses (includes finish_reason and model)
+
+### Added
+- Diagnostic logging for SEO Enhance JSON parse failures (model, raw response, extracted JSON)
+- Error code distinction in SEO content generation API responses
+
+---
+
 ## [2.9.26.2] - 2026-03-31
 
 ### Fixed
