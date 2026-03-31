@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.26.0
+Stable tag: 2.9.26.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,11 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.26.1 =
+* Fixed: "Fix Permissions" button now shows manual guide when chmod fails on shared hosting
+* Fixed: Diagnostic logging for permission fix failures
+* Fixed: Undefined finding_code in L1 scan fix requests
 
 = 2.9.26.0 =
 * Security: WAF now blocks PHP file execution in upload directories (Pro tier)

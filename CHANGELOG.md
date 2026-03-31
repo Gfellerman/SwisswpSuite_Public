@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.26.1] - 2026-03-31
+
+### Fixed
+- "Fix Permissions" button now shows manual Hostinger hPanel guide when chmod fails (was showing a dead-end toast)
+- Added diagnostic logging for chmod failures (previously only successes were logged)
+- Fixed undefined `finding_code` in L1 scan fix requests (finding.code and finding.file_path were always undefined)
+
+---
+
 ## [2.9.26.0] - 2026-03-31
 
 ### Security
