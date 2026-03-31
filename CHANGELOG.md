@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.26.0] - 2026-03-31
+
+### Security
+- WAF now blocks PHP file execution in upload directories (Pro) — prevents webshell execution via `/wp-content/uploads/*.php`
+- Plugin vulnerability scanner expanded from 5 to 20 hardcoded CVEs covering ThemeREX, WooCommerce Custom Product Addons Pro, SureTriggers, LiteSpeed Cache, Bricks Builder, and more
+
+### Added
+- WPScan API v3 integration for real-time vulnerability scanning with 24h transient caching
+- WPScan API Key field in Settings > Security tab (optional — for agencies with existing WPScan accounts)
+- Deterministic `version_compare()` validation on all CVE results (never trusts API blindly)
+
+### Changed
+- M4-D2 scanner now uses hybrid strategy: WPScan API first, hardcoded fallback when API unavailable
+
+---
+
 ## [2.9.24.2] - 2026-03-28
 
 ### Security

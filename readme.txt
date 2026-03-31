@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.24.2
+Stable tag: 2.9.26.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,13 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.26.0 =
+* Security: WAF now blocks PHP file execution in upload directories (Pro tier)
+* Security: Plugin vulnerability scanner expanded from 5 to 20 hardcoded CVEs
+* Added: WPScan API v3 integration for real-time vulnerability scanning
+* Added: WPScan API Key field in Settings > Security (optional)
+* Changed: M4-D2 scanner uses hybrid strategy — WPScan API first, hardcoded fallback
 
 = 2.9.24.2 =
 * Security: PBKDF2 iterations upgraded from 10K to 310K (OWASP 2023 compliance) with backward-compatible version header
