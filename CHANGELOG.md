@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.26.2] - 2026-03-31
+
+### Fixed
+- Crash after L2 AI scan when AI response omits `scan_metadata` (TypeError: Cannot read properties of undefined reading 'findings_count')
+- Added defensive defaults for all AI-sourced fields: scan_metadata, attack_chains, remediation_plan, positive_findings
+- ScanHistoryTable null safety for findings_count and critical_count
+
+---
+
 ## [2.9.26.1] - 2026-03-31
 
 ### Fixed
