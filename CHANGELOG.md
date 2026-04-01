@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.26.9] - 2026-04-01
+
+### Fixed
+- Backup tab blank on sites with LiteSpeed Cache or other caching plugins — caused by duplicate script injection loading the React app twice, creating two RouterProvider instances and crashing with "You cannot render a Router inside another Router"
+- Added double-load guard in app entry point with HMR-aware exception for dev mode
+
+---
+
 ## [2.9.26.8] - 2026-03-31
 
 ### Fixed
