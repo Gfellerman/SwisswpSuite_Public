@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.26.10
+Stable tag: 2.9.27.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,13 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.0 =
+* Added: Patchstack Community API as a parallel CVE source alongside WPScan — dual-source vulnerability detection with confidence scoring
+* Added: WordPress.org core integrity checksum caching (24h) — reduces API calls, adds toggle control
+* Added: Abandoned/closed plugin detection — daily check flags plugins removed from WordPress.org repository
+* Added: MalwareBazaar bulk import — PHP-tagged malware hashes added to local threat database nightly (replaces per-scan live lookup)
+* Security: VPS threat database now tracks signature source (URLhaus vs MalwareBazaar) for attribution
 
 = 2.9.26.10 =
 * Fixed: Auto-clear stale migration state on new migration start

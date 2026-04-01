@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.0] - 2026-04-01
+
+### Added
+- Patchstack Community API integrated as a parallel CVE source alongside WPScan — findings now show dual-source confidence scoring (HIGH when both agree, MEDIUM for single source)
+- WordPress.org core integrity check now caches the official checksum manifest for 24 hours, reducing external API calls and adding an on/off toggle in Settings
+- Abandoned/closed plugin detection — new daily background check flags any installed plugin that has been removed or closed by WordPress.org (a strong indicator of security compromise or unpatched vulnerability)
+- MalwareBazaar bulk import — PHP-tagged malware hashes from MalwareBazaar are now imported nightly into the local threat database alongside URLhaus, replacing the previous per-scan live API fallback
+
+### Security
+- VPS threat database `malware_signatures` table now includes a `source` column (urlhaus / malwarebazaar) for signature attribution and auditability
+
+---
+
 ## [2.9.26.10] - 2026-04-01
 
 ### Fixed
