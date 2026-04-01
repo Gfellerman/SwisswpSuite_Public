@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.0
+Stable tag: 2.9.27.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,11 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.1 =
+* Fixed: Security scan Attack Chain crash when AI returns unexpected exploitability values (defensive fallback added)
+* Fixed: Scan findings display crash for unknown severity values in sort and badge rendering
+* Fixed: License activation DOMAIN_LOCKED error handler for clearer user messaging
 
 = 2.9.27.0 =
 * Added: Patchstack Community API as a parallel CVE source alongside WPScan — dual-source vulnerability detection with confidence scoring

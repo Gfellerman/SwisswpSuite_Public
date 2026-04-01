@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.1] - 2026-04-01
+
+### Fixed
+- Security scan Attack Chain view no longer crashes when the AI returns an unexpected exploitability value — unknown values now degrade gracefully with a neutral label instead of throwing a fatal render error
+- Scan findings list no longer crashes on unknown severity values — sort order, border, and badge all have safe fallbacks
+- License activation now shows a clear actionable message when a key is locked to another domain
+
+---
+
 ## [2.9.27.0] - 2026-04-01
 
 ### Added
