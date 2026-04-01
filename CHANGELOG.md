@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.26.10] - 2026-04-01
+
+### Fixed
+- Auto-clear stale migration state on new migration start to prevent false "migration in progress" errors
+- Deferred `flush_rewrite_rules` after DB import to resolve "No route found" / 404 errors post-migration
+- Emergency theme restore endpoint triggered on retry exhaustion during migration to recover broken themes
+- Deferred cron cleanup on plugin deactivation to prevent timing issues
+
+---
+
 ## [2.9.26.9] - 2026-04-01
 
 ### Fixed
