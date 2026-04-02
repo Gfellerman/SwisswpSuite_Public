@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.4
+Stable tag: 2.9.27.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,14 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.5 =
+* Added: "Drop Orphaned Tables" action in Settings > Maintenance — safely drops abandoned plugin tables with 5-layer protection (core table guard, active plugin match, protected prefix list)
+* Fixed: Sentinel AI no longer suggests SwissWPSuite Database Cleanup for orphaned plugin tables (they require manual phpMyAdmin intervention — different feature)
+* Fixed: AI audit no longer recommends 2FA or Geo-Blocking to Free-tier users without Pro upgrade disclosure
+* Fixed: AI audit now covers all 11 hardening options (was missing User Enumeration, WP Cron Public, CSP)
+* Fixed: Pro-only hardening options now show upgrade prompt in AI remediation steps
+* Fixed: WAF and Login Protection recommendations now include Pro tier disclosure
 
 = 2.9.27.4 =
 * Added: Database Cleanup section in Settings > Maintenance — clean orphaned postmeta, orphaned commentmeta, trashed posts, auto-drafts (7-day safety window), and orphaned term relationships

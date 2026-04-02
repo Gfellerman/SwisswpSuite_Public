@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.5] - 2026-04-02
+
+### Added
+- "Drop Orphaned Tables" action in Settings → Maintenance — safely drops abandoned plugin tables with 5-layer protection: core table allowlist, active plugin slug matching, protected prefix guard (WooCommerce, Elementor, Yoast, Wordfence, etc.), regex validation, and `esc_sql()` defense-in-depth
+
+### Fixed
+- Sentinel AI no longer suggests using SwissWPSuite Database Cleanup for orphaned plugin tables (the two features solve different problems — clarified in remediation text and AI prompts)
+- AI security audit no longer tells Free-tier users to enable 2FA or Geo-Blocking via SwissWPSuite without disclosing these are Pro-only features
+- AI audit now covers all 11 hardening options (previously missing User Enumeration, WP Cron Public, Content Security Policy)
+- Pro-only hardening options (Security Headers, REST API Guest Block, Author Archives, Bad Bots, WP Cron, CSP) now include Pro upgrade disclosure in AI remediation steps
+- WAF and Login Protection AI recommendations now include Pro tier disclosure for Free-tier users
+
+---
+
 ## [2.9.27.4] - 2026-04-02
 
 ### Added
