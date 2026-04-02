@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.3
+Stable tag: 2.9.27.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,11 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.4 =
+* Added: Database Cleanup section in Settings > Maintenance — clean orphaned postmeta, orphaned commentmeta, trashed posts, auto-drafts (7-day safety window), and orphaned term relationships
+* Fixed: Auto-draft cleanup now preserves drafts created within the last 7 days — prevents clearing active editor sessions
+* Fixed: Term relationship cleanup now recalculates taxonomy counts after deletion
 
 = 2.9.27.3 =
 * Fixed: Google Drive cloud backups now correctly capture the file ID from upload response — prune and delete now work reliably

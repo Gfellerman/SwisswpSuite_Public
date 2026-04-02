@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.4] - 2026-04-02
+
+### Added
+- Database Cleanup section in Settings → Maintenance with five new one-click actions: remove orphaned postmeta, remove orphaned commentmeta, permanently delete trashed posts, remove abandoned auto-drafts, and clean orphaned term relationships
+
+### Fixed
+- Auto-draft cleanup now only targets drafts older than 7 days — prevents accidentally destroying an active block editor session open in another browser tab
+- Term relationship cleanup now recalculates `wp_term_taxonomy` counts after deleting orphaned rows, preventing stale category/tag counts
+
+---
+
 ## [2.9.27.3] - 2026-04-02
 
 ### Fixed
