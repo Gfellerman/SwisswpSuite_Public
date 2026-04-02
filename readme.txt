@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.5
+Stable tag: 2.9.27.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,14 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.6 =
+* Fixed: SEO archive pages (blog listing, categories, tags) now output full OG tags, Twitter cards, meta description, and canonical
+* Fixed: Blog listing page title was showing latest post title instead of page name
+* Fixed: og:image/twitter:image now fall back to configurable Default Social Image when no featured image set
+* Fixed: Blog posts now output article:published_time, article:modified_time, article:author OG tags
+* Fixed: Homepage JSON-LD schema corrected from Article to WebSite + WebPage type
+* Added: Settings > SEO tab with Default Social Image picker (1200x630px fallback for social sharing)
 
 = 2.9.27.5 =
 * Added: "Drop Orphaned Tables" action in Settings > Maintenance — safely drops abandoned plugin tables with 5-layer protection (core table guard, active plugin match, protected prefix list)

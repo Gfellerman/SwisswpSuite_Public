@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.6] - 2026-04-02
+
+### Fixed
+- SEO: Archive pages (blog listing, categories, tags) now output full OG tags, Twitter cards, meta description, and canonical — previously got zero meta tags due to `is_singular()` guard
+- SEO: Blog listing page `<title>` was showing the latest post title instead of the page name — fixed
+- SEO: `og:image` and `twitter:image` now fall back to a configurable "Default Social Image" when no featured image is set (homepage, blog listing, posts without thumbnails)
+- SEO: Blog posts now output `article:published_time`, `article:modified_time`, and `article:author` OG tags for better Google News and social context
+- SEO: Homepage JSON-LD schema changed from `Article` to `WebSite` + `WebPage` — `Article` type on a homepage is incorrect and confuses search engines
+
+### Added
+- Settings → SEO tab: New "Default Social Image" picker — upload a fallback 1200×630px image used when pages have no featured image set
+
+---
+
 ## [2.9.27.5] - 2026-04-02
 
 ### Added
