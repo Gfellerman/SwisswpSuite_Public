@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.7] - 2026-04-02
+
+### Fixed
+- "Disable Visitor-Triggered Scheduling" hardening toggle now explicitly warns that SwissWPSuite's backup automations will stop, and shows server cron setup instructions (cPanel → Cron Jobs, every 5 minutes) before the user confirms — prevents silent backup failures after enabling this option
+
+---
+
 ## [2.9.27.6] - 2026-04-02
 
 ### Fixed

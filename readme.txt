@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.6
+Stable tag: 2.9.27.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,9 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.7 =
+* Fixed: "Disable Visitor-Triggered Scheduling" hardening toggle now explicitly warns that SwissWPSuite backup automations will stop, and provides server cron setup instructions before confirming
 
 = 2.9.27.6 =
 * Fixed: SEO archive pages (blog listing, categories, tags) now output full OG tags, Twitter cards, meta description, and canonical
