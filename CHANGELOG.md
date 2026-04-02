@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.3] - 2026-04-02
+
+### Fixed
+- Google Drive cloud backups now correctly capture the file ID from the upload completion response — prune and delete operations now work reliably on GDrive-backed sets
+- Backblaze B2 cloud backups now correctly delete files using the composite `fileId||fileName` key required by the B2 API
+- Backup worker spawn timeout increased from 1 second to 5 seconds — prevents missed scheduled backups when the VPS TCP/TLS handshake is slow
+
+### Added
+- WP-Cron visitor-dependency notice in the Backup Automations panel — explains why scheduled backups may be delayed on low-traffic sites and links to the Server Cron setup guide
+- Circuit breaker status notice in the Backup Automations panel — amber warning badge when automations are paused after repeated consecutive failures
+- Cloud storage cross-border data transfer disclosures per provider (AWS S3 US, Google Drive US, Dropbox US, Backblaze B2 US/EU) for GDPR/Swiss nDSG compliance
+- Dismissible PII/data-processor notice on the Cloud Storage panel advising users to review their provider's DPA before connecting
+
+---
+
 ## [2.9.27.2] - 2026-04-02
 
 ### Fixed

@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.2
+Stable tag: 2.9.27.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,15 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.3 =
+* Fixed: Google Drive cloud backups now correctly capture the file ID from upload response — prune and delete now work reliably
+* Fixed: Backblaze B2 cloud backups now correctly delete files by composite file-ID/file-name key
+* Fixed: Backup worker spawn timeout increased from 1s to 5s — prevents missed scheduled backups on slow VPS starts
+* Added: WP-Cron visitor-dependency notice in Backup Automations panel — explains why scheduled backups may be delayed
+* Added: Circuit breaker status notice — amber warning when automations are paused due to repeated failures
+* Added: Cloud storage cross-border data transfer disclosures (GDPR/nDSG compliance)
+* Added: Dismissible PII notice on cloud storage connection panel
 
 = 2.9.27.2 =
 * Fixed: Security alert no longer reappears after dismissal when attacker rotates IPs within same /24 subnet
