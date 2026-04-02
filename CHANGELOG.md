@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.2] - 2026-04-02
+
+### Fixed
+- Security alert no longer reappears after dismissal when the attacker rotates IPs within the same /24 subnet — fingerprint now normalizes to subnet level
+- Alert dismiss state persisted to localStorage (24h TTL) so it survives page reloads
+
+---
+
 ## [2.9.27.1] - 2026-04-01
 
 ### Fixed
