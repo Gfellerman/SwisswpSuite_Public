@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.16
+Stable tag: 2.9.27.17
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,9 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.17 =
+* Fixed: Cloud backup size showing as 0 B in the backup list — backup data was uploading correctly to Google Drive/S3, but the recorded file size was always zero due to a keying bug when resolving sizes after local ZIPs are deleted post-upload
 
 = 2.9.27.16 =
 * Added: "Fix Non-Compliant" targeted SEO re-optimization button — re-runs AI only on posts/products with meta descriptions below the 120-character quality gate, instead of re-processing all content

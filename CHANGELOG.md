@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.17] - 2026-04-03
+
+### Fixed
+- **Cloud backup size recorded as 0 B** — fixed incorrect size metadata for cloud-only backups (Google Drive, S3, etc.); the backup data was always uploaded correctly, but the UI showed 0 B due to a positional index mismatch when resolving file sizes after local ZIPs were deleted; size is now stored during upload init and retrieved via a keyed lookup map
+
+---
+
 ## [2.9.27.16] - 2026-04-03
 
 ### Added
