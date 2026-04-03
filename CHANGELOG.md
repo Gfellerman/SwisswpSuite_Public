@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.19] - 2026-04-03
+
+### Fixed
+- **SEO "Run Full Scan" button invisible in WordPress admin** — button rendered white-on-white due to WP admin CSS overriding Tailwind styles; resolved with `.swps-cta-dark` CSS class using `!important` on background/color/border-color with `#wpwrap` selector specificity
+- **SEO Health score included phantom backlinks dimension** — removed `backlinks` from the `seo_breakdown` stats response and from the `OnPageDiagnostics` component; score now reflects only the 6 on-page factors (schema, heading, meta desc, content length, image alt, meta titles)
+- **On-page audit meta titles check used wrong meta key** — `check_meta_titles()` was reading `_swisswpsuite_seo_title` (non-existent) instead of `_swisswpsuite_meta_title` (written by the AI worker); all pages were incorrectly flagged as missing titles
+- **Page-builder pages flagged for short content** — Elementor, Divi, and Beaver Builder pages with empty `post_content` (content stored in postmeta) no longer counted as content length failures
+
+### Added
+- **Fix Missing Titles endpoint** — `POST /swisswpsuite/v1/seo/fix-missing-titles` (Pro) queries posts without `_swisswpsuite_meta_title` and enqueues them for AI title generation via the background SEO worker; rate-limited, lock-guarded, deduplicates against in-progress queue
+
+---
+
 ## [2.9.27.18] - 2026-04-03
 
 ### Fixed

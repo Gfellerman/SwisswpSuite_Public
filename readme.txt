@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.18
+Stable tag: 2.9.27.19
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,13 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.19 =
+* Fixed: SEO dashboard "Run Full Scan" button now visible in WordPress admin (white-on-white issue resolved)
+* Fixed: SEO Health score no longer includes backlinks dimension — score now reflects only on-page factors
+* Fixed: On-page audit meta titles check now reads the correct meta key (_swisswpsuite_meta_title)
+* Fixed: Page-builder pages (Elementor, Divi, Beaver) no longer flagged for short content
+* Added: Fix Missing Titles endpoint — plugin can now auto-generate missing meta titles via AI worker queue
 
 = 2.9.27.18 =
 * Fixed: Basic scan now respects user-dismissed paths — "Mark as Safe" dismissals in the basic scan view now persist across scheduled scans
