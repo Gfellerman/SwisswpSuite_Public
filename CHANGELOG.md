@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.18] - 2026-04-03
+
+### Fixed
+- **Basic scan ignores "Mark as Safe" paths (R1)** — `perform_core_scan()` now calls `is_user_ignored()` before appending findings; previously, user-dismissed core file findings (bundled plugins, etc.) reappeared on every scheduled scan because only the deep scan path respected the ignore list
+- **Config manifest missing `swisswpsuite_pageviews_table_version` (R2)** — added to `SITE_LOCAL_CONFIG` so the visitor tracker schema version is excluded from backup exports and preserved during foreign-site restores; previously the option leaked into backup SQL and could be overwritten
+
+---
+
 ## [2.9.27.17] - 2026-04-03
 
 ### Fixed
