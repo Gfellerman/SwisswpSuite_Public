@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.14
+Stable tag: 2.9.27.15
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,13 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.15 =
+* Fixed: "Mark as Safe" now works for uninstalled bundled plugins — previously failed silently for non-existent files (realpath validation blocked all missing-file paths)
+* Fixed: Core integrity scan now respects the user's ignore list — marked-safe paths no longer reappear on subsequent scans
+* Fixed: "Mark as Safe" button now appears for root-level files like readme.html and license.txt
+* Fixed: Quarantine button hidden for finding categories where the file does not exist (bundled_plugin, known_safe_missing, core_missing)
+* Added: "Mark All Safe" one-click button in benign integrity group headers to dismiss all findings at once
 
 = 2.9.27.14 =
 * Added: Native pageview tracker — daily visit stats with bot filtering (50+ patterns), no cookies, GDPR-compliant, feeds real traffic data to the Dashboard chart

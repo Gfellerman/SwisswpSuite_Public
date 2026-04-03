@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.15] - 2026-04-03
+
+### Fixed
+- **Sentinel scan "Mark as Safe" now works for missing files** — `add_ignored_path` previously used `realpath()` which returns false for non-existent files, causing all "Mark as Safe" calls for uninstalled bundled plugins to silently fail with HTTP 400. Now uses format-based validation for non-existent files and only applies realpath for existing ones.
+- **Core integrity scan respects user's ignore list** — `check_wp_core_integrity` was not checking the user's ignore list, so marked-safe paths reappeared on every scan. Now correctly skips ignored paths.
+- **"Mark as Safe" button now appears for root-level files** — Files like `readme.html` and `license.txt` (no directory prefix) were incorrectly excluded from the action buttons display.
+- **Quarantine button hidden for missing files** — Quarantining a non-existent file is meaningless. Quarantine/delete actions are now hidden for `bundled_plugin`, `known_safe_missing`, and `core_missing` integrity categories.
+- **"Mark All Safe" button added to benign integrity groups** — Users can now dismiss all uninstalled bundled plugin files (39+) with a single click instead of one by one.
+
+---
+
 ## [2.9.27.14] - 2026-04-03
 
 ### Added
