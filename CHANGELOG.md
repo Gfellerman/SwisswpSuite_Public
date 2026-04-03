@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.14] - 2026-04-03
+
+### Added
+- **Native pageview tracker** (`SwissWPSuite_Visitor_Tracker`) — server-side daily visit tracking via `wp` hook; bot-filtered (50+ UA patterns including GPTBot, ClaudeBot, SemrushBot); no cookies, GDPR-compliant; `wp_swisswpsuite_pageviews` table with UPSERT per request; feeds real traffic data to the Dashboard chart
+- **On-Page SEO Diagnostic** (`SwissWPSuite_OnPage_Audit`) — Pro-only audit engine scanning 6 factors: meta descriptions, meta titles, image alt text, schema markup, heading hierarchy, content length; weighted scoring (schema=3x, headings+meta=2x); 1-hour transient cache; cache invalidated on post publish; returns gap analysis and prioritized quick-wins
+- **REST endpoint** `GET /swisswpsuite/v1/seo/onpage-audit` — Pro-gated, supports `?force=1` to bust cache
+- **`OnPageDiagnostics` React component** — replaces static SEO breakdown panel in Dashboard; shows live factor scores with color-coded severity; "Run Audit" button for Pro users triggers on-demand drill-down
+
+### Changed
+- Dashboard SEO breakdown section now shows real on-page factor scores instead of static mock data (Pro unlocks drill-down; Free shows coverage metrics only)
+- `get_stats()` API now returns real pageview data from the tracker table instead of empty zeros
+
+---
+
 ## [2.9.27.13] - 2026-04-03
 
 ### Fixed

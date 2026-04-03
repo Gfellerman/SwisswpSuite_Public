@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.13
+Stable tag: 2.9.27.14
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,11 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.14 =
+* Added: Native pageview tracker — daily visit stats with bot filtering (50+ patterns), no cookies, GDPR-compliant, feeds real traffic data to the Dashboard chart
+* Added: On-Page SEO Diagnostic — Pro audit scanning 6 factors (meta descriptions, titles, alt text, schema, headings, content length) with gap analysis and quick-win prioritization
+* Changed: Dashboard SEO breakdown panel now shows live factor scores with a "Run Audit" drill-down button (Pro only)
 
 = 2.9.27.13 =
 * Fixed: Sentinel L2 AI scan now enforces 4 hard rules against hallucination — no invented patch versions, CVE confidence gate, plugin list enforcement, and WordPress version ceiling
