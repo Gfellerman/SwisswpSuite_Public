@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.8
+Stable tag: 2.9.27.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,12 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.9 =
+* Fixed: Closed/Abandoned Plugins check no longer false-positives on swisswpsuite-ai (commercial plugin, never on WP.org) or hosting-provider bundled plugins (hostinger- prefix excluded)
+* Fixed: Distinguishes between plugins "removed from WP.org" vs "never submitted" — different severity and message
+* Fixed: Basic scan results are now fully visible in the Security Hub Sentinel tab
+* Fixed: Pro/AI scan now finds all issues that the basic scan finds, plus additional AI-powered insights
 
 = 2.9.27.8 =
 * Added: "Restrict AI Crawlers to Homepage" hardening option (Free) — prevents GPTBot, ClaudeBot, PerplexityBot, Google-Extended, Bytespider and 5 other AI crawlers from indexing beyond the homepage via robots.txt

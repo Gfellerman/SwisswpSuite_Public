@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.9] - 2026-04-03
+
+### Fixed
+- **Closed/Abandoned Plugins false positives** — `swisswpsuite-ai` (commercial plugin, intentionally not on WordPress.org) and plugins with the `hostinger-` prefix (hosting-provider bundled tools) are now permanently excluded from the abandoned plugins check
+- **"Not found" vs "removed" distinction** — the check now correctly distinguishes between plugins that were removed from WordPress.org (`closed: true` API flag) vs plugins that were never submitted (404 response); different severity and message text for each case
+- **Basic scan results visibility** — scan findings are now fully rendered in the Security Hub Sentinel tab
+- **Pro/AI scan completeness** — Pro scan now surfaces all findings that the basic scan detects, plus additional AI-powered analysis
+
+---
+
 ## [2.9.27.8] - 2026-04-03
 
 ### Added
