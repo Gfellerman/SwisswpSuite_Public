@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.12] - 2026-04-03
+
+### Changed
+- **Pro tier: unlimited Layer 2 AI scans** — removed hourly rate cap (previously 2/hour) and monthly quota (previously 1/month) for Pro and Full Suite license holders; Free tier limits unchanged
+- Pro scan quota check now short-circuits locally without a VPS round-trip, making scan start faster for Pro users
+
+---
+
 ## [2.9.27.11] - 2026-04-03
 
 ### Fixed
