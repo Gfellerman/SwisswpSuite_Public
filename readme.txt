@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.9
+Stable tag: 2.9.27.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,11 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.10 =
+* Improved: Core file integrity scan now categorizes findings by risk level — "Modified Core Files" (real threat), "Bundled Theme Files", "Uninstalled Bundled Plugins" (Akismet, Hello Dolly — not a threat), and "Commonly Removed Files" (readme.html, xmlrpc.php — often deleted for hardening)
+* Improved: Remediation text is now context-aware per category instead of a generic "reinstall WordPress" message
+* Improved: Real issue count in the scan summary only counts actual threats (modified core files), not uninstalled plugins or deliberately removed files
 
 = 2.9.27.9 =
 * Fixed: Closed/Abandoned Plugins check no longer false-positives on swisswpsuite-ai (commercial plugin, never on WP.org) or hosting-provider bundled plugins (hostinger- prefix excluded)

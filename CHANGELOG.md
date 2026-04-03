@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.10] - 2026-04-03
+
+### Changed
+- **Core file integrity scan — risk-based categorization**: findings are now grouped into four categories: *Modified Core Files* (potential tampering — shown expanded with red badge), *Bundled Theme Files* (collapsed, yellow), *Uninstalled Bundled Plugins* (collapsed, blue — e.g. Akismet, Hello Dolly — this is expected when plugins are uninstalled), and *Commonly Removed Files* (collapsed, grey — e.g. `readme.html`, `xmlrpc.php`, `hello.php` — often deleted for security hardening)
+- **Context-aware remediation text**: each category now shows specific advice instead of the generic "Reinstall WordPress" message which was incorrect for plugin-related findings
+- **Accurate issue count**: the summary badge now only counts real threats (modified core files) — uninstalled plugins and deliberately removed files no longer inflate the count
+
+---
+
 ## [2.9.27.9] - 2026-04-03
 
 ### Fixed
