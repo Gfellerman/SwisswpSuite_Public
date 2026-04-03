@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.10
+Stable tag: 2.9.27.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,11 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.11 =
+* Fixed: Core file integrity scan grouping now applies to the Basic Scan button (v2.9.27.10 incorrectly fixed only the Full Sentinel Scan path)
+* Fixed: Akismet MISS entries and commonly-removed files (readme.html, hello.php) are now grouped separately in Basic Scan results with accurate context
+* Fixed: Basic Scan issue count only reflects genuine core file threats, not uninstalled bundled plugins
 
 = 2.9.27.10 =
 * Improved: Core file integrity scan now categorizes findings by risk level — "Modified Core Files" (real threat), "Bundled Theme Files", "Uninstalled Bundled Plugins" (Akismet, Hello Dolly — not a threat), and "Commonly Removed Files" (readme.html, xmlrpc.php — often deleted for hardening)

@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.11] - 2026-04-03
+
+### Fixed
+- **Basic Scan core file grouping** — v2.9.27.10 applied the risk-based categorization to the Full Sentinel Scan path only; this fix applies it to the correct path: `SwissWPSuite_Security::perform_core_scan()` and the inline renderer in SecurityHub
+- Akismet MISS entries now show under "Uninstalled Bundled Plugins" (collapsed, informational) in Basic Scan results
+- `readme.html`, `hello.php`, `xmlrpc.php` now show under "Commonly Removed Files" (collapsed, safe to ignore) in Basic Scan results
+- Basic Scan summary count now only counts genuine modified core files, not uninstalled plugins or hardening-related deletions
+- Backward-compatible: cached scan results without `category` field are reclassified client-side by file path
+
+---
+
 ## [2.9.27.10] - 2026-04-03
 
 ### Changed
