@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.7
+Stable tag: 2.9.27.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,11 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.8 =
+* Added: "Restrict AI Crawlers to Homepage" hardening option (Free) — prevents GPTBot, ClaudeBot, PerplexityBot, Google-Extended, Bytespider and 5 other AI crawlers from indexing beyond the homepage via robots.txt
+* Added: "Restrict Google to Homepage Only" hardening option (Free, high-risk) — limits Googlebot and Bingbot to homepage only; requires confirmation due to SEO impact
+* Added: Physical robots.txt file detection — warns when a static robots.txt file would override the plugin's rules
 
 = 2.9.27.7 =
 * Fixed: "Disable Visitor-Triggered Scheduling" hardening toggle now explicitly warns that SwissWPSuite backup automations will stop, and provides server cron setup instructions before confirming

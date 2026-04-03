@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.8] - 2026-04-03
+
+### Added
+- **Restrict AI Crawlers to Homepage** (Free hardening option) — adds `robots.txt` rules via WordPress filter to prevent GPTBot, ClaudeBot, PerplexityBot, anthropic-ai, Bytespider, CCBot, cohere-ai, FacebookBot, and Google-Extended from crawling beyond the homepage; bot names are hardcoded (no user input)
+- **Restrict Google to Homepage Only** (Free hardening option, high-risk) — adds `robots.txt` rules for Googlebot and Bingbot; requires confirmation dialog with explicit SEO impact warning before enabling
+- Physical `robots.txt` file detection — both options detect a static `robots.txt` at the webroot and warn the user that the WordPress filter will be bypassed until the file is removed
+
+---
+
 ## [2.9.27.7] - 2026-04-02
 
 ### Fixed
