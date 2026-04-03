@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.16] - 2026-04-03
+
+### Added
+- **"Fix Non-Compliant" targeted SEO re-optimization** — new `POST /swisswpsuite/v1/seo/fix-noncompliant` endpoint (Pro-gated) querying only posts/products with meta descriptions under 120 chars and sufficient content (200+ chars) to generate a longer one; feeds matching IDs into the existing background queue; does not touch compliant items
+- **`SEO_MIN_DESC_LENGTH` and `MIN_CONTENT_LENGTH_FOR_REOPT` constants** — extracted from 5 hardcoded values scattered across `run_seo_scan()`, `get_stats()`, and the new fix handler; single source of truth for the quality gate threshold
+
+### Changed
+- SEO Manager UI "Intelligence Suggestion" section now shows a real action button **"Fix Non-Compliant (N)"** instead of static text; the button triggers the targeted endpoint, shows a loading state, and refreshes the audit count when done
+
+---
+
 ## [2.9.27.15] - 2026-04-03
 
 ### Fixed

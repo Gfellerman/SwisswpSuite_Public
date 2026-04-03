@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.15
+Stable tag: 2.9.27.16
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,11 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.16 =
+* Added: "Fix Non-Compliant" targeted SEO re-optimization button — re-runs AI only on posts/products with meta descriptions below the 120-character quality gate, instead of re-processing all content
+* Added: SEO_MIN_DESC_LENGTH and MIN_CONTENT_LENGTH_FOR_REOPT constants replacing hardcoded magic numbers across scan, stats, and fix endpoints
+* Changed: Non-Compliant Asset Manifest section now shows an actionable "Fix Non-Compliant (N)" button alongside the intelligence suggestion
 
 = 2.9.27.15 =
 * Fixed: "Mark as Safe" now works for uninstalled bundled plugins — previously failed silently for non-existent files (realpath validation blocked all missing-file paths)
