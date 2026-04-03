@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.13] - 2026-04-03
+
+### Fixed
+- **Sentinel L2 AI hallucination guardrails** — added 4 mandatory hard rules to the attack chain generation prompt: (A) never recommend a patch version that doesn't exist, (B) only include CVEs with a known CVE ID and high confidence, (C) only generate findings for plugins explicitly in the installed plugin list, (D) never reference a WordPress version higher than what is installed
+- **Post-AI deterministic filter** (`filterHallucinatedChains`) — strips attack chains that mention a WordPress version higher than `site_context.wp_version` before the response reaches the plugin; catches the "update to 6.9.5 when 6.9.4 is current" class of hallucination
+- Sentinel protocol version bumped to 2.2
+
+---
+
 ## [2.9.27.12] - 2026-04-03
 
 ### Changed

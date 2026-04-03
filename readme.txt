@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.12
+Stable tag: 2.9.27.13
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,12 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.13 =
+* Fixed: Sentinel L2 AI scan now enforces 4 hard rules against hallucination — no invented patch versions, CVE confidence gate, plugin list enforcement, and WordPress version ceiling
+* Fixed: Post-AI deterministic filter strips attack chains that reference WordPress versions higher than what is installed (e.g., "update to 6.9.5" when 6.9.4 is installed and is the latest)
+* Fixed: AI prompt now explicitly states installed WP version and instructs the model not to recommend updates to non-existent versions
+* Bumped Sentinel version to 2.2
 
 = 2.9.27.12 =
 * Changed: Pro license tier now has unlimited Layer 2 AI scans — no hourly cap, no monthly quota
