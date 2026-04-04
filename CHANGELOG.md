@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.25] - 2026-04-04
+
+### Fixed
+- **SEO PAGES badge** -- Badge row now shows a dedicated PAGES category with its own non-compliant count; pages were previously invisible in the summary row
+- **SEO posts/pages separation** -- POSTS badge now counts only `post_type=post` items; PAGES badge counts only `post_type=page` items; the two were previously lumped together under POSTS
+- **SEO health transient staleness** -- On-page audit cache is now invalidated when a scan completes or a batch job finishes, so the Dashboard SEO HEALTH tile reflects the latest scan result immediately
+
+---
+
 ## [2.9.27.24] - 2026-04-04
 
 ### Fixed
