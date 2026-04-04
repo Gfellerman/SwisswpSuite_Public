@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.21] - 2026-04-04
+
+### Fixed
+- **AI audit reads actual hardening state** — prompt now instructs AI to check `hardening.{key}` value from snapshot; only flags options genuinely set to `false`; never reports enabled options as vulnerabilities
+- **SECURITY_BENEFICIAL options strictly excluded from Critical findings** — CSP (`enable_csp`) and Geo-Blocking forbidden from appearing in `security_issues`/`critical_issues` under any circumstances; appear only in `improvement_suggestions`
+- **Remediation text uses UI labels** — human-readable labels ("Disable XML-RPC", "Block PHP in Uploads") replace internal PHP option keys (`disable_xmlrpc`, `block_php_uploads`) in all AI-generated remediation paths
+- **L2 CVE false positives eliminated** — CVEs missing `fixed_in` version now downgraded to `medium` severity with `unverified: true` flag; Grade F automatic fail requires a confirmed (non-unverified) CVE finding; LiteSpeed Cache 7.8.1 false positive scenario fixed
+- **Environment/Configuration finding groups** — M4 findings (WordPress Version, PHP Version, Server Software Header, Plugin Inventory, Cloud Protection) and M3 findings (license.txt) now grouped under dedicated "Environment" and "Configuration" categories instead of misclassified "External Files"
+- **File-action buttons suppressed for non-file findings** — Quarantine and Delete action buttons hidden for findings in Environment and Configuration groups where file operations make no sense
+- **Mark Safe for non-file findings** — new `swisswpsuite_sentinel_ignored_findings` wp_option stores finding IDs; M3/M4 scan modules check this list; non-file findings (WP Version, PHP Version, etc.) can now be permanently dismissed
+
+### Added
+- `swisswpsuite_sentinel_ignored_findings` wp_option (registered in `swisswpsuite-config-manifest.php`) — stores finding IDs for non-file findings that should be suppressed in future scans
+
+---
+
 ## [2.9.27.20] - 2026-04-04
 
 ### Fixed

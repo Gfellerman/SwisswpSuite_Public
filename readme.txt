@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.20
+Stable tag: 2.9.27.21
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,15 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.21 =
+* Fixed: AI audit now reads actual hardening state — only flags options that are genuinely disabled, never assumes defaults
+* Fixed: CSP and geo-blocking forbidden from appearing as Critical findings — classified as improvement suggestions only
+* Fixed: Remediation text uses human-readable UI labels instead of internal option key names
+* Fixed: L2 CVE scan — CVEs without confirmed fixed_in version downgraded to medium/unverified; Grade F requires confirmed CVE
+* Fixed: Environment findings (WP Version, PHP Version, Server Header, Cloudflare) grouped under Environment, not External Files
+* Fixed: File-action buttons (Quarantine/Delete) hidden for non-file findings (environment and configuration groups)
+* Fixed: Mark Safe now works for non-file findings (environment/configuration) via finding ID ignore list
 
 = 2.9.27.20 =
 * Fixed: AI daily audit no longer flags SEO features (AI crawler restriction, Google indexing) as security vulnerabilities
