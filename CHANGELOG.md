@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.20] - 2026-04-04
+
+### Fixed
+- **AI daily audit prompt rewrite** — SEO features (`restrict_llm_crawlers`, `restrict_google_indexing`) removed from hardening gap list; they are not security controls
+- **Hardening option tiers** — 13 options classified as security-critical / security-beneficial / operational / excluded; blanket "each disabled option = vulnerability" rule removed
+- **WordPress-normal exclusions** — writable `wp-content/uploads` no longer flagged as vulnerability; orphaned tables downgraded to maintenance-level; wp-cron public access contextualized
+- **Post-AI deterministic risk capping** — AI cannot return High/Critical when only improvement suggestions (Pro upsells) exist; adds server-side validation of risk score
+- **Orphaned table false positives** — added `termmeta`, `wc_*` (WooCommerce), `swisswpsuite_*` (own plugin), `actionscheduler_*` prefix mappings
+- **wp-config.php writability** — context-annotated in AI snapshot (owner-writable is normal for WordPress auto-updates)
+- **Deep scan severity tiers** — known webshells (c99shell, FilesMan, r57shell, b374k, WSO) → critical; exec with user input → high; obfuscation-only (hex2bin, str_rot13, chr chains) → medium
+- **Cron double-binding** — removed legacy System A `add_action` in `security.php`; daily hook fires exactly once via System B (deterministic L1+L2)
+- **Free-tier daily email** — replaces useless "Unknown Risk / Upgrade to Pro" with real L1 deterministic scan findings and computed risk level
+- **Mark Safe persistence** — `get_sentinel_scan_record()` now filters `swisswpsuite_security_ignored_paths`; ignored files no longer reappear on page refresh
+- **Duplicate Quarantine button** — Delete action now uses red button + Trash2 icon + "Permanently delete — cannot be undone" confirmation; Quarantine remains amber + Archive icon
+
+### Added
+- `compute_risk_level()` method in `SwissWPSuite_Sentinel_Security` — deterministic L1 findings → risk level mapping (Critical/High/Medium/Low/Info)
+
+---
+
 ## [2.9.27.19] - 2026-04-03
 
 ### Fixed

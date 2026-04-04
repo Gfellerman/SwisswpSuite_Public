@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.19
+Stable tag: 2.9.27.20
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,18 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.20 =
+* Fixed: AI daily audit no longer flags SEO features (AI crawler restriction, Google indexing) as security vulnerabilities
+* Fixed: Hardening options classified into tiers — only real security controls flagged as vulnerabilities; Pro upsells separated
+* Fixed: Writable wp-content/uploads no longer reported as critical vulnerability (normal WordPress behavior)
+* Fixed: Orphaned DB table detection improved — WooCommerce (wc_*), SwissWPSuite, Action Scheduler tables no longer false-positives
+* Fixed: Deep scan severity now tiered — webshells=critical, exec-with-input=high, obfuscation-only=medium
+* Fixed: Post-AI deterministic risk capping — AI cannot inflate to High/Critical when only upsell recommendations exist
+* Fixed: Daily cron fires once (removed legacy System A double-binding)
+* Fixed: Free-tier daily email now shows real L1 scan findings instead of "Unknown Risk / Upgrade to Pro"
+* Fixed: "Mark Safe" now persists on page refresh (scan record filtered by ignored paths)
+* Fixed: Delete button distinct from Quarantine button (red/trash icon vs amber/archive icon)
 
 = 2.9.27.19 =
 * Fixed: SEO dashboard "Run Full Scan" button now visible in WordPress admin (white-on-white issue resolved)
