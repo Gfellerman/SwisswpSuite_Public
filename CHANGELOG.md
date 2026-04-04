@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.22] - 2026-04-04
+
+### Fixed
+- **Config manifest completeness** -- 36 previously unregistered option keys now registered in config manifest (backup export protection, import recovery, deep scan runtime state)
+- **Autoload optimization** -- Security scan result options (`swisswpsuite_basic_scan_result`, `swisswpsuite_scan_result`) set to `autoload=false` to reduce WordPress autoload cache size
+- **SQL WPCS compliance** -- Table name references in trainer, logger, and WAF stats queries now use `$wpdb->prepare()` and `esc_sql()` instead of direct interpolation
+- **Documentation headers** -- SECURITY_HUB.md and SECURITY_CAPABILITIES_REFERENCE.md updated to v2.9.27.22
+
+---
+
 ## [2.9.27.21] - 2026-04-04
 
 ### Fixed

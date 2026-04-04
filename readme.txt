@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.21
+Stable tag: 2.9.27.22
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,12 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.22 =
+* Fixed: 36 unregistered option keys added to config manifest (backup export + import recovery protection)
+* Fixed: Security scan result options no longer pollute WordPress autoload cache
+* Fixed: SQL WPCS violations in trainer, logger, and WAF stats queries (table names use prepare()/esc_sql())
+* Fixed: Stale version headers in SECURITY_HUB.md and SECURITY_CAPABILITIES_REFERENCE.md
 
 = 2.9.27.21 =
 * Fixed: AI audit now reads actual hardening state — only flags options that are genuinely disabled, never assumes defaults
