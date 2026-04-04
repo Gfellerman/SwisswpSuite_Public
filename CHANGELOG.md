@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.24] - 2026-04-04
+
+### Fixed
+- **Sentinel PHP remediation** -- PHP version check is now context-aware; sites already running PHP 8.2+ receive an "up to date" confirmation instead of a stale "upgrade to 8.2+" tip
+- **Sentinel server header remediation** -- Server Software finding now detects LiteSpeed vs Nginx vs Apache and provides server-specific fix instructions instead of generic Apache/Nginx commands
+
+---
+
 ## [2.9.27.23] - 2026-04-04
 
 ### Fixed
