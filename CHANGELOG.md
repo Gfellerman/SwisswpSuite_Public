@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.23] - 2026-04-04
+
+### Fixed
+- **SEO score accuracy** -- Score no longer shows false 100% when posts/images are missing; a `missing_total` safety cap ensures score stays at 99 when any category has unresolved items
+- **SEO formula consistency** -- META COVERAGE on_page score now uses the same weighted formula as the headline SEO score (optimal×1.0 + acceptable×0.6 + faq_bonus), eliminating score discrepancy
+- **SEO action list completeness** -- Posts with 120–149 character descriptions now appear in the optimization action list (threshold aligned to 150-char optimal, matching the missing counter)
+- **SEO "All optimized" accuracy** -- "All assets fully optimized" message now correctly checks `details.post.missing` and `details.image.missing` in addition to `non_compliant_items.length`
+
+---
+
 ## [2.9.27.22] - 2026-04-04
 
 ### Fixed
