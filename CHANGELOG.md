@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.29] - 2026-04-06
+
+### Changed
+- **Full UX clarity pass** -- Replaced all military/sci-fi jargon with plain English across Dashboard, Security Hub, SEO Manager, and sidebar navigation
+- **Dashboard honest empty state** -- Removed fake fallback statistics; shows "No data yet" when no scan has run
+- **SecurityHub fake stats removed** -- Deleted hardcoded "100% Precision" and "High Availability" decorative bars
+- **Scan button naming** -- "Layer 1 Scan" → "Quick Scan", "Deep Malware Scan" → "Full Scan", consistent naming throughout
+- **SEO Manager label rewrite** -- 128 lines of jargon replaced: "Intel Asset" → "Content", "Non-Compliant" → "Needs SEO", "Terminate Session" → "Close", and token usage warnings added
+- **Sidebar navigation** -- "Command Center" → "Dashboard", "Defense Hub" → "Security", "Content Forge" → "AI Content", "System Config" → "Settings"
+
+### Fixed
+- **Polling-driven SEO queue** -- On Cloudflare/LiteSpeed hosts where WP-Cron loopback is blocked, each status poll now processes 1 queue item server-side
+- **Bulk content list limit** -- Raised to 10,000 when fields=ids for bulk SEO queue building (UI pagination stays at 200)
+
+---
+
 ## [2.9.27.27] - 2026-04-06
 
 ### Fixed

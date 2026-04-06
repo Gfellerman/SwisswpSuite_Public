@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.27
+Stable tag: 2.9.27.29
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,15 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.29 =
+* Changed: Full UX clarity pass — replaced military/sci-fi jargon with plain English across all pages
+* Changed: Dashboard shows honest empty state instead of fake fallback statistics
+* Changed: Scan buttons renamed: Quick Scan, Full Scan, Full Scan + AI Analysis
+* Changed: SEO Manager complete label rewrite (128 lines) with token usage warnings
+* Changed: Sidebar navigation: Dashboard, Security, SEO, AI Content, Settings
+* Fixed: Polling-driven SEO queue for Cloudflare/LiteSpeed WP-Cron blocking
+* Fixed: Bulk content list limit raised to 10,000 for queue building
 
 = 2.9.27.27 =
 * Fixed: Deep scan, SEO background processing, and automated backups now fire reliably on low-traffic sites via shared WP-Cron spawn helper
