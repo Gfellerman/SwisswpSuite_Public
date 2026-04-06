@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.30] - 2026-04-06
+
+### Fixed
+- **3 surviving jargon items** -- "NEURAL CORE INTEGRITY" → "SEO HEALTH" on Dashboard, "Precision threat monitoring..." → plain English on Security Hub, "Content Forge" → "AI Content Writer" on AI Content page
+
+---
+
 ## [2.9.27.29] - 2026-04-06
 
 ### Changed
