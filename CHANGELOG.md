@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.31] - 2026-04-06
+
+### Changed
+- **License tab fully rewritten** -- 12 jargon items replaced: "ACCESS PROTOCOL" → "License", "NEURAL RESOURCES" → "AI Token Balance", "ACQUIRE RESOURCES" → "Buy More Tokens", etc. Added plan name formatter for readable display.
+- **Security Hub jargon cleanup** -- "Deep Code Extraction" → "Deep File Scanner", "ARMOR-PLATING YOUR WORDPRESS CORE" → plain English, "LAYER 1" badges → "Quick Scan", hardening button → "Apply All Recommended Settings"
+- **WPScan & Patchstack explanations** -- Both API key fields now have plain-English descriptions explaining what the service does, that scans run automatically, and where to get the free key
+- **Security feature descriptions expanded** -- Detection Only mode, login attempt limits, file integrity, blocked IPs, and hardening options all have clear plain-English explanations
+- **SEO brand names removed** -- "ChatGPT and Gemini" replaced with "AI assistants" throughout SEO Manager
+- **AI Content Writer explanations** -- Added token usage notice, "How it works" guide, tooltips on tone selector and instruction input, button explanations
+- **Dashboard action descriptions** -- Quick action buttons now explain exactly what clicking them does
+
+---
+
 ## [2.9.27.30] - 2026-04-06
 
 ### Fixed

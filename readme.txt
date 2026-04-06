@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.30
+Stable tag: 2.9.27.31
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,15 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.31 =
+* Changed: License tab rewritten — all 12 jargon labels replaced with plain English
+* Changed: Security Hub — scan jargon, hardening subtitle, history badges all clarified
+* Changed: WPScan & Patchstack API fields now explain what they do and how they integrate with scans
+* Changed: All security features now have plain-English descriptions for non-technical users
+* Changed: SEO page removes specific AI brand names, uses generic "AI assistants"
+* Changed: AI Content Writer page adds token usage notice, how-it-works guide, and tooltips
+* Changed: Dashboard action buttons now describe exactly what they do
 
 = 2.9.27.30 =
 * Fixed: 3 surviving jargon labels — "NEURAL CORE INTEGRITY", "Precision threat monitoring", "Content Forge" replaced with plain English
