@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.27] - 2026-04-06
+
+### Fixed
+- **Deep scan timeout** -- WP-Cron loopback now targets `/wp-cron.php` directly instead of the site root; shared `SwissWPSuite_Cron_Helper` utility ensures scheduled events fire immediately on low-traffic sites behind Cloudflare/LiteSpeed
+- **SEO background processing stuck** -- Added cron spawn after scheduling SEO background queue; processing now starts immediately without waiting for the next page visit
+- **Automated backups not running** -- Backup scheduler now force-spawns WP-Cron after job registration to prevent stale cron events on low-traffic sites
+- **License sync page reload** -- Sync button no longer causes a full page reload; token balance updates in-place via AJAX and the active Settings tab is preserved
+- **Neural Traffic Monitor shows no visits** -- Dashboard stats endpoint now reads from the native pageview tracker instead of returning hardcoded zeros
+- **AI advisor recommends 2FA when already active** -- Intelligence Advisor prompt now includes 2FA status so the AI does not recommend enabling an already-active feature
+- **SEO modal accessibility** -- SEO Health Audit modal now has `role="dialog"`, `aria-modal`, `aria-labelledby`, Escape key close handler, auto-focus on open, and accessible close button label
+
+---
+
 ## [2.9.27.25] - 2026-04-04
 
 ### Fixed

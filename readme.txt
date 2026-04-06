@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.25
+Stable tag: 2.9.27.27
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,13 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.27 =
+* Fixed: Deep scan, SEO background processing, and automated backups now fire reliably on low-traffic sites via shared WP-Cron spawn helper
+* Fixed: License sync button no longer reloads the page; token balance updates in-place
+* Fixed: Dashboard Neural Traffic Monitor now shows real pageview data from the native visitor tracker
+* Fixed: AI Intelligence Advisor no longer recommends 2FA when it is already active
+* Fixed: SEO Health Audit modal now keyboard-accessible with ARIA dialog attributes and Escape key close
 
 = 2.9.27.25 =
 * Fixed: SEO badge row now shows separate POSTS and PAGES non-compliant counts (pages were previously invisible)
