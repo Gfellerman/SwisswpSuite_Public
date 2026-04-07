@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.45] - 2026-04-07
+
+### Fixed
+- **Zombie engine state loop** -- When Sentinel abandons a job (max attempts or circuit breaker), it now also sets the corresponding `swisswpsuite_backup_engine_*` WP option row to `cancelled`. Previously, the engine state stayed `running` and TickDispatcher would fire loopback HTTP every 5 minutes indefinitely, driving server load to 7-9.
+- **TickDispatcher zombie guard** -- `discover_active_jobs()` now skips engine state rows whose `last_tick_start` is older than 2 hours. These rows are auto-cancelled to prevent future scans from encountering them.
+- **HTTP 0 false-alarm suppression** -- `chain_next_tick()` no longer logs a warning for HTTP response code 0, which is the expected response for non-blocking requests (`blocking => false`).
+
+### Added
+- **POST /backup/clear-stuck-jobs** -- Emergency REST endpoint that finds and cancels all stuck engine state rows (running/pending with last activity >2 hours). Returns count of cleared jobs for audit trail.
+- **"Clear Stuck Jobs" button** -- Shown in the Backup Automations panel when stuck jobs are detected. Red/danger styling to indicate it's an emergency tool.
+- **`stuck_job_count` in automations response** -- GET /backup/automations now includes a count of stuck engine state rows so the frontend can conditionally show the clear button.
+
+---
+
+## [2.9.27.44] - 2026-04-07
+
+### Fixed
+- **Backup schedule anchor now actually preserved across plugin updates** -- fixed array indexing bug where `schedule_cron_event()` used string ID on a numerically-indexed array, causing `last_run_at` lookup to always return null and reset to `time()+interval`.
+- **UI edits no longer reset backup schedule time** -- `sync_cron_events()` now delegates to `schedule_cron_event()` instead of bypassing anchor logic with `time()+60`.
+- **Deleting a backup automation now clears its cron event** -- prevents orphaned WP-Cron events.
+- **Free users no longer get phantom backup cron events** -- `ensure_cron_events()` gated behind `backup_cloud` capability.
+- **Post-import recovery now re-registers backup automation cron hooks** -- per-automation dynamic hooks restored alongside manifest hooks.
+- **Diagnostic warning logged when backup cron scheduling fails** -- visible in plugin UI diagnostics panel.
+
+---
+
 ## [2.9.27.43] - 2026-04-07
 
 ### Fixed

@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.43
+Stable tag: 2.9.27.45
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,21 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.45 =
+* Fixed: Sentinel now cancels engine state rows when abandoning jobs (prevents zombie resurrection loop)
+* Fixed: TickDispatcher skips engine state rows older than 2 hours (zombie guard)
+* Fixed: HTTP 0 response no longer logged as warning for non-blocking requests
+* Added: POST /backup/clear-stuck-jobs endpoint for emergency cleanup
+* Added: "Clear Stuck Jobs" button in Backup Automations panel (shown when stuck jobs detected)
+
+= 2.9.27.44 =
+* Fixed: Backup schedule anchor preserved across plugin updates (array indexing bug)
+* Fixed: UI edits no longer reset backup schedule time
+* Fixed: Deleting automation clears its cron event
+* Fixed: Free users no longer get phantom backup cron events
+* Fixed: Post-import recovery re-registers backup automation cron hooks
+* Fixed: Diagnostic warning when backup cron scheduling fails
 
 = 2.9.27.31 =
 * Changed: License tab rewritten — all 12 jargon labels replaced with plain English
