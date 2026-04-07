@@ -6,6 +6,74 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.37] - 2026-04-07
+
+### Fixed
+- **Meta description auto-padding now works for near-miss lengths** -- added short padders (" Read more.", " Learn more.", " Get started.") for descriptions at 139-149 chars. Previous padders (30+ chars) overshot the 165 cap for near-miss cases. Raised cap to 170 to accommodate site name padders.
+
+---
+
+## [2.9.27.36] - 2026-04-07
+
+### Fixed
+- **AI SEO generation 38% failure rate** -- root cause: overly complex prompt with contradictory character-counting instructions caused Groq API `json_validate_failed` errors. Prompt stripped back to clean, simple instructions. Post-generation validation (truncation + padding) handles length enforcement instead of prompt-level instructions.
+
+---
+
+## [2.9.27.35] - 2026-04-07
+
+### Fixed
+- **AI SEO prompt redesigned for thin content** -- two-tier approach: rich content gets strict 150-160 char enforcement, thin/empty pages get marketing-oriented prompt using site name and page purpose
+- **Auto-padding for short descriptions** -- if AI generates 130-149 chars, the system appends a relevant call-to-action phrase to reach 150+ chars automatically
+- **CRITICAL reinforcement in prompt** -- explicit "count every character including spaces" instruction plus "Not 140, not 149, not 161" examples to reduce AI miscounts
+
+---
+
+## [2.9.27.34] - 2026-04-07
+
+### Fixed
+- **Utility pages excluded from content length check** -- Home, Blog, Shop, Cart, Checkout, My Account, Login no longer flagged for thin content (template-rendered pages have no post_content by design)
+- **AI meta description prompt hardened** -- now enforces "MUST be 150-160 characters" instead of "around 155"; descriptions over 160 chars auto-truncated at word boundary
+- **SEO quality gate constant aligned** -- SEO_MIN_DESC_LENGTH updated from 120 to 150, matching the scanner threshold
+
+---
+
+## [2.9.27.33] - 2026-04-07
+
+### Added
+- **WooCommerce Product schema (JSON-LD)** -- automatic Product structured data with price, availability, SKU, ratings for all WooCommerce products
+- **Theme-aware H1 detection** -- SEO scanner now assumes theme renders post title as H1 (standard WP behavior), eliminating false positives; front-page exception preserved
+- **Page-builder content length analysis** -- SEO scanner extracts and counts text from Elementor, Divi, and Beaver Builder meta data instead of reporting 0 words
+
+### Fixed
+- **Schema markup false positives eliminated** -- SEO audit now recognizes that SwissWPSuite Frontend already injects Article/WebPage/FAQ schema via wp_head (was checking post_content only)
+
+---
+
+## [2.9.27.32] - 2026-04-07
+
+### Fixed
+- **Silent data loss in content editor** -- wp_update_post() now checks return value and returns 500 on DB failure (F-067)
+- **SEO description threshold mismatch** -- UI and PHP both use 150 chars now (was 120, scoring used 150) (F-030, F-031)
+- **SEO N+1 query** -- batch-prefetch page-builder meta in check_content_length instead of per-post queries (F-016)
+- **Content writer race condition** -- bulk rewrite button disabled during in-flight individual rewrites (F-069)
+- **Dashboard route crash** -- #/dashboard now redirects to #/ instead of showing React Router 404 (F-075)
+- **Config manifest gaps** -- 3 missing option keys added (last_import_completed, security_fixed_findings, seo_batch_filters) (F-070)
+- **Backup autoload bloat** -- all 16 export update_option() calls now use autoload=false (F-071)
+
+### Changed
+- **Hardening constants deduplicated** -- FREE_HARDENING_KEYS extracted to shared constants/hardening.ts (F-074)
+- **Doc version headers updated** -- SECURITY_HUB.md and SECURITY_CAPABILITIES_REFERENCE.md brought to current version (F-072, F-073)
+
+### Security
+- **Vite dev dependency updated** -- 0 npm vulnerabilities (was 2 HIGH CVEs) (F-068)
+
+### Removed
+- 4 dead VPS route files (license.js, ai_new.js, api.js, license_new.js) (F-055)
+- 35 stale .bak files from VPS routes directory (F-056)
+
+---
+
 ## [2.9.27.31] - 2026-04-06
 
 ### Changed
