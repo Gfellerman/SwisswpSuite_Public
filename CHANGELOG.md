@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.43] - 2026-04-07
+
+### Fixed
+- **Plugin update no longer resets backup schedule times** -- schedule_cron_event() now computes the next occurrence from last_run_at + interval instead of time(). If a user's daily backup was set to run at 3 AM, it stays at 3 AM after a plugin update. New automations with no history start at now + interval.
+
+---
+
 ## [2.9.27.42] - 2026-04-07
 
 ### Fixed
