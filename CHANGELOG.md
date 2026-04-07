@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.42] - 2026-04-07
+
+### Fixed
+- **Countdown timezone mismatch** -- compute_next_run() now returns UTC ISO 8601 (with Z suffix) instead of site-local wp_date(). Frontend parses UTC correctly regardless of browser timezone. Daily backups now show "23h 47m" instead of "1d".
+- **Countdown always shows hours+minutes** -- removed the "Xd" rounding; all countdowns show precise hours and minutes (e.g. "25h 30m" instead of "1d").
+
+---
+
 ## [2.9.27.41] - 2026-04-07
 
 ### Fixed
