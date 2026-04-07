@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.39] - 2026-04-07
+
+### Security
+- **Log injection fixed** -- username sanitized with sanitize_user() before writing to security threat log (HIGH-1)
+- **Tier gate hardened** -- force_security_headers and disable_rest_api_guests added to pro_only_options internal gate (HIGH-2)
+- **uploads/.htaccess migrated to insert_with_markers** -- no more file_put_contents anti-pattern, proper marker management (HIGH-3)
+- **CF-Connecting-IP validated** -- FILTER_VALIDATE_IP check added before trusting Cloudflare header (HIGH-4, 2 audits overdue)
+- **REST API namespace whitelist tightened** -- replaced broad /v1/ match with 3 surgical public endpoints
+- **Core scan locale-aware** -- uses get_locale() instead of hardcoded en_US, eliminates false positives on non-English sites
+- **Scanner reports highest severity** -- no longer stops at first pattern match; scans all patterns and reports worst-case
+
+### Fixed
+- **Deactivator cleanup** -- restrict_google_indexing and restrict_llm_crawlers settings cleared on deactivation (prevents silent reactivation of Google deindexing)
+- **uploads/.htaccess cleanup** -- deactivator now removes SwissWPSuite markers from uploads/.htaccess
+
+### Changed
+- **18 security regression baselines** added to REGRESSION_BASELINE.md -- every future audit verifies these
+- **Comprehensive auditor CAT-10** now includes mandatory 15-point security invariant checklist -- can never skip deep security review
+- **SECURITY_HUB.md updated** -- reflects 13 hardening options (was 11)
+
+---
+
 ## [2.9.27.38] - 2026-04-07
 
 ### Fixed
