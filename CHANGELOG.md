@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.38] - 2026-04-07
+
+### Fixed
+- **[CRITICAL] Backup tick chain timeout** -- chain_next_tick() raised from 1s to 5s, matching Hostinger TLS handshake requirements
+- **[CRITICAL] Sentinel job stays "pending"** -- register_job() now sets status to "running" after spawn, preventing duplicate worker spawns
+- **[CRITICAL] Parallel engine corruption** -- run_automation_backup() now checks for active engine jobs before registering new ones
+- **[CRITICAL] Silent file write failure** -- write_jobs() no longer suppresses errors; logs warning on failure, wp_options is authoritative fallback
+- **[HIGH] Flock failure without heartbeat** -- execute_automation_backup() now calls heartbeat() on flock contention to prevent false "stuck" detection
+- **[HIGH] Rate limiter blocks loopback ticks** -- engine tick rate limiter now exempts loopback requests (nonce-protected)
+- **[HIGH] Circuit breaker reset on active jobs** -- register_job() skips re-registration when job is already running
+- **[HIGH] Migrated automations never fire** -- migrate_legacy() now calls sync_cron_events() after saving automation records
+- **[HIGH] TickDispatcher init gated behind license** -- moved init() outside backup_cloud capability gate so health check always registers
+- **[HIGH] Manual backup wrong Sentinel prefix** -- manual jobs now use "backup_manual_" prefix to avoid automation dispatch collision
+- **[MEDIUM] Orphaned engine state cleanup** -- load_all_states() now purges stale complete/failed states older than 24 hours
+- **[MEDIUM] CronHelper spawn timeout** -- raised from 0.01s to 2s for HTTPS loopback compatibility
+- **[LOW] chain_next_tick ignores HTTP 429** -- now logs non-200 responses for chain break debugging
+- **[LOW] ZIP SQL duplication on retry** -- archive_db_only_zip() now uses locateName() idempotency check
+
+---
+
 ## [2.9.27.37] - 2026-04-07
 
 ### Fixed
