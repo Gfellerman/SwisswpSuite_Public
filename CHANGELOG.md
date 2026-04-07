@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.46] - 2026-04-07
+
+### Fixed
+- Lowered stuck-job detection threshold from 2 hours to 30 minutes — "Clear Stuck Jobs" button now appears ~30 min after a job gets stuck, not 2 hours later
+
 ## [2.9.27.45] - 2026-04-07
 
 ### Fixed
