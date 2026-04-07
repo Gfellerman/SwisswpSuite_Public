@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.41] - 2026-04-07
+
+### Fixed
+- **Backup countdown shows "Overdue" for all automations** -- next_run was computed once at creation and never refreshed. get_all() now recomputes next_run from live wp_next_scheduled() on every API read so the UI always shows accurate countdown.
+
+---
+
 ## [2.9.27.40] - 2026-04-07
 
 ### Added
