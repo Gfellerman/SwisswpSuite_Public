@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.48] - 2026-04-08
+
+### Fixed
+- **Concurrent backup temp dir collision** -- `get_temp_dir()` now appends the job_id to the temp path so each engine instance gets an isolated directory. Previously, two simultaneous automations with the same scope (e.g., two hourly db backups) shared the same temp dir — the first to finish would `rmdir()` it, causing the second to fatal with "SQL dump file not found."
+- **Engine failure not updating automation status** -- When `cleanup_on_failure()` is called, it now invokes `set_last_run('failed', ...)` on the automation if `automation_id` is set. Previously, a failed engine left the automation permanently stuck in "running" until the watchdog's abandonment timeout.
+
+---
+
 ## [2.9.27.47] - 2026-04-08
 
 ### Fixed
