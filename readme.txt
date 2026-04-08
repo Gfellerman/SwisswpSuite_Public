@@ -90,8 +90,14 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 = 2.9.27.59 =
-* chore: version collision resolution (v2.9.27.57 and v2.9.27.58 were claimed by concurrent sessions)
-* Fixed: "Under Attack" security banner no longer shows false "no protection active" claim when Login Safeguard is enabled or the attacking IP is already blocked (F-090)
+* Fixed: chain_next_tick() now uses sslverify=>false for loopback — Hostinger self-signed cert caused silent HTTP 0 failures stalling the engine tick chain (P1-A)
+* Fixed: chain_next_tick() deferred to WordPress shutdown action at priority 999 — LiteSpeed LSAPI was killing the loopback before response completion (P1-B)
+* Fixed: Diagnostics::log() DB write moved to after wp_remote_post() in chain_next_tick() — eliminates blocking write on the critical pre-loopback path (P1-C)
+* Fixed: spawn_worker() in Sentinel restored sslverify=>false — HIGH-3 FIX incorrectly removed it; loopback SSL verify is not a MITM protection; shared secret is the real gate (P1-D)
+* Fixed: Concurrent automation stagger in chain_next_tick() — 0.5-1.5s random delay when another engine job is active, prevents exhausting Hostinger 10-worker PHP pool (P1-E)
+* Fixed: Upgrade migration purges stale log noise entries and fixes autoload=true on swisswpsuite_debug_log for existing installs (P2-A)
+* Fixed: Diagnostics update_option now passes autoload=false — 500-entry serialized arrays must not load on every WP page load (P2-B)
+* Fixed: Consecutive-duplicate deduplication in Diagnostics::log() prevents chatty calls from filling the 500-entry buffer (P2-C)
 
 = 2.9.27.57 =
 * Fixed: Backup retention off-by-one — prune phase now uses keep_count-1 to account for the set record created after pruning, so retention=2 keeps exactly 2 backups instead of 3.

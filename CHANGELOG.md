@@ -9,8 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [2.9.27.59] - 2026-04-08
 
 ### Fixed
-- Version collision resolution — v2.9.27.57 and v2.9.27.58 were claimed by concurrent backup and security sessions; this is the canonical clean version
-- Security: "Under Attack" banner no longer shows false "no login protection or IP block is active" claim when LOGIN SAFEGUARD is enabled or the attacking IP is already in the banned list (F-090)
+
+- (backup) P1-A: Added `sslverify => apply_filters('https_local_ssl_verify', false)` to `chain_next_tick()` args — Hostinger's self-signed loopback certificate was causing silent TLS failures (HTTP 0), stalling the engine tick chain
+- (backup) P1-B: `chain_next_tick()` now registered on WordPress `shutdown` action at priority 999 instead of firing inline — LiteSpeed LSAPI was killing the loopback TLS handshake before response completion, causing HTTP 0
+- (backup) P1-C: Moved `Diagnostics::log()` call in `chain_next_tick()` to after `wp_remote_post()` returns — eliminates a blocking DB write (get_option + update_option) on the critical pre-loopback path
+- (backup) P1-D: Restored `sslverify => false` to `spawn_worker()` in Sentinel (HIGH-3 FIX removed it incorrectly — loopback SSL verify is not a MITM protection; the shared secret is); replaced misleading comment with correct explanation
+- (backup) P1-E: Added concurrent-automation stagger in `chain_next_tick()` — if another engine job has a heartbeat <30s old, inserts a 0.5-1.5s random delay before firing the loopback to avoid exhausting Hostinger's 10-worker PHP pool
+- (diagnostics) P2-A: Added v2.9.27.59 upgrade migration to purge stale log noise entries (`BackupScheduler constructor:`, `CORE Dependencies loaded.`, `backup_cloud capability gate`) from existing installs and fix the autoload flag via direct SQL
+- (diagnostics) P2-B: `update_option('swisswpsuite_debug_log', ...)` now passes `false` as third arg — large serialized 500-entry arrays must not autoload on every WordPress page load
+- (diagnostics) P2-C: Added consecutive-duplicate deduplication in `Diagnostics::log()` — skips insertion if the most recent entry carries the same module + message, preventing a chatty call from filling the entire 500-entry buffer
 
 ---
 
