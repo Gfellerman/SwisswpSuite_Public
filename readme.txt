@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.58
+Stable tag: 2.9.27.59
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -89,12 +89,9 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
-= 2.9.27.58 =
-
-* Prune off-by-one fix — now keeps exactly N backups
-* is_auto detection fixed via backup_sets nonce lookup
-* Debug log constructor noise removed
-* Fixed: "Under Attack" security banner no longer shows false "no protection active" claim when Login Safeguard is enabled or the attacking IP is already blocked
+= 2.9.27.59 =
+* chore: version collision resolution (v2.9.27.57 and v2.9.27.58 were claimed by concurrent sessions)
+* Fixed: "Under Attack" security banner no longer shows false "no protection active" claim when Login Safeguard is enabled or the attacking IP is already blocked (F-090)
 
 = 2.9.27.57 =
 * Fixed: Backup retention off-by-one — prune phase now uses keep_count-1 to account for the set record created after pruning, so retention=2 keeps exactly 2 backups instead of 3.

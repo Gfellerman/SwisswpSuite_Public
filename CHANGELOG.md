@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.59] - 2026-04-08
+
+### Fixed
+- Version collision resolution — v2.9.27.57 and v2.9.27.58 were claimed by concurrent backup and security sessions; this is the canonical clean version
+- Security: "Under Attack" banner no longer shows false "no login protection or IP block is active" claim when LOGIN SAFEGUARD is enabled or the attacking IP is already in the banned list (F-090)
+
+---
+
 ## [2.9.27.58] - 2026-04-08
 
 ### Fixed
