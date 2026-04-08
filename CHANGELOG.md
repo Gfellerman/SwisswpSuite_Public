@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.54] - 2026-04-08
+
+### Added
+- **Maintenance tab warnings banner** — The `/system-logs` REST response's `warnings` array is now rendered at the top of the Maintenance tab. Each warning shows as a severity-coloured banner (amber/orange/red). The `DISABLE_WP_CRON` public-access warning introduced in v2.9.27.53 is now visible to admins without any additional action.
+
+### Changed
+- `SystemLogsWarning` and `SystemLogsResponse` interfaces added to `plugin/src/types.ts`.
+
+---
+
 ## [2.9.27.53] - 2026-04-08
 
 ### Fixed
