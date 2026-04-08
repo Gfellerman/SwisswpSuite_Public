@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.56] - 2026-04-08
+
+### Fixed
+- Sentinel `stuck_count` no longer carries over to the next automation run cycle. `complete_job()` now resets `stuck_count=0` and `circuit_open=false` before removing the job entry, so any disk-write failure leaves a clean entry rather than one with an accumulated count that could prematurely trip the circuit breaker on the next cycle.
+- Backup engine prune phase (`phase_prune()`) now calls `phase_complete()` directly instead of `transition_to('complete')`. The old path set `phase='complete'` in state and relied on `chain_next_tick()` dispatching an HTTP loopback to actually execute `phase_complete()`. Under server load that loopback returned HTTP 0, leaving jobs permanently stuck at "prune done, waiting for done tick." Inline completion eliminates the extra round-trip and the failure mode entirely.
+- Automation cron stagger (3 minutes per slot, added in v2.9.27.55) is now retroactively applied to all existing enabled automations via a one-time upgrade migration in `run_upgrade_migrations()`. Previously, the `schedule_cron_event()` early-exit guard ("already scheduled — skip") prevented the stagger code from running on automations created before v2.9.27.55.
+
+---
+
 ## [2.9.27.55] - 2026-04-08
 
 ### Fixed

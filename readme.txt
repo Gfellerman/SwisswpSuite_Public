@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.55
+Stable tag: 2.9.27.56
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,11 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.56 =
+* Fixed: Sentinel stuck_count no longer carries over to the next automation run cycle after a job completes (circuit breaker false-positive after one genuine stuck event).
+* Fixed: Backup engine prune phase no longer chains an extra HTTP loopback tick to reach phase_complete — completion is now inline, eliminating HTTP 0 stalls under server load.
+* Fixed: Automation cron stagger (introduced in 2.9.27.55) now applies to existing automations via a one-time upgrade migration on plugin update.
 
 = 2.9.27.55 =
 * Fixed: Backup automations with the same frequency (e.g. two hourly automations) are now staggered by 3 minutes each to prevent concurrent loopback collisions on Hostinger/LiteSpeed.
