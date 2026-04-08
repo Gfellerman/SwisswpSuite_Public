@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [2.9.27.57] - 2026-04-08
 
+### Fixed
+- Backup retention off-by-one: `phase_prune()` now uses `keep_count - 1` when querying and pruning backup sets, because the current backup's set record is not created until `phase_complete()` runs after pruning. Previously with retention=2, prune saw 2 sets, kept both, then `phase_complete()` added a 3rd — leaving retention+1 backups on disk.
+- `is_auto` detection in local backup list API now uses the backup sets registry (nonce lookup) instead of checking for the `auto-` filename prefix. Engine-produced filenames (`backup-db-{nonce}.zip`, `backup-full-{nonce}.zip`, etc.) never start with `auto-`, so automation backups were always reported as manual. The response now also includes `automation_id` for matched sets.
+- Removed three high-frequency log entries that fired on every WordPress page load and filled the 500-entry diagnostics buffer within minutes: "Dependencies loaded." (core.php), "backup_cloud capability gate" (core.php), and "constructor: registered N automation hook(s)" (backup-scheduler.php).
+
 ### Security
 - 2FA rate limiting migrated from transients to persistent options (autoload=false) — prevents brute-force bypass on Redis/Memcached object cache backends where transients are evictable (F-087)
 - Quarantine `.htaccess` and `index.php` writes now check return value and log via Diagnostics on failure — prevents silently unprotected quarantine directories on disk-full or permission errors (F-082)

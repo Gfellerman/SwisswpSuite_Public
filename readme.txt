@@ -90,6 +90,9 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 = 2.9.27.57 =
+* Fixed: Backup retention off-by-one — prune phase now uses keep_count-1 to account for the set record created after pruning, so retention=2 keeps exactly 2 backups instead of 3.
+* Fixed: is_auto detection in local backup list now uses nonce lookup in backup sets registry — engine filenames never start with 'auto-', so all automation backups were previously misidentified as manual.
+* Fixed: Three per-page-load log entries removed (Dependencies loaded, backup_cloud capability gate, BackupScheduler constructor hook count) — freed up the 500-entry diagnostics buffer that was filling within minutes.
 * Security: 2FA rate limiting migrated from transients to persistent options — prevents brute-force bypass on Redis/Memcached backends (F-087).
 * Security: Quarantine directory protection writes now validated — logs error if .htaccess or index.php cannot be written (F-082).
 * Security: Geoblocking user agent sanitized before storage — closes stored XSS vector (F-083).
