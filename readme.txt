@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.56
+Stable tag: 2.9.27.57
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,15 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.57 =
+* Security: 2FA rate limiting migrated from transients to persistent options — prevents brute-force bypass on Redis/Memcached backends (F-087).
+* Security: Quarantine directory protection writes now validated — logs error if .htaccess or index.php cannot be written (F-082).
+* Security: Geoblocking user agent sanitized before storage — closes stored XSS vector (F-083).
+* Fixed: Geoblocking log options use autoload=false — reduces per-request memory load (F-084).
+* Fixed: Quarantine base64_decode uses strict mode with corruption guard (F-086).
+* Fixed: Quarantine timestamps use wp_date() for consistent timezone display (F-085).
+* Fixed: Hardening default preset now includes block_user_enumeration (F-089).
 
 = 2.9.27.56 =
 * Fixed: Sentinel stuck_count no longer carries over to the next automation run cycle after a job completes (circuit breaker false-positive after one genuine stuck event).

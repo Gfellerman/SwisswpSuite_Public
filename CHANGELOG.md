@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.57] - 2026-04-08
+
+### Security
+- 2FA rate limiting migrated from transients to persistent options (autoload=false) — prevents brute-force bypass on Redis/Memcached object cache backends where transients are evictable (F-087)
+- Quarantine `.htaccess` and `index.php` writes now check return value and log via Diagnostics on failure — prevents silently unprotected quarantine directories on disk-full or permission errors (F-082)
+- Geoblocking stored user agent now sanitized with `sanitize_text_field()` — closes stored XSS vector in log exports and admin panels (F-083)
+- Geoblocking log `update_option()` calls hardened with `autoload=false` — reduces per-request memory load (F-084)
+- Quarantine `base64_decode()` uses strict mode with validation — skips corrupted entries instead of returning garbage paths (F-086)
+- Quarantine date formatting changed to `wp_date()` for timezone-consistent display (F-085)
+- Hardening default preset now includes `block_user_enumeration: true` (F-089)
+
+---
+
 ## [2.9.27.56] - 2026-04-08
 
 ### Fixed
