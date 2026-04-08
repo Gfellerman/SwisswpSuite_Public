@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.48
+Stable tag: 2.9.27.49
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,10 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.49 =
+* Fixed: Sentinel watchdog no longer overwrites "success" automation status -- checks engine completion state before marking job abandoned.
+* Fixed: Concurrent spawn_worker loopbacks staggered by 500ms to prevent LiteSpeed dropping second simultaneous connection.
 
 = 2.9.27.48 =
 * Fixed: Concurrent backup temp dir collision -- each engine now gets an isolated temp dir per job_id; prevents second concurrent job from fataling when first job cleans up shared temp directory.

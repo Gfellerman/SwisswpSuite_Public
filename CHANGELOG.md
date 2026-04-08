@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.49] - 2026-04-08
+
+### Fixed
+- **Sentinel overwrites successful automation status** -- Before marking a job abandoned/failed, the watchdog now checks whether the backup engine already completed the job (engine state `status === 'complete'`). If so, it cleans up the stale Sentinel entry without calling `set_last_run('failed')`. Prevents the circuit breaker from overwriting a correct "success" status 30 minutes after a fast backup completes.
+- **Concurrent spawn_worker loopback collision** -- `spawn_worker()` now checks a 5-second transient for the last spawn timestamp. If two automations fire within 1 second of each other, the second spawn is delayed by 500ms, preventing LiteSpeed from dropping one of the two near-simultaneous loopback connections.
+
+---
+
 ## [2.9.27.48] - 2026-04-08
 
 ### Fixed
