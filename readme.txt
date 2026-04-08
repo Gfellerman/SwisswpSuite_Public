@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.52
+Stable tag: 2.9.27.53
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,14 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.53 =
+* Fixed: Debug log API returned only 100 entries despite 500-entry buffer in diagnostics.
+* Fixed: Backup automation created_at timestamps used local time instead of UTC.
+* Security: REST API route existence oracle eliminated (401 changed to 404 for unauthenticated requests).
+* Security: Removed apply_filters hook from REST guest allowlist (no legitimate callers).
+* Security: /backup/ping endpoint hidden from REST API OPTIONS schema.
+* Added: Diagnostics warning when DISABLE_WP_CRON is not defined.
 
 = 2.9.27.52 =
 * Fixed: Sentinel job ID mismatch made BUG-4 safety net a no-op (engine/sentinel IDs never matched).

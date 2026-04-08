@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.53] - 2026-04-08
+
+### Fixed
+- **[BUG-A] Debug log API capped at 100 entries** — `get_system_logs()` in api.php sliced to 100, overriding the 500-entry buffer in diagnostics.php. Now returns up to 500 entries.
+- **[BUG-B] Backup automation `created_at` timezone drift** — `current_time('mysql')` (local time) replaced with `gmdate('Y-m-d H:i:s')` (UTC) in `create()` and `migrate_legacy()` for consistency with `last_run_at`.
+
+### Security
+- **[PENTEST-M01] Route existence oracle eliminated** — unauthenticated REST requests to non-whitelisted routes now return HTTP 404 (was 401), preventing attackers from enumerating valid routes.
+- **[PENTEST-M03] REST allowlist filter removed** — `apply_filters('swisswpsuite_rest_api_allowed_routes')` allowed any plugin to inject routes into the guest allowlist. No legitimate callers existed; removed entirely.
+- **[PENTEST-M02] /backup/ping hidden from OPTIONS schema** — added `show_in_index => false` to prevent endpoint discovery via REST API index.
+- **[PENTEST-L05] wp-cron.php public access warning** — diagnostics panel now warns if `DISABLE_WP_CRON` is not defined in wp-config.php.
+
+---
+
 ## [2.9.27.52] - 2026-04-08
 
 ### Fixed
