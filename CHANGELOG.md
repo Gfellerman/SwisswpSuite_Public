@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.58] - 2026-04-08
+
+### Fixed
+- (backup) Prune off-by-one: keep_count-1 passed to get_prunable_sets() so exactly N backups are retained
+- (backup) is_auto detection fixed: looks up nonce in backup_sets option instead of checking filename prefix
+- (backup) Constructor log noise removed from BackupScheduler and Core — debug log now shows real entries
+- (core) Bootstrap error_log() fallbacks replaced with Diagnostics::log() guards
+
 ## [2.9.27.57] - 2026-04-08
 
 ### Fixed
