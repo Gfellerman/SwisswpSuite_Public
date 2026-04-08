@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - (backup) is_auto detection fixed: looks up nonce in backup_sets option instead of checking filename prefix
 - (backup) Constructor log noise removed from BackupScheduler and Core — debug log now shows real entries
 - (core) Bootstrap error_log() fallbacks replaced with Diagnostics::log() guards
+- (ui) F-090: "Security Alert: Under Attack" banner no longer shows false "no login protection or IP block is active" warning when Login Safeguard is enabled or the attacking IP is already banned — banner now evaluates real-time frontend state and shows an amber "Login protection is active" notice instead
 
 ## [2.9.27.57] - 2026-04-08
 

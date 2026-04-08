@@ -94,6 +94,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 * Prune off-by-one fix — now keeps exactly N backups
 * is_auto detection fixed via backup_sets nonce lookup
 * Debug log constructor noise removed
+* Fixed: "Under Attack" security banner no longer shows false "no protection active" claim when Login Safeguard is enabled or the attacking IP is already blocked
 
 = 2.9.27.57 =
 * Fixed: Backup retention off-by-one — prune phase now uses keep_count-1 to account for the set record created after pruning, so retention=2 keeps exactly 2 backups instead of 3.
