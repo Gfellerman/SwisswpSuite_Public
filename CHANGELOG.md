@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.55] - 2026-04-08
+
+### Fixed
+- Backup automations sharing the same schedule frequency (e.g. two hourly automations) are now staggered by 3 minutes per slot when their WP-Cron events are registered, preventing concurrent loopback HTTP collisions that caused LiteSpeed/Hostinger to silently drop one worker request (HTTP 0) on every run.
+
+---
+
 ## [2.9.27.54] - 2026-04-08
 
 ### Added

@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.54
+Stable tag: 2.9.27.55
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,9 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.55 =
+* Fixed: Backup automations with the same frequency (e.g. two hourly automations) are now staggered by 3 minutes each to prevent concurrent loopback collisions on Hostinger/LiteSpeed.
 
 = 2.9.27.54 =
 * Added: Maintenance tab now surfaces backend warnings from /system-logs (e.g. DISABLE_WP_CRON notice) as visible banners with severity-based colors.
