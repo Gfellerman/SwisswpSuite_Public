@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.52] - 2026-04-08
+
+### Fixed
+- **[CRITICAL] Sentinel job ID mismatch** — `is_engine_job_complete()` and `cancel_engine_state_for_job()` were comparing `bkeng_*` engine IDs against `backup_auto_*` sentinel IDs — they never matched, making both functions no-ops. Now matches on `automation_id` field after stripping the sentinel prefix.
+- **[HIGH] Manual backup heartbeat sent to wrong sentinel job** — heartbeat used `backup_auto_` prefix for all jobs; manual backups are registered as `backup_manual_`. Fixed to use `$state['trigger']`-aware prefix.
+- **[HIGH] Manual backup never cleaned up sentinel entry** — `complete_job()` was guarded by `automation_id !== null`, skipping all manual backups. Now called unconditionally for all backup types.
+- **[HIGH] `check_loopback()` called unregistered `/health` endpoint** — always hit 404. Switched to `/backup/ping` which is registered and whitelisted in both security layers.
+- **[HIGH] Security layer mismatch** — `/health` was in geo-blocking exempt list but the endpoint never existed. Replaced with `/backup/ping` to match the loopback fix.
+- **[HIGH] Watchdog timezone mismatch** — `last_run_at` stored as `current_time('mysql')` (WP local time) but compared against `time()` (UTC) in the watchdog, causing 2h false offset on UTC+2 sites. Changed to `gmdate('Y-m-d H:i:s')` (UTC).
+- **[MEDIUM] Removed 4 ANCHOR-DEBUG log statements** from `schedule_cron_event()` that fired on every backup run.
+- **[MEDIUM] Removed `@` error suppressor** from temp dir `.htaccess`/`index.php` writes; failures now logged via `SwissWPSuite_Diagnostics`.
+- **[MEDIUM] Keyset pagination infinite loop on UUID/VARCHAR PKs** — `%d` coerced non-integer PKs to 0; now detects PK column type and falls back to OFFSET pagination for non-integer keys.
+- **[MEDIUM] BackupEngineStatus TypeScript interface** — added missing `total_elapsed`, `created_at`, `updated_at` fields.
+- **[LOW] Heartbeat I/O debounce** — `write_jobs()` now only persists to DB/disk every 30 seconds instead of on every engine tick.
+- **Debug log buffer** increased from 100 to 500 entries for better diagnostics visibility.
+
+---
+
 ## [2.9.27.51] - 2026-04-08
 
 ### Fixed

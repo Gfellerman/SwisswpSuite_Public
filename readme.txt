@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.51
+Stable tag: 2.9.27.52
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,16 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.52 =
+* Fixed: Sentinel job ID mismatch made BUG-4 safety net a no-op (engine/sentinel IDs never matched).
+* Fixed: Manual backup heartbeat sent to wrong sentinel job key; manual backups never cleaned up sentinel entries.
+* Fixed: check_loopback() called non-existent /health endpoint (404); now uses /backup/ping.
+* Fixed: Watchdog timezone mismatch (current_time mysql vs time()) causing false 2h offset on UTC+2 sites.
+* Fixed: Keyset pagination infinite loop on UUID/VARCHAR primary keys.
+* Fixed: BackupEngineStatus TypeScript interface missing 3 fields.
+* Removed ANCHOR-DEBUG log spam from backup automations.
+* Debug log buffer increased from 100 to 500 entries.
 
 = 2.9.27.51 =
 * Fixed: Dashboard "Last Backup" widget showed inflated time (e.g. "3 hours ago" for a 35-minute-old backup) due to timezone mismatch between filemtime() UTC and current_time('timestamp') which adds WP site offset.
