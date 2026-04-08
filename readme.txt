@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.49
+Stable tag: 2.9.27.50
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,10 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.50 =
+* Fixed: Backup pruning race condition -- concurrent engine instances now use a mutex to prevent one run overwriting another's prune result, leaving excess backup sets.
+* Fixed: GDrive cloud backup list was always showing "not configured" even when GDrive uploads were working. Cloud list now correctly shows GDrive backups.
 
 = 2.9.27.49 =
 * Fixed: Sentinel watchdog no longer overwrites "success" automation status -- checks engine completion state before marking job abandoned.

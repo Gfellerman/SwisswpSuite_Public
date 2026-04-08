@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.50] - 2026-04-08
+
+### Fixed
+- **Backup pruning race condition** — `phase_prune()` now acquires a per-automation mutex (transient + object-cache) before executing the read-modify-write on the backup sets option. Concurrent engine instances (e.g., two Sentinel recovery runs in the same hour) skip pruning if the lock is held, preventing one run from overwriting the other's prune result and leaving excess backup sets.
+- **GDrive cloud list always showing "configured: false"** — `list_cloud_backups()` now checks for GDrive `access_token` or `refresh_token` presence (matching the actual upload credential path) and calls `list_files()` when either exists. Previously it returned empty/unconfigured even when GDrive uploads were succeeding.
+
+---
+
 ## [2.9.27.49] - 2026-04-08
 
 ### Fixed
