@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.51] - 2026-04-08
+
+### Fixed
+- **Dashboard "Last Backup" showing wrong time** — `human_time_diff()` was comparing `filemtime()` (UTC Unix timestamp) against `current_time('timestamp')` (UTC + site timezone offset). On a UTC+2 site this inflated the displayed age by 2 hours, showing "3 hours ago" for a backup that was 35 minutes old. Changed to `time()` which is always UTC, matching `filemtime()`.
+
+---
+
 ## [2.9.27.50] - 2026-04-08
 
 ### Fixed
