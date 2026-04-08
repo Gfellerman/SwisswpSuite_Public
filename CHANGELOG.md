@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.47] - 2026-04-08
+
+### Fixed
+- **Critical backup regression (v2.9.27.39)** -- Added `/backup/engine/tick` to the REST API guest whitelist in `restrict_rest_api()`. The v2.9.27.39 security hardening tightened the whitelist from the broad `/swisswpsuite/v1/` prefix to surgical entries, but omitted the tick endpoint. Because `wp_remote_post()` loopback calls are unauthenticated at the HTTP layer, they were blocked before reaching the route handler, causing HTTP 0 responses and breaking the entire tick chain for all automations.
+- Added `/backup/engine/tick` and `/sentinel/worker` to the geo-blocking exempt list as a defensive measure — server-to-self loopback requests must bypass country checks.
+
+---
+
 ## [2.9.27.46] - 2026-04-07
 
 ### Fixed
