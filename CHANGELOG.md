@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.61] - 2026-04-09
+
+### Fixed
+- Mobile tab bar overflow: Security Hub, SEO, and Settings tabs are now accessible on 375px viewports
+- Backup list Restore/Delete action buttons now visible via sticky positioning on mobile
+- SEO content area 254px horizontal overflow resolved with min-w-0 constraint
+
+---
+
 ## [2.9.27.60] - 2026-04-09
 
 ### Fixed

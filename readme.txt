@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.60
+Stable tag: 2.9.27.61
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,11 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.61 =
+* Fixed: Mobile tab bar overflow — Security Hub, SEO, and Settings tabs now accessible on 375px viewports
+* Fixed: Backup list Restore/Delete action buttons now visible via sticky positioning on mobile
+* Fixed: SEO content area 254px horizontal overflow resolved with min-w-0 constraint
 
 = 2.9.27.60 =
 * Fixed: POST /content/{id} now requires Pro-tier content_rewrite capability (F-111)
