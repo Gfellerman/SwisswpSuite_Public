@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.59
+Stable tag: 2.9.27.60
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,25 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.60 =
+* Fixed: POST /content/{id} now requires Pro-tier content_rewrite capability (F-111)
+* Fixed: update_content_item post_type restricted to product/post/page/attachment allowlist (F-112)
+* Fixed: /seo/onpage-audit corrected to seo_meta capability check (F-129)
+* Fixed: save_meta_history uses add_post_meta unique=true to preserve original value (F-110)
+* Fixed: Empty AI rewrite result returns 422 with error message instead of silent success (F-114)
+* Fixed: All wp_update_post calls in SEO worker check return value for WP_Error (F-122)
+* Fixed: SEO batch staleness detection (20-min threshold) + daily cleanup cron (F-126)
+* Fixed: wp_cache_delete added to sync scheduler save/delete to prevent stale reads (F-108)
+* Fixed: Attachment LIKE query uses directory-boundary prefix + exact-match fallback (F-102)
+* Fixed: PII post type blocklist extended with edd_payment, give_payment, llms_order (F-105)
+* Fixed: 3 SEO cron hooks registered in config manifest (F-120/F-121/F-133)
+* Fixed: All (window as any).swisswpsuiteData casts removed, backed by vite-env.d.ts (F-117)
+* Fixed: Dashboard .license?.plan corrected to .license?.tier (F-131)
+* Fixed: LicenseManager explicit TokenStatus construction (F-132)
+* Fixed: ContentEnhancer parses 422 error body for specific AI error toast (F-130)
+* Fixed: "Missing SEO" badge renamed to "Needs Attention" (F-127)
+* Added: Per-license-key rate limiters on VPS AI and Sentinel routes (F-092/F-093/F-094)
 
 = 2.9.27.59 =
 * Fixed: chain_next_tick() now uses sslverify=>false for loopback — Hostinger self-signed cert caused silent HTTP 0 failures stalling the engine tick chain (P1-A)

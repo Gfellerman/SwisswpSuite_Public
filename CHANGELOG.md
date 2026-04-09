@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.60] - 2026-04-09
+
+### Fixed
+- (api) F-111: POST `/content/{id}` now requires Pro-tier `content_rewrite` capability
+- (api) F-112: `update_content_item` post_type restricted to product/post/page/attachment allowlist
+- (api) F-129: `/seo/onpage-audit` corrected to `seo_meta` capability check
+- (api) F-110: `save_meta_history` uses `add_post_meta` unique=true to preserve original value
+- (api) F-114: Empty AI rewrite result returns 422 with error message instead of silent success
+- (seo) F-122: All `wp_update_post` calls in SEO worker check return value for `WP_Error`
+- (seo) F-126: SEO batch staleness detection (20-min threshold) + daily cleanup cron
+- (seo) F-127: "Missing SEO" badge renamed to "Needs Attention"
+- (sync) F-108: `wp_cache_delete` added to sync scheduler save/delete to prevent stale reads
+- (sync) F-102: Attachment LIKE query uses directory-boundary prefix + exact-match fallback
+- (sync) F-105: PII post type blocklist extended (edd_payment, give_payment, llms_order, etc.)
+- (config) F-120/F-121/F-133: Three SEO cron hooks registered in config manifest
+- (ui) F-117: All `(window as any).swisswpsuiteData` casts removed, backed by `vite-env.d.ts`
+- (ui) F-130: ContentEnhancer parses 422 error body for specific AI error toast
+- (ui) F-131: Dashboard `.license?.plan` corrected to `.license?.tier`
+- (ui) F-132: LicenseManager explicit `TokenStatus` construction
+
+### Added
+- (vps) F-092: `sentinelAnalyzeLimiter` (5/min per license key) on POST `/analyze`
+- (vps) F-093: `aiCompletionsLimiter` (30/min per license key) on POST `/completions`
+- (vps) F-094: `batchSubmitLimiter` (5/min per license key) on POST `/batch/submit`
+
+---
+
 ## [2.9.27.59] - 2026-04-08
 
 ### Fixed
