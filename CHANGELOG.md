@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.64] - 2026-04-10
+
+### Security
+- **F-138**: License keys masked in VPS logs — 4 sites in `license_new_v2.js` (`checkExpiry`, module-parse error, reset log, cancel log) now print `SWS-XXXX…YYYY` instead of the full key. Prior behavior leaked full keys to journalctl (equivalent to logging passwords).
+- **F-139**: Admin recovery endpoint (`POST /v1/admin/recover`) now persists the new API key to the `settings` table and activates it in-memory via `process.env.ADMIN_API_KEY`. On server restart, `ensureRecoveryKey()` loads the key from the settings table if the env var is empty, so recovery survives a restart without manual `.env` editing. Prior behavior: key was generated, returned to caller, and immediately lost.
+- **F-142**: Added `charge.refunded` Stripe webhook handler in `webhooks_new.js`. Matches license by invoice → subscription (primary), metadata.license_key (fallback), or customer_id (legacy fallback). Sets license status to `refunded`, logs refund amount to `token_logs`. Idempotent — skips licenses already in refunded/cancelled state. Prior behavior: refunds left licenses active indefinitely.
+- **F-154**: Atomic CAS domain lock in `sentinel.js verifyLicense()`. Replaced two-step read-then-update with single `UPDATE ... WHERE license_key = ? AND domain IS NULL RETURNING domain`. On race loss, refetches the winning domain and returns a clean `Domain Mismatch` error. Matches the pattern already used in `license_new_v2.js /activate`.
+
+### Fixed
+- **F-141**: Raised plugin AI completions timeout from 60s to 125s in `class-swisswpsuite-groq.php::call_api()`. VPS forwards to Groq with a 120s timeout, so a 60s plugin timeout caused the VPS to deduct tokens while the plugin reported an error for any completion taking 61–120s. The 125s value provides a 5s safety margin above the VPS ceiling.
+- **F-153**: `sentinel.js verifyLicense()` now accepts `PAST_DUE` alongside `ACTIVE` and `GRACE_PERIOD`. Scans no longer fail during the Stripe retry window, matching the behavior already present in `ai.js`. A past_due license keeps features active with a warning banner; denying scans contradicted that UX.
+
+### Added
+- **F-143**: Payment failure email notification. `handlePaymentFailed` in `webhooks_new.js` now sends a transactional email to the customer (via nodemailer using the same SMTP credentials as the crash alert system) with the plan name, attempt count, and a link to update the payment method (hosted_invoice_url or account page). Email is best-effort — a mail failure is logged but never blocks the webhook.
+- **F-144**: Daily data retention cron in `server.js` (`runDataRetentionCleanup`). Deletes `token_logs` older than 90 days and `stripe_events` older than 365 days. Guarded by PostgreSQL advisory lock 100002 (100001 is the expiry cron). Runs once on startup (after 60s delay) then every 24h via `setInterval`. GDPR Art. 5(1)(e) compliance — the privacy policy's "account + 30 days" retention promise now has an enforcement mechanism.
+
+---
+
 ## [2.9.27.63] - 2026-04-10
 
 ### Security

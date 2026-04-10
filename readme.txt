@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.63
+Stable tag: 2.9.27.64
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,16 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.64 =
+* Security: License keys masked in VPS logs — 4 log sites in license_new_v2.js now print `SWS-XXXX…YYYY` instead of full keys (F-138)
+* Security: Admin recovery endpoint (/v1/admin/recover) now persists new API key to settings table and activates it in-memory (F-139)
+* Security: Added charge.refunded Stripe webhook handler — refunded customers now have licenses automatically revoked (F-142)
+* Security: Atomic CAS domain lock in sentinel.js — prevents race condition where two concurrent first-scans could both claim domain lock (F-154)
+* Fixed: Raised plugin AI timeout from 60s to 125s to match VPS Groq ceiling (120s) — prevents "paid but no response" timeouts on long completions (F-141)
+* Added: Payment failure email sent to customer with update-payment link on invoice.payment_failed (F-143)
+* Added: PAST_DUE license status accepted by sentinel.js /analyze — scans now work during Stripe retry window, matching ai.js behavior (F-153)
+* Added: Daily data retention cron (F-144) — deletes token_logs older than 90 days and stripe_events older than 365 days (GDPR Art. 5(1)(e))
 
 = 2.9.27.63 =
 * Security: ZIP bomb protection added to receiver — rejects zip entries >50MB or total extraction >300MB
