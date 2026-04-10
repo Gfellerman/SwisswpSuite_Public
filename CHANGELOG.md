@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.63] - 2026-04-10
+
+### Security
+- ZIP bomb protection added to `receiver_validate_zip()` — rejects zip entries >50MB or total extraction >300MB before extraction begins
+- `fix-missing-titles` endpoint migrated from `check_pro_permission` to `check_capability('seo_meta')` for correct tier enforcement
+
+### Fixed
+- SEO cleanup: `cleanup_stuck_items()` now uses NOT EXISTS subqueries — only removes stuck markers for items with neither success NOR failure markers (was incorrectly removing items that were queued but not yet processed)
+- SEO bg_queue: `process_bg_seo_queue()` writes `_swisswpsuite_seo_processed_at` marker after each post to prevent duplicate processing in overlapping cron runs
+- SEO sitemap: noindex posts excluded from XML sitemap via `meta_query` on `_swisswpsuite_seo_noindex`
+- SEO optimization: `wp_page_for_login` excluded from SEO optimization targets to prevent conflicts with login-page plugins
+- Content Enhancer: Bulk Apply returns failed item IDs and surfaces warning toast when any items fail
+- Transport: File write failures now throw `RuntimeException`; caller (`handle_transfer`) catches and returns HTTP 500 instead of silently discarding data
+- Backup: `get_signing_secret()` logs WARNING on placeholder salts before returning empty string
+- Migration receiver: Self-destruct now checks `.htaccess` write return value and logs failure instead of silently leaving the file accessible
+- Settings: Encryption password corruption detection added via `openssl_decrypt` check — surfaces `encryptionPasswordCorrupted` flag
+- Sync: `download_url()` failures now logged via `SwissWPSuite_Diagnostics` instead of swallowed silently
+- Sync: `delete_connection()` cleans up orphaned `_swisswpsuite_sync_origin` postmeta entries on connection deletion
+
+### Removed
+- Dead `Settings.tsx` component (523 lines, zero importers) — routing uses `SettingsPage.tsx`
+
+### Documentation
+- `SYNC_ARCHITECTURE.md`: Corrected 3-way comparison strategy description — replaces outdated "Newest Wins" with accurate source/target/hash comparison
+
+---
+
 ## [2.9.27.62] - 2026-04-10
 
 ### Security

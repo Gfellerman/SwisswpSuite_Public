@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.62
+Stable tag: 2.9.27.63
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,23 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.63 =
+* Security: ZIP bomb protection added to receiver — rejects zip entries >50MB or total extraction >300MB
+* Security: `fix-missing-titles` endpoint now uses capability gate instead of pro permission
+* Fixed: SEO cleanup stuck items now uses NOT EXISTS subqueries — only removes markers for items with no success AND no failure markers
+* Fixed: SEO bg_queue writes `_swisswpsuite_seo_processed_at` marker after each post to prevent duplicate processing
+* Fixed: noindex posts excluded from XML sitemap via meta_query
+* Fixed: wp_page_for_login excluded from SEO optimization targets
+* Fixed: Bulk Apply now returns failed item IDs and surfaces warning toast in ContentEnhancer
+* Fixed: Transport throws RuntimeException on file write failure; caller returns HTTP 500 (no more silent data loss)
+* Fixed: Backup signing secret logs WARNING on placeholder salts to prevent silent HMAC failures
+* Fixed: Self-destruct checks .htaccess write return value and logs on failure
+* Fixed: Encryption password corruption detection added to settings diagnostics
+* Fixed: Sync `download_url()` failure now logged via Diagnostics
+* Fixed: `delete_connection()` cleans up orphaned `_swisswpsuite_sync_origin` postmeta
+* Removed: Dead `Settings.tsx` component (523 lines, zero importers — routing uses SettingsPage.tsx)
+* Docs: SYNC_ARCHITECTURE.md updated — 3-way comparison strategy replaces outdated "Newest Wins" description
 
 = 2.9.27.62 =
 * Security: Blocked SSRF redirect-chain bypass in custom API ping (redirection=>0)
