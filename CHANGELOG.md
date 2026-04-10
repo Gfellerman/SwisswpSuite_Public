@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.62] - 2026-04-10
+
+### Security
+- Blocked SSRF redirect-chain bypass in `ping_custom_api_url()` — `redirection => 0` prevents following 301/302 redirects to internal hosts after initial URL validation
+- Prevented plugin license key exfiltration to external custom API endpoints when BYO key is absent — Groq constructor now sets `$this->license_key = ''` in custom mode with empty BYO key
+
+### Fixed
+- PHP 8.0+ `TypeError` crash in `get_content_items()` bulk `hasHistory` query — `$ids_with_history ?? []` guard prevents `array_map(callable, null)` fatal error on DB failure
+- Sync origin collision guard now correctly handles deleted connections — stale `_swisswpsuite_sync_origin` from deleted connections no longer permanently blocks future syncs
+- `response_format: json_object` re-enabled for BYO/custom API users in `call_api()` — Bunker proxy users unaffected (conditional injection via `$use_custom_api && $json_mode`)
+- LLM.txt generation wrapped in `function_exists('do_blocks')` guard for headless/minimal WordPress installs
+- Content Enhancer "Fun & Witty" tone option now sends `value="Fun"` to match REST API enum — previously "Fun & Witty" caused HTTP 400 on all tone rewrites
+- SEO config key `swisswpsuite_seo_rewrite_titles` moved to correct `SITE_LOCAL_CONFIG` category in config manifest
+
+---
+
 ## [2.9.27.61] - 2026-04-09
 
 ### Fixed
