@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.65] - 2026-04-11
+
+### Security
+- **Bug #1**: HMAC sync key no longer returned to the browser on `GET /sync/connections` — frontend uses `connection_id`, server resolves key internally
+- **Bug #2**: API keys (`apiKey`, `wpscanApiKey`, `patchstackApiKey`) now masked in `GET /settings` response (`sk-...XXXX` format) with `has*Key` boolean indicators; PHP `save_settings()` guards against masked round-trip corruption
+- **Bug #13**: `loginMaxRetries` now bounded server-side to `[1, 20]` — previously setting to 0 bypassed lockout entirely
+- **Bug #19**: `download_local_backup()` now uses `realpath()` containment check after `file_exists()` to prevent symlink traversal
+
+### Fixed
+- **Bug #3+#7**: SQL import parser now correctly tracks `--` and `/* */` comment state; state persisted in `import_state.json` across HTTP request boundaries — prevents `;` inside comments from splitting queries
+- **Bug #4**: `automation_id` added to `BackupArchive` TypeScript interface
+- **Bug #5**: GDrive resumable upload session re-initiated on HTTP 404/410 (expired session) with restart cap of 2
+- **Bug #6**: ContentEnhancer now exposes all post-type tabs (Posts, Pages, Products, Images) — was limited to Products only
+- **Bug #8**: Receiver template self-integrity hash now computed on post-substitution output (two-pass substitution); Mode B migrations were returning 403 on every invocation
+- **Bug #9**: `preserve_users` flag now correctly blocks `DELETE`, `UPDATE`, and `REPLACE` statements in both importer and receiver template
+- **Bug #10**: Stuck-job detection uses byte-consumption tracking instead of query count — prevents reset when small queries execute alongside a giant stalled query
+- **Bug #11**: Backup retention enforcement moved from `list_local_backups()` (GET) to `phase_prune()` post-backup — GET endpoints no longer delete files
+- **Bug #12**: `alertEmail` field now editable in GeneralSettings UI (was ghost field — written to by diagnostics but with no UI)
+- **Bug #14**: `SettingsResponse` TypeScript interface now includes `alertEmail`, `seoDefaultOgImage`, and `has*Key` boolean fields
+- **Bug #15**: GeneralSettings save converted to per-field AJAX auto-save — eliminates page reload requirement
+- **Bug #16**: `apply_content_rewrite` now allows `attachment` post type with `altText` field targeting `_wp_attachment_image_alt`
+- **Bug #17**: Sync PII blocklist extended with WooCommerce HPOS order types (`wc_order`, `wc_order_coupon`, `wc_order_product`, `wc_user_membership`)
+- **Bug #18**: Sync diff modal now has full WCAG 2.1 AA focus trap — Tab/Shift+Tab cycle within dialog, focus returns to trigger on close
+- **Bug #20**: VPS `token_logs` now records `module` field for AI usage attribution (DB migration `v14_token_logs_module.sql`)
+- **Bug #21**: `alertEmail` validation moved before all DB writes in `save_settings()` — prevents partial-save on invalid input; clearing the field now calls `delete_option()`
+- **R4**: `restore_content_item` now accepts `attachment` post type — Undo for AI-rewritten image alt-text was returning 400
+- **R5**: `phase_prune()` now uses backup set metadata (`automation_id`) to distinguish manual from automated backups instead of filename prefix heuristic
+- **R6**: Missing backup file download returns 404 (not 403) — `file_exists()` check moved before `realpath()` containment
+
+---
+
 ## [2.9.27.64] - 2026-04-10
 
 ### Security
