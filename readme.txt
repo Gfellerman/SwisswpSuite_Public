@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.65
+Stable tag: 2.9.27.66
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,17 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.66 =
+* Docs: Post-ship documentation update — all capability references, agent memories, and PROJECT_MEMORIES.md updated for v2.9.27.65 audit sprint
+* Chore: 16 treated audit reports archived; live test result (8/8 confirmed) recorded; Bug #21 Vite code-split false-negative corrected
+
+= 2.9.27.65 =
+* Security: HMAC sync key stripped from GET /sync/connections; API keys masked with has*Key booleans; loginMaxRetries bounded [1,20]; realpath symlink guard on download
+* Fixed: SQL import parser comment-state persistence; GDrive 404/410 session re-init; Mode B receiver two-pass hash (no more always-403); preserve_users covers DELETE/UPDATE/REPLACE; phase_prune uses automation_id metadata; alertEmail delete_option on clear; stall detection uses byte-offset
+* Fixed: ContentEnhancer all 4 tabs active + Images type=image + restore parity; SyncManager focus trap WCAG 2.1; GeneralSettings per-field autoSave
+* Fixed: HPOS order types added to sync PII blocklist; list_local_backups no silent deletes on GET
+* Added: VPS module attribution in token_logs (ai.js + migration v14)
 
 = 2.9.27.64 =
 * Security: License keys masked in VPS logs — 4 log sites in license_new_v2.js now print `SWS-XXXX…YYYY` instead of full keys (F-138)

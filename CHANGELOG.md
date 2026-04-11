@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.66] - 2026-04-11
+
+### Changed
+- Post-ship documentation update: all capability reference docs, agent memories, and PROJECT_MEMORIES.md updated to reflect v2.9.27.65 audit sprint results
+- 16 treated audit reports archived to `.claude/audit-reports/archive/2026-04-11-sprint/`
+- Live test result (8/8 confirmed) recorded in live-system-tester memory; Bug #21 false-negative corrected (SyncManager is code-split into its own Vite chunk)
+- `docs/IMPACT_MAP.md` updated with Vite code-split chunk lesson
+
+---
+
 ## [2.9.27.65] - 2026-04-11
 
 ### Security
