@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.68] - 2026-04-13
+
+### Fixed
+- SYNC-D001 upgrade migration: `migrate_sync_origin_stamps()` rewrites URL-format `_swisswpsuite_sync_origin` postmeta to `conn_*` UUID format on first admin load after upgrade; collision detection in `upsert_capsule()` now works correctly for all pre-v2.9.27.67 synced posts
+- Attachment rewrite (`rewrite_content_item`): per-field AI instructions for title (filename/SEO title), description (alt text, targeting `_wp_attachment_image_alt`), and caption; previously all fields used the same generic prompt
+- Attachment alt text apply/restore: `bulk_apply_content_rewrite` now writes proposed description to `_wp_attachment_image_alt` for attachments; `restore_content_item` correctly restores alt text from history
+
 ## [2.9.27.67] - 2026-04-13
 
 ### Fixed
