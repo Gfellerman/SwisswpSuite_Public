@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.67] - 2026-04-13
+
+### Fixed
+- SYNC-C001: `upsert_capsule()` double-write destroyed WPML meta — removed `meta_input` from `wp_insert_post` args, added `wpml_media_processed` to blocklist, guarded meta loop from pre-writing `_swisswpsuite_sync_origin`
+- SYNC-D001: Sync `source_connection_id` stamped as URL format instead of `conn_*` UUID — fixed in `proxy_push`, `proxy_pull`, and sync scheduler; collision check now resolves correctly
+- SEO: Background queue poll stale closure never fired completion branch — fixed with `useRef` mirrors for `bgQueue` and `fetchItems` state in `SeoManager.tsx`
+- SEO: `rewriteTitles` toggle had no effect on background queue or bulk batch — plumbed end-to-end through `submit_background_seo` → queue store → `process_bg_seo_queue`
+- CE-01: `ContentEnhancer` broken on non-WooCommerce sites — Products tab hidden when WooCommerce absent; default tab is Posts; `rewrite_content_item` now supports post/page/attachment with type-aware AI prompts
+- CE-01: `bulk_apply_content_rewrite` had no post-type guard (IDOR risk) — added `allowed_bulk_types` check
+- CE-01: `restore_content_item` always returned `success: true` regardless of outcome — now returns actual restored count
+
 ## [2.9.27.66] - 2026-04-11
 
 ### Changed

@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.66
+Stable tag: 2.9.27.67
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,15 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.67 =
+* Fix: SYNC-C001 — upsert_capsule() triple-write destroyed WPML meta; fixed meta_input handling + wpml_media_processed blocklist
+* Fix: SYNC-D001 — sync source_connection_id stamped as URL instead of conn_* UUID; collision check now resolves
+* Fix: SEO background queue poll stale closure never fired completion; fixed with useRef mirrors
+* Fix: rewriteTitles toggle had no effect on background queue batches; now plumbed end-to-end
+* Fix: CE-01 — ContentEnhancer broken on non-WooCommerce sites; type-aware rewriting for post/page/attachment
+* Fix: bulk_apply_content_rewrite IDOR risk; added post-type guard
+* Fix: restore_content_item always returned success=true; now returns actual restored count
 
 = 2.9.27.66 =
 * Docs: Post-ship documentation update — all capability references, agent memories, and PROJECT_MEMORIES.md updated for v2.9.27.65 audit sprint
