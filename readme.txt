@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.68
+Stable tag: 2.9.27.69
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,12 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.69 =
+* Fix: Single-apply attachment guard now accepts field:'description' (frontend path) in addition to 'altText'
+* Fix: Alt text sanitization uses sanitize_text_field() instead of wp_kses_post() — correct for plain-text meta
+* Fix: Upgrade migration idempotency guard uses version_compare so .68-migrated sites also receive URL-variant normalization
+* Fix: URL variant normalization in migrate_sync_origin_stamps() matches www/non-www and http/https URL variants
 
 = 2.9.27.68 =
 * Fix: SYNC-D001 upgrade migration — rewrites URL-format _swisswpsuite_sync_origin postmeta to conn_* UUID format; collision guard now works for pre-v2.9.27.67 synced posts

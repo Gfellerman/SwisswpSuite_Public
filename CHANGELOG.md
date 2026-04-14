@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.69] - 2026-04-14
+
+### Fixed
+- Single-apply attachment guard (`apply_content_rewrite`): guard now accepts `field:'description'` (the path the frontend sends) in addition to `field:'altText'` — previously all image single-applies were silently blocked
+- Alt text sanitization: attachment `description` field now uses `sanitize_text_field()` instead of `wp_kses_post()` — alt text is stored as plain text in `_wp_attachment_image_alt`, not HTML
+- Upgrade migration idempotency guard: `migrate_sync_origin_stamps()` now uses `version_compare(get_option(..., '0'), '2.9.27.69', '>=')` so sites that ran the v2.9.27.68 URL→UUID migration also receive the v2.9.27.69 URL-variant normalization pass
+- Upgrade migration trigger: `run_upgrade_migrations()` now fires the migration for sites upgrading from any version below `2.9.27.69` (previously `2.9.27.68`), ensuring .68→.69 upgrades run the URL normalization
+- URL variant normalization: `migrate_sync_origin_stamps()` now generates 5 URL variants per connection (original, www-stripped, www-added, http, https) so stamps created by sites with www/protocol mismatches are also healed
+
+---
+
 ## [2.9.27.68] - 2026-04-13
 
 ### Fixed
