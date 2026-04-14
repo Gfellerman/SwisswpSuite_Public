@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.70
+Stable tag: 2.9.27.71
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,24 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.71 =
+* Fix: CC-001 — Sentinel job ID mismatch (backup_auto_ vs backup_automation_); watchdog now correctly identifies and circuit-breaks stalled automation jobs
+* Fix: SYNC-SEC-1 — Sync push nonce moved from Redis-evictable transient to DB-backed option (autoload=false) with daily cleanup cron
+* Fix: SYNC-BE-4 — Raw REMOTE_ADDR replaced with CF-aware SwissWPSuite_Security::get_client_ip() for sync IP logging
+* Fix: SYNC-BE-5 — FSE template theme slug normalized to local active theme on upsert to prevent theme mismatch
+* Fix: NEW-1 — FSE template meta now synced with same blocklist as capsule upsert; prevents dangerous meta injection
+* Fix: BKP-HIGH-1 — Mode A SQL blocklist now includes CALL, SET SESSION, SET LOCAL, SET PASSWORD, SET ROLE (parity with Mode B receiver)
+* Fix: BKP-HIGH-2 — stream type comparison is now case-insensitive (strtolower normalization)
+* Fix: SEO-HIGH-3 — Slow batch queue never polled job_id for completion; useEffect polling with 60s interval + toast on completion added
+* Fix: SEO-HIGH-6 — SeoBatchStatus TypeScript interface was missing from types.ts; added with full shape
+* Fix: LicenseManager — Token usage bar was hardcoded to 85%; now computed from balance/token_limit
+* Fix: admin.php — Bare SwissWPSuite_Token_Manager instantiation wrapped in class_exists + try/catch guard
+* Fix: F-NEW-001 — automation_id typed as string instead of string|null; BackupAutomation interface updated
+* Fix: F-NEW-002/F-NEW-003 — Unchecked file_put_contents return values in backup engine and quarantine htaccess
+* Fix: NEW-4.3 — Migration profile now persisted to wp_options at import start for cross-chunk durability
+* Fix: A-01 — QR code SVG missing aria-label in TwoFactorSettings
+* Fix: C-03 — GeneralSettings alertEmail not initialized from adminEmail default
 
 = 2.9.27.69 =
 * Fix: Single-apply attachment guard now accepts field:'description' (frontend path) in addition to 'altText'

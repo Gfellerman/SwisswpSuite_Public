@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.71] - 2026-04-14
+
+### Fixed
+- CC-001: Sentinel watchdog job ID mismatch (`backup_auto_` vs `backup_automation_`) — scheduler and sentinel now use consistent `backup_automation_{id}` prefix; stalled automation jobs correctly detected and circuit-broken
+- SYNC-SEC-1: Sync push nonce stored in Redis-evictable transient — replaced with DB-backed `update_option(autoload=false)` + daily cleanup cron using direct `$wpdb->prepare` DELETE
+- SYNC-BE-4: Raw `$_SERVER['REMOTE_ADDR']` used for IP logging — replaced with CF-aware `SwissWPSuite_Security::get_client_ip()` fallback chain
+- SYNC-BE-5: FSE template theme slug not normalized on upsert — `preg_replace` now rewrites `"theme":"*"` to active theme slug on push
+- NEW-1: FSE template meta synced without blocklist — same blocklist as `upsert_capsule()` now applied; prevents `_wp_page_template`, `_edit_lock`, etc. injection
+- BKP-HIGH-1: Mode A SQL import blocklist missing 5 dangerous statement types vs Mode B — added `CALL`, `SET SESSION`, `SET LOCAL`, `SET PASSWORD`, `SET ROLE`
+- BKP-HIGH-2: Backup stream type comparison was case-sensitive — `strtolower()` normalization prevents silent mismatch
+- SEO-HIGH-3: Slow batch queue job_id never polled for completion — `useEffect` with 60s interval polls `/batch/status?job_id=` until complete, shows toast
+- SEO-HIGH-6: `SeoBatchStatus` TypeScript interface missing from `types.ts` — added with full shape (`active`, `total`, `completed`, `failed`, `pending`, `percent`, `estimated_minutes`, `started_at`)
+- LicenseManager: Token usage bar hardcoded to 85% — now computed from `balance / token_limit` using PHP-supplied `token_limit` in settings response
+- admin.php: Bare `new SwissWPSuite_Token_Manager()` instantiation without guard — wrapped in `class_exists` + `try/catch` with diagnostics logging
+- F-NEW-001: `automation_id` typed as `string` instead of `string | null` in `BackupAutomation` interface
+- F-NEW-002/F-NEW-003: Unchecked `file_put_contents()` return values in backup engine (cancel flag, LiteSpeed `.htaccess`) and quarantine handler
+- NEW-4.3: Migration profile lost on `wp_options` DROP — profile now persisted to `wp_options` at import start for cross-chunk durability alongside `import_meta.json`
+- A-01: QR code SVG in `TwoFactorSettings` missing `aria-label` — added `aria-label="QR code for authenticator app setup"`
+- C-03: `GeneralSettings` `alertEmail` field not initialized from `adminEmail` default on first render
+- B-03: Backup settings test assertion used plaintext equality on encrypted value — corrected to base64 check
+- SD-01: Sync nonce cleanup used unindexed query — daily cron cleanup now uses `$wpdb->prepare` DELETE with proper column targeting
+
+---
+
 ## [2.9.27.70] - 2026-04-14
 
 ### Fixed
