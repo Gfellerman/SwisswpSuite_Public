@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.72
+Stable tag: 2.9.27.73
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,16 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.73 =
+* Fix: Sentinel backup cancel_engine_state_for_job() regex corrected (auto→automation) — prevents zombie engine resurrection loops (F-282)
+* Fix: Backup cancel flag path unified across archiver and all 5 cloud providers — cancel button now works in archiver path (F-283)
+* Fix: PII post-type blocklist unified into single canonical source — EDD/LifterLMS/GiveWP + WooCommerce HPOS now all protected (F-284)
+* Fix: HTTPS enforcement extracted to shared method in API sync — 11 duplicate preg_replace calls consolidated (F-285)
+* Fix: backup_current_job option key added to config manifest (F-286)
+* Security: axios upgraded in VPS to patch GHSA-fvcv-3m26-pcqx and GHSA-3p68-rc4w-qgx5 (F-278)
+* Security: Rate limiting added to /batch/results, /batch/status, /batch/cancel VPS endpoints (F-279)
+* Security: Additional npm dependency vulnerabilities resolved — 0 audit findings (F-287)
 
 = 2.9.27.72 =
 * Fix: BatchQueueJob.status enum corrected — "running" → "processing", added "applied" to match PHP STATUS_* constants

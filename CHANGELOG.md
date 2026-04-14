@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.73] - 2026-04-14
+
+### Fixed
+- Sentinel backup `cancel_engine_state_for_job()` regex corrected (`(?:auto|manual)` → `(?:automation|manual)`) — zombie engine HTTP resurrection loop on automation jobs (F-282 CRITICAL)
+- Backup cancel flag path unified: archiver.php and all 5 cloud providers now read from `swisswpsuite-backups/` matching the writer — cancel button was silently ignored in archiver path (F-283)
+- PII post-type blocklist centralised into `SwissWPSuite_Sync::get_pii_post_types()` — 3 divergent inline arrays consolidated; EDD, LifterLMS, GiveWP, and WooCommerce HPOS types now all protected (F-284)
+- HTTPS enforcement extracted to `enforce_https()` private method in API sync — 11 duplicate `preg_replace` call sites replaced (F-285)
+- `swisswpsuite_backup_current_job` option key added to config manifest (F-286)
+
+### Security
+- axios upgraded in VPS Command Center — patches GHSA-fvcv-3m26-pcqx (header injection) and GHSA-3p68-rc4w-qgx5 (NO_PROXY bypass SSRF) (F-278 CRITICAL)
+- Rate limiting added to `/batch/results`, `/batch/status`, `/batch/cancel` VPS AI endpoints (30/10 req/min per license) (F-279)
+- Additional npm dependency vulnerabilities resolved — `follow-redirects` and `nodemailer` updated; `npm audit` reports 0 findings (F-287)
+
 ## [2.9.27.72] - 2026-04-14
 
 ### Fixed
