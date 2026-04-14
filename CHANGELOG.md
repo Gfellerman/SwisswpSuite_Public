@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.70] - 2026-04-14
+
+### Fixed
+- SEO-HIGH-1: AI prompt injection via unsanitized post_title in `build_seo_prompt()` — all 4 inputs now sanitized with `wp_strip_all_tags()` + length caps before Groq prompt construction
+- SEO-HIGH-2: SSRF via custom API URL — `wp_http_validate_url()` now validates custom URLs; `redirection:0` blocks redirect-chain SSRF bypass on all Groq API calls
+- CQ-01: `'****'` sentinel collision corrupted API key saves — replaced `strpos` guard with exact mask comparison on all 3 key-save sites (Gemini, WPScan, Patchstack)
+- S-02: `log_js_error()` wrote untrusted unlimited-length fields to wp_options — `$message`, `$source`, `$type` now truncated at 500/200/50 chars respectively
+- MIG-H3: Migration profile lost after `wp_options` DROP — profile now persisted to `import_meta.json`; `process_chunk()` falls back to filesystem when `get_option()` returns null post-DROP
+- backup-HIGH-2: `file_put_contents()` return unchecked in backup constructor — both `.htaccess` and `index.php` writes now check return value and log warnings on failure
+- SEO-E3: Fast background SEO queue did not invalidate onpage audit cache on completion — `invalidate_cache()` now called in fast BG queue completion branch
+- RB-052: N+1 `get_post_meta()` queries in `get_builder_word_count()` — `update_meta_cache()` now primes WP object cache before the post loop
+- SEO-MED-1: Unlimited batch size in `queue_bulk_seo()`, `submit_background_seo()`, and `start_seo_batch()` — all three endpoints now cap at 500 posts per batch
+- C-07: `SwissWPSuite_Token_Manager` instantiation had no try/catch — both call sites now wrapped with Diagnostics logging on exception
+- MIG-M4: Export options null dereference on WP-CLI paths — `empty()/is_array()` guard added with fallback
+- MIG-L3: `ensure_cron_events()` return type is void — removed incorrect falsy check; method logs internally
+- MIG-L2: Journal class require lacked `file_exists()` guard in `export_table_chunk()` and `resume_job()` — both now null-safe with diagnostic warning if file missing
+- MIG-L1: ETA calculation could produce unrealistic values — `min(86400, ...)` sanity cap applied
+- F-SYNC-008: FSE template upsert failure was silent — `Diagnostics::log('error', 'SYNC', ...)` now logged on failure
+- A2: `OnPageAuditResult.status` TypeScript type declared unused `"scanning"` and `"error"` states — narrowed to `"complete"` only; dead state handling removed from `OnPageDiagnostics.tsx`
+- C-01 partial: `encryptionPasswordCorrupted` field was untyped in `SwissSettings` — added as optional boolean
+- C1: SEO background poll errors were silently swallowed — replaced with one-time dismissible warning banner and AbortController cleanup
+- SEO a11y: 4 SEO modals missing `role="dialog"` + `aria-modal="true"` + `aria-labelledby` + focus management + Escape key handler
+
+---
+
 ## [2.9.27.69] - 2026-04-14
 
 ### Fixed
