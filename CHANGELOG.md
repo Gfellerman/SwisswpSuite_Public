@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.74] - 2026-04-14
+
+### Fixed
+- SEO Enhance ~40% HTTP 500 failure rate resolved: `response_format` JSON enforcement now sent for ALL API paths (Bunker + BYO/custom), not just custom — VPS ai.js passes it through to Groq (F-204)
+- 3 newer hardening options added to security level presets: `restrict_llm_crawlers` in balanced+maximum+apply_all_recommended; `restrict_google_indexing` in maximum only; both in compatible as false (F-089)
+- 6 findings confirmed already fixed in prior versions: N+1 sync-scheduler query (F-104), N+1 hasHistory query (F-179), SSL verify default (F-206), llms.txt do_blocks (F-207), config manifest categorization (F-208)
+- 12 findings reclassified as FALSE_POSITIVE after deep code verification: tone enum (F-177), MODEL_FAST intentional (F-205), 10 migration/backup VERIFIED CORRECT findings (F-243-F-249, F-251, F-254, F-255)
+
 ## [2.9.27.73] - 2026-04-14
 
 ### Fixed

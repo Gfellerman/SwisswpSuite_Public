@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.73
+Stable tag: 2.9.27.74
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,12 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.74 =
+* Fix: SEO Enhance ~40% failure rate resolved — response_format now sent for all API paths, enabling JSON enforcement on Groq (F-204)
+* Fix: 3 newer hardening options (restrict_llm_crawlers, restrict_google_indexing) added to security level presets and apply_all_recommended (F-089)
+* Audit: 6 findings confirmed already fixed in prior versions (F-104, F-179, F-206, F-207, F-208)
+* Audit: 12 findings reclassified as FALSE_POSITIVE after code verification (F-177, F-205, F-243-F-249, F-251, F-254, F-255)
 
 = 2.9.27.73 =
 * Fix: Sentinel backup cancel_engine_state_for_job() regex corrected (auto→automation) — prevents zombie engine resurrection loops (F-282)
