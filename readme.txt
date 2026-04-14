@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.71
+Stable tag: 2.9.27.72
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,10 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.72 =
+* Fix: BatchQueueJob.status enum corrected — "running" → "processing", added "applied" to match PHP STATUS_* constants
+* Fix: SeoManager slow-batch progress banner removed phantom job.failed_requests field (no DB column); failed count display removed
 
 = 2.9.27.71 =
 * Fix: CC-001 — Sentinel job ID mismatch (backup_auto_ vs backup_automation_); watchdog now correctly identifies and circuit-breaks stalled automation jobs

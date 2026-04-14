@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.72] - 2026-04-14
+
+### Fixed
+- `BatchQueueJob` TypeScript interface: `status` enum corrected from `"running"` to `"processing"`, added `"applied"` — now exactly matches `SwissWPSuite_Batch_Queue::STATUS_*` PHP constants
+- `SeoManager` slow-batch progress banner: removed phantom `job.failed_requests` field read (no such column in `wp_swisswpsuite_batch_queue` table); removed always-zero "N failed" display; removed `failed` field from `slowBatchStatus` state type
+
+---
+
 ## [2.9.27.71] - 2026-04-14
 
 ### Fixed
