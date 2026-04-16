@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.77] - 2026-04-16
+
+### Added
+- F-163: Customer management UI on VPS admin dashboard — list, detail view, CSV export, email composition (4 new routes + 2 new EJS views)
+- VPS structured logging via Winston (config/logger.js) replacing raw console.log
+- VPS session authentication middleware (middleware/sessionAuth.js)
+
+### Fixed
+- F-261: GDrive auth error fast-fail in backup engine — immediate abort instead of silent retry loop
+- F-264/F-265: CreateBackupResponse TypeScript type corrected to match PHP shape (useBackups.ts)
+- CE-004: Bulk apply response now includes total_received count (class-swisswpsuite-api.php)
+- CE-005/F-184: Per-promise .catch() in handleBulkApply; success count reads from API response (ContentEnhancer.tsx)
+- F-181: Category fetch abort controller + useEffect cleanup prevents memory leak (ContentEnhancer.tsx)
+- F-220: Empty permalink guard in llms.txt generation (class-swisswpsuite-llm-txt.php)
+- F-213: 5 SEO operational state options added to deactivator cleanup (class-swisswpsuite-deactivator.php)
+- F-219: FAQ fetch error handling with user-facing toast (SeoManager.tsx)
+- SET-008/SET-027: encryptionPasswordConfirm required; mismatch returns HTTP 400 (class-swisswpsuite-api.php)
+- SET-022: WPScan/Patchstack API key length validation — minimum 20 characters (class-swisswpsuite-api.php)
+- SET-006: 11 missing add_option() defaults in plugin activator (class-swisswpsuite-activator.php)
+- F-175: Responsive CSS on VPS admin dashboard — mobile-friendly tables and navigation
+- apiKey @deprecated JSDoc annotation in useSettings.ts
+
+### Security
+- F-166: Groq DPA and SCCs documented in privacy policy (PRIVACY_POLICY.md)
+
+### Documentation
+- F-169: Docker iptables documented as safe-by-design in VPS capabilities reference
+
 ## [2.9.27.74] - 2026-04-14
 
 ### Fixed

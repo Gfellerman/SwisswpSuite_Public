@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.74
+Stable tag: 2.9.27.77
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,22 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.77 =
+* Added: Customer management UI on VPS admin dashboard (F-163)
+* Added: VPS structured logging and session auth middleware
+* Fix: GDrive auth error fast-fail in backup engine (F-261)
+* Fix: CreateBackupResponse type corrected (F-264/F-265)
+* Fix: Bulk apply response + per-promise catch (CE-004/CE-005/F-184)
+* Fix: Category fetch abort controller cleanup (F-181)
+* Fix: Empty permalink guard in llms.txt (F-220)
+* Fix: 5 SEO options cleaned on deactivation (F-213)
+* Fix: FAQ fetch error handling in SeoManager (F-219)
+* Fix: Encryption confirm + API key validation (SET-008/SET-022/SET-027)
+* Fix: 11 missing activator defaults (SET-006)
+* Fix: Responsive CSS on VPS admin dashboard (F-175)
+* Security: Groq DPA documented in privacy policy (F-166)
+* Docs: Docker iptables safe-by-design (F-169)
 
 = 2.9.27.74 =
 * Fix: SEO Enhance ~40% failure rate resolved — response_format now sent for all API paths, enabling JSON enforcement on Groq (F-204)
