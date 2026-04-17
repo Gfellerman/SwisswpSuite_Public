@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.80] - 2026-04-17
+
+### Added
+- Per-category one-click fix buttons inside the SEO Health Report ("Generate Alt Text for All (33)", "Generate SEO for All Pages (11)", etc.) that close the dialog, switch to the right tab, and trigger bulk optimization
+- SEO scan response now exposes `actionable` and `excluded_thin_content` fields per content type so the UI can distinguish real problems from unfixable thin content
+
+### Changed
+- Content Enhancer scoped back to WooCommerce products only — Posts, Pages, and Images tabs removed to eliminate duplication with the SEO page. Shows an empty state with install CTA when WooCommerce is not active
+- SEO Health Report dialog restructured with sticky header + scrollable body (max-h-90vh) + sticky Close footer so long content doesn't clip on smaller viewports
+
+### Fixed
+- Bug 1 — `/content?filter=unoptimized` now returns items missing EITHER `_swisswpsuite_meta_title` OR `_swisswpsuite_meta_description` (was only checking description)
+- Bug 2 — `processSingleItem` retry loop now actually retries on 5xx and network errors with exponential backoff (1s / 3s); 4xx non-429 still exits immediately; 429 keeps 65s wait
+- Bug 3B/3C — SEO Health badge count no longer inflates from unfixable thin-content pages; `missing` field now equals actionable items only; thin content shown as separate informational note
+- Bug 3E — SEO score ceiling formula now credits all fixable items at full weight; thin content at 0.6; ceiling no longer pessimistically penalizes missing metadata
+- Audit CRIT-1 — SEO Health category fix buttons now bypass the two-click confirm toast via `skipConfirm` option; one click actually runs the job
+- Audit CRIT-2 — Category fix buttons now pass explicit `typeOverride` argument to `handleFastOptimizeAll` and `handleBackgroundQueue`, avoiding the stale `activeTab` closure race
+- Audit WARN-4 — Network error detection is now case-insensitive (`/fetch|network/i`) so Firefox's "NetworkError" message triggers retry behavior in addition to Chrome's "Failed to fetch"
+
 ## [2.9.27.79] - 2026-04-17
 
 ### Added

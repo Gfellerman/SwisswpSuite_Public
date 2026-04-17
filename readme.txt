@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.79
+Stable tag: 2.9.27.80
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,16 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.80 =
+* Fixed: "Generate SEO for All" no longer returns empty when items exist — filter now checks BOTH missing titles and missing descriptions
+* Fixed: SEO Health Report dialog now scrolls correctly inside viewport (sticky header + sticky Close footer, scrollable body, 90vh max)
+* Added: Per-category one-click fix buttons in SEO Health Report — "Generate Alt Text for All", "Generate SEO for All Pages/Posts/Products"
+* Fixed: SEO Health badge count no longer inflated by unfixable thin-content pages; informational note shown separately
+* Fixed: SEO score ceiling formula now realistically credits all fixable items; no longer pessimistically penalizes missing metadata
+* Fixed: Bulk post enhance retry loop — 5xx and network errors now retry with exponential backoff; Firefox NetworkError case-insensitive match
+* Changed: Content Enhancer scoped back to WooCommerce products only — posts/pages/images no longer duplicated between SEO and AI Content pages
+* Fixed: SEO Health category buttons now correctly use the chosen content type (no stale activeTab closure) and bypass the two-click confirm
 
 = 2.9.27.79 =
 * Added: SEO bulk batch persists to localStorage; auto-resumes polling after tab close (F-224/F-225)
