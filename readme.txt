@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.78
+Stable tag: 2.9.27.79
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,15 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.79 =
+* Added: SEO bulk batch persists to localStorage; auto-resumes polling after tab close (F-224/F-225)
+* Added: Settings save concurrent-edit protection via settings_version hash + HTTP 409 (SET-031)
+* Fixed: Groq shared parse-failure guard — empty body / invalid JSON return WP_Error (F-230)
+* Fixed: job_status TypeScript union corrected (pending/error added, completed removed) (F-239)
+* Fixed: SEO bulk "Queue Running" banner auto-clears on completion/failure/expiry
+* Fixed: Sentinel sync status drift — PHP emits 'unknown' to match TS union
+* Fixed: 8 additional LOW findings (CE-001/002/003/006, SET-012/013/016/017, F-253, F-231, F-238)
 
 = 2.9.27.78 =
 * Added: SEO test suite — 45 test methods, 5 test classes (F-209)

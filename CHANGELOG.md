@@ -6,6 +6,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.79] - 2026-04-17
+
+### Added
+- F-224/F-225: SEO bulk batch jobs now persist to localStorage with 24h TTL — polling auto-resumes after tab close
+- F-225: PHP stale-job detection normalizes >24h-old pending batches to `expired` status; frontend halts polling cleanly
+- SET-031: Optimistic-concurrency protection on settings save via `settings_version` hash — returns HTTP 409 on two-tab conflicts, frontend auto-refetches
+- Section 7 of SETTINGS_CAPABILITIES_REFERENCE.md documents the new settings_version + 409 contract
+
+### Changed
+- F-230: Groq `call_api()` now uses shared `parse_outer_response()` helper — empty bodies and malformed JSON return `WP_Error` instead of silent null, all 9 callers already guarded
+- F-226: Disambiguation PHPDoc added to `run_seo_scan()` and `get_onpage_audit()` clarifying they serve different UI surfaces (2-dimension badge vs 6-factor weighted audit)
+- F-231: Migrated last `MODEL_MAIN` caller to `MODEL_PRIMARY`; alias retained for backward compat until v2.9.28.x
+- CE-003: `ContentType` union extended with `"template"` for FSE post types
+
+### Fixed
+- F-239 (WARNING-1): `job_status` union corrected — removed non-existent `"completed"`, added `"pending"` and `"error"` (actually emitted by Sentinel receiver)
+- Pre-commit CRITICAL: `class-swisswpsuite-api-sync.php` now emits `'unknown'` instead of `'idle'` to match the narrowed `SentinelJobStatus` TS union
+- Pre-commit WARNING: SEO slow batch banner auto-clears on terminal states (completed/failed/expired) — previously stuck until manual dismiss
+- WARNING-3: `compute_settings_version()` excludes 3 background-mutated options (login_max_retries, transfer_strategy, server_profile_override) to prevent spurious 409s
+- WARNING-4 / CE-001: Removed dead `isImage` ternary in ContentEnhancer.tsx after identical branches
+- CE-002: PHP-side tone allowlist rejects unknown tones with HTTP 400 (defense-in-depth)
+- CE-006: Bulk apply truncation now surfaced in toast when PHP 100-item cap fires
+- SET-012: Documented why `esc_sql` is correct for SHOW TABLES output (no prepare support for table names)
+- SET-013: `perform_maintenance` unknown action now returns HTTP 400 instead of silent no-op
+- SET-016: Removed erroneous optional chaining on non-optional `settings` prop in SeoSettings.tsx
+- SET-017: Dev-only guards on `console.error` calls in 5s-interval refresh effects
+- F-253: Corrected stale HMAC CSRF validity-window comment in receiver template
+
+### Security
+- CE-002: Tone parameter server-side allowlist prevents prompt-injection surface widening
+- SET-031: `hash_equals()` used for timing-safe settings version comparison
+
 ## [2.9.27.78] - 2026-04-17
 
 ### Added
