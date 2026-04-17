@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.78] - 2026-04-17
+
+### Added
+- F-209: SEO test suite — 45 test methods across 5 test classes (LlmTxtTest, OnPageAuditTest, SitemapTest, FrontendTitleTest, LlmTxtQueryVarTest)
+- F-214/F-215: SeoBackgroundStatus and SeoBatchStatus TypeScript interfaces added to types.ts
+
+---
+
 ## [2.9.27.77] - 2026-04-16
 
 ### Added

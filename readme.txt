@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.77
+Stable tag: 2.9.27.78
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,10 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.78 =
+* Added: SEO test suite — 45 test methods, 5 test classes (F-209)
+* Added: SeoBackgroundStatus + SeoBatchStatus TypeScript interfaces (F-214/F-215)
 
 = 2.9.27.77 =
 * Added: Customer management UI on VPS admin dashboard (F-163)
