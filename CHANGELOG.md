@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.81] - 2026-04-17
+
+### Added
+
+- `SwissWPSuite_Groq::assert_result_has_content($result, $required_fields, $context)` — shared static guard used across all 6 Groq consumer call sites; returns null (OK) if any required field is non-empty, WP_Error on all-empty or non-array response
+- Background SEO status polling now returns `last_error` and `last_item_error` fields; frontend displays amber warning banner when present
+- Upgrade migration deletes orphan `_swisswpsuite_seo_processed_at` markers from the silent-success path in previous versions (chunked, LIMIT 1000)
+- PHPUnit test class `SeoWorkerGuardTest` with 8 test cases covering all assert_result_has_content edge cases
+
+### Fixed
+
+- CRIT-1 — Background SEO queue (`process_bg_seo_queue`) now branches on `$post->post_type === 'attachment'` and calls `generate_image_seo` (vision model) for images; text posts continue to use `generate_seo_meta`
+- CRIT-2 — `process_image()` in seo-worker.php now throws when Groq response has all-empty alt_text/title
+- CRIT-3 — `process_text()` in seo-worker.php now throws when Groq response has all-empty title/description (updates=0 was previously logged-only)
+- CRIT-4 — Background queue `completed[]` push is now gated behind `if ($updates > 0)`; failed items pushed to `failed[]` and flagged with `_swisswpsuite_seo_failed` postmeta
+- CRIT-5 — Batch ingestion regex extended to `/^seo_(post|product|page|attachment)_(\d+)$/`; FAQ capture group fixed from `$m[2]` to `$m[1]`; `STATUS_APPLIED` only set when `$saved > 0`
+- HIGH-1 — `generate_content_item()` sync endpoint returns HTTP 502 (success:false) when Groq returns a parseable but all-empty response
+- HIGH-3 — `get_background_seo_status()` wraps inline execution in try/catch; `last_error`/`last_item_error` surfaced in JSON response
+- HIGH-5 — `_swisswpsuite_seo_processed_at` now written AFTER successful work completes; previously written before the try block, permanently blacklisting failed items from retry
+- W1 — `process_product_images()` now has `assert_result_has_content` guard and tracks `$img_updates`; `_processed_at` only written when `$img_updates > 0`
+- Frontend `handleGenerate` and `processSingleItem` now validate that Groq response contains at least one usable field before marking item as optimized
+
+### Security
+
+- No security changes
+
 ## [2.9.27.80] - 2026-04-17
 
 ### Added

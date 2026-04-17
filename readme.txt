@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.80
+Stable tag: 2.9.27.81
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,17 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.81 =
+* Fixed: CRIT-1 — Background SEO queue now correctly routes image attachments to vision model (generate_image_seo) instead of text model
+* Fixed: CRIT-2/3 — Image and text SEO workers now throw on empty Groq responses instead of silently marking items complete
+* Fixed: CRIT-4 — Background queue only pushes post_id to completed[] when writes were actually made (updates > 0)
+* Fixed: CRIT-5 — Batch ingestion regex now matches attachment custom_ids; FAQ $m[2] undefined index fixed to $m[1]; STATUS_APPLIED gated on $saved > 0
+* Fixed: HIGH-5 — _swisswpsuite_seo_processed_at now written AFTER successful work, not before; failed items no longer permanently blacklisted
+* Fixed: HIGH-1 — Sync SEO endpoint returns 502 instead of 200 when Groq response is empty
+* Fixed: HIGH-3 — Background status polling now surfaces last_error and last_item_error fields
+* Added: SwissWPSuite_Groq::assert_result_has_content() shared guard used across all 6 Groq consumer call sites
+* Fixed: Upgrade migration now reclaims orphan _swisswpsuite_seo_processed_at markers from silent-success path
 
 = 2.9.27.80 =
 * Fixed: "Generate SEO for All" no longer returns empty when items exist — filter now checks BOTH missing titles and missing descriptions
