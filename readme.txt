@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.81
+Stable tag: 2.9.27.82
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,10 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.82 =
+* Build: Excluded `vendor/` (PHPUnit + Mockery + dev-only test infrastructure) from the production zip — no runtime Composer dependencies; drops release zip from ~2.9MB back to ~1.1MB
+* Build: Added comment in build_plugin.sh documenting why vendor/ is omitted and how to re-introduce prod deps if ever needed (composer install --no-dev)
 
 = 2.9.27.81 =
 * Fixed: CRIT-1 — Background SEO queue now correctly routes image attachments to vision model (generate_image_seo) instead of text model

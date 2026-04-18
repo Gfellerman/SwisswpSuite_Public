@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.82] - 2026-04-18
+
+### Changed
+
+- Production zip no longer includes `vendor/` directory. `composer.json` only declares `require-dev` (PHPUnit, Mockery) — the vendor tree is test infrastructure, not runtime code. The plugin uses classmap autoloading from `includes/` and has no runtime Composer dependencies.
+
+### Fixed
+
+- Release zip size regression introduced in v2.9.27.44 (jumped from ~1.1MB to ~2.9MB). Zip is now back in the ~1.1MB range. The `build_plugin.sh` "future proof" vendor copy was unconditionally bundling PHPUnit, Mockery, nikic/php-parser, php-code-coverage, and sebastian/* — ~5.3MB uncompressed of pure dev tooling.
+
 ## [2.9.27.81] - 2026-04-17
 
 ### Added
