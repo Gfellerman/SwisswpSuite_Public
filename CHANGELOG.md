@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.83] - 2026-04-19
+
+### Fixed
+
+- Pro users were hitting a 120-requests-per-hour rate cap on `run_security_scan` (core scan) and `start_deep_scan` (deep scan), identical to the Free tier limit. Both endpoints now exempt Pro users (`sentinel_pro` capability), matching the `full_scan` and `sentinel_audit` exemption pattern already in place elsewhere in the codebase.
+
 ## [2.9.27.82] - 2026-04-18
 
 ### Changed
