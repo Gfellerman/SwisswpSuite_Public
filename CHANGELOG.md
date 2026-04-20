@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.93] - 2026-04-20
+
+### Fixed
+
+- **SMTP host without credentials no longer breaks all site mail.** `configure_phpmailer_smtp()` now returns early (falls back to PHP `mail()`) when SMTP host is configured but username is empty. Previously, PHPMailer entered SMTP mode with no auth credentials and tried to connect on whatever port was saved — on shared hosts like Hostinger this always failed, and the connection failure caused *every* `wp_mail()` call on the site to return `false` (breaking password resets, WooCommerce notifications, and our daily security report). The early return is safe: if username is empty, SMTP auth is impossible and the server will reject the connection anyway.
+- **Send-now endpoint surfaces `no_smtp_credentials` root cause.** `POST /reports/send-now` now checks for a configured SMTP host with no username and returns HTTP 400 with `rootCause: "no_smtp_credentials"` and an actionable message ("Add your SMTP username and password, or clear the SMTP Host field"). Previously returned a vague "wp_mail() returned false".
+- **SMTP settings panel shows amber callout for missing credentials.** `SmtpSettings.tsx` renders a clear "SMTP host is set but no username is entered — server is falling back to PHP mail()" card when the send-now or test endpoint returns `rootCause: "no_smtp_credentials"`.
+- **Daily report failure log now includes actual SMTP error.** `send_daily_security_report()` captures `WP_Error` from the `wp_mail_failed` hook at priority 1 and includes the error message in the Diagnostics log. Previous log only said "wp_mail returned false" with no SMTP-level detail.
+
+---
+
 ## [2.9.27.92] - 2026-04-20
 
 ### Fixed

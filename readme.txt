@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.92
+Stable tag: 2.9.27.93
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,12 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.27.93 =
+* Fixed: SMTP host configured without username no longer breaks all site mail — configure_phpmailer_smtp() now skips SMTP and falls back to PHP mail() when username is empty, logging a clear diagnostic instead of failing silently.
+* Fixed: Send-now endpoint returns HTTP 400 with rootCause no_smtp_credentials when SMTP host is set but username is missing — surfaces actionable error instead of silent wp_mail() failure.
+* Fixed: SmtpSettings.tsx shows amber callout with instructions when send-now reports no_smtp_credentials.
+* Fixed: WP_Error detail from wp_mail_failed now included in daily security report failure log — replaces useless "wp_mail returned false" with actual SMTP error reason.
 
 = 2.9.27.92 =
 * Fixed: Sentinel L2 (deep AI) scan JSON truncation / HTTP 502 — MAX_L2_FINDINGS reduced from 25 to 15. Prioritisation by severity preserved, so the 15 most security-relevant findings are always sent to the AI. Eliminates mid-response truncation observed in production on sites with 40+ L1 findings.
