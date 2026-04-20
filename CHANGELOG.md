@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.92] - 2026-04-20
+
+### Fixed
+
+- **Sentinel L2 deep-scan JSON truncation / HTTP 502 (log-report Issue #1 permanent fix).** `SwissWPSuite_Sentinel_Security::MAX_L2_FINDINGS` reduced from 25 to 15. Production logs across 4 sites showed 25-finding L2 payloads intermittently producing truncated JSON responses from Groq Compound (hard 8192 output-token ceiling), causing the VPS to return HTTP 502 with the scan wasted. A chunked/merged design was evaluated and rejected as architecturally unsound — merging two independent AI reports produces non-deterministic grade/chain/recommendation conflicts that would require either a third AI call or fragile hand-rolled reconciliation. Reducing the cap trades a small amount of analytical depth for deterministic, always-complete responses. The existing severity-based trim (critical→high→medium→low→info) still selects the 15 most security-relevant findings.
+- **Backup health-check adaptive stale threshold (log-report Issue #3 permanent fix).** `SwissWPSuite_Backup_Tick_Dispatcher::get_stale_threshold()` is now adaptive: `clamp(avg_tick_seconds * 2.5, 300s, 900s)`, where `avg_tick_seconds` is an exponentially-weighted moving average (alpha=0.2) of this site's actual tick durations. On fast hosts (VPS, local dev) the threshold collapses to the 300s floor — identical to v2.9.27.91 behaviour. On slow shared hosts where chunk exports average 180s per tick, the threshold climbs to ~450s so the health check stops pre-empting in-progress ticks and triggering DB lock contention. Recorded by `record_tick_duration_ms()` from the engine after every completed tick; read only during the 5-minute health-check cron. The previous static 300s threshold was still arbitrary and too low for genuinely slow shared-hosting tiers.
+- **Google Drive `delete_file()` silent-refresh-failure gap (log-report Issue #4 permanent fix).** Every other GDrive entry point (`list_files`, `upload_file`, `init_resumable_session`, `upload_single_chunk`, `get_resume_offset`) already checked the refresh-token return value after v2.9.27.91. `delete_file()` was the last remaining call site where a failed refresh would silently proceed with a dead access_token — producing a 401 that we mapped to "delete failed" with no indication that re-authentication was required. Now refresh errors are logged via Diagnostics and the delete returns `false`, so the cron-driven retention caller logs the real reason.
+
+### Added
+
+- **Persistent SMTP health snapshot (log-report Issue #6 permanent fix).** New `swisswpsuite_smtp_health` option holds the outcome of the most recent send attempt (`{ status: 'ok'|'fail', timestamp, context, reason }`). Updated on both the daily-security-report cron path and the manual `POST /smtp/test` endpoint. Surfaced in the SMTP settings panel via `GET /smtp/environment` as a persistent badge — green "Last email send: succeeded, 3 hours ago (daily security report)" or red "Last email send: FAILED, 12 minutes ago (test email) — Wrong username or password". Unlike the existing `swisswpsuite_smtp_failure_notice` (transient, dismissible, cleared on next success), this snapshot is always kept up to date so users can verify SMTP is actually working without running a diagnostic test.
+- `swisswpsuite_backup_avg_tick_ms` option key (operational state, autoload=false) — EWMA of engine tick durations in milliseconds, drives the adaptive stale threshold.
+- `swisswpsuite_smtp_health` option key (operational state, autoload=false) — persistent SMTP send-outcome snapshot.
+- `SmtpHealthSnapshot` TypeScript interface + `smtp_health` field on `SmtpEnvironmentResponse`.
+
+---
+
+## [2.9.27.91] - 2026-04-20
+
+### Fixed
+
+- **Backup health-check false positives (log-report Finding #1, HIGH).** Raised `SwissWPSuite_Backup_Tick_Dispatcher::STALE_THRESHOLD` from 120s to 300s. On shared hosting (Hostinger/LiteSpeed) a single tick processing a multi-GB database chunk or large `wp-content` ZIP can legitimately exceed 120s before the PHP process returns. The old 120s threshold caused the 5-minute health-check cron to fire `chain_next_tick()` while the original process was still running, spawning parallel instances of the same job and triggering DB lock contention and ZIP file conflicts. 300s covers two full LiteSpeed request windows while still being well below `ZOMBIE_THRESHOLD` (1800s).
+- **Google Drive cloud backup silently returning empty list (log-report Finding #2, HIGH).** `SwissWPSuite_Cloud_GDrive::list_files()` previously ignored the return value of `refresh_access_token()`. A stale/revoked refresh token returned `WP_Error` silently and the next API call hit Google with a dead access_token — Google responded with 401, our parser fell through, and the UI showed "no backups" with zero indication that re-authentication was required. Now the refresh failure is logged loudly via `SwissWPSuite_Diagnostics` and propagated as a `WP_Error` to the REST handler, which surfaces a real "Re-authenticate Google Drive in Cloud Settings" error instead of masking the problem. Same silent-failure pattern also fixed in `SwissWPSuite_Cloud_Dropbox::list_files()` for parity (Diagnostics log only — no dedicated UI path on the Dropbox side).
+- **Silent SMTP failure on daily security report (log-report Finding #3, MEDIUM).** When `wp_mail()` returns `false` during the scheduled daily-security-report send, the failure is now captured in the new `swisswpsuite_smtp_failure_notice` option and rendered as a dismissible admin notice on the next admin page load (gated to `manage_options`). Previously the failure was only logged to the diagnostics panel, which most users never check. The notice auto-clears when the next daily send succeeds or when a user runs a successful SMTP Test. Notices older than 7 days self-purge to prevent permanent nagging after transient hiccups.
+
+### Added
+
+- `swisswpsuite_smtp_failure_notice` option key added to `SwissWPSuite_Config_Manifest::OPERATIONAL_STATE` (ephemeral, site-specific, excluded from backup exports and protected from migration overwrite).
+
+---
+
 ## [2.9.27.90] - 2026-04-20
 
 ### Added

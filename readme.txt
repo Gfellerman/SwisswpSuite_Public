@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.90
+Stable tag: 2.9.27.92
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,19 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.27.92 =
+* Fixed: Sentinel L2 (deep AI) scan JSON truncation / HTTP 502 — MAX_L2_FINDINGS reduced from 25 to 15. Prioritisation by severity preserved, so the 15 most security-relevant findings are always sent to the AI. Eliminates mid-response truncation observed in production on sites with 40+ L1 findings.
+* Fixed: Backup health-check now uses an adaptive stale threshold — EWMA of this site's actual tick durations × 2.5 (clamped to 300-900s). On fast hosts it collapses to the old 300s floor; on slow shared hosts it grows so the watchdog stops pre-empting in-progress ticks and causing parallel job spawns.
+* Fixed: Google Drive retention delete_file() now checks refresh-token return value — was the last GDrive call site that silently proceeded with a dead access token on refresh failure.
+* Added: Persistent SMTP health snapshot in the SMTP settings panel. Shows "Last email send: succeeded/FAILED (when, context, reason)" without requiring a diagnostic test — updated on every daily-report send and every test email.
+* Added: swisswpsuite_backup_avg_tick_ms and swisswpsuite_smtp_health option keys (operational state, autoload=false, excluded from backup exports).
+
+= 2.9.27.91 =
+* Fixed: Backup health-check false positives — STALE_THRESHOLD raised from 120s to 300s so legitimate slow backups on shared hosting no longer get killed and restarted in parallel
+* Fixed: Google Drive cloud backup now surfaces a real "re-authenticate" error when the OAuth refresh token is stale/revoked — previously returned an empty list silently
+* Fixed: Silent SMTP failures on the daily security report are now surfaced as a dismissible admin notice on the next admin page load, instead of being buried in the diagnostics log
+* Added: swisswpsuite_smtp_failure_notice operational-state option (excluded from backup/migration, self-clears on next successful send)
 
 = 2.9.27.90 =
 * Added: XOR obfuscation fallback for hosts without Sodium/OpenSSL — SMTP password always saveable on any PHP 7.4+ server
