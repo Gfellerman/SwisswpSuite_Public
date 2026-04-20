@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.85] - 2026-04-20
+
+### Fixed
+
+- **SMTP From address fallback.** When the From Email field is empty, `configure_phpmailer_smtp()` now falls back to the SMTP username as the sender address (if it is a valid email). Prevents Hostinger's silent post-250 OK discard that caused test emails and daily security reports to disappear without error.
+- **SMTP test preflight validation.** `send_smtp_test_email()` now returns HTTP 400 with a descriptive error message when both From Email and SMTP Username are absent or invalid, instead of returning HTTP 200 with a silent false success.
+
+---
+
 ## [2.9.27.84] - 2026-04-20
 
 ### Added
