@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.84] - 2026-04-20
+
+### Added
+
+- **Plugin safety wrapper (Change E).** Top-level bootstrap in `swisswpsuite-ai.php` and the activator's `activate()` body are now wrapped in `try/catch(\Throwable)`. Fatal errors are appended to `wp-content/swisswpsuite-error.log` (flat file, not wp_options or Diagnostics — those may be unavailable at the failure point) and surfaced as a `manage_options`-gated admin notice. Activation no longer white-screens on third-party plugin conflicts, missing PHP extensions, or partially loaded classes.
+- **Built-in SMTP settings (Change F).** New panel under Settings > General. 13 provider presets (Hostinger, SiteGround, Bluehost, GoDaddy, DreamHost, IONOS, OVH, Namecheap, Gmail, Outlook, Brevo, SendGrid, Custom). Auto-fills host/port/encryption. Password encrypted at rest via `SwissWPSuite_Encryption::encrypt_string()` (Sodium preferred, OpenSSL fallback). Hooks into `phpmailer_init` at priority 20 — completely inert when no host is configured (wp_mail() falls back to default mailer). "Send Test Email" button dispatches a diagnostic to `admin_email` and captures PHPMailer errors via the `wp_mail_failed` action.
+
+### Changed
+
+- **Activator Bunker connectivity ping deferred to admin_init.** Previously an inline `wp_remote_get` inside `activate()` could throw on hosts with blocked outbound traffic (SSL handshake failures, firewall interception, connect timeout). Now set as a one-shot transient and consumed on the next admin page load, where exceptions can no longer abort activation.
+
+### Config
+
+- `swisswpsuite-config-manifest.php`: added `swisswpsuite_smtp_password` to `SITE_LOCAL_SECRETS` (encrypted, excluded from backup exports, protected from migration overwrite). Added `swisswpsuite_smtp_host|port|encryption|username|from_email|from_name` to `SITE_LOCAL_CONFIG`.
+
+---
+
 ## [2.9.27.83] - 2026-04-19
 
 ### Fixed

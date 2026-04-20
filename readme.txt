@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.83
+Stable tag: 2.9.27.84
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,10 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 == Changelog ==
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+= 2.9.27.84 =
+* Added: Plugin safety wrapper — fatal boot errors are now caught, logged to wp-content/swisswpsuite-error.log, and surfaced as an admin notice instead of causing a white-screen. Activation Bunker connectivity check deferred to admin_init so a network blip cannot abort activation.
+* Added: Built-in SMTP settings panel under Settings > General. 13 host presets (Hostinger, SiteGround, Bluehost, GoDaddy, DreamHost, IONOS, OVH, Namecheap, Gmail, Outlook, Brevo, SendGrid, Custom), password encrypted at rest via SwissWPSuite_Encryption, Send Test Email button.
 
 = 2.9.27.83 =
 * Fixed: Pro users were hitting a 120-requests-per-hour rate cap on core + deep security scan endpoints, identical to Free tier. Pro users now exempt, matching the existing full_scan and sentinel_audit exemption pattern.
