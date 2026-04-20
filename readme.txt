@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.88
+Stable tag: 2.9.27.89
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,10 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.27.89 =
+* Fix: SMTP test now captures wp_mail_failed at priority 1, probes PHPMailer effective state, and returns root-cause classification (password_decrypt_failed, not_smtp_mode, no_password, etc.) with saved-vs-actual config diff
+* Fix: SMTP password field now has explicit "Change" button + onBlur restores mask if field left empty — prevents confusion when re-entering a saved password
 
 = 2.9.27.88 =
 * Fix: API error handler now surfaces real server error (HTTP status + response body snippet) instead of opaque "An unknown API error occurred" — PHP fatals, Cloudflare/nginx errors, and non-JSON responses are now visible to the user

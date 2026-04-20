@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.89] - 2026-04-20
+
+### Fixed
+
+- **SMTP test diagnostic overhaul.** `send_smtp_test_email()` now: (1) registers `wp_mail_failed` capture at priority 1 so competing plugins cannot consume the error first; (2) probes the final PHPMailer effective state via `phpmailer_init` at priority 9999 (fires after all plugins) to detect if a competing SMTP plugin overrode our configuration; (3) applies a 5-heuristic root-cause classifier (`not_smtp_mode`, `password_decrypt_failed`, `no_password`, `wp_mail_failed`, `silent_failure`); (4) returns a structured diagnostics payload with saved-config vs PHPMailer-effective-config side-by-side. The "wp_mail() returned false." dead-end log is replaced with actionable messages like "Could not decrypt the saved SMTP password — WordPress security keys may have been rotated. Click Change and re-enter the password."
+- **SMTP password re-entry UX.** Added explicit "Change" button next to the masked password field. Clicking it clears the field and focuses it for immediate typing. Added `onBlur` handler that re-applies the `••••••••` placeholder if the user clicks into the field but types nothing — preventing the field from appearing empty when a password is already saved.
+
+---
+
 ## [2.9.27.88] - 2026-04-20
 
 ### Fixed
