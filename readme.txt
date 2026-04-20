@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.86
+Stable tag: 2.9.27.87
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,10 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.27.87 =
+* Fix: SwissWPSuite_Encryption class now loaded at boot — was never require_once'd so SMTP password save and cloud OAuth token encryption silently failed
+* Side-effect fix: Google Drive and Dropbox OAuth tokens will now be encrypted at rest on next save (plaintext-migration fallback handles existing tokens)
 
 = 2.9.27.86 =
 * Fix: SMTP test now returns HTTP 400 (not silent success) when no SMTP host is saved — closes the PHP mail() silent-fallback path on Hostinger

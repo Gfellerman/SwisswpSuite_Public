@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.87] - 2026-04-20
+
+### Fixed
+
+- **Encryption class never loaded at runtime.** `SwissWPSuite_Encryption` was referenced by `class_exists()` guards across 6+ files (SMTP, cloud backup, admin) but was never added to `load_dependencies()` in `class-swisswpsuite-core.php`. At `rest_api_init` time the class was missing, causing the SMTP save endpoint to return "Encryption module unavailable — cannot save password." Added the `require_once` to the `$essentials` array before any consumer class is loaded.
+- **Secondary:** Google Drive and Dropbox OAuth tokens were also silently falling through to unencrypted storage. Now encrypted at rest on next save. `decrypt_string()` has a plaintext-migration branch so existing stored tokens continue to work without re-authentication.
+
+---
+
 ## [2.9.27.86] - 2026-04-20
 
 ### Fixed
