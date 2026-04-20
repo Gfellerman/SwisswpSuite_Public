@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.89
+Stable tag: 2.9.27.90
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,17 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.27.90 =
+* Added: XOR obfuscation fallback for hosts without Sodium/OpenSSL — SMTP password always saveable on any PHP 7.4+ server
+* Added: Port connectivity pre-check (fsockopen, 5s timeout) before SMTP test — detects hosting firewall blocks with actionable port suggestions
+* Added: Competing SMTP plugin detection (WP Mail SMTP, FluentSMTP, PostSMTP, Easy WP SMTP) with admin notice
+* Added: PHP mail() availability indicator — warns when neither SMTP nor PHP mail() is usable
+* Added: SMTP error message mapper — translates raw PHPMailer errors into actionable user instructions
+* Added: AUTH_KEY rotation guard in configure_phpmailer_smtp — decryption failure logs clearly instead of silently using empty password
+* Added: wp-cron status panel + "Send Daily Report Now" button in SMTP settings
+* Added: Cache-Control no-cache/no-store headers on all SMTP REST responses
+* Added: GET /smtp/environment endpoint for host environment probing
 
 = 2.9.27.89 =
 * Fix: SMTP test now captures wp_mail_failed at priority 1, probes PHPMailer effective state, and returns root-cause classification (password_decrypt_failed, not_smtp_mode, no_password, etc.) with saved-vs-actual config diff

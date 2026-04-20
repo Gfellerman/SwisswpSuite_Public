@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.90] - 2026-04-20
+
+### Added
+
+- **XOR obfuscation encryption fallback (Scenario 1).** `SwissWPSuite_Encryption` now has a 3-tier cascade: Sodium (`s1:`) → OpenSSL (`o1:`) → XOR stream keyed by `wp_salt('auth')` (`x1:`). SMTP password saves never fail due to missing PHP extensions. Sites without Sodium or OpenSSL get a Diagnostics warning but full functionality. `decrypt_string()` handles all 4 formats including raw plaintext for migration.
+- **Port connectivity pre-check (Scenario 3).** Before calling `wp_mail()`, `send_smtp_test_email()` runs `fsockopen()` with a 5-second timeout against the configured host:port. If the port is unreachable, returns HTTP 400 with `rootCause: "port_blocked"` and a suggestion to try port 587/465 instead of waiting for PHPMailer to time out.
+- **Competing SMTP plugin detection (Scenario 2).** New `detect_competing_smtp_plugins()` method probes 5 known constants and 9 active-plugin slug patterns (WP Mail SMTP, FluentSMTP, Easy WP SMTP, Post SMTP, SendGrid, WP Offload SES, etc.). Surfaces a named warning in the test response and an amber admin-notice banner in the settings panel.
+- **PHP `mail()` availability indicator (Scenario 4).** `GET /smtp/environment` probes `disable_functions`, reports `mail_is_usable`. Frontend renders a red alert banner when no SMTP host is configured and PHP mail is disabled (affects WP Engine, Kinsta, some Cloudways plans).
+- **SMTP error message mapper (Scenario 5).** 7-pattern classifier translates raw PHPMailer errors into actionable instructions (wrong password → "Use an App Password for Gmail/Outlook"; STARTTLS → "Switch to SSL on port 465"; relay denied → "Your account may require sender-domain verification").
+- **AUTH_KEY rotation guard (Scenario 6).** `configure_phpmailer_smtp()` wraps `decrypt_string()` in `try/catch(\Throwable)`. Decryption failures are logged with the cause and `$password` is set to `''` cleanly so PHPMailer produces a proper auth-failure instead of a crash.
+- **wp-cron status panel + "Send Daily Report Now" (Scenario 7).** `GET /smtp/environment` exposes next/last cron timestamps, `DISABLE_WP_CRON` flag, and `alternate_wp_cron`. SMTP settings panel shows a cron health indicator with relative times. New `POST /reports/send-now` endpoint triggers `send_daily_security_report()` immediately, bypassing cron — lets users verify email delivery without waiting 24h.
+- **Cache-Control headers on all SMTP REST responses (Scenario 8).** `no-cache, no-store, must-revalidate, private` + `Pragma: no-cache` applied to every SMTP endpoint. Frontend appends `_nocache` timestamp to test/environment/send-now calls.
+
+### Changed
+
+- `send_smtp_test_email()` root-cause classifier extended with `port_blocked` heuristic. All heuristics now also consult the competing-plugin detector and the error-message mapper.
+- `swisswpsuite_last_sentinel_scan_ts` and `swisswpsuite_last_sentinel_scan_result` options now updated on every cron run (feeds the cron status panel and the send-now fallback).
+
+---
+
 ## [2.9.27.89] - 2026-04-20
 
 ### Fixed
