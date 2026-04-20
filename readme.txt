@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.85
+Stable tag: 2.9.27.86
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,11 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.27.86 =
+* Fix: SMTP test now returns HTTP 400 (not silent success) when no SMTP host is saved — closes the PHP mail() silent-fallback path on Hostinger
+* Fix: SMTP settings panel now shows "unsaved changes" banner and disables Test button until settings are saved, preventing the "green checkmark but no email" UX trap
+* Fix: From Email field label and help text clarified — no separate SMTP account needed; blank = auto-use SMTP username
 
 = 2.9.27.85 =
 * Fix: SMTP From address fallback to username when From field is empty (prevents Hostinger silent discard)

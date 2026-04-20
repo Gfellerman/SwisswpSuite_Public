@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.86] - 2026-04-20
+
+### Fixed
+
+- **SMTP test silent-success via PHP mail() fallback.** `send_smtp_test_email()` now returns HTTP 400 when no SMTP host is saved, with a clear message directing the user to fill and save SMTP fields first. Previously, an unsaved SMTP config caused `wp_mail()` to fall back to PHP `mail()`, which Hostinger blocks — but the endpoint still returned HTTP 200 and a green success toast.
+- **SMTP "unsaved changes" UX trap.** `SmtpSettings.tsx` now tracks dirty state (form values vs last-saved server state). An amber banner appears whenever there are unsaved changes, and the Send Test Email button is disabled until the current form state is saved. This closes the loop where users clicked Test before Save and received a misleading success indicator.
+- **From Email field copy clarified.** Label, description, and a contextual info notice now explain that the From Email field is a display-only sender address that does not require its own SMTP account. Leaving it blank automatically uses the SMTP username as the From address (with a logged notice). The placeholder dynamically shows the SMTP username as a hint when one is set.
+
+---
+
 ## [2.9.27.85] - 2026-04-20
 
 ### Fixed
