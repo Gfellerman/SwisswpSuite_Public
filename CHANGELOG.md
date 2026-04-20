@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.94] - 2026-04-20
+
+### Fixed
+
+- **Daily report failure log now identifies `pre_wp_mail` interception.** `send_daily_security_report()` probes a `pre_wp_mail` filter at priority 1 before calling `wp_mail()`. If another plugin short-circuits delivery by returning a non-null value from `pre_wp_mail`, the failure log now explicitly says "another plugin or hook short-circuited mail delivery before PHPMailer ran" instead of the cryptic "no WP_Error captured". This makes it diagnosable without server-level debugging.
+- **Send-now endpoint surfaces PHP `mail()` disabled.** When SMTP host is empty and `mail` appears in `disable_functions`, `POST /reports/send-now` now returns HTTP 400 with `rootCause: "php_mail_disabled"` before calling `wp_mail()` — instead of silently failing and logging nothing useful.
+
+### Added
+
+- `"php_mail_disabled"` to `SmtpTestRootCause` TypeScript union.
+
+---
+
 ## [2.9.27.93] - 2026-04-20
 
 ### Fixed
