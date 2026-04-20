@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.87
+Stable tag: 2.9.27.88
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,9 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.27.88 =
+* Fix: API error handler now surfaces real server error (HTTP status + response body snippet) instead of opaque "An unknown API error occurred" — PHP fatals, Cloudflare/nginx errors, and non-JSON responses are now visible to the user
 
 = 2.9.27.87 =
 * Fix: SwissWPSuite_Encryption class now loaded at boot — was never require_once'd so SMTP password save and cloud OAuth token encryption silently failed

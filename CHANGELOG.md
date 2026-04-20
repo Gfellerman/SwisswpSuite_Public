@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.27.88] - 2026-04-20
+
+### Fixed
+
+- **"An unknown API error occurred" swallowed real server errors.** The shared `wpApi()` helper in `services/api.ts` called `response.json()` directly — if the server returned a PHP fatal with HTML output, a Cloudflare/nginx error page, or any non-JSON body, the parse threw, `statusText` was empty (HTTP/2), and the catch-all "An unknown API error occurred" string fired. Rewrote the `!response.ok` branch to read body as text first, attempt JSON.parse, then fall back to `Server error (HTTP {status}) — {first 200 chars of body}`. Every feature in the SPA (SMTP, Backup, Sync, SEO, Security, License) now surfaces the real failure reason. Existing JSON error responses (`{ success: false, message: "..." }`) are unchanged.
+
+---
+
 ## [2.9.27.87] - 2026-04-20
 
 ### Fixed
