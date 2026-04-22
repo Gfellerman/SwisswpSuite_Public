@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.16
+Stable tag: 2.9.28.17
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,12 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.17 =
+* Feature: Virtual Patching Phase 2 — Update Guard now supports `review_first` and `block_on_match` modes; malicious plugin updates are blocked at `upgrader_source_selection` and auto-rolled back post-apply when confidence exceeds 70%.
+* Security: Three HIGH vulnerabilities fixed in rollback engine: slug path traversal guard, symlink escape via glob, and override transient now correctly consumed as one-time bypass.
+* Feature: SnapshotList, UpdateReviewPanel, UpdateBlockedBanner React components — full approve/reject queue, two-step restore confirmation, idempotent override button.
+* Fix: WCAG 2.1 AA audit: 9 a11y findings fixed across UpdateGuard components (APG radio keyboard pattern, always-mounted live regions, role="alert" key cycling for repeat errors).
 
 = 2.9.28.16 =
 * Fix: Update Guard `last_verdict` now serialises as `{}` (empty object) instead of `[]` (empty array) when no verdict recorded, matching the TypeScript contract.

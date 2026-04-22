@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.17] - 2026-04-22
+
+### Added
+
+- Virtual Patching Phase 2: `review_first` and `block_on_match` modes in Update Guard
+- `SwissWPSuite_Update_Scanner`: staged package scanner with VPS allowlist (3s timeout + 12-slug fallback)
+- `SwissWPSuite_Update_Rollback`: 12-step atomic rollback with flock, sha256 manifest verify, opcache_reset
+- SnapshotList, UpdateReviewPanel, UpdateBlockedBanner React components for Security Hub
+- Two-step confirmation token on manual snapshot restore (CSRF-resistant)
+- Override bypass for blocked updates (rate-limited to 3/hour per admin)
+
+### Security
+
+- Fixed slug path traversal in rollback engine (`basename(sanitize_file_name())` guard)
+- Fixed symlink escape via `glob(GLOB_ONLYDIR)` in snapshot content directory resolution
+- Fixed override transient never consumed — one-time bypass now correctly single-use
+
+### Fixed
+
+- WCAG 2.1 AA: 9 a11y findings fixed (APG radio keyboard, always-mounted live regions, role="alert" key cycling)
+- `retry_after` response field in override rate-limit endpoint now uses `HOUR_IN_SECONDS` constant
+
 ## [2.9.28.16] - 2026-04-22
 
 ### Fixed
