@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.18
+Stable tag: 2.9.28.19
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,10 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.19 =
+* Changed: Restored filled button theme across new Sprint 1.5 components — ScanResultPanel batch actions (Mark Safe/Quarantine/Delete/Analyze), UpdateReviewPanel Approve, UpdateBlockedBanner Override, SeoManager action button.
+* Added: "Check with AI" bulk action button in scan result panels for Pro users — analyzes N selected findings with AI; Pro-gated with Lock icon for free tier.
 
 = 2.9.28.18 =
 * Security: C-1 — Path-traversal guard added to snapshot restore endpoint (mirrors delete handler); token now rejected before issuance if path escapes snapshots dir.

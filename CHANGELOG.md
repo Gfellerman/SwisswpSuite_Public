@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.19] - 2026-04-22
+
+### Changed
+
+- Restored filled button theme across all new Sprint 1.5 components: batch action buttons (Mark Safe, Quarantine, Delete, Analyze) in ScanResultPanel now use solid `swiss-navy`, `amber-600`, and `red-600` fills matching the canonical SwissWPSuite button design language
+- UpdateReviewPanel Approve button: `bg-swiss-navy text-white` (was `bg-green-50 text-green-700`)
+- UpdateBlockedBanner Override button: `bg-amber-600 text-white` (was `bg-white text-amber-700` outline)
+- SeoManager action button aligned to secondary/navy theme
+
+### Added
+
+- "Check with AI" batch button in bulk action bar for all Pro scan result panels (AI Audit, Malware, Full Scan + AI) — selects N findings and runs AI file analysis sequentially; Pro-gated with Lock icon for free tier
+
+---
+
 ## [2.9.28.18] - 2026-04-22
 
 ### Security
