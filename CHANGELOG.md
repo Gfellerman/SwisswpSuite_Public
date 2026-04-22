@@ -6,6 +6,184 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.12] - 2026-04-22
+
+### Changed
+
+- Version bump for release pipeline (pre-commit zip-collision guard).
+
+## [2.9.28.11] - 2026-04-22
+
+### Fixed
+
+- **AI Security Audit: restored bulk selection UI.** The select-all checkbox, per-row checkboxes, and batch-action bar (Mark N Safe / Quarantine N / Delete N) were silently dropped in v2.9.28.0 when `ScanResultsTable` was replaced by the new `ScanResultPanel`. The corresponding handlers still existed in `SecurityHub.tsx` as orphaned code. This release re-wires the selection UI into the new `ScanResultPanel` component and connects it to the existing `/security/bulk` endpoint via a new `handleScanPanelBulkAction` handler. Applies to AI Audit, Malware, and Full AI scan result panels. No backend changes required.
+
+---
+
+## [2.9.28.10] - 2026-04-22
+
+### Fixed
+- AI Security Audit: restored "Fix: ..." remediation text per finding (was silently dropped in v2.9.28.08 when the L1→AiAuditResult transform was refactored to use a separate `detail` field).
+- AI Security Audit + Full AI Scan: restored per-finding **Quarantine** and **Mark Safe** action buttons. The new `ScanResultPanel` component was missing `onQuarantine`/`onMarkSafe` props and the findings were missing the `evidence` file path.
+- PHP scan orchestrator now forwards `evidence`, `remediation`, and `fix_type` from L1 findings to the frontend (previously these were dropped by the transform).
+
+---
+
+## [2.9.28.09] - 2026-04-22
+
+### Fixed
+
+- **Quick Scan info banner accuracy.** Removed false claim that low-risk deviations are "reviewed by our AI". Quick Scan is local checksum and regex comparison only — no AI is involved. Updated banner text to accurately describe what the scan does.
+
+## [2.9.28.08] - 2026-04-22
+
+### Fixed
+
+- **Quick Scan severity classification.** Quick Scan now assigns a severity per category (`bundled_plugin` + `known_safe_missing` = `info`, `theme_modified` = `low`, `core_missing` + `core_modified` = `high`) rather than hard-coding every finding as `medium`. Only `medium`/`high`/`critical` count toward the headline `threats_found` number — a clean site with 44 WordPress-baseline deviations (Akismet, Hello Dolly, readme files, theme customisations) now correctly reports **0 threats** instead of 44. The full list is still returned so the detail view can show everything.
+
+### Changed
+
+- **Quick Scan results UI.** Added an info banner explaining that expected deviations (bundled plugins, theme edits) are flagged for visibility but not counted as threats. Only modified core files or suspicious patterns are actionable. Added a collapsible "Low-risk findings (not counted as threats)" section below the actionable threats list.
+
+## [2.9.28.07] - 2026-04-22
+
+### Fixed (CRITICAL — WAF lockout incident)
+
+- **Site owner locked out of WP Admin resolved.** A site owner reported that after a plugin upgrade, "half of the pages were blocked with a message saying this site was blocked due to multiple IP attacks" and they had to delete the plugin via cPanel file manager to regain access. Root cause: the activator was unconditionally forcing `swisswpsuite_firewall_simulation_mode = 'no'` on every upgrade/reactivation — flipping the WAF from observe-only to active-blocking without the admin's consent. False-positive pattern matches on normal frontend traffic then triggered the IP-reputation "five strikes" rule, banning the admin's IP for 30 minutes. Because `wp-login.php` is not `is_admin()`, the existing admin bypass did not apply — once the admin's IP was banned, there was no way back in from the browser. The WAF now:
+  - Uses `add_option()` (idempotent) for all firewall defaults on activation, never `update_option()`. Existing user settings are now preserved on upgrade.
+  - Ships with `simulation_mode = 'yes'` as the fresh-install default. The admin must consciously flip it off after reviewing the threat log. A red admin notice warns while simulation mode is active.
+  - Maintains an **admin IP safelist** (max 3 entries, 30-day TTL): when a user with `manage_options` completes WordPress login, their IP is recorded. Safelisted IPs bypass the WAF entirely, including for wp-login.php and unauthenticated requests. The safelist is checked before the IP-reputation ban check.
+  - **Skips pattern scanning on `wp-login.php`.** Login credentials can legitimately contain SQL/XSS-looking characters; scanning them caused false-positive bans. Brute-force protection via the `authenticate` filter is retained.
+  - On upgrade to v2.9.28.07, a **one-time emergency unlock** runs: clears all permanent IP bans, flushes all WAF violation/ban/login-attempt transients, and (if the admin never consciously saved a simulation-mode preference) restores `simulation_mode = 'yes'`.
+
+## [2.9.28.06] - 2026-04-22
+
+### Fixed
+
+- **All primary scan buttons now readable in light mode.** `text-foreground` resolves to near-black (`oklch(23.5%, 0, 0)`) in light mode — placing it on `bg-swiss-navy` (dark navy) made all button text invisible. Fixed by changing Button.tsx `variant="primary"` to use `text-white` globally, and updating 12 additional instances in SecurityHub.tsx and ScanCard.tsx mode toggles.
+- **Quick/Deep mode toggle selected state contrast corrected.** Selected mode button now uses `text-white` instead of `text-foreground` — matching the `text-white` pattern already used on the main Dashboard action tiles.
+
+## [2.9.28.05] - 2026-04-21
+
+### Fixed
+- **Deep malware scan now completes all batches.** The orphan-cleanup threshold in the status endpoint was racing with legitimate in-progress scans — the first status poll (3s after queue) could kill the scan if the `scan_running` flag briefly cleared between batches. Threshold raised from 60s → 120s, and the `scan_running` flag is now set **before** `start_scan()` in the deep-scan orchestrator path so the first status poll sees an authoritative "running" state.
+- **Quick/Deep mode selector buttons restored to plugin design system.** Selected state now uses `bg-swiss-navy text-foreground` (matches Geo Block / Allow toggle in SecurityHub); unselected uses `bg-secondary text-neutral-700 border-border hover:border-swiss-navy`. Scan card containers restored to `bg-card border border-border` and icon wrappers to `bg-secondary rounded-xl` — replacing the previous hardcoded `bg-white`/`bg-gray-100`.
+- **Dashboard icon containers restored to correct token usage.** Active states on colored backgrounds (`bg-swiss-navy`, `bg-swiss-red`) use `text-white`; inactive states use `bg-secondary text-neutral-700`.
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
+## [2.9.28.03] - 2026-04-21
+
+### Fixed
+
+- **Quick malware scan PHP crash.** Replaced non-existent `SWISSWPSUITE_AI_NAME` constant with `'swisswpsuite-ai'` string literal in orchestrator — every Quick scan was returning a PHP undefined-constant error while UI falsely showed "clean".
+- **All primary buttons and CTAs rendering transparent.** Added `@theme` block to `plugin/src/index.css` registering `swiss-navy`, `swiss-red`, `swiss-gold` as Tailwind v4 theme tokens — without `@theme`, utility classes (`bg-swiss-navy` etc.) were not generated.
+- **"Groq" branding removed from all user-facing strings.** Replaced with "AI" throughout scan card descriptions and SEO batch status text.
+- **Email report toggle colors.** Toggle now shows red track (OFF) and green track (ON) for instant visual state clarity.
+- **Malware scan mode selector visual feedback.** Selected Quick/Deep mode button now shows solid filled state with checkmark icon.
+- **Scan result inline expansion.** "Show all N findings" now expands inline in the Scan card without navigating away; "View in History →" remains as secondary action.
+- **Free tier AI Security Audit token gate.** Requires 1,500 tokens and enforces a 7-day cooldown between scans. Returns `402 Insufficient tokens` or `429 Rate limited` if conditions not met.
+
+---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
+## [2.9.28.02] - 2026-04-21
+
+### Fixed
+
+- **Security Audit card description.** Description now clearly states the scan runs via SwissWPSuite's own Groq AI quota — no user API key required. Free and Pro users both get the scan; the distinction from the Pro-only "Full AI Scan" is now explicit.
+- **History tab scan type and grade.** AI Security Audit scans now write `scan_type='ai_audit'` and the correct grade (A–F derived from L1 findings) to the `wp_swisswpsuite_sentinel_scans` table. The History tab maps `ai_audit` → blue "AI Audit" badge, `full_ai` → green "Full + AI" badge, and retains `layer1`/`full` as backward-compatible labels for older records.
+- **Scan result navigation.** After a scan completes, results stay inline on the Scan tab. The "View in History" button is now a secondary action that navigates to History AND refreshes the list so the new scan appears at top. No more forced tab navigation.
+- **2FA settings visibility.** `TwoFactorSettings.tsx` now checks three signals (`capabilities`, `sentinelIsPro`, `tier`) to determine Pro status — reduces cases where 2FA settings were incorrectly hidden.
+
+---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
+## [2.9.28.01] - 2026-04-21
+
+### Fixed
+
+- **Malware scan crash.** `SwissWPSuite_Security::__construct()` in the orchestrator now receives the required `$plugin_name` and `$version` arguments — zero-argument call caused a fatal constructor error on every malware scan.
+- **TierBadge showing wrong tier.** `ScanCard` now derives the badge tier from `SCAN_TIER[scanType]` (the scan's required tier) instead of the user's license tier — Free users no longer see a "Pro" badge on the AI Audit card they can actually run.
+- **Null display on malware results.** `files_scanned` and `threats_found` in `ScanCard` and `ScanResultPanel` are now guarded with `?? 0` — NaN/undefined no longer rendered when backend omits these fields.
+- **Dead "View in Security Hub" text.** `ScanResultPanel` `onViewHistory` prop now wires to SecurityHub History tab navigation; the non-functional paragraph is replaced by a button.
+- **Stale AI Audit entry in Dashboard.** Old "AI Audit" button replaced by "Security Audit →" link that navigates to the Scan tab.
+- **Historical scan detail.** Clicking a history entry now shows an inline detail panel with grade badge, AI summary, and full findings list instead of a blank panel.
+- **WAF/Log Advisors in wrong tab.** WAF Advisor and AI Log Advisor moved from Logs tab to Dashboard tab with descriptive subtitle.
+- **Daily cron log module.** All four `Diagnostics::log()` calls in `run_daily_report()` corrected from module `'scan_cron'` to `'scan_orchestrator'`.
+
+---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
+## [2.9.28.0] - 2026-04-20
+
+### Fixed
+
+- **WAF silent failure on reinstall.** `plugin/includes/class-swisswpsuite-activator.php` now uses `update_option()` (not `add_option()`) for all four WAF defaults — `firewall_enabled='yes'`, `firewall_simulation_mode='no'`, `firewall_block_sqli='yes'`, `firewall_block_xss='yes'`. A prior installation that had disabled the WAF no longer silently stays disabled after reinstall.
+- **Free users blocked from WAF toggle.** Removed `'firewall'` from `$pro_only_options` in `class-swisswpsuite-api.php`. Free-tier sites can now enable/disable the WAF without receiving HTTP 403.
+
+### Added
+
+- **Scan Consolidation — 5 scans → 3.** The old overlapping scan types (AI Audit, Free VPS Scan, Quick Scan, Full Sentinel Scan, Deep File Scan) are replaced by three clean scans: **AI Security Audit** (Groq AI, Free+Pro, cron 24h both tiers), **Malware Scan** (local regex + VPS hash DB, Free+Pro, manual only, Deep mode Pro-gated), **Full Scan with AI** (L1+L2, Pro only, cron 24h).
+- **`SwissWPSuite_Scan_Orchestrator`** (`plugin/includes/security/class-swisswpsuite-scan-orchestrator.php`). Single PHP entry point for all scan types. Provides `classify_tier()`, `run_ai_audit()`, `run_malware_scan()`, `run_full_ai_scan()`, `run_daily_report()` with 23-hour throttle guard.
+- **`SwissWPSuite_Scan_Report_Mailer`** (`plugin/includes/security/class-swisswpsuite-scan-report-mailer.php`). Tier-aware HTML email builder + sender. Free report includes AI Audit section; Pro report includes Full Scan section + Update Guard activity section (rendered when Phase 2 ships). Recipient configurable via new `swisswpsuite_scan_report_email` option.
+- **New canonical cron hook `swisswpsuite_daily_scan_report`** (daily). Replaces the fragmented `swisswpsuite_daily_sentinel_scan` + `swisswpsuite_scheduled_scan` pair (both kept as no-op shims for two-version deprecation window).
+- **New REST endpoints** — `POST /security/scan/ai-audit`, `POST /security/scan/malware`, `POST /security/scan/full-ai`, `GET/POST /security/scan/report-config`, `GET /security/scan/report-preview`, `POST /security/scan/report-test-send`.
+- **SecurityHub Scan tab redesigned.** Five-panel scan layout replaced with `ScanCronStatusBanner` (next scan time, last grade, email preview trigger), three `ScanCard` components (with Pro-lock overlay on Full AI), `ScanResultPanel` (grade badges, findings list, CVE matches), `ScanReportPreviewModal` (sandboxed iframe, WCAG-AA focus trap), `ScanReportSettingsPanel` (save-on-blur email, immediate toggle, rate-limited test-send). All components WCAG 2.1 AA compliant.
+- **New TypeScript types** — `AiAuditResult`, `MalwareScanResult`, `FullAiScanResult`, `ScanReportConfig`. `SentinelReport` marked `@deprecated`.
+
+### Deprecated
+
+- REST endpoints `/security/sentinel/audit`, `/security/sentinel/full-scan`, `/security/deep-scan/start` — two-version deprecation window (removes in v2.9.30.0). Responses include `X-SwissWPSuite-Deprecation` header.
+- Cron hooks `swisswpsuite_daily_sentinel_scan`, `swisswpsuite_scheduled_scan` — kept as no-op shims until v2.9.30.0.
+
+---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.94] - 2026-04-20
 
 ### Fixed
@@ -19,6 +197,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.93] - 2026-04-20
 
 ### Fixed
@@ -29,6 +217,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **Daily report failure log now includes actual SMTP error.** `send_daily_security_report()` captures `WP_Error` from the `wp_mail_failed` hook at priority 1 and includes the error message in the Diagnostics log. Previous log only said "wp_mail returned false" with no SMTP-level detail.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.92] - 2026-04-20
 
@@ -47,6 +245,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.91] - 2026-04-20
 
 ### Fixed
@@ -60,6 +268,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - `swisswpsuite_smtp_failure_notice` option key added to `SwissWPSuite_Config_Manifest::OPERATIONAL_STATE` (ephemeral, site-specific, excluded from backup exports and protected from migration overwrite).
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.90] - 2026-04-20
 
@@ -81,6 +299,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.89] - 2026-04-20
 
 ### Fixed
@@ -90,6 +318,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.88] - 2026-04-20
 
 ### Fixed
@@ -97,6 +335,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **"An unknown API error occurred" swallowed real server errors.** The shared `wpApi()` helper in `services/api.ts` called `response.json()` directly — if the server returned a PHP fatal with HTML output, a Cloudflare/nginx error page, or any non-JSON body, the parse threw, `statusText` was empty (HTTP/2), and the catch-all "An unknown API error occurred" string fired. Rewrote the `!response.ok` branch to read body as text first, attempt JSON.parse, then fall back to `Server error (HTTP {status}) — {first 200 chars of body}`. Every feature in the SPA (SMTP, Backup, Sync, SEO, Security, License) now surfaces the real failure reason. Existing JSON error responses (`{ success: false, message: "..." }`) are unchanged.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.87] - 2026-04-20
 
@@ -106,6 +354,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **Secondary:** Google Drive and Dropbox OAuth tokens were also silently falling through to unencrypted storage. Now encrypted at rest on next save. `decrypt_string()` has a plaintext-migration branch so existing stored tokens continue to work without re-authentication.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.86] - 2026-04-20
 
@@ -117,6 +375,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.85] - 2026-04-20
 
 ### Fixed
@@ -125,6 +393,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **SMTP test preflight validation.** `send_smtp_test_email()` now returns HTTP 400 with a descriptive error message when both From Email and SMTP Username are absent or invalid, instead of returning HTTP 200 with a silent false success.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.84] - 2026-04-20
 
@@ -142,6 +420,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - `swisswpsuite-config-manifest.php`: added `swisswpsuite_smtp_password` to `SITE_LOCAL_SECRETS` (encrypted, excluded from backup exports, protected from migration overwrite). Added `swisswpsuite_smtp_host|port|encryption|username|from_email|from_name` to `SITE_LOCAL_CONFIG`.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.83] - 2026-04-19
 
@@ -244,6 +532,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.77] - 2026-04-16
 
 ### Added
@@ -302,6 +600,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.71] - 2026-04-14
 
 ### Fixed
@@ -325,6 +633,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - SD-01: Sync nonce cleanup used unindexed query — daily cron cleanup now uses `$wpdb->prepare` DELETE with proper column targeting
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.70] - 2026-04-14
 
@@ -351,6 +669,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.69] - 2026-04-14
 
 ### Fixed
@@ -361,6 +689,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - URL variant normalization: `migrate_sync_origin_stamps()` now generates 5 URL variants per connection (original, www-stripped, www-added, http, https) so stamps created by sites with www/protocol mismatches are also healed
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.68] - 2026-04-13
 
@@ -389,6 +727,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - `docs/IMPACT_MAP.md` updated with Vite code-split chunk lesson
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.65] - 2026-04-11
 
@@ -421,6 +769,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.64] - 2026-04-10
 
 ### Security
@@ -438,6 +796,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **F-144**: Daily data retention cron in `server.js` (`runDataRetentionCleanup`). Deletes `token_logs` older than 90 days and `stripe_events` older than 365 days. Guarded by PostgreSQL advisory lock 100002 (100001 is the expiry cron). Runs once on startup (after 60s delay) then every 24h via `setInterval`. GDPR Art. 5(1)(e) compliance — the privacy policy's "account + 30 days" retention promise now has an enforcement mechanism.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.63] - 2026-04-10
 
@@ -466,6 +834,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.62] - 2026-04-10
 
 ### Security
@@ -482,6 +860,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.61] - 2026-04-09
 
 ### Fixed
@@ -490,6 +878,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - SEO content area 254px horizontal overflow resolved with min-w-0 constraint
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.60] - 2026-04-09
 
@@ -518,6 +916,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.59] - 2026-04-08
 
 ### Fixed
@@ -532,6 +940,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - (diagnostics) P2-C: Added consecutive-duplicate deduplication in `Diagnostics::log()` — skips insertion if the most recent entry carries the same module + message, preventing a chatty call from filling the entire 500-entry buffer
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.58] - 2026-04-08
 
@@ -560,6 +978,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.56] - 2026-04-08
 
 ### Fixed
@@ -569,12 +997,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.55] - 2026-04-08
 
 ### Fixed
 - Backup automations sharing the same schedule frequency (e.g. two hourly automations) are now staggered by 3 minutes per slot when their WP-Cron events are registered, preventing concurrent loopback HTTP collisions that caused LiteSpeed/Hostinger to silently drop one worker request (HTTP 0) on every run.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.54] - 2026-04-08
 
@@ -585,6 +1033,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - `SystemLogsWarning` and `SystemLogsResponse` interfaces added to `plugin/src/types.ts`.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.53] - 2026-04-08
 
@@ -599,6 +1057,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **[PENTEST-L05] wp-cron.php public access warning** — diagnostics panel now warns if `DISABLE_WP_CRON` is not defined in wp-config.php.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.52] - 2026-04-08
 
@@ -618,12 +1086,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.51] - 2026-04-08
 
 ### Fixed
 - **Dashboard "Last Backup" showing wrong time** — `human_time_diff()` was comparing `filemtime()` (UTC Unix timestamp) against `current_time('timestamp')` (UTC + site timezone offset). On a UTC+2 site this inflated the displayed age by 2 hours, showing "3 hours ago" for a backup that was 35 minutes old. Changed to `time()` which is always UTC, matching `filemtime()`.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.50] - 2026-04-08
 
@@ -633,6 +1121,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.49] - 2026-04-08
 
 ### Fixed
@@ -640,6 +1138,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **Concurrent spawn_worker loopback collision** -- `spawn_worker()` now checks a 5-second transient for the last spawn timestamp. If two automations fire within 1 second of each other, the second spawn is delayed by 500ms, preventing LiteSpeed from dropping one of the two near-simultaneous loopback connections.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.48] - 2026-04-08
 
@@ -649,6 +1157,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.47] - 2026-04-08
 
 ### Fixed
@@ -656,6 +1174,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Added `/backup/engine/tick` and `/sentinel/worker` to the geo-blocking exempt list as a defensive measure — server-to-self loopback requests must bypass country checks.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.46] - 2026-04-07
 
@@ -676,6 +1204,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.44] - 2026-04-07
 
 ### Fixed
@@ -688,12 +1226,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.43] - 2026-04-07
 
 ### Fixed
 - **Plugin update no longer resets backup schedule times** -- schedule_cron_event() now computes the next occurrence from last_run_at + interval instead of time(). If a user's daily backup was set to run at 3 AM, it stays at 3 AM after a plugin update. New automations with no history start at now + interval.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.42] - 2026-04-07
 
@@ -703,6 +1261,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.41] - 2026-04-07
 
 ### Fixed
@@ -710,12 +1278,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.40] - 2026-04-07
 
 ### Added
 - **Backup countdown timer** -- each automation card shows live "Next run in Xh Ym" countdown that auto-updates every 60 seconds. States: Running now (amber), Overdue (red), <10 min (orange), normal (blue), Disabled (gray).
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.39] - 2026-04-07
 
@@ -739,6 +1327,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.38] - 2026-04-07
 
 ### Fixed
@@ -759,6 +1357,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.37] - 2026-04-07
 
 ### Fixed
@@ -766,12 +1374,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.36] - 2026-04-07
 
 ### Fixed
 - **AI SEO generation 38% failure rate** -- root cause: overly complex prompt with contradictory character-counting instructions caused Groq API `json_validate_failed` errors. Prompt stripped back to clean, simple instructions. Post-generation validation (truncation + padding) handles length enforcement instead of prompt-level instructions.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.35] - 2026-04-07
 
@@ -782,6 +1410,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.34] - 2026-04-07
 
 ### Fixed
@@ -790,6 +1428,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **SEO quality gate constant aligned** -- SEO_MIN_DESC_LENGTH updated from 120 to 150, matching the scanner threshold
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.33] - 2026-04-07
 
@@ -802,6 +1450,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **Schema markup false positives eliminated** -- SEO audit now recognizes that SwissWPSuite Frontend already injects Article/WebPage/FAQ schema via wp_head (was checking post_content only)
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.32] - 2026-04-07
 
@@ -827,6 +1485,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.31] - 2026-04-06
 
 ### Changed
@@ -840,12 +1508,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.30] - 2026-04-06
 
 ### Fixed
 - **3 surviving jargon items** -- "NEURAL CORE INTEGRITY" → "SEO HEALTH" on Dashboard, "Precision threat monitoring..." → plain English on Security Hub, "Content Forge" → "AI Content Writer" on AI Content page
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.29] - 2026-04-06
 
@@ -863,6 +1551,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.27] - 2026-04-06
 
 ### Fixed
@@ -876,6 +1574,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.25] - 2026-04-04
 
 ### Fixed
@@ -885,6 +1593,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.24] - 2026-04-04
 
 ### Fixed
@@ -892,6 +1610,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **Sentinel server header remediation** -- Server Software finding now detects LiteSpeed vs Nginx vs Apache and provides server-specific fix instructions instead of generic Apache/Nginx commands
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.23] - 2026-04-04
 
@@ -903,6 +1631,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.22] - 2026-04-04
 
 ### Fixed
@@ -912,6 +1650,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **Documentation headers** -- SECURITY_HUB.md and SECURITY_CAPABILITIES_REFERENCE.md updated to v2.9.27.22
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.21] - 2026-04-04
 
@@ -928,6 +1676,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - `swisswpsuite_sentinel_ignored_findings` wp_option (registered in `swisswpsuite-config-manifest.php`) — stores finding IDs for non-file findings that should be suppressed in future scans
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.20] - 2026-04-04
 
@@ -949,6 +1707,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.19] - 2026-04-03
 
 ### Fixed
@@ -962,6 +1730,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.18] - 2026-04-03
 
 ### Fixed
@@ -970,12 +1748,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.17] - 2026-04-03
 
 ### Fixed
 - **Cloud backup size recorded as 0 B** — fixed incorrect size metadata for cloud-only backups (Google Drive, S3, etc.); the backup data was always uploaded correctly, but the UI showed 0 B due to a positional index mismatch when resolving file sizes after local ZIPs were deleted; size is now stored during upload init and retrieved via a keyed lookup map
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.16] - 2026-04-03
 
@@ -988,6 +1786,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.15] - 2026-04-03
 
 ### Fixed
@@ -998,6 +1806,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **"Mark All Safe" button added to benign integrity groups** — Users can now dismiss all uninstalled bundled plugin files (39+) with a single click instead of one by one.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.14] - 2026-04-03
 
@@ -1013,6 +1831,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.13] - 2026-04-03
 
 ### Fixed
@@ -1022,6 +1850,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.12] - 2026-04-03
 
 ### Changed
@@ -1029,6 +1867,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Pro scan quota check now short-circuits locally without a VPS round-trip, making scan start faster for Pro users
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.11] - 2026-04-03
 
@@ -1041,6 +1889,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.10] - 2026-04-03
 
 ### Changed
@@ -1049,6 +1907,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **Accurate issue count**: the summary badge now only counts real threats (modified core files) — uninstalled plugins and deliberately removed files no longer inflate the count
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.9] - 2026-04-03
 
@@ -1060,6 +1928,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.8] - 2026-04-03
 
 ### Added
@@ -1069,12 +1947,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.7] - 2026-04-02
 
 ### Fixed
 - "Disable Visitor-Triggered Scheduling" hardening toggle now explicitly warns that SwissWPSuite's backup automations will stop, and shows server cron setup instructions (cPanel → Cron Jobs, every 5 minutes) before the user confirms — prevents silent backup failures after enabling this option
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.6] - 2026-04-02
 
@@ -1090,6 +1988,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.5] - 2026-04-02
 
 ### Added
@@ -1104,6 +2012,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.4] - 2026-04-02
 
 ### Added
@@ -1114,6 +2032,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Term relationship cleanup now recalculates `wp_term_taxonomy` counts after deleting orphaned rows, preventing stale category/tag counts
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.3] - 2026-04-02
 
@@ -1130,6 +2058,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.27.2] - 2026-04-02
 
 ### Fixed
@@ -1137,6 +2075,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Alert dismiss state persisted to localStorage (24h TTL) so it survives page reloads
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.1] - 2026-04-01
 
@@ -1146,6 +2094,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - License activation now shows a clear actionable message when a key is locked to another domain
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.27.0] - 2026-04-01
 
@@ -1160,6 +2118,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.26.10] - 2026-04-01
 
 ### Fixed
@@ -1170,6 +2138,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.26.9] - 2026-04-01
 
 ### Fixed
@@ -1177,6 +2155,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Added double-load guard in app entry point with HMR-aware exception for dev mode
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.26.8] - 2026-03-31
 
@@ -1194,6 +2182,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.26.2] - 2026-03-31
 
 ### Fixed
@@ -1203,6 +2201,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.26.1] - 2026-03-31
 
 ### Fixed
@@ -1211,6 +2219,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Fixed undefined `finding_code` in L1 scan fix requests (finding.code and finding.file_path were always undefined)
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.26.0] - 2026-03-31
 
@@ -1227,6 +2245,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - M4-D2 scanner now uses hybrid strategy: WPScan API first, hardcoded fallback when API unavailable
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.24.2] - 2026-03-28
 
@@ -1251,6 +2279,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.24.1] - 2026-03-28
 
 ### Fixed
@@ -1268,6 +2306,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Added `utf8mb4_0900_ai_ci` (MySQL 8.0+ default) to collation replacement adapter.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.24.0] - 2026-03-28
 
@@ -1312,6 +2360,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.23.0] - 2026-03-27
 
 ### Security
@@ -1334,6 +2392,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.22.1] - 2026-03-27
 
 ### Security
@@ -1345,6 +2413,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Added missing `code` and `file_path` fields to `SentinelLayer1Finding` TypeScript interface — resolves 2 pre-existing `tsc` type errors.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.22.0] - 2026-03-27
 
@@ -1365,6 +2443,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.21.2] - 2026-03-27
 
 ### Security
@@ -1377,6 +2465,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.21.1] - 2026-03-27
 
 ### Fixed
@@ -1384,6 +2482,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Security Hub: Scan error toasts now show the actual error message (e.g. rate limit) instead of misleading "check your connection."
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.21.0] - 2026-03-27
 
@@ -1400,6 +2508,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.20.8] - 2026-03-27
 
 ### Security
@@ -1408,6 +2526,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Sentinel L2: Enriched `site_context` with structured plugin inventory (name, version, slug, active status) for accurate version comparison.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.20.7] - 2026-03-27
 
@@ -1418,6 +2546,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.20.6] - 2026-03-27
 
 ### Fixed
@@ -1425,12 +2563,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.20.5] - 2026-03-27
 
 ### Fixed
 - 2FA: Corrected all QR code spec lookup tables (data codewords, block structure, capacity) — every version had wrong values, making all generated QR codes undecodable.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.20.4] - 2026-03-26
 
@@ -1445,6 +2603,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.20.2] - 2026-03-26
 
 ### Fixed
@@ -1453,6 +2621,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Backup: Added archiver excludes for LiteSpeed cache, upgrade temp files, and debug.log — reduces backup size significantly on sites with LiteSpeed.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.20.1] - 2026-03-26
 
@@ -1465,6 +2643,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Cloud Backup: Automation backup retention now enforced on list load — catches failed-upload leftovers that exceeded retention.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.20.0] - 2026-03-25
 
@@ -1482,6 +2670,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.19.0] - 2026-03-25
 
 ### Improved
@@ -1493,6 +2691,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Cloud Backup: Self-hosted OAuth flow now explicitly stores connection mode for reliable status reporting.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.18.0] - 2026-03-25
 
@@ -1518,6 +2726,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.17.0] - 2026-03-24
 
 ### Security
@@ -1540,6 +2758,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.16.0] - 2026-03-24
 
 ### Fixed
@@ -1560,6 +2788,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Plan tier validation prevents unauthorized feature access.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.15.0] - 2026-03-21
 
@@ -1589,6 +2827,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.12.0] - 2026-03-18
 
 ### Added
@@ -1605,6 +2853,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.7.70] - 2026-03-14
 
 ### Fixed
@@ -1613,12 +2871,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.6.2] - 2026-02-28
 
 ### Fixed
 - TEST AI CONNECTION: "License Invalid" false failure resolved.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.6.0] - 2026-02-28
 
@@ -1632,6 +2910,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.5.2] - 2026-02-27
 
 ### Added
@@ -1640,6 +2928,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.4.1] - 2026-02-26
 
 ### Changed
@@ -1647,6 +2945,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - 55 quality improvements across all features.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.3.0] - 2026-02-24
 
@@ -1657,6 +2965,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.2.8] - 2026-02-24
 
 ### Added
@@ -1664,6 +2982,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - AI Analysis modal.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.2.7] - 2026-02-23
 
@@ -1675,6 +3003,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.1.7] - 2026-02-21
 
 ### Added
@@ -1683,6 +3021,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - 2FA and hardening action buttons.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.1.3] - 2026-02-20
 
@@ -1696,12 +3044,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.0.9] - 2026-02-19
 
 ### Security
 - Security audit fixes and infrastructure hardening.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.9.0.8] - 2026-02-18
 
@@ -1710,12 +3078,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
+
 ## [2.9.0.1] - 2026-02-17
 
 ### Added
 - First unified release build.
 
 ---
+
+## [2.9.28.04] - 2026-04-21
+
+### Added
+- **Mark as Safe:** Malware scan findings now have a "Mark Safe" button that adds the file to the ignore list, excluding it from future scans. Managed under Security Hub → Ignore Paths.
+
+### Fixed
+- **Button contrast on Scan tab.** Quick/Deep mode selector buttons were rendering with invisible text (black on black background in dark mode). Now uses `text-card-foreground` which adapts to both light and dark themes.
+- **Deep malware scan showing 0 threats.** Deep scan is asynchronous — the initial response returns `queued:true` immediately. The frontend now polls the deep-scan status endpoint until completion before showing results.
+- **Security Audit vs Malware Scan grade discrepancy explained.** Security Audit checks configuration, hardening, file integrity, and plugin vulnerabilities. Malware Scan matches file contents against signature patterns. They measure different threat vectors — a site can pass the Audit and still have signature matches, and vice versa.
 
 ## [2.8.9.9] - 2026-02-17
 

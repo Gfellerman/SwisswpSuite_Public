@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.27.94
+Stable tag: 2.9.28.12
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,73 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.12 =
+* Version bump for release pipeline (pre-commit hook: zip-collision guard resolved).
+
+= 2.9.28.11 =
+* AI Security Audit: restored bulk selection UI (select-all checkbox, per-row checkboxes, batch-action bar with Mark Safe / Quarantine / Delete buttons) that was silently dropped in v2.9.28.0 when ScanResultsTable was replaced by ScanResultPanel. Applies to AI Audit, Malware, and Full AI scan result panels.
+
+= 2.9.28.10 =
+* AI Security Audit: restored "Fix: ..." remediation text per finding (was dropped in v2.9.28.08 transform refactor).
+* AI Security Audit: restored Quarantine and Mark Safe per-finding action buttons.
+* Scan: Full AI scan also wires Quarantine and Mark Safe action buttons.
+
+= 2.9.28.09 =
+* Quick Scan info banner: removed false "reviewed by our AI" claim. Quick Scan is local checksum + regex comparison only. No AI is involved.
+
+= 2.9.28.08 =
+* Quick Scan: `info` and `low` severity findings (bundled plugins, known-safe missing files, theme edits) no longer count toward the headline "threats found" number. A clean site now correctly shows 0 threats even when 44 informational items are listed.
+* Quick Scan results now show an AI-review info banner explaining how low-risk baseline deviations are filtered, plus a collapsible "Low-risk findings" section separate from actionable threats.
+
+= 2.9.28.07 =
+* CRITICAL FIX: WAF no longer locks admins out of wp-login.php. Activator now uses idempotent add_option() — existing settings are preserved on upgrade.
+* Safe default: simulation_mode='yes' on fresh install. Admins must consciously enable live blocking.
+* New: Admin IP safelist (max 3 IPs, 30-day TTL). IPs of admins who successfully log in are remembered and always bypass the WAF.
+* New: WAF skips pattern scanning on wp-login.php (brute-force protection via authenticate filter still applies).
+* Upgrade to v2.9.28.07 automatically clears all existing IP bans and WAF violation counters — one-time emergency unlock for users previously affected.
+
+= 2.9.28.06 =
+* Fixed: All primary buttons and mode-toggle selected states now use text-white on bg-swiss-navy — resolves invisible text bug in light mode (text-foreground resolved to near-black on dark navy background).
+* Fixed: Button.tsx primary variant globally corrected — every Start Scan, AI Audit, and Full AI Scan button is now readable.
+
+= 2.9.28.05 =
+* Fixed: Deep malware scan now completes all batches — orphan cleanup threshold raised to 120s, and scan_running flag is set before start_scan() so the first status poll no longer kills the in-progress scan.
+* Fixed: Quick/Deep mode selector buttons restored to plugin design system (bg-swiss-navy selected, bg-secondary unselected) — matches all other toggle buttons in the plugin.
+* Fixed: Dashboard icon containers restored to correct token usage (bg-swiss-navy/bg-swiss-red + text-white for active, bg-secondary + text-neutral-700 for inactive).
+
+= 2.9.28.04 =
+* Fixed: Quick/Deep scan mode buttons now show correct contrast in both light and dark mode (text-card-foreground replaces fixed gray that was invisible on dark backgrounds).
+* Fixed: Deep malware scan now polls for completion instead of displaying "0 threats" from the initial queued response — results are now accurate.
+* Added: "Mark as Safe" button on malware scan findings — whitelist individual files to skip them in future scans.
+* Fixed: Security Audit card now explains it uses a different detection method than the malware scanner (configuration/integrity vs. file signatures).
+
+= 2.9.28.02 =
+* Fixed: Security Audit scan card description clarified — now states it runs via SwissWPSuite's own AI quota (no user API key required) on Free and Pro plans.
+* Fixed: History tab now correctly labels AI Security Audit scans as "AI Audit" (not "Quick Scan") and displays the derived security grade.
+* Fixed: Scan result inline panel stays on Scan tab after completion; "View in History →" is now a secondary action, not forced navigation.
+* Fixed: 2FA Pro gate in TwoFactorSettings now checks three signals (capabilities, sentinelIsPro, tier) for reliability.
+
+= 2.9.28.01 =
+* Fixed: Malware scan crash — SwissWPSuite_Security constructor now receives required plugin_name and version arguments in orchestrator.
+* Fixed: TierBadge on ScanCard now shows the scan's required tier (free/pro) instead of the user's active license tier.
+* Fixed: Null safety guards on files_scanned and threats_found in ScanCard and ScanResultPanel — no more NaN display.
+* Fixed: "View in Security Hub" dead text replaced by functional onViewHistory button navigating to History tab.
+* Fixed: Old AI Audit entry point in SecurityHub dashboard replaced by "Security Audit →" tab navigation link.
+* Fixed: Historical scan detail view now shows full findings list with grade badge and AI summary inline.
+* Fixed: WAF Advisor and AI Log Advisor relocated from Logs tab to Dashboard tab for correct placement.
+* Fixed: Daily cron report log module corrected from 'scan_cron' to 'scan_orchestrator' in all Diagnostics::log() calls.
+
+= 2.9.28.0 =
+* Fixed: WAF silent failure on plugin reinstall — update_option() now always sets firewall_enabled='yes', simulation_mode='no', block_sqli='yes', block_xss='yes' on activation, overwriting any stale values.
+* Fixed: Free users could not toggle WAF on/off — 'firewall' removed from pro_only_options gate, toggle now works on all tiers.
+* Added: Scan Consolidation — 5 overlapping scan types replaced by 3 clean scans: AI Security Audit (Free+Pro, cron 24h), Malware Scan (Free+Pro, manual), Full Scan with AI (Pro only, cron 24h).
+* Added: SwissWPSuite_Scan_Orchestrator — single entry point routing all scan types with tier classification, 23h throttle guard, and daily cron report.
+* Added: SwissWPSuite_Scan_Report_Mailer — tier-aware email report (Free: AI Audit only; Pro: AI Audit + Full Scan; Update Guard section when Phase 2 ships).
+* Added: New cron hook swisswpsuite_daily_scan_report (daily) replaces fragmented sentinel_scan + scheduled_scan pair.
+* Added: Scan report email configuration (recipient override, enabled toggle, test-send with rate limit) via new REST endpoints.
+* Added: SecurityHub Scan tab redesigned with ScanCronStatusBanner, ScanCard, ScanResultPanel, ScanReportPreviewModal, ScanReportSettingsPanel — all WCAG 2.1 AA compliant.
+* Deprecated: /security/sentinel/audit, /security/sentinel/full-scan, /security/deep-scan/start endpoints (2-version window, aliases to new routes, X-SwissWPSuite-Deprecation header).
 
 = 2.9.27.94 =
 * Fixed: Daily security report failure log now distinguishes pre_wp_mail interception (another plugin short-circuiting wp_mail before PHPMailer runs) from PHPMailer exceptions. Log shows actionable root cause instead of generic "no WP_Error captured".
