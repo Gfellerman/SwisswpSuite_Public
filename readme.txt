@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.15
+Stable tag: 2.9.28.16
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,10 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.16 =
+* Fix: Update Guard `last_verdict` now serialises as `{}` (empty object) instead of `[]` (empty array) when no verdict recorded, matching the TypeScript contract.
+* Fix: `SwissWPSuite_Update_Snapshot::write_security_files()` now checks return values of `@file_put_contents()` for `.htaccess` and `index.php` and logs a warning on failure (prevents silent web exposure of snapshot directory).
 
 = 2.9.28.15 =
 * Virtual Patching Phase 1 (observe-only): SwissWPSuite_Update_Guard intercepts WordPress updater hooks — snapshots plugin state before each update, scans the installed files post-apply, logs URL allowlist violations. Never blocks in Phase 1. Free + Pro tiers. UI card in Security Hub (read-only).

@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.16] - 2026-04-22
+
+### Fixed
+
+- **Update Guard `last_verdict` JSON shape.** `GET /update-guard/status` now returns `last_verdict: {}` (empty object) when no verdict has been recorded yet, matching the TypeScript contract `UpdateGuardLastVerdict | Record<string, never>`. Previously PHP `array()` serialised to JSON `[]` (empty array), which violated the expected object shape and could trip strict type checks in the frontend.
+- **Snapshot directory `file_put_contents()` return checks.** `SwissWPSuite_Update_Snapshot::write_security_files()` now checks the return value of both `@file_put_contents()` calls (for `.htaccess` and `index.php`) and logs a warning via `SwissWPSuite_Diagnostics::log()` if the write fails. A silent failure here would leave the snapshot directory web-accessible.
+
+---
+
 ## [2.9.28.15] - 2026-04-22
 
 ### Added
