@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.14] - 2026-04-22
+
+### Fixed
+
+- **Malware Scan: "Check with AI" per-file button restored.** Sprint 1 deleted `ScanResultsTable.tsx` and replaced it with `ScanResultPanel.tsx`, which never received the `onAnalyze` prop or the per-row "Analyze" button. The handler (`handleAiAnalyze` → `POST /security/analyze-file`) and the AI analysis result modal were still present in SecurityHub.tsx but disconnected. This release rewires `onAnalyze`, `analyzingFile`, and `hasSentinelPro` props through `ScanResultPanel` → `MalwareResultView` and renders a Pro-gated "Analyze" button (Sparkles icon / Lock icon for Free) on each actionable threat row, restoring behavior that was present since v2.9.27.x.
+
+---
+
 ## [2.9.28.13] - 2026-04-22
 
 ### Fixed
