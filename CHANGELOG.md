@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.15] - 2026-04-22
+
+### Added
+
+- **Virtual Patching Phase 1 — observe-only update interceptor.** `SwissWPSuite_Update_Guard` registers 4 WordPress upgrader hooks (`pre_auto_update`, `upgrader_pre_download`, `upgrader_source_selection`, `upgrader_process_complete`). In Phase 1, it never blocks — every hook is fail-open (try/catch on `\Throwable`, always returns unchanged values). Logs URL allowlist violations and post-update malware scan findings. Available to all tiers (Free + Pro).
+- **Pre-update snapshots.** `SwissWPSuite_Update_Snapshot` copies plugin directories to `wp-content/uploads/swisswpsuite-snapshots/` before each update. Includes disk pre-flight check (<200MB free or slug dir >250MB → skip snapshot). Snapshots protected by `.htaccess` (Deny from all / Require all denied) + `index.php` stub. Auto-pruned daily by `swisswpsuite_update_guard_prune_snapshots` cron (TTL 14 days, quota 5 per slug).
+- **Post-apply malware scan.** New `scan_directory()` method on `SwissWPSuite_Sentinel_Security` runs M1-B (suspicious file names) and M1-C (malware signatures) scoped to the updated plugin directory. Results stored in `swisswpsuite_update_guard_last_verdict` (autoload=false).
+- **UpdateGuard REST endpoints.** `GET /update-guard/status` (enabled, mode, last verdict, snapshot count) and `GET /update-guard/snapshots` (list by slug). Admin-permission-gated.
+- **Update Guard UI card.** New `UpdateGuardCard` React component in Security Hub (Security tab). Read-only Phase 1 view: phase badge, mode row (REVIEW FIRST + BLOCK ON MATCH disabled with tooltip), snapshot table with disabled Restore, live region for verdict announcements. WCAG 2.1 AA compliant.
+
+---
+
 ## [2.9.28.14] - 2026-04-22
 
 ### Fixed

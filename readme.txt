@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.14
+Stable tag: 2.9.28.15
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,9 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.15 =
+* Virtual Patching Phase 1 (observe-only): SwissWPSuite_Update_Guard intercepts WordPress updater hooks — snapshots plugin state before each update, scans the installed files post-apply, logs URL allowlist violations. Never blocks in Phase 1. Free + Pro tiers. UI card in Security Hub (read-only).
 
 = 2.9.28.14 =
 * Malware Scan: per-file "Check with AI" / "Analyze" button restored on actionable threat rows (Pro-gated). Was present in v2.9.27.x via ScanResultsTable, removed in Sprint 1 scan consolidation (v2.9.28.0), now rewired to the new ScanResultPanel/MalwareResultView architecture.
