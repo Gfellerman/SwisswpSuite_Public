@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.13] - 2026-04-22
+
+### Fixed
+
+- **Malware Scan: bulk selection now works on clean sites.** The v2.9.28.11 bulk-action restoration only wired checkboxes + batch action bar to the "Actionable threats" block (medium/high/critical severity). On clean sites with zero actionable threats but many low-risk urlhaus-matched or bundled-plugin deviations, the bulk UI was invisible — forcing users to Ignore items one-by-one. This release adds an independent bulk-selection bar to the collapsed "Low-risk findings" section, with its own `selectedLow` state and wired to the existing `handleScanPanelBulkAction` handler (no backend changes). AI Audit + Full AI panels were already correct.
+
+---
+
 ## [2.9.28.12] - 2026-04-22
 
 ### Changed

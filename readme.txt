@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.12
+Stable tag: 2.9.28.13
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,9 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.13 =
+* Malware Scan: bulk selection (select-all + per-row checkboxes + Mark Safe / Quarantine / Delete batch bar) now appears for low-risk findings on clean sites too. Previously only the actionable (medium+) threats block rendered the bulk UI, leaving users unable to bulk-ignore the collapsed low-risk list.
 
 = 2.9.28.12 =
 * Version bump for release pipeline (pre-commit hook: zip-collision guard resolved).
