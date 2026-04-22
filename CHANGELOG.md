@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.18] - 2026-04-22
+
+### Security
+
+- **C-1**: Path-traversal guard added to `restore_update_guard_snapshot` before Step-1 token issuance — mirrors the existing guard in the delete handler; `realpath()` + `DIRECTORY_SEPARATOR` strpos pattern closes prefix-collision bypass
+- **C-2**: `plugin_file` parameter validated with explicit `strpos(..)` check + regex before reaching `deactivate_plugins()` — prevents crafted `../sibling-plugin/x.php` from deactivating unrelated plugins
+- **C-3**: VPS allowlist slug response filtered with `preg_match('/^[a-z0-9][a-z0-9\-]*$/')` before caching — empty strings and path fragments can no longer bypass scan for unrelated plugins
+- **H-2**: `GET /update-guard/reviews` now requires `check_pro_permission` (was `check_permission` any-admin, inconsistent with Approve/Reject gates)
+
+### Fixed
+
+- **H-1**: `calculate_confidence()` promoted to `public static`; `post_apply_verify()` now calls `SwissWPSuite_Update_Scanner::calculate_confidence()` instead of duplicating 13-line inline scoring logic — eliminates drift risk
+- **H-3**: `verify_integrity()` now fails closed (returns `false`) on unreadable, corrupt JSON, and empty array manifest — previously all three cases were fail-open, allowing partial-write snapshots to bypass integrity verification
+- **H-4**: Rollback process lock file moved from web-accessible `wp-content/uploads/` root to `.htaccess`-protected `wp-content/uploads/swisswpsuite-snapshots/` subdir
+
+---
+
 ## [2.9.28.17] - 2026-04-22
 
 ### Added

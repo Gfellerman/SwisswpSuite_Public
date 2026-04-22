@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.17
+Stable tag: 2.9.28.18
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,15 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.18 =
+* Security: C-1 — Path-traversal guard added to snapshot restore endpoint (mirrors delete handler); token now rejected before issuance if path escapes snapshots dir.
+* Security: C-2 — `plugin_file` param validated with regex + explicit `..` check before reaching `deactivate_plugins()`.
+* Security: C-3 — VPS allowlist slugs regex-filtered before caching; empty string and path fragments rejected.
+* Security: H-2 — `GET /update-guard/reviews` now requires Pro capability (was any-admin, inconsistent with Approve/Reject).
+* Fix: H-1 — `calculate_confidence()` made `public static`; `post_apply_verify()` calls it directly instead of duplicating 13-line inline scoring loop.
+* Fix: H-3 — `verify_integrity()` now fails closed on unreadable, corrupt, and empty manifest (was fail-open on all three).
+* Fix: H-4 — Rollback lock file moved to `.htaccess`-protected `swisswpsuite-snapshots/` subdir (was web-accessible uploads root).
 
 = 2.9.28.17 =
 * Feature: Virtual Patching Phase 2 — Update Guard now supports `review_first` and `block_on_match` modes; malicious plugin updates are blocked at `upgrader_source_selection` and auto-rolled back post-apply when confidence exceeds 70%.
