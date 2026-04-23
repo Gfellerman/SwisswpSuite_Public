@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.21
+Stable tag: 2.9.28.22
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,9 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.22 =
+* Fixed: Full AI Scan stuck on "pending" forever on Hostinger/LiteSpeed. `spawn_cron()` loopback requests are blocked by LiteSpeed, leaving the WP-Cron event scheduled but never executed. The status polling endpoint now detects stale `pending` jobs (3+ seconds old) and runs the scan inline, using an atomic transient claim as a concurrency guard.
 
 = 2.9.28.21 =
 * Added: Async Full AI Scan — new `POST /security/scan/full-ai/start` + `GET /security/scan/full-ai/status` endpoints break the scan into a fire-and-poll pattern. Fixes the Hostinger edge 504 timeout that killed Full AI Scan under shared-host load.

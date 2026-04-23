@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.22] - 2026-04-23
+
+### Fixed
+
+- **Full AI Scan stuck on "pending" on Hostinger/LiteSpeed:** `spawn_cron()` fires a loopback HTTP request that LiteSpeed blocks, so the WP-Cron event was scheduled but never executed. The `/security/scan/full-ai/status` polling handler now detects a job still in `pending` state 3+ seconds after creation and executes the scan inline in the REST worker, using an atomic transient claim (`status: "running"`) as a concurrency guard to prevent double-execution by simultaneous polls. The `spawn_cron()` call in `start_scan_full_ai()` is retained for hosts that allow loopback but is now conditional on `DISABLE_WP_CRON` not being set.
+
+---
+
 ## [2.9.28.21] - 2026-04-23
 
 ### Added
