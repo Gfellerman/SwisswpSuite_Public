@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.23
+Stable tag: 2.9.28.24
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,9 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.24 =
+* Fixed: Full AI Scan times out after 5 minutes with "Scan is taking longer than expected" on Hostinger/LiteSpeed. v2.9.28.22 moved the 504 Gateway Timeout problem from `/start` to `/status` by running the scan inline inside the polling REST request — which then blocked for 30-90s and got killed by Hostinger's ~60s edge timeout. The `/status` endpoint is now a pure transient reader (no scan logic). The scan runs in a dedicated WP-Cron loopback worker with `set_time_limit(0)` + `ignore_user_abort(true)`, kicked off by `SwissWPSuite_Cron_Helper::spawn()` (the proven non-blocking loopback pattern used by the SEO background queue). No more edge timeouts on the scan path.
 
 = 2.9.28.23 =
 * Fixed: `POST /security/analyze-file` rejected valid in-root files (e.g. `readme.html`, `wp-content/themes/.../comments.html`) with a 400 "File path is outside WordPress root" response on Hostinger. The path validator is rewritten: every path is now resolved to an absolute candidate BEFORE `realpath()` is called (PHP resolves relative paths against an undefined cwd inside REST), and the containment check compares canonical symlink-resolved strings on both sides. Missing files now return 404 `file_not_found` instead of 400 `invalid_path` for clearer errors.

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.24] - 2026-04-23
+
+### Fixed
+
+- **Full AI Scan 5-minute timeout regression:** v2.9.28.22 worked around Hostinger's blocked WP-Cron loopback by running the scan inline inside the `/security/scan/full-ai/status` poll handler if the job was still `pending` after 3 seconds. That "fix" turned every `/status` poll into a 30–90 second blocking request, which Hostinger's ~60s edge CDN killed with a 504 Gateway Timeout — the frontend never saw the completion and displayed *"Scan is taking longer than expected. Check back in a few minutes."* after the 5-minute polling cap. The inline-execution block in `get_scan_full_ai_status()` is removed entirely — `/status` is now a pure transient reader that always returns in under 100ms. The scan now fires in a dedicated WP-Cron loopback worker kicked off by `SwissWPSuite_Cron_Helper::spawn()` (unconditional, non-blocking, already proven by the SEO background queue on the same host class). The `dispatch_fullai_scan_job()` cron callback gains `set_time_limit(0)` + `ignore_user_abort(true)` so the worker outlives the scan regardless of FPM execution caps — mirroring the battle-tested pattern used by `class-swisswpsuite-backup-worker.php`.
+
+---
+
 ## [2.9.28.23] - 2026-04-23
 
 ### Fixed
