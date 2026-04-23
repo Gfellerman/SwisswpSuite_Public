@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.27] - 2026-04-23
+
+### Fixed
+- **Bulk "Check with AI" fails for missing-file findings:** When users clicked "Select All" in the Full AI Scan results, the top findings were often about files that don't exist on disk (readme.html, missing core files, bundled plugin files). Sending these to `/analyze-file` correctly returns 404. The bulk handler now pre-filters: findings with category `known_safe_missing`, `core_missing`, or `bundled_plugin`/`theme_modified` with status missing are excluded before the AI chain runs. If ALL selected findings are non-analyzable, a descriptive error toast explains the situation. If only some are skipped, an info toast reports the count.
+
+---
+
 ## [2.9.28.26] - 2026-04-23
 
 ### Fixed

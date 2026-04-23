@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.26
+Stable tag: 2.9.28.27
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,9 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.27 =
+* Fixed: Bulk "Check with AI" showed "AI analysis failed — none of the 10 files could be analyzed" when all selected findings were about missing files (readme.html, missing core files, etc.). These files don't exist on disk so there is no content to analyze. The bulk handler now filters out missing-file findings (categories: known_safe_missing, core_missing, bundled_plugin/theme where status is missing) before running the AI chain. If all selected findings are non-analyzable, a clear error toast is shown. If some are skipped, an info toast reports how many were skipped before running AI on the rest.
 
 = 2.9.28.26 =
 * Fixed: Bulk "Check with AI" showed "Analysis request failed — check your connection" for every file in the batch, followed by a false "AI analysis complete" success toast. Root cause: `handleAiAnalyze` always fired an error toast on exception even when called from the sequential bulk chain; the chain reported success regardless of per-file outcomes. In bulk mode, per-file error toasts are now suppressed and the chain tracks succeeded/failed counts. The completion summary now accurately reports "N of M files analyzed" or "none could be analyzed" when all fail.
