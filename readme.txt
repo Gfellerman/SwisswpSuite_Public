@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.22
+Stable tag: 2.9.28.23
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,10 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.23 =
+* Fixed: `POST /security/analyze-file` rejected valid in-root files (e.g. `readme.html`, `wp-content/themes/.../comments.html`) with a 400 "File path is outside WordPress root" response on Hostinger. The path validator is rewritten: every path is now resolved to an absolute candidate BEFORE `realpath()` is called (PHP resolves relative paths against an undefined cwd inside REST), and the containment check compares canonical symlink-resolved strings on both sides. Missing files now return 404 `file_not_found` instead of 400 `invalid_path` for clearer errors.
+* Hardened: `handleAiAnalyze` and the legacy bulk-analyze path in the Security Hub now short-circuit if a parent scan (Full AI / AI Audit / Malware / Deep) is still polling in the background, preventing any unintended re-entrant analyze-file bursts during scan completion.
 
 = 2.9.28.22 =
 * Fixed: Full AI Scan stuck on "pending" forever on Hostinger/LiteSpeed. `spawn_cron()` loopback requests are blocked by LiteSpeed, leaving the WP-Cron event scheduled but never executed. The status polling endpoint now detects stale `pending` jobs (3+ seconds old) and runs the scan inline, using an atomic transient claim as a concurrency guard.

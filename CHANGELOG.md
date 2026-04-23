@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.23] - 2026-04-23
+
+### Fixed
+
+- **analyze-file path validator rejected valid in-root files (live-verified bug):** `POST /security/analyze-file` was returning `400 {"code":"invalid_path","message":"File path is outside WordPress root."}` for every single request in a 433-file DevTools test, including obviously in-root files like `readme.html` and `wp-content/themes/twentytwentythree/parts/comments.html`. The v2.9.28.21 patch normalized relative paths against `wp_normalize_path(ABSPATH)` but then compared the result (after `realpath()` resolved symlinks) against the un-resolved `wp_normalize_path(ABSPATH)`, so on Hostinger — where the WP root is reached via symlink — the two strings disagreed and the containment check failed. The validator is now rewritten end-to-end: every input is first converted to an absolute candidate (`ABSPATH + ltrim($file, '/')`), then `realpath()` is applied on BOTH that candidate AND `ABSPATH` so both sides of the containment check are in canonical symlink-resolved form. Missing files return `404 file_not_found` (instead of `400 invalid_path`) so the error is diagnostically clearer.
+- **Defensive guard against unintended analyze-file bursts:** Chrome DevTools browser testing observed ~9 `/security/analyze-file` requests firing ~20 seconds after a Full AI Scan completed, with no user click in between. A full code audit found zero auto-trigger effects or render-time onClick invocations — every call path in the React tree is wired to an explicit click handler. As a defense-in-depth measure, `handleAiAnalyze` and the legacy `handleBulkAction('analyze')` path now short-circuit if a parent scan (Full AI / AI Audit / Malware / Deep) is still loading or polling, blocking any ghost-click or stale-state re-entrant fire during scan completion.
+
+---
+
 ## [2.9.28.22] - 2026-04-23
 
 ### Fixed
