@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.28] - 2026-04-23
+
+### Fixed
+- **"Check with AI" 404 on all files:** `isMissingFileFinding()` was checking `f.category` ("File System") instead of `f.integrity_category` ("known_safe_missing" etc.) because the orchestrator transform was stripping the field. Added `integrity_category` passthrough to the PHP transform; TypeScript filter now reads the correct field.
+- **AI module attribution lost:** All 9 Groq methods were missing the `module` field in request bodies — token usage was recorded as `'unknown'` in all logs. Module field now correctly set on all calls.
+- **Groq 502/504 silent failures:** Upstream errors failed immediately with no retry. A single retry after 0.5 s (`usleep(500000)`) is now attempted before surfacing the error to the user.
+- **AI buttons active at zero balance:** "Check with AI", "Analyze Logs", and "Analyze Firewall" buttons were enabled even with insufficient token balance, only failing after the API call. Buttons are now disabled with a tooltip showing required token count.
+- **Frozen UI on long AI calls:** AI calls taking 15–60 s showed no feedback. A persistent info toast now appears when a call starts, and the button label shows elapsed seconds after 5 s.
+- **Batch tokens deducted at retrieval:** Tokens were deducted when fetching batch results, allowing jobs to be submitted beyond the available balance. Tokens are now atomically reserved at submission with reconciliation at retrieval and full refund on cancel.
+- **Double-retry cascade:** Combining 502 retry + json_validate_failed retry could produce 3 Groq API calls on 502→400 sequences. Both retry paths now share a `_retried` flag to prevent cascading.
+
+### Added
+- **Redis AI response caching:** Deterministic SEO and content AI calls are cached in Redis (TTL: 24 h SEO, 1 h content). Security and migration calls are never cached. Cache hits return in <100 ms at zero token cost.
+- **balance_remaining in API responses:** `/security/analyze-file`, AI audit, and full-AI scan endpoints now return `balance_remaining` so the UI can refresh the token balance display without an extra round-trip.
+- **Batch token reservation migration:** DB migration `v18` adds `estimated_cost` and `tokens_reserved` columns to `batch_jobs` with full backward compatibility for legacy rows.
+- **Stale batch expiry cleanup:** Pending batch jobs older than 25 hours are automatically refunded and marked `expired` by an hourly server-side cron.
+
+---
+
 ## [2.9.28.27] - 2026-04-23
 
 ### Fixed

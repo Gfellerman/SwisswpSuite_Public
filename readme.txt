@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.27
+Stable tag: 2.9.28.28
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,16 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.28 =
+* Fixed: "Check with AI" returned 404 on all files — orchestrator transform stripped integrity_category, causing isMissingFileFinding() to check the wrong field. Filter now reads integrity_category correctly; only files that exist on disk are sent to /analyze-file.
+* Fixed: All 9 Groq methods were missing the module field in their request bodies, so all AI token usage was attributed to 'unknown'. Module field now set on every call for accurate billing attribution.
+* Fixed: Groq 502/504 upstream errors failed silently with no retry. A single 0.5s retry is now attempted before surfacing the error.
+* Fixed: AI action buttons (Check with AI, Analyze Logs, Analyze Firewall) remained enabled at zero token balance, showing a 402 error after the call was already made. Buttons are now disabled with a tooltip showing the required token count when balance is insufficient.
+* Fixed: Long AI calls (15-60s) showed no feedback — UI appeared frozen. A persistent info toast now appears at call start, and the button label shows elapsed seconds after 5s ("Analyzing... 12s").
+* Fixed: Batch token deduction happened at result retrieval, allowing users to submit jobs beyond their balance. Tokens are now reserved atomically at batch submission with reconciliation at retrieval and full refund on cancel.
+* Added: Redis response caching for deterministic SEO and content AI calls (TTL: 24h SEO, 1h content). Security and migration calls are never cached. Cache hit returns in <100ms at zero token cost.
+* Added: token balance returned in API responses for analyze-file, ai-audit, and full-ai endpoints, allowing the frontend to update the balance display without an extra round-trip.
 
 = 2.9.28.27 =
 * Fixed: Bulk "Check with AI" showed "AI analysis failed — none of the 10 files could be analyzed" when all selected findings were about missing files (readme.html, missing core files, etc.). These files don't exist on disk so there is no content to analyze. The bulk handler now filters out missing-file findings (categories: known_safe_missing, core_missing, bundled_plugin/theme where status is missing) before running the AI chain. If all selected findings are non-analyzable, a clear error toast is shown. If some are skipped, an info toast reports how many were skipped before running AI on the rest.
