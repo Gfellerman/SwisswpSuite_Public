@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.29] - 2026-04-23
+
+### Fixed
+- **FAQ generation missing module attribution:** `generate_faq()` was the only Groq method missing the `module` field in its request body. All FAQ generation token usage was logged as `module: 'unknown'`. Module now correctly set to `sentinel_seo`.
+- **Batch expiry cron double-refund race:** If `/batch/results` was fetched at the exact moment the hourly expiry sweep ran on a job older than 25 hours, both paths could process the same row, causing a double token refund. The expiry `UPDATE` now includes `AND status = 'pending'` to act only on jobs not yet completed or cancelled by the results path.
+
+---
+
 ## [2.9.28.28] - 2026-04-23
 
 ### Fixed

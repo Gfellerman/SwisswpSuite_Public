@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.28
+Stable tag: 2.9.28.29
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,10 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.29 =
+* Fixed: FAQ generation calls (generate_faq) were missing the module field in the Groq request body — token usage was attributed to 'unknown' in billing logs. Module now correctly set to 'sentinel_seo'.
+* Fixed: Batch expiry cron could double-refund a job if /batch/results was fetched at the exact moment the expiry sweep ran. The expiry UPDATE now includes AND status = 'pending' to prevent processing already-completed jobs.
 
 = 2.9.28.28 =
 * Fixed: "Check with AI" returned 404 on all files — orchestrator transform stripped integrity_category, causing isMissingFileFinding() to check the wrong field. Filter now reads integrity_category correctly; only files that exist on disk are sent to /analyze-file.
