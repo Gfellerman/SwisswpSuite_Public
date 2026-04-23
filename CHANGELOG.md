@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.20] - 2026-04-23
+
+### Fixed
+
+- **F-1 (HIGH, PHP):** `/security/scan/ai-audit` and `/security/scan/full-ai` handlers no longer swallow orchestrator errors. When `run_ai_audit()` / `run_full_ai_scan()` returns an array with an `error` key (e.g. `'Sentinel not available'`), the handler now returns HTTP 500 with `{success:false, code:'scan_failed', message}` instead of burying the error inside a `{success:true, result:{error:...}}` 200 OK envelope. Existing `rate_limited` (429) and `insufficient_tokens` (402) paths are preserved.
+- **F-2 (MEDIUM, TS):** `SecurityHub.handleTriggerScan` now checks `envelope.success` immediately after `wpApi()` resolves and throws a user-friendly `Error` if the server reported failure. Prevents the frontend from storing a partial/undefined result and later crashing with `TypeError: Cannot read properties of undefined (reading 'length')` when rendering `result.summary`.
+- **F-3 (MEDIUM, TS contract):** `AiAuditResult.tier` and `ScanHistoryRecord.tier` union widened from `'free' | 'pro'` to `'free' | 'pro' | 'none'` to match PHP `SwissWPSuite_Scan_Orchestrator::classify_tier()` output when no license is active. `FullAiScanResult` inherits the fix via extension.
+
+---
+
 ## [2.9.28.19] - 2026-04-22
 
 ### Changed

@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.19
+Stable tag: 2.9.28.20
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,11 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.20 =
+* Fixed: F-1 — Scan handlers (`/security/scan/ai-audit`, `/security/scan/full-ai`) now return HTTP 500 with `{success:false, code:'scan_failed', message}` when the orchestrator reports a generic error (e.g. Sentinel unavailable), instead of wrapping the error in a 200 OK envelope.
+* Fixed: F-2 — SecurityHub scan handlers now check `envelope.success` before committing the result to state, preventing a `TypeError: Cannot read properties of undefined (reading 'length')` crash on `result.summary`.
+* Fixed: F-3 — `AiAuditResult.tier` and `ScanHistoryRecord.tier` widened to `'free' | 'pro' | 'none'` to match PHP `classify_tier()` output when no license is active.
 
 = 2.9.28.19 =
 * Changed: Restored filled button theme across new Sprint 1.5 components — ScanResultPanel batch actions (Mark Safe/Quarantine/Delete/Analyze), UpdateReviewPanel Approve, UpdateBlockedBanner Override, SeoManager action button.
