@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.33] - 2026-04-23
+
+### Fixed
+- **F-298 — Full AI Scan mutex fallback was not truly atomic:** The v2.9.28.30 fallback branch used `add_option()` (which internally issues `INSERT ... ON DUPLICATE KEY UPDATE`), allowing two concurrent pollers to both see `get_option() === false` AND both receive `true` from `add_option()` — defeating the CAS guarantee on hosts without a persistent object cache. Both Phase 1 and Phase 2 fallback blocks now perform a direct `INSERT IGNORE INTO {$wpdb->options}` via `$wpdb` and check `$wpdb->rows_affected === 1`. `INSERT IGNORE` on the unique `option_name` key is MySQL-atomic: exactly one concurrent request wins.
+- **F-299 — Billing lock not released on exception in `/batch/results`:** After the CAS claim flips `batch_jobs.status` to `'billing'`, any `db.query()` throwing inside the billing block (connection drop, deadlock, constraint) caused the outer `catch` to return 500 while leaving the job permanently stuck in `'billing'`. The billing block is now wrapped in its own try/catch that resets status back to `'pending'` (best-effort) before re-throwing to the outer handler, so the client can retry. The exception is logged with event `batch_billing_exception_released`.
+
+### Internal
+- Regression baseline RB-388 grep command rewritten to avoid fragile shell quoting of `$this->`.
+
+---
+
 ## [2.9.28.32] - 2026-04-23
 
 ### Fixed
