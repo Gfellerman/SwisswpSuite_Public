@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.33
+Stable tag: 2.9.28.34
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,9 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.34 =
+* Changed: SecurityHub.tsx and vps/ai.js reformatted with Prettier (no logic changes).
 
 = 2.9.28.33 =
 * Fixed (F-298): Full AI Scan concurrency mutex fallback was not truly atomic on hosts without a persistent object cache — `add_option()` uses `INSERT ... ON DUPLICATE KEY UPDATE` which allowed two concurrent pollers to both win. Both Phase 1 and Phase 2 fallback blocks now use direct `INSERT IGNORE` via `$wpdb` with `rows_affected === 1` as the single-winner check.

@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.34] - 2026-04-23
+
+### Changed
+- SecurityHub.tsx and vps/ai.js reformatted with Prettier (no logic changes)
+
+### Internal
+- Archived 19 old session/socratic audit reports to `.claude/audit-reports/archive/`
+
+---
+
 ## [2.9.28.33] - 2026-04-23
 
 ### Fixed
