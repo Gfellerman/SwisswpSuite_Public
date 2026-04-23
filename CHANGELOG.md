@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.36] - 2026-04-23
+
+### Fixed
+- **Full AI Scan grade jitter eliminated (Bug 1):** When the Layer 2 (AI) call to the VPS fails — network issues, rate limits, or VPS downtime — the scan previously fell back to a finding-count formula that writes a harsh grade (1 HIGH = D) to history, making the security grade visibly drop from C to D even though the site itself did not change. `plugin/includes/security/class-swisswpsuite-scan-orchestrator.php::run_l2_phase()` now looks up the most recent genuine L2 grade from the last 30 days and, if that prior grade is strictly better than the current L1 fallback, inherits it (tagged `grade_source='inherited'`, with a note in the summary: "grade inherited from previous AI scan on YYYY-MM-DD — AI analysis unavailable."). When no prior good grade exists, the fallback grade is capped at 'C' (`grade_source='l1_capped'`) — the error path never writes D or F again. Earned A/B grades always survive; the floor only raises toward C, never lowers toward D.
+- **Hardening posture now factors into the L1-fallback grade (Bug 2):** The L1-only grading formula was purely finding-count driven, so a fully hardened site with one HIGH finding scored the same D as a completely unprotected site with one HIGH finding. After the base L1 grade is computed, if the grade is D/C/B, the orchestrator now counts seven active defensive controls (WAF, per-user 2FA, geo-blocking or Cloudflare at the edge, XML-RPC disabled, file-editor disabled, login limiter, WP version hidden). Five or more active defenses raises the grade two steps (D→B, C→A, B→A); three or four active defenses raises it one step. F-graded sites are intentionally ineligible (a CRITICAL finding means the site is compromised regardless of posture). A-graded sites are already at the ceiling. The Layer 2 (AI) grade is never modified by posture bonus — L2 already accounts for defensive posture in its own reasoning.
+- **New public method `SwissWPSuite_Sentinel_Security::get_last_good_l2_grade( int $days = 30 )`:** Queries `wp_swisswpsuite_sentinel_scans` for the most recent row with `status='complete' AND scan_type='full_ai' AND grade IS NOT NULL AND created_at >= NOW() - INTERVAL $days DAY`. Read-only, `$wpdb->prepare()`-parameterised, clamped to a 1–365-day window. Returns `['grade', 'scan_id', 'created_at']` or `null`. Supports the Bug 1 inheritance logic without schema changes.
+
+### Internal
+- New additive fields in the AI result array: `grade_source` (`'l2' | 'l1_fallback' | 'inherited' | 'l1_capped'`) and `active_defenses` (0–7). Not declared on the TypeScript `AiAuditResult` / `FullAiScanResult` interfaces; present in the JSON payload for diagnostics log readability and future UI surfacing.
+- All hardening-state reads verified against `swisswpsuite-config-manifest.php`: keys `swisswpsuite_firewall_enabled`, `swisswpsuite_login_protection_enabled`, `swisswpsuite_geo_settings`, `swisswpsuite_hardening_settings` (for `disable_xmlrpc`, `disable_file_editor`, `hide_wp_version`). Per-user 2FA check matches the existing project idiom in `SwissWPSuite_Sentinel_Security::get_active_protections()`.
+
+---
+
 ## [2.9.28.35] - 2026-04-23
 
 ### Fixed

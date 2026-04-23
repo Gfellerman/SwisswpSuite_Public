@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.35
+Stable tag: 2.9.28.36
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,12 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.36 =
+* Fixed (Bug 1 — Grade Jitter): When the Full AI Scan's Layer 2 (AI) analyzer call fails, the grade stored in history is no longer computed from L1 finding counts alone. Instead, `run_l2_phase()` now looks up the most recent genuine L2-assigned grade from the last 30 days; if it is strictly better than the current L1 fallback, it is inherited (tagged `grade_source='inherited'`). When no prior good grade is available, the fallback grade is capped at 'C' minimum (`grade_source='l1_capped'`) — the error path never writes D or F to history again. Earned A or B grades are preserved; the floor only raises toward C.
+* Fixed (Bug 2 — Hardening Posture Bonus): The L1-fallback grade now rewards active defensive controls. After computing the base grade, if the grade is D/C/B the orchestrator counts seven signals — WAF, per-user 2FA, geo-blocking (or Cloudflare at the edge), XML-RPC disabled, file-editor disabled, login limiter, WordPress version hidden. Five or more active defenses raises the grade two steps; three or four raises it one step. A fully hardened site with one HIGH finding no longer scores the same D as a completely unprotected site. The Layer 2 (AI) grade is never modified by posture bonus (L2 already incorporates defensive posture in its reasoning).
+* Added: New public method `SwissWPSuite_Sentinel_Security::get_last_good_l2_grade( int $days = 30 )` — read-only, `$wpdb->prepare()`-parameterised lookup for the most recent complete Full AI Scan grade within the given inheritance window. Supports the Bug 1 inheritance decision without schema changes.
+* Internal: Additive `grade_source` and `active_defenses` fields in the AI scan result array for diagnostics readability. Not declared on the TypeScript interfaces; present in the JSON payload only.
 
 = 2.9.28.35 =
 * Fixed: Bulk "Check with AI" on the Full AI Scan results was sending descriptive finding text (e.g. `"wp-config.php (0644) — group or world readable"`) to `POST /security/analyze-file` as the `file` parameter, which failed server-side `file_exists()` and produced a silent UI failure. Added a `classifyFindingForAi()` categorizer in `ScanResultPanel.tsx` that inspects `fix_type`, `integrity_category`, and evidence patterns to decide whether the finding targets a real on-disk file; a clean path is extracted via `extractPathFromEvidence()` before calling the API.
