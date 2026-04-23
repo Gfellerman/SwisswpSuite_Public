@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.24
+Stable tag: 2.9.28.25
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,9 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.25 =
+* Fixed: Full AI Scan never completed on Hostinger after four prior fix attempts (v2.9.28.21 through v2.9.28.24). Every cron-based approach failed because Hostinger blocks WP-Cron loopback requests (both `spawn_cron()` and `SwissWPSuite_Cron_Helper::spawn()`). Every inline-execution approach failed because Hostinger's LiteSpeed edge CDN kills PHP workers at ~60 s and the combined L1+L2 scan takes 45-90 s. The scan is now split into two phases driven by a state machine inside the `/security/scan/full-ai/status` polling endpoint: Phase 1 runs Layer 1 only (~30-45 s, local filesystem/config audit), Phase 2 runs Layer 2 only (~15 s, VPS AI analysis). Each phase finishes well under the edge timeout, and a Phase 2 failure degrades gracefully to an L1-only result instead of failing the entire scan. All cron-scheduling paths (`wp_schedule_single_event`, `SwissWPSuite_Cron_Helper::spawn()`, the `swisswpsuite_fullai_scan_job` hook, and its dispatcher method) have been removed.
 
 = 2.9.28.24 =
 * Fixed: Full AI Scan times out after 5 minutes with "Scan is taking longer than expected" on Hostinger/LiteSpeed. v2.9.28.22 moved the 504 Gateway Timeout problem from `/start` to `/status` by running the scan inline inside the polling REST request — which then blocked for 30-90s and got killed by Hostinger's ~60s edge timeout. The `/status` endpoint is now a pure transient reader (no scan logic). The scan runs in a dedicated WP-Cron loopback worker with `set_time_limit(0)` + `ignore_user_abort(true)`, kicked off by `SwissWPSuite_Cron_Helper::spawn()` (the proven non-blocking loopback pattern used by the SEO background queue). No more edge timeouts on the scan path.

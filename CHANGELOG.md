@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.25] - 2026-04-23
+
+### Fixed
+
+- **Full AI Scan never completed on Hostinger (fifth attempt — definitive fix):** v2.9.28.21 through v2.9.28.24 all failed. Cron-based approaches (`wp_schedule_single_event` + `spawn_cron` in v21, `SwissWPSuite_Cron_Helper::spawn()` in v24) failed because Hostinger's egress firewall blocks WP-Cron loopback requests, so the scheduled job never fired. Inline-execution approaches (v22 running the scan inside the `/status` poll) failed because Hostinger's LiteSpeed edge CDN kills PHP workers at ~60 s while the combined L1+L2 scan takes 45-90 s, producing a 504 Gateway Timeout that lost the scan. The scan is now split into two phases driven by a state machine inside the `/status` polling endpoint itself: **Phase 1 (~30-45 s)** runs Layer 1 only (local filesystem/permission/config/environment audit with no VPS call), stores the raw findings in the job transient, and returns to the frontend; **Phase 2 (~15 s)** reads the Phase 1 state on the next poll, makes the VPS `sentinel/analyze` call with the pre-computed L1 findings, persists the combined result as a single history row, and returns the final `FullAiScanResult`. Each phase completes well under the edge timeout. If Phase 1 is killed at the edge, the transient state remains `pending` or `l1_running` and the next poll retries cleanly. If Phase 2 fails (VPS down, rate-limited, parse error), the orchestrator degrades gracefully to an L1-only result with a tagged summary — the scan never silently fails. The dead cron paths (`wp_schedule_single_event('swisswpsuite_fullai_scan_job', ...)`, the hook registration in `core.php`, the `dispatch_fullai_scan_job()` dispatcher method, and the `run_fullai_scan_job()` API callback) have been removed. The frontend `pollFullAiJobToCompletion` now surfaces phase-aware progress text ("Running security audit…" during Phase 1, "Sending to AI for analysis…" during Phase 2) on the Full AI scan card. `FullAiScanJob.status` TypeScript union widened to include the new intermediate states `'l1_running' | 'l2_pending' | 'l2_running'`.
+
+---
+
 ## [2.9.28.24] - 2026-04-23
 
 ### Fixed
