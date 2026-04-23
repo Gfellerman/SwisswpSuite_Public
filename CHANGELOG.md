@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.26] - 2026-04-23
+
+### Fixed
+- **Bulk "Check with AI" toast spam + false success:** Selecting files and clicking "Check N with AI" flooded the UI with "Analysis request failed — check your connection" toasts (one per file), then showed a false "AI analysis complete: N files processed" success toast even when zero files were analyzed. `handleAiAnalyze` now suppresses error toasts when called from bulk context (`options.bulk: true`) and rethrows so the chain can count failures. The summary toast now accurately reports `N of M files analyzed` on partial success or an error toast on total failure.
+
+---
+
 ## [2.9.28.25] - 2026-04-23
 
 ### Fixed
