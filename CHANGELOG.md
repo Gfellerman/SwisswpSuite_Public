@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.37] - 2026-04-23
+
+### Fixed
+- **`count_active_defenses()` now returns an accurate count (Bug 1):** The L1-fallback posture bonus helper checked only 7 defensive signals but reported the result as `active_defenses: 0` on the L2 success path because the method was never called there. Expanded the signal set to 11 (WAF, per-user 2FA, geo-blocking or Cloudflare, XML-RPC disabled, file-editor disabled, login protection, WP version hidden, auto-updates, PHP execution blocked in uploads, user enumeration blocked, bad-bot or LLM crawler limits) and moved the call out of the L1-only branch so the `active_defenses` field in the AI result is always accurate regardless of L1 or L2 path. The bonus application itself still runs only in the L1 fallback — L2 grade is never modified. Bonus thresholds re-scaled (`>=7` for +2, `>=4` for +1) to preserve intent at the new ceiling.
+- **L2 (Groq) prompt now factors hardening posture into the overall grade (Bug 2):** A "bulletproof" site with nine active defenses and only eight configuration findings was receiving the same Grade D from Groq as a completely unprotected site. The AI already received per-feature `active_protections` for per-chain blocking, but had no aggregate posture signal to weight the overall grade. `SwissWPSuite_Sentinel_Security::get_site_context()` now injects a concise `hardening_posture` object — `{ active_count, total_count, summary }` — which the VPS prompt (`vps/command-center/routes/v1/sentinel.js::buildSentinelPrompt()`) surfaces as a single HARDENING POSTURE line instructing Groq to weight defensive breadth into the security grade when there are no verified critical RCE findings. Backward compatible: the field is optional, prior VPS versions ignore it without breaking.
+- **Banner "Last grade" no longer stale after a manual Full AI Scan (Bug 3):** `GET /security/scan/report-config` returns `last_scan: {ts, tier, grade}` which the top-of-tab banner renders. Previously this value was only written by the scheduled-email cron (`run_daily_report()`) — a manual Full AI Scan updated the scan card but left the banner showing a months-old grade. `get_scan_full_ai_status()` now updates `swisswpsuite_last_scan_report` at the moment the state machine transitions to `'complete'`, stamping `{ts: time(), tier: 'pro', grade, source: 'manual_full_ai'}`. Written with `autoload=false`. Only successful completions update the value — errors, timeouts, and Phase 2 exceptions leave the prior record untouched.
+
+### Internal
+- New private helper `SwissWPSuite_Scan_Orchestrator::get_posture_snapshot()` and its public wrapper `build_posture_snapshot()` centralise the posture-reading logic so it is computed once and consumed in two places: the L1 fallback grade bonus and the L2 VPS prompt injection. Avoids duplicating the 11-signal read across files.
+- No new `wp_options` keys — all reads use manifest-verified keys (`swisswpsuite_firewall_enabled`, `swisswpsuite_login_protection_enabled`, `swisswpsuite_geo_settings`, `swisswpsuite_hardening_settings`, `swisswpsuite_auto_update`). The only write is the existing `swisswpsuite_last_scan_report` key (OPERATIONAL_STATE, autoload=false), same shape as the cron-path writer.
+
+---
+
 ## [2.9.28.36] - 2026-04-23
 
 ### Fixed
