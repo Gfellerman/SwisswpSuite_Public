@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.34
+Stable tag: 2.9.28.35
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,11 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.35 =
+* Fixed: Bulk "Check with AI" on the Full AI Scan results was sending descriptive finding text (e.g. `"wp-config.php (0644) — group or world readable"`) to `POST /security/analyze-file` as the `file` parameter, which failed server-side `file_exists()` and produced a silent UI failure. Added a `classifyFindingForAi()` categorizer in `ScanResultPanel.tsx` that inspects `fix_type`, `integrity_category`, and evidence patterns to decide whether the finding targets a real on-disk file; a clean path is extracted via `extractPathFromEvidence()` before calling the API.
+* Fixed: Non-file findings (configuration/network/header/plugin-inventory) now render a friendly inline neutral message ("This finding is a configuration check — there's no source file to analyze.") when selected for AI analysis, instead of failing silently. Mixed selections run AI on real files and skip the rest with a single summary toast.
+* Fixed: `POST /security/analyze-file` now returns HTTP 400 with `code:"invalid_file_path"` when the provided path is not a valid file, instead of HTTP 404. Path-traversal and ABSPATH-containment checks are unchanged.
 
 = 2.9.28.34 =
 * Changed: SecurityHub.tsx and vps/ai.js reformatted with Prettier (no logic changes).

@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.35] - 2026-04-23
+
+### Fixed
+- **Bulk "Check with AI" sent descriptive text as the file path (CRITICAL UX bug):** The Full AI Scan bulk analyze flow in `ScanResultPanel.tsx` was sending `finding.evidence` verbatim as the `file` parameter to `POST /security/analyze-file`. For file findings that works ("wp-content/plugins/foo/bar.php"), but for configuration/network/header/plugin-inventory findings, `evidence` is descriptive text such as `"wp-config.php (0644) — group or world readable"` or `"No CF-Ray or CF-Connecting-IP headers detected"` — which failed server-side `file_exists()` and returned an error, producing a silent UI failure. Added a `classifyFindingForAi()` categorizer that inspects `fix_type`, `integrity_category`, and evidence pattern to decide whether a finding targets a real on-disk file; when it does, a clean file path is extracted via `extractPathFromEvidence()` before the API call.
+- **Non-file findings now receive a friendly inline message (UX):** When the user selects configuration/network/header findings and clicks "Check N with AI", each non-file finding now renders an inline neutral info block — `"This finding is a configuration check — there's no source file to analyze. Review the remediation steps above."` — instead of failing silently. Mixed selections run AI on real file findings and skip the rest with a single summary toast (`"Analyzing N files with AI — M configuration findings skipped (see inline notes)"`).
+- **`/security/analyze-file` returns 400 (not 404) for invalid path (backend):** In `plugin/includes/api/class-swisswpsuite-api.php::analyze_security_file()`, when the resolved path does not exist, the response now returns HTTP 400 with `{success:false, code:"invalid_file_path", message:"The provided path is not a valid file."}` instead of HTTP 404 + `file_not_found`. This is the correct status for a client-side input problem (the path is malformed or nonexistent), and the frontend categorizer is the primary defense anyway. All existing path-traversal and ABSPATH-containment checks are unchanged.
+
+---
+
 ## [2.9.28.34] - 2026-04-23
 
 ### Changed
