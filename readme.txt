@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.20
+Stable tag: 2.9.28.21
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,12 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.21 =
+* Added: Async Full AI Scan — new `POST /security/scan/full-ai/start` + `GET /security/scan/full-ai/status` endpoints break the scan into a fire-and-poll pattern. Fixes the Hostinger edge 504 timeout that killed Full AI Scan under shared-host load.
+* Added: Bulk "Check with AI" safety guardrails — cap of 10 files per click (with in-app confirmation modal when exceeded), live "Analyzing N of M…" counter, single summary toast on completion. Prevents 400+-file floods that burned tokens and spammed the toast area.
+* Fixed: `/security/analyze-file` no longer rejects valid in-root relative paths (e.g. `wp-content/themes/.../file.php`) with a misleading 403 "Authentication failed" toast. Path resolution against ABSPATH is now explicit; status code changed to 400 so the real message surfaces.
+* Fixed: `wpApi()` no longer overrides genuine 403 JSON messages (e.g. "Pro licence required.") with the generic "Authentication failed. Please refresh the page." fallback. The fallback still applies when the 403 body is empty.
 
 = 2.9.28.20 =
 * Fixed: F-1 — Scan handlers (`/security/scan/ai-audit`, `/security/scan/full-ai`) now return HTTP 500 with `{success:false, code:'scan_failed', message}` when the orchestrator reports a generic error (e.g. Sentinel unavailable), instead of wrapping the error in a 200 OK envelope.

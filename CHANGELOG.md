@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.21] - 2026-04-23
+
+### Added
+
+- **Async Full AI Scan (Bug 1 fix):** New REST endpoints `POST /security/scan/full-ai/start` and `GET /security/scan/full-ai/status?job_id=...` decouple the scan orchestration from the HTTP request. The previous synchronous `/security/scan/full-ai` route blocked the PHP worker while the VPS Layer 2 Sentinel ran, routinely exceeding Hostinger's ~60s edge timeout and returning an opaque 504. The new pattern returns a `job_id` in under a second, runs the scan in a WP-Cron single event (hook `swisswpsuite_fullai_scan_job`, registered in the config manifest), and stores the result in a job-keyed transient (10 min TTL). The frontend polls every 3 seconds until `status: 'complete'` or `status: 'failed'`. The original synchronous route is retained unchanged for backward compatibility.
+- **Bulk "Check with AI" safety guardrails (Bug 2C fix):** All three bulk-AI buttons in Scan result panels (audit bulk bar, malware actionable bar, malware low-risk bar) now cap batches at 10 files per click. Selecting more than 10 opens an in-app confirmation modal ("Analyze first 10?") — no native `window.confirm()`. While the chain runs, the button shows a live progress counter ("Analyzing 3 of 10…"). A single summary toast fires on completion instead of per-file notifications.
+
+### Fixed
+
+- **analyze-file path validation (Bug 2A):** `POST /security/analyze-file` no longer returns `403 "File path is outside WordPress root"` for perfectly valid in-root files. Relative paths (e.g. `wp-content/themes/…/file.php`) are now resolved against `ABSPATH` with an explicit absolute candidate instead of bare `realpath()`, which was failing because PHP resolves relative paths against the script's cwd (undefined inside a REST request). Status code changed from `403` to `400` because path validation is bad input, not auth denied — unblocks the frontend error-surfacing path.
+- **403 error messaging (Bug 2B):** `wpApi()` no longer maps every HTTP 403 response to "Authentication failed. Please refresh the page." Real 403s carrying a backend message (e.g. "AI analysis requires a Pro license.") now surface their actual message to the user. Empty-body 403s still fall back to the generic auth string.
+
+### Changed
+
+- **Full AI Scan frontend flow:** `SecurityHub.handleTriggerScan('full-ai')` now calls the new start-then-poll pattern instead of the synchronous route. Added `pollFullAiJobToCompletion(jobId)` with a 5-minute cap (100 polls × 3s), surfacing "Scan is taking longer than expected" to the user if the cron never fires.
+- **`FullAiScanJob` interface** added to `types.ts` to model the new async envelope: `{ success, job_id, status: 'pending'|'running'|'complete'|'failed'|'not_found', result, message }`.
+- **Cron hook manifest:** `swisswpsuite_fullai_scan_job` (single_event) registered in `SwissWPSuite_Config_Manifest::CRON_HOOKS` and wired to `SwissWPSuite_Core::dispatch_fullai_scan_job()` in `define_plugin_hooks()`. Dispatcher lazy-instantiates the API class at fire time (the core does not keep a persistent `$this->api` property).
+
+---
+
 ## [2.9.28.20] - 2026-04-23
 
 ### Fixed
