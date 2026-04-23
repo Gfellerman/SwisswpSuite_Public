@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.29
+Stable tag: 2.9.28.32
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,16 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.32 =
+* Fixed (F-296): Full AI Scan card briefly showed "Sending to AI for analysis…" after the success toast — phase-hint state now cleared before returning the final result.
+
+= 2.9.28.31 =
+* Fixed (F-292): `/batch/results` could double-deduct tokens on concurrent requests because the "pending" check and the token deduction were not atomic. The VPS now claims the billing window atomically (CAS `pending` → `billing`) before deducting; the only request that claims the window performs the deduction, others return results without charging again.
+* Fixed (F-293): Full AI Scan routes (`/security/scan/full-ai`, `/security/scan/full-ai/start`, `/security/scan/full-ai/status`) now enforce the `sentinel_pro` capability at the route `permission_callback` in addition to the existing in-body check, making the Pro gate defense-in-depth.
+
+= 2.9.28.30 =
+* Fixed (F-291): `get_scan_full_ai_status()` could run Layer 1 twice or persist Layer 2 twice if two `/status` polls both saw the job in a `pending` or `l2_pending` state and raced into the phase body. A dual-path compare-and-set mutex (persistent object cache primary, `add_option` INSERT IGNORE fallback) now guards both phase entry points, so only one poll ever runs the phase work.
 
 = 2.9.28.29 =
 * Fixed: FAQ generation calls (generate_faq) were missing the module field in the Groq request body — token usage was attributed to 'unknown' in billing logs. Module now correctly set to 'sentinel_seo'.

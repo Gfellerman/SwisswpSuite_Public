@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.32] - 2026-04-23
+
+### Fixed
+- **F-296 — Full AI Scan phase hint lingers on completion:** `pollFullAiJobToCompletion` now clears `fullAiPhaseMessage` to an empty string inside the `envelope.status === 'complete' && envelope.result` branch, immediately before returning. Previously, the ScanCard briefly rendered "Sending to AI for analysis…" in the same paint frame as the success toast.
+
+---
+
+## [2.9.28.31] - 2026-04-23
+
+### Fixed
+- **F-292 — Atomic billing claim on `/batch/results`:** The token-deduction block in `vps/command-center/routes/v1/ai.js` ran inside `if (job.status === 'pending')` without an atomic claim. Two concurrent `/batch/results` requests sharing the same stale `pending` read could both deduct tokens. The block now performs a compare-and-set `UPDATE batch_jobs SET status = 'billing' WHERE id = ? AND status = 'pending'` before any deduction; only the request whose update returns `affectedRows > 0` performs the deduction, others fall through to return results without re-charging. The final `UPDATE` is guarded by `status = 'billing'`. Internal `billing` status is mapped to external `processing` in the `/batch/status` response so the TypeScript `BatchStatus` union is unchanged. A `/batch/cancel` arriving during the transient `billing` window is rejected with a `batch_cancel_during_billing` log warning.
+- **F-293 — Route-level Pro gate on Full AI Scan:** `/security/scan/full-ai`, `/security/scan/full-ai/start`, and `/security/scan/full-ai/status` now combine `check_permission()` and `check_capability('sentinel_pro')` in their route `permission_callback`. The existing in-body `sentinel_pro` check is retained as defense-in-depth.
+
+---
+
+## [2.9.28.30] - 2026-04-23
+
+### Fixed
+- **F-291 — Dual-path mutex on Full AI Scan phase transitions:** `get_scan_full_ai_status()` had no mutex between reading `state['status']` and writing the next status, so two concurrent `/status` polls could both see `pending` and both run Layer 1, or both see `l2_pending` and both persist Layer 2. Both phase entry blocks now acquire a per-job lock via a dual-path CAS — `wp_cache_add` primary (for hosts with a persistent object cache) and `add_option` INSERT IGNORE fallback (for hosts without one). The lock is released in a `finally` block. Losers return the current state without re-entering the phase body.
+
+---
+
 ## [2.9.28.29] - 2026-04-23
 
 ### Fixed
