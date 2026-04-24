@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.38] - 2026-04-24
+
+### Fixed
+- **Scan-tab banner "Last grade" now auto-refreshes after a manual Full AI Scan completes (F-300):** The React `scanReportConfig` state is fetched once on mount, but the Full AI Scan completion path only called `setFullAiResult(finalResult)` (re-rendering the scan card) without re-fetching `/security/scan/report-config`. The server-side stamp written by v2.9.28.37 Bug 3 was being produced correctly — the banner just never asked for it. `pollFullAiJobToCompletion()` in `plugin/src/components/SecurityHub.tsx` now re-fetches the scan report config on the `status==='complete'` branch and calls `setScanReportConfig(refreshed)` so the banner updates without requiring a tab switch or page reload. Silent catch on network failure matches the existing mount-time pattern — if the refetch fails, the banner keeps its prior state and the scan success path is unaffected.
+
+### Internal
+- Pure React state-sync fix — no PHP, VPS, TypeScript types, REST routes, or `wp_options` keys changed. 15 LOC added to one function in `SecurityHub.tsx`. Reuses the already-imported `wpApi` and `ScanReportConfig` type.
+
+---
+
 ## [2.9.28.37] - 2026-04-23
 
 ### Fixed

@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.37
+Stable tag: 2.9.28.38
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,9 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.38 =
+* Fixed: Scan-tab banner "Last grade" now auto-refreshes after a manual Full AI Scan completes — the React `scanReportConfig` state is re-fetched from `/security/scan/report-config` on scan completion, so the banner updates without requiring a tab switch or page reload (F-300)
 
 = 2.9.28.37 =
 * Fixed: count_active_defenses() now accurately reflects site posture on both L1 and L2 paths (Bug 1) — expanded from 7 to 11 signals, moved out of the L1-only branch
