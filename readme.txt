@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.43
+Stable tag: 2.9.28.44
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,15 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.44 =
+* Fix: F-303 Update Guard REST routes now register correctly — load order in `class-swisswpsuite-core.php` corrected so `define_api_hooks()` can see `SwissWPSuite_Api_Update_Guard` via `class_exists()`. Eliminates ~15 404s per page load on the Security tab.
+* Fix: F-304 WooCommerce cart/checkout — hardening REST allowlist now explicitly covers `/wc-auth/v1/` (cart authentication) and `/wc/store/v1/` (Blocks-based Store API). Logged-out guests can complete checkout with "Limit What Strangers Can See" enabled.
+* Fix: F-305 SEO score consistency — `seo_score` dashboard headline is now the simple integer mean of the three breakdown metrics (on-page + technical + content), so the headline is always consistent with what users see in the SEO Health Breakdown panel. Dashboard tile renamed to "Overall SEO Score" with a subtitle; breakdown heading renamed to "SEO Health Breakdown" with a composite description.
+* Fix: F-309 backup automation — when "Disable Visitor-Triggered Scheduling" is enabled, the backup banner and the hardening confirmation modal now display the exact server cron command with the site URL prefilled, so users can paste it directly into their hosting control panel.
+* Fix: F-301 post-migration verification — new `GET /migration/post-check` and `GET /license/status` endpoints return site URL, active theme, plugin count, admin user count, and license status. Migration Station no longer shows "unknown" for these fields.
+* Fix: F-302 dead code — removed orphaned `BasicScanResults` import, legacy `scanning`/`scanResults`/`basicScanExpanded` state, and the orphaned `handleScan` function from `SecurityHub.tsx`.
+* Resolved: F-306 Update Guard frontend 404s — automatically resolved by the F-303 load-order fix. 6 frontend call sites (SecurityHub, UpdateGuardCard, SnapshotList, UpdateReviewPanel, UpdateBlockedBanner) now hit real endpoints.
 
 = 2.9.28.43 =
 * Refactor: F-005 extraction FINAL — all remaining Security-tier REST routes extracted from the api.php monolith into SwissWPSuite_Api_Security (class-swisswpsuite-api-security.php). api.php is now a lean route coordinator (~337 lines). 10 modular API classes own their domains.

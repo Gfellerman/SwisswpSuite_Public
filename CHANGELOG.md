@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.44] - 2026-04-24
+
+### Fixed
+- **F-303 Update Guard routes 404** — Corrected load order in `class-swisswpsuite-core.php` so `define_api_hooks()` sees `SwissWPSuite_Api_Update_Guard` via `class_exists()` and registers all 9 `/update-guard/*` routes on `rest_api_init`. Eliminates ~15 404s per page load on the Security tab.
+- **F-304 WooCommerce cart/checkout with hardening** — Hardening REST allowlist now explicitly covers `/wc-auth/v1/` (cart authentication) and `/wc/store/v1/` (Blocks-based Store API). Logged-out guests can complete checkout with "Limit What Strangers Can See" enabled.
+- **F-305 SEO score consistency** — `seo_score` is now the simple integer mean of the three breakdown metrics (on-page + technical + content). The dashboard headline is always consistent with the visible "SEO Health Breakdown". Dashboard tile renamed to "Overall SEO Score" with subtitle "Mean of on-page, technical & content". Breakdown heading renamed to "SEO Health Breakdown" with composite description.
+- **F-309 backup automation — missing cron command** — When "Disable Visitor-Triggered Scheduling" is enabled, the backup banner and the hardening confirmation modal now display the exact server cron command with the site URL prefilled, so users can paste it directly into their hosting control panel.
+- **F-301 post-migration verification missing endpoints** — New `GET /migration/post-check` and `GET /license/status` endpoints return site URL, active theme, plugin count, admin user count, and license status. Migration Station no longer shows "unknown" for these fields.
+- **F-302 BasicScanResults dead code** — Removed orphaned import, legacy `scanning`/`scanResults`/`basicScanExpanded` state, and the orphaned `handleScan` function from `SecurityHub.tsx`.
+
+### Resolved
+- **F-306 Update Guard frontend 404s** — Automatically resolved by the F-303 load-order fix. 6 frontend call sites (`SecurityHub`, `UpdateGuardCard`, `SnapshotList`, `UpdateReviewPanel`, `UpdateBlockedBanner`) now hit real endpoints.
+
+### Closed
+- **F-307** — Closed as INVALID / NOT_REPRODUCIBLE. The Freemius SDK is not bundled or integrated in this plugin; no "Contact Support" link exists in the UI; the premise (plugin UI showing `plugin_version=2.8.8`) cannot be reproduced against the current code.
+
+---
+
 ## [2.9.28.43] - 2026-04-24
 
 ### Changed
