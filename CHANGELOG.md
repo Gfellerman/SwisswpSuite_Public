@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.43] - 2026-04-24
+
+### Changed
+- **F-005 god-class extraction — FINAL:** All remaining Security-tier REST routes (~1,770 lines) extracted from `class-swisswpsuite-api.php` into new `SwissWPSuite_Api_Security` (`class-swisswpsuite-api-security.php`). The monolith is now a lean route coordinator (~337 lines, down from ~12,000+ at sprint start). 10 modular API classes now own their domains: Backup, Sync, SEO, Content, 2FA, Geo, Hardening, Update-Guard, Settings, Migration, Security.
+- **F-004 React organism extractions:** `ScanHistoricalRecord`, `BasicScanResults`, and `SecurityLogsPanel` extracted as reusable organisms from `SecurityHub.tsx` to reduce god-component complexity.
+- **F-004 Zustand store foundation:** New `plugin/src/store/useScanStore.ts` establishes the Zustand-based state convention for scan results (aiAuditResult, malwareResult, fullAiResult). Per-field selectors plus dedicated `updateXxx` functional-update helpers keep call-sites clean.
+
+### Internal
+- `class-swisswpsuite-api-security.php` registers scan, firewall, hardening-dashboard, 2FA-admin, logs, and quarantine routes.
+- `useScanStore` is the first Zustand slice in the codebase — follow its pattern for future store extractions.
+- `LogAdvisorModal` extraction blocked at 9+ props (exceeds 8-prop limit); follow-up requires a shared `useLogAdvisor()` hook first.
+- Documentation: `docs/capabilities/SEO_CAPABILITIES_REFERENCE.md` refreshed for v2.9.28.43 (F-228); `public/PRIVACY_POLICY.md` sub-processor disclosure tightened to list Patchstack, WPScan, and Groq use-cases explicitly (F-229).
+
+---
+
 ## [2.9.28.42] - 2026-04-24
 
 ### Changed

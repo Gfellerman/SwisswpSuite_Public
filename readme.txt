@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.42
+Stable tag: 2.9.28.43
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,12 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.43 =
+* Refactor: F-005 extraction FINAL — all remaining Security-tier REST routes extracted from the api.php monolith into SwissWPSuite_Api_Security (class-swisswpsuite-api-security.php). api.php is now a lean route coordinator (~337 lines). 10 modular API classes own their domains.
+* Refactor: F-004 React organism extractions — ScanHistoricalRecord, BasicScanResults, and SecurityLogsPanel extracted as reusable organisms from SecurityHub.tsx.
+* Refactor: F-004 Zustand store foundation — new plugin/src/store/useScanStore.ts establishes the state-management convention for scan results.
+* Docs: SEO capabilities reference and Privacy Policy sub-processor disclosure updated.
 
 = 2.9.28.42 =
 * Refactor: F-005 extraction — migration, export, import-status, diagnostics, deep-scan reset, and batch-queue-status REST routes extracted from the api.php monolith into SwissWPSuite_Api_Migration (class-swisswpsuite-api-migration.php, 954 lines). api.php reduced from ~4,950 to ~4,300 lines (-650 lines). Zero behavior change.
