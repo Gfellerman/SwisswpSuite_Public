@@ -1,7 +1,7 @@
 # SwissWPSuite AI — Privacy Policy
 
-> **Last Updated:** 2026-03-23
-> **Effective Date:** 2026-03-23
+> **Last Updated:** 2026-04-24
+> **Effective Date:** 2026-04-24
 
 ---
 
@@ -96,11 +96,15 @@ We use the following third-party services to deliver the Service:
 
 | Service | Purpose | Data Shared | Location | DPA Status |
 |---------|---------|-------------|----------|------------|
-| **Groq LLC** | AI language model processing | Content submitted to AI features | USA | Available upon request |
+| **Groq LLC** | AI language model processing (SEO generation, security Layer 2 analysis, content enhancement) | Content submitted to AI features | USA | Available upon request |
 | **Stripe, Inc.** | Payment processing | Payment card data, email, amount | USA | Stripe DPA available |
 | **ipwho.is** | IP geolocation (geo-blocking feature) | Visitor IP addresses | USA | No DPA — public API, IP only |
+| **Patchstack** | Plugin/theme vulnerability database lookup (part of Sentinel Layer 1 scans) | Plugin/theme slug strings; your server's outbound IP as source | EU | Public API, no account required for read access |
+| **WPScan (Automattic)** | WordPress vulnerability database lookup (optional, requires your WPScan API key) | Plugin/theme slug strings; your WPScan API key; your server's outbound IP as source | USA | User-provided API key; Automattic DPA applies |
 
 **Cloud backup providers** (Google Drive, Dropbox, AWS S3, Backblaze B2, FTP servers) are configured by you and operate under your own agreements with those providers. We facilitate the connection but do not receive or store your backup data.
+
+**Patchstack and WPScan** are queried on your behalf from your own WordPress server (not from our VPS). They receive plugin/theme slug strings (e.g. "woocommerce", "jetpack") plus your server's outbound IP as a standard HTTP source — no visitor PII, no post content, no credentials beyond the WPScan API key you configure. We never proxy or log these queries.
 
 ### International Transfers
 
@@ -194,4 +198,4 @@ Website: https://swisswpsecure.com
 
 ---
 
-*This document was last reviewed on 2026-03-23.*
+*This document was last reviewed on 2026-04-24.*
