@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.41] - 2026-04-24
+
+### Changed
+- **F-005 god-class extraction:** All Settings, License, SMTP, Cache, Maintenance, and Debug REST routes (19 routes, ~2,152 lines) extracted from `class-swisswpsuite-api.php` into new `SwissWPSuite_Api_Settings`. Follows the same modular pattern established by `Api_Backup`, `Api_Sync`, `Api_Seo`, `Api_2fa`, `Api_Geo`, and `Api_Hardening`. Monolith reduced from ~7,102 to ~4,950 lines. Tombstone comments left at all removed sites. Zero behavior change on existing routes.
+
+### Fixed
+- `ping_custom_api_url()` in `SwissWPSuite_Api_Settings` used `defined('SwissWPSuite_Groq::MODEL_FALLBACK')` which is invalid PHP — `defined()` only resolves global `define()` constants. Corrected to `class_exists('SwissWPSuite_Groq') ? SwissWPSuite_Groq::MODEL_FALLBACK : 'llama-3.3-70b-versatile'`.
+
+### Internal
+- `class-swisswpsuite-api-settings.php` loaded unconditionally in the essentials array in `core.php` (settings/license are core-tier, no capability gate).
+- SSRF guard in `ping_custom_api_url()` delegates to `SwissWPSuite_Api::validate_external_url()` (public static on monolith) via `class_exists()` + `method_exists()` guards — avoids duplicating 50 lines of IP-range validation.
+- Static license cache pattern (M-6) applied in `check_capability()` to avoid re-reading license from DB on repeated calls.
+
+---
+
 ## [2.9.28.38] - 2026-04-24
 
 ### Fixed

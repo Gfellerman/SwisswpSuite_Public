@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.38
+Stable tag: 2.9.28.41
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,10 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.41 =
+* Refactor: F-005 extraction — all Settings, License, SMTP, Cache, Maintenance, and Debug REST routes moved from the api.php monolith to SwissWPSuite_Api_Settings (class-swisswpsuite-api-settings.php). Reduces api.php from ~7,102 to ~4,950 lines (-2,152 lines). Zero behavior change on existing routes.
+* Fixed: ping_custom_api_url() in Settings API used defined() for a class constant (invalid PHP) — corrected to class_exists() guard with MODEL_FALLBACK access.
 
 = 2.9.28.38 =
 * Fixed: Scan-tab banner "Last grade" now auto-refreshes after a manual Full AI Scan completes — the React `scanReportConfig` state is re-fetched from `/security/scan/report-config` on scan completion, so the banner updates without requiring a tab switch or page reload (F-300)
