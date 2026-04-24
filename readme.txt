@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.41
+Stable tag: 2.9.28.42
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,9 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.42 =
+* Refactor: F-005 extraction — migration, export, import-status, diagnostics, deep-scan reset, and batch-queue-status REST routes extracted from the api.php monolith into SwissWPSuite_Api_Migration (class-swisswpsuite-api-migration.php, 954 lines). api.php reduced from ~4,950 to ~4,300 lines (-650 lines). Zero behavior change.
 
 = 2.9.28.41 =
 * Refactor: F-005 extraction — all Settings, License, SMTP, Cache, Maintenance, and Debug REST routes moved from the api.php monolith to SwissWPSuite_Api_Settings (class-swisswpsuite-api-settings.php). Reduces api.php from ~7,102 to ~4,950 lines (-2,152 lines). Zero behavior change on existing routes.

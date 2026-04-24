@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.42] - 2026-04-24
+
+### Changed
+- **F-005 god-class extraction:** Migration, export, import-status, diagnostics, deep-scan reset, and batch-queue-status REST routes (17 routes, ~650 lines) extracted from `class-swisswpsuite-api.php` into new `SwissWPSuite_Api_Migration` (`class-swisswpsuite-api-migration.php`, 954 lines). Monolith reduced from ~4,950 to ~4,300 lines. Tombstone comments at all removed sites. Zero behavior change.
+
+### Internal
+- `class-swisswpsuite-api-migration.php` loaded unconditionally in the essentials array in `core.php` — `/batch/status` (used by the SEO frontend) and `/diagnostics/analyze` must remain available without the `backup_cloud` capability. Per-handler `check_pro_permission()` enforces `backup_cloud` on export/import/migration routes.
+- Standalone guard (`defined('SWISSWPSUITE_SENTINEL_STANDALONE')`) preserved — backup/migration routes are skipped in standalone mode, matching original monolith behavior.
+- `deep-scan/reset` extracted from an inline closure into a named method `reset_deep_scan()`.
+
+---
+
 ## [2.9.28.41] - 2026-04-24
 
 ### Changed
