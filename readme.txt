@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.44
+Stable tag: 2.9.28.45
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,14 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.45 =
+* CRITICAL: Fixed Groq json_validate_failed retry that was causing ~90% of content rewrite calls to fail terminally — retry now strips response_format so the second attempt succeeds.
+* HIGH: SEO 500-item batch silent data loss — backend now returns dropped IDs and the frontend surfaces the count via toast, so >500-item batches no longer disappear without warning.
+* HIGH: Restored "Ban IP" column to the Security Event Log table (regression from F-004 organism extraction).
+* MEDIUM: Security tab now paints sooner — 4 non-critical REST calls are deferred to after the initial paint.
+* MEDIUM: Scan results now sorted by severity (Critical first).
+* MEDIUM: "Mark as Safe" allowlist hardened with SHA-256 hash check — files swapped on a whitelisted path are re-flagged automatically.
 
 = 2.9.28.44 =
 * Fix: F-303 Update Guard REST routes now register correctly — load order in `class-swisswpsuite-core.php` corrected so `define_api_hooks()` can see `SwissWPSuite_Api_Update_Guard` via `class_exists()`. Eliminates ~15 404s per page load on the Security tab.

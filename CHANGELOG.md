@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.45] - 2026-04-25
+
+### Fixed
+- **F-310 (BUG #9, CRITICAL) — Content rewrite completely broken** — `SwissWPSuite_Groq::call_api()` retry on `json_validate_failed` was re-posting the SAME body with the SAME `response_format=json_object`, so retries failed at the same ~5-10% rate as the first call (compounded ~90% terminal failure rate on `rewrite_content`). The retry now strips `response_format` from the body; the in-prompt "Output strictly JSON" instruction keeps Groq emitting JSON without the strict schema validator. Recovers the 5-10% of content-rewrite calls that were failing terminally.
+- **F-311 (BUG #6, HIGH) — SEO 500-item batch silent data loss** — `start_seo_batch`, `submit_background_seo`, and `queue_bulk_seo` were rejecting requests with >500 IDs as 400 errors and silently dropping the overflow. All three handlers now process the first 500 and return `{accepted_count, dropped_count, dropped_ids[]}`. `SeoManager` surfaces the dropped count via a warning toast: "X items were not queued — please run Queue All again to process them."
+- **F-312 (BUG #4, HIGH) — Ban IP column missing from Security Event Log** — The per-row Ban IP button (regression from F-004 organism extraction) is restored. `SecurityLogsPanel` accepts optional `onBanIp` + `bannedIps` props and renders an "Action" column with a one-click Ban IP button per row. Already-banned IPs show a grayed-out "Banned" badge instead.
+- **F-313 (BUG #5, MEDIUM) — Page load 10+ seconds on Security tab** — Mount-time `Promise.all` was firing 10 concurrent REST calls. Two-phase mount: 6 critical fetches (status, logs, sentinel, hardening, banned IPs, latest scan) finalize the loading state and gate the default tab paint; 4 non-critical fetches (deep scan, geo, environment, abandoned plugins) are deferred to 100ms after mount via `setTimeout`. Cuts blank-screen time substantially on Hostinger shared hosting.
+- **F-314 (BUG #1, MEDIUM) — Scan list not sorted by severity** — `transform_l1_to_ai_audit_result()` now `usort()`s findings by severity rank (Critical=1, High=2, Medium=3, Low=4, Info=5) before returning. Stable sort preserves detection order for ties.
+- **F-315 (BUG #2, MEDIUM) — "Mark as Safe" tamper-detection** — Companion option `swisswpsuite_security_ignored_path_hashes` stores a SHA-256 hash for each whitelisted file at the time of marking. The scanner verifies the stored hash against the file's current hash on each scan; mismatch evicts the entry from the allowlist and re-flags the file. Defends against benign-file → malware swaps on whitelisted paths.
+
+### Closed
+- **F-316 (BUG #3, LOW) — Email report wrong address** — Closed as INVALID / NOT_REPRODUCIBLE. Code trace verified that the save endpoint and the mailer read the same option key (`swisswpsuite_scan_report_email`); save flow uses AJAX `onBlur` per project rules. Reported "wrong address" likely originated from `admin_email` fallback when the user's input failed `is_email()` validation.
+
+---
+
 ## [2.9.28.44] - 2026-04-24
 
 ### Fixed
