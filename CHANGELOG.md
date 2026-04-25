@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.47] - 2026-04-25
+
+### Fixed
+- **CRITICAL fix — Wrapped Groq call sites in try-catch(\Throwable)** — The previous fix (v2.9.28.46) incorrectly wrapped `wc_get_product()` in try-catch, which is pure local data access and makes no HTTP calls. The actual `WpOrg\Requests\TypeError` ("Argument #3 must be of type array|string, boolean given") propagates from the underlying `WpOrg\Requests\Curl` transport inside `wp_remote_post()`. Both `generate_image_seo()` (line 921) and `generate_seo_meta()` (line 983) are now protected. If the transport throws, the item is moved to `failed` with a TypeError marker and the queue continues processing.
+
 ## [2.9.28.46] - 2026-04-25
 
 ### Fixed
