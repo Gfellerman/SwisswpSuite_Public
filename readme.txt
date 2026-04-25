@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.45
+Stable tag: 2.9.28.46
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,9 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.46 =
+* SEO death-spiral fix — Groq rate-limited/504 failures during background SEO now mark items permanently failed (never retried). Semaphore lock prevents concurrent WP-Cron and REST poll processing. Status endpoint returns HTTP 503 with retry_after when blocked. Frontend respects retry_after and backs off polling.
 
 = 2.9.28.45 =
 * CRITICAL: Fixed Groq json_validate_failed retry that was causing ~90% of content rewrite calls to fail terminally — retry now strips response_format so the second attempt succeeds.

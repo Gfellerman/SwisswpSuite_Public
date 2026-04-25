@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.46] - 2026-04-25
+
+### Fixed
+- **SEO death-spiral fix** — When Groq returns `rate_limited`/504/timeout during background SEO processing, items are now marked permanently failed and never retried. A semaphore lock (`swisswpsuite_seo_bg_lock`) prevents WP-Cron and REST poll from racing. The status endpoint returns HTTP 503 with `retry_after` when the lock is held or skip window is active. `SeoManager` respects `retry_after` and reschedules polling at that interval instead of always 10s.
+
 ## [2.9.28.45] - 2026-04-25
 
 ### Fixed
