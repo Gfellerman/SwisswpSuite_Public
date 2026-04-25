@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.47
+Stable tag: 2.9.28.48
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,16 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.48 =
+* SEO BG-queue bug-cluster fix sprint — 8 socratic-audit findings resolved in one release.
+* F-318 (CRITICAL): generate_faq() exception no longer silently discards entire batch progress. Wrapped in try/catch(\Throwable) AND moved the queue save inside the finally block.
+* F-319 (CRITICAL): Atomic INSERT IGNORE semaphore lock replaces the prior TOCTOU-race get_option→check→update_option pattern. Stale-lock cleanup runs first because this lock is process-wide.
+* F-320 (HIGH): Permanent-failure marker ('permanent_failure: <code>') survives in postmeta — the trailing update_post_meta() that was overwriting it has been moved inside the else branch only.
+* F-321 (CRITICAL): Removed the perpetual-503 loop. The API status handler no longer treats permanently_failed as a sticky 503 trigger; skip_until is now armed once-per-new-permanent-failure inside core.php and read by the existing 30-second staleness window.
+* F-322 (HIGH): Lock TTL bumped from 120s to 180s (must exceed set_time_limit(120) + Groq HTTP latency). Defined as SWISSWPSUITE_SEO_LOCK_TTL constant in swisswpsuite-config-manifest.php — single source of truth across both core.php and api-seo.php.
+* F-323 (HIGH): The "permanently_failed" count is now visible in the SEO progress banner. The field has been in the API response since v2.9.28.45 but the React state shape never declared it.
+* F-324 (MEDIUM): Sonner toast deduplication via stable id "seo-rate-limited" — repeated 503 responses now refresh the existing toast instead of stacking dozens of duplicates on screen.
 
 = 2.9.28.47 =
 * CRITICAL fix: Wrapped Groq call sites in try-catch(\Throwable). The previous v2.9.28.46 fix incorrectly wrapped wc_get_product() (pure local data access, no HTTP calls). The WpOrg\Requests\TypeError comes from the wp_remote_post() transport layer — both generate_image_seo() and generate_seo_meta() are now protected.
