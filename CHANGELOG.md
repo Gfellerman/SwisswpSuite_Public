@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.50] - 2026-04-27
+
+### Added
+- **WP AI Client routing tier (PR 2)** — `SwissWPSuite_Groq::call_api()` now checks for WordPress 7.0's `wp_ai_client_prompt()` before dispatching to the VPS Bunker proxy. When a user-configured AI Connector is present (Claude, GPT-4, Gemini), all text-mode AI calls route through WP AI Client (Tier 1) with automatic fallback to the Bunker proxy on failure. Vision calls and Groq Batch jobs are explicitly excluded (Tier 1 flag `$is_batch_call`). Zero call sites changed — routing is internal to `call_api()`. Synthetic response wraps WP AI Client output in the decoded shape callers already expect (json_mode decodes the JSON string; non-json-mode returns `['content' => ...]`). Gated on `SWISSWP_WP7 && function_exists('wp_ai_client_prompt')` — no behaviour change on WP 6.9.
+- **Abilities API registration (PR 3)** — New `SwissWP_Abilities` class registers 4 abilities and 5 categories with the WordPress Abilities API (backported to WP 6.9). Abilities: `swisswpsuite/get-server-health` (synchronous), `swisswpsuite/scan-malware`, `swisswpsuite/sync-to-remote`, `swisswpsuite/enhance-seo-content` (all async — queue the operation and return a job reference). Guarded by `class_exists('WP_Ability')` rather than `SWISSWP_WP7` because the API was backported. All async execute callbacks return `{job_id/scan_id/batch_id, status_url}` immediately.
+- **WP Connector admin notice** — Admin notice shown on WP 7.0 sites where no AI Connector is configured, informing users that Pro license works automatically but a personal connector is available.
+- **Free-tier WP AI Client gate** — `wp_ai_client_prevent_prompt` filter blocks Tier 1 routing for non-Pro users, preserving the existing rate-limited Bunker proxy path.
+
+## [2.9.28.49] - 2026-04-27
+
+### Added
+- **SWISSWP_WP7 feature gate** — New global constant exposes a boolean (`true` on WordPress 7.0+, `false` otherwise) computed once at plugin load from `$GLOBALS['wp_version']`. Phase A of the WordPress 7.0 migration plan; downstream Phase B/C code branches will key off this constant rather than re-querying the WP version at every call site. Zero behaviour change on WordPress 6.9 and earlier.
+- **RTC collaboration defer for scheduled syncs** — `SwissWPSuite_Sync_Scheduler::run_job()` now checks `post_type_exists('wp_sync_storage')` (WordPress 7.0's Real-Time Collaboration session post type) before pushing content to a remote target. If a session is open, the job releases its flock, schedules itself 60 seconds later via `wp_schedule_single_event()`, and increments a per-job retry transient (`swisswpsuite_rtc_retry_<job_id>`). After 10 consecutive deferrals (~10 minutes) the job is abandoned with an `error`-level diagnostic so a stuck session never permanently blocks the sync queue. WordPress 6.9 and earlier are unaffected — the post type doesn't exist, so the guard short-circuits.
+
+### Security
+- **MySQL 8.0 SQL identifier hardening** — Sanitised all dynamic SQL identifiers (table and column names) in three backup-path classes against a strict `[a-zA-Z0-9_$]` allowlist before interpolation. Numeric `LIMIT`/`OFFSET` arguments now pass through `$wpdb->prepare()`. SQL identifiers cannot be parameterised by `$wpdb->prepare()`; the only safe pattern is sanitise-then-interpolate, and this PR applies it consistently.
+  - `class-swisswpsuite-backup.php` — search-and-replace path (line ~7656). The previous raw-concat `LIMIT $offset, $limit` is now `$wpdb->prepare('... LIMIT %d, %d', ...)`.
+  - `class-swisswpsuite-database-dumper.php` — `export_to_file()`. New private `safe_identifier()` helper applied to all 9 raw `$table` interpolations across `SHOW CREATE TABLE`, `DROP TABLE`, `SELECT COUNT(*)`, `SHOW KEYS`, `DESCRIBE`, keyset-pagination `SELECT`, `INSERT INTO`, and OFFSET-pagination `SELECT`.
+  - `class-swisswpsuite-logger.php` — `get_logs()` and `get_log_count()`. Both raw `$table` interpolations now sanitised.
+- **Migration receiver `mysqli_real_escape_string()` tracker entry (TD-58)** — All 10 occurrences in `swisswp-receiver-template.php` carry inline TODO comments and are tracked in `docs/TECHNICAL_DEBT.md` for a future prepared-statement refactor. No behaviour change in this release — `mysqli_real_escape_string()` works correctly under MySQL 8.0; the markers exist to surface the call sites in greps for the eventual rewrite.
+
+---
+
 ## [2.9.28.48] - 2026-04-25
 
 ### Fixed

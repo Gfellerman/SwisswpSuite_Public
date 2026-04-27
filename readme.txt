@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.48
+Stable tag: 2.9.28.50
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,15 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.50 =
+* WP 7.0 migration Phase B — WP AI Client routing tier inside SwissWPSuite_Groq::call_api() (zero call sites changed), Abilities API registration for 4 capabilities (get-server-health, scan-malware, sync-to-remote, enhance-seo-content), free-tier WP AI Client gate, and admin notice for unconfigured Connectors on WP 7.0 sites. Phase B bugs fixed: PHP 7.4 union-type parse error, non-existent license method, Groq response shape mismatch.
+
+= 2.9.28.49 =
+* WP 7.0 migration foundation (Phase A) — Adds the SWISSWP_WP7 feature gate and prepares the sync layer to coexist with WordPress 7.0's Real-Time Collaboration sessions. Zero behavior change on WordPress 6.9 and earlier.
+* SWISSWP_WP7 constant: Plugin now exposes a global SWISSWP_WP7 boolean (true on WordPress 7.0+) so feature flags can branch deterministically without re-querying the WP version at every call site.
+* RTC defer for scheduled syncs: When a WordPress 7.0 Real-Time Collaboration session is open on the same site, scheduled sync jobs now defer 60 seconds (up to 10 retries / ~10 minutes) instead of pushing into a live co-authoring session and risking CRDT divergence. Guarded by post_type_exists('wp_sync_storage'), so WordPress 6.9 sites are unaffected.
+* MySQL 8.0 SQL hardening — Sanitised all dynamic SQL identifiers (table and column names) in backup, database-dumper, and logger paths via a strict [a-zA-Z0-9_$] allowlist. Numeric LIMIT/OFFSET arguments now pass through $wpdb->prepare(). The receiver-template's mysqli_real_escape_string() call sites carry inline TODOs and a tracker entry (TD-58) for the eventual prepared-statement refactor — no logic change, behaviour preserved on MySQL 5.7 and 8.0.
 
 = 2.9.28.48 =
 * SEO BG-queue bug-cluster fix sprint — 8 socratic-audit findings resolved in one release.
