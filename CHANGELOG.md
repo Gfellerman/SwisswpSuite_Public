@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.52] - 2026-04-28
+
+### Fixed
+- **Snapshot slug separator** — `sanitize_file_name()` was stripping `/` from plugin slugs like `hostinger-reach/hostinger-reach.php`, producing `hostinger-reachhostinger-reach.php` and causing `invalid_plugin_file` 400 errors on every restore attempt. The separator is now preserved by splitting on `/` before sanitizing only the directory component.
+- **Snapshot meta.json persistence** — A `swisswpsuite-meta.json` file is written alongside each new snapshot to persist the full `plugin_file` path, surviving the sanitization boundary and making the field available to the restore call.
+- **SnapshotList restore payload** — Both restore steps (step 1 and step 2 confirmation) now send `plugin_file: snap.plugin_file ?? snap.slug`, ensuring the correct `folder/file.php` format reaches the restore API instead of the mangled slug.
+
+### Infrastructure
+- **VPS Nginx timeout** — `proxy_read_timeout` raised from default 60 s to 130 s on `/v1/sentinel/` and `/v1/ai/` location blocks, eliminating 504 Gateway Timeout errors on long Groq Compound AI analysis calls (which have a 120 s axios timeout on the Node.js side).
+
+---
+
 ## [2.9.28.51] - 2026-04-28
 
 ### Security

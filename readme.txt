@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.51
+Stable tag: 2.9.28.52
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,12 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.52 =
+* Fix: Snapshot slug separator preserved — sanitize_file_name() no longer strips the slash from plugin slugs like "folder/file.php", preventing invalid_plugin_file 400 errors on restore.
+* Fix: swisswpsuite-meta.json written per snapshot to persist full plugin_file path across the sanitization boundary.
+* Fix: SnapshotList.tsx restore calls now send plugin_file ?? slug ensuring the correct folder/file.php format reaches the API.
+* VPS: Nginx proxy_read_timeout raised to 130s on /v1/sentinel/ and /v1/ai/ — eliminates 504 Gateway Timeout on long Groq Compound AI analysis calls.
 
 = 2.9.28.51 =
 * Security: Conditional comment SQL bypass closed — $inner blocks now pass through is_dangerous_import_sql() before execute.
