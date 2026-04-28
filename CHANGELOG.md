@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.51] - 2026-04-28
+
+### Security
+- **Conditional comment SQL bypass closed** — MySQL conditional comment blocks (`/*!...*/`) extracted during SQL import are now validated through `is_dangerous_import_sql()` before execution, preventing an attacker from wrapping forbidden SQL in a conditional comment to bypass the import filter.
+- **2FA brute-force protection via CSRF nonce** — The pre-authentication 2FA challenge form now emits a WordPress nonce (`swisswpsuite_2fa_verify`) and the POST handler verifies it with `wp_verify_nonce()`, blocking CSRF-assisted brute-force attacks on the code input.
+- **Atomic token deduction** — `deduct_tokens()` now uses a single atomic SQL `UPDATE … WHERE CAST(option_value AS SIGNED) >= $amount` instead of a read→compute→write sequence, eliminating the race condition where two concurrent AI requests could both observe a sufficient balance and double-spend tokens.
+
+### Fixed
+- **Update Guard enable/disable toggle** — The master guard switch was read-only (`StatusBadge` had no click handler). A full ARIA `role="switch"` toggle is now rendered in the card header; clicking it sends `POST /update-guard/settings {enabled, mode}` with an optimistic UI update and automatic revert on failure.
+- **Update Guard URL allowlist editor (Pro)** — The `url_allowlist` field was defined in types and handled by the API but had no UI. A Pro-gated textarea now renders the current allowlist (loaded from `GET /update-guard/status`) and saves changes via the settings endpoint.
+- **SEO on-page audit scope** — The batch post fetch used `post_status => 'any'`, causing draft, private, and trashed content to appear in per-post SEO scores while the dashboard counter only includes published posts. Changed to `post_status => 'publish'` for consistency.
+- **PHP 8.0 nested ternary fatal** — Three ambiguous nested ternaries in `class-swisswpsuite-core.php` (SEO result field extraction) replaced with null-coalescing chains (`?? ??`); PHP 8.0+ treats unparenthesized nested ternaries as a fatal deprecation.
+- **Hook `accepted_args` mismatch** — `SwissWP_Abilities` registered two zero-parameter action callbacks with implicit `accepted_args=1`; corrected to explicit `10, 0`.
+
+### Added
+- **`confidence_score` in Update Guard verdict** — `UpdateGuardLastVerdict` TypeScript interface now declares `confidence_score?: number` (0.0–1.0 float from the update scanner) so frontends can display a percentage without backend changes.
+- **Config manifest: `admin_safelist_ips`** — `swisswpsuite_admin_safelist_ips` added to `SECURITY_SETTINGS` so the IP allowlist is snapshotted before import and restored by `post_import_recovery()`.
+- **`autoload=false` on large options** — `swisswpsuite_banned_ips`, `swisswpsuite_admin_safelist_ips`, and all 7 SMTP settings now stored with `autoload='no'`; these options can grow large and should not load on every WordPress page request.
+
 ## [2.9.28.50] - 2026-04-27
 
 ### Added

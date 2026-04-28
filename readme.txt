@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.50
+Stable tag: 2.9.28.51
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,19 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.51 =
+* Security: Conditional comment SQL bypass closed — $inner blocks now pass through is_dangerous_import_sql() before execute.
+* Security: 2FA nonce added to challenge form and POST handler — prevents CSRF-assisted brute-force.
+* Security: Atomic token deduction — UPDATE WHERE balance >= amount replaces race-prone read/modify/write.
+* Fix: Update Guard enable/disable toggle (ARIA role=switch, optimistic UI, was read-only StatusBadge).
+* Fix: Update Guard URL allowlist editor for Pro — textarea saves/loads url_allowlist via settings API.
+* Fix: SEO on-page audit post_status changed from 'any' to 'publish' to match dashboard stats.
+* Fix: PHP 8.0 nested ternary fatal in core.php — replaced with null-coalescing chains.
+* Fix: Hook accepted_args corrected to 0 for zero-parameter SwissWP_Abilities callbacks.
+* Added: confidence_score field to UpdateGuardLastVerdict TypeScript interface.
+* Added: admin_safelist_ips to config manifest SECURITY_SETTINGS.
+* Added: autoload=false for banned_ips, admin_safelist_ips, and 7 SMTP settings options.
 
 = 2.9.28.50 =
 * WP 7.0 migration Phase B — WP AI Client routing tier inside SwissWPSuite_Groq::call_api() (zero call sites changed), Abilities API registration for 4 capabilities (get-server-health, scan-malware, sync-to-remote, enhance-seo-content), free-tier WP AI Client gate, and admin notice for unconfigured Connectors on WP 7.0 sites. Phase B bugs fixed: PHP 7.4 union-type parse error, non-existent license method, Groq response shape mismatch.
