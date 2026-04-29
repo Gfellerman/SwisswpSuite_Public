@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.53] - 2026-04-29
+
+### Fixed
+- Snapshot restore: legacy snapshots (pre-v2.9.28.52, no meta.json) now restore correctly via server-side disk scan fallback; inner plugin directory was never mangled so recovery is reliable for standard WP plugin layouts.
+- Snapshot restore: rollback target slug now derived server-side as `dirname($plugin_file)`, preventing a silent no-op where rollback created a non-existent directory while leaving the actual bad plugin in place.
+- Snapshot restore: empty-string `plugin_file` parameter no longer bypasses API regex validation (defense-in-depth).
+
+### Added
+- "Legacy" amber badge in snapshot list for snapshots created before v2.9.28.52, indicating restore path is recovered via disk scan rather than embedded metadata.
+
+---
+
 ## [2.9.28.52] - 2026-04-28
 
 ### Fixed

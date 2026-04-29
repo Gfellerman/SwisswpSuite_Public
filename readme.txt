@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.52
+Stable tag: 2.9.28.53
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,12 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.53 =
+* Fix: Snapshot restore now server-authoritative — recover_plugin_file_from_snapshot() reads meta.json (fast path) or disk-scans inner directory (fallback) instead of trusting frontend-supplied plugin_file.
+* Fix: Rollback target slug now derived as dirname($plugin_file) server-side, preventing silent no-op restores where rollback operated on a non-existent mangled directory.
+* Fix: Empty plugin_file string no longer bypasses API regex validation.
+* UI: Legacy badge shown on snapshot rows created before v2.9.28.52 (plugin_file lacks '/').
 
 = 2.9.28.52 =
 * Fix: Snapshot slug separator preserved — sanitize_file_name() no longer strips the slash from plugin slugs like "folder/file.php", preventing invalid_plugin_file 400 errors on restore.
