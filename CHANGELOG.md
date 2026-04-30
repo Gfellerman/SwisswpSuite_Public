@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.58] - 2026-04-30
+
+### Fixed
+- Identity hash protocol drift: `generate_identity_hash()` now strips protocol (`http://`/`https://`) before hashing, so HTTP→HTTPS migrations don't invalidate the stored hash
+- `is_identity_valid()` now includes a migration path for hashes stored with protocol prefix — transparently upgrades stored hash on first run after update
+
 ## [2.9.28.57] - 2026-04-30
 
 ### Fixed
