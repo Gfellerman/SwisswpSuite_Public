@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.57] - 2026-04-30
+
+### Fixed
+- F-326 (add): `analyze_security_logs` AI prompt sanitizes `ip_address` via `sanitize_text_field()` and `event` via `esc_html()` — prevents prompt injection from raw DB values
+- F-329 Bug 4: `verify_sync_integrity` fallback branches now log WARNING when `json_encode` fails for `source_data` or `target_data`
+- F-329 (additional): `wp_json_encode` retry_body guard added — returns `WP_Error` on failure instead of silently sending empty body
+- F-330 Bug 2: Bulk security `ignore` action now tracks invalid paths in `$failed` array with reasons — no more silent discards
+- F-331 Bug 1: `DISABLE_WP_CRON` check uses `constant()` after `defined()` — handles falsy-but-defined values (`''`, `0`) correctly
+- F-331 Bug 2: `SeoBackgroundStatus` TypeScript interface now declares `cron_blocked?: boolean` — eliminates type drift between types.ts and API response
+- F-333: 6 additional `update_option` calls in `api-seo.php` now use `autoload=false` — prevents SEO batch state from polluting wp_options cache
+- F-334: `SeoManager` slow-batch poll catch block now clears `slowBatchJobId` and `groqBatchId` alongside `slowBatchInProgress` — no more stuck banners
+
+---
+
 ## [2.9.28.56] - 2026-04-30
 
 ### Fixed
