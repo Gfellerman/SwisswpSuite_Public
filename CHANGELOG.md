@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.56] - 2026-04-30
+
+### Fixed
+- F-326: Security logs endpoint now escapes log messages with `esc_html()` — defense-in-depth against XSS in log viewing
+- F-329: Groq API responses now use `JSON_INVALID_UTF8_ERROR | JSON_PARTIAL_OUTPUT_ON_ERROR` flags — prevents silent data corruption for non-English content (Chinese, Arabic, emoji)
+- F-330: Bulk security actions now return failed-item list with reasons — actionable error reporting instead of silent partial failures
+- F-331: SEO tab now shows inline fallback warning when WP-Cron is disabled (Hostinger/LiteSpeed environments)
+- F-332: Scan results React key now uses evidence path (globally unique) instead of scan-local ID — no more duplicate key warnings
+- F-333: SEO worker batch `update_option()` calls now use `autoload=false` — no more wp_options cache pollution
+- F-334: SEO batch banner now clears automatically on network error — no more stuck banners
+- F-335: M2 (Permissions Audit) now respects "Mark as Safe" ignore list — findings from ignored paths filtered correctly (same as M1/M3)
+
+---
+
 ## [2.9.28.55] - 2026-04-30
 
 ### Fixed
