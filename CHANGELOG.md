@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.54] - 2026-04-30
+
+### Fixed
+- H-1: M2 (Permissions Audit) now respects user's "Mark as Safe" ignore list — permission findings for ignored files no longer reappear on every scan
+- H-3: Mark-as-Safe now calls record_fixed_finding() so findings stop reappearing in historical scan records
+
+---
+
 ## [2.9.28.53] - 2026-04-29
 
 ### Fixed
