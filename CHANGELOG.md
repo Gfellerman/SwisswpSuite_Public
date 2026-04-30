@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.55] - 2026-04-30
+
+### Fixed
+- H-4: SEO batch queue now processes up to 3 items inline when `DISABLE_WP_CRON` is set — prevents queue stall on Hostinger/LiteSpeed/Cloudflare environments where WP-Cron loopback is blocked
+
+---
+
 ## [2.9.28.54] - 2026-04-30
 
 ### Fixed
