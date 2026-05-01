@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.61
+Stable tag: 2.9.28.62
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -112,9 +112,8 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 * Added: admin_safelist_ips to config manifest SECURITY_SETTINGS.
 * Added: autoload=false for banned_ips, admin_safelist_ips, and 7 SMTP settings options.
 
-= 2.9.28.61 =
-* Fix: Contract sync — added last_scan_source to SecurityStatus interface (PHP already returns this field at api-security.php:424)
-* Fix: Contract sync — removed phantom quarantine_path field from QuarantineFile interface (PHP never returns this at quarantine.php:198-203)
+= 2.9.28.62 =
+* Fix: DISABLE_WP_CRON truthiness bug fixed in api-seo.php:1392, api-backup.php:1755, and api-backup.php:2140 — `constant('DISABLE_WP_CRON') !== false` now correctly handles empty-string define values
 
 = 2.9.28.60 =
 * Fix: P0-1 post_status whitelist validation in sync upsert — blocks ghost-post injection from malicious capsules

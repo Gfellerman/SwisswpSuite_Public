@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.62] - 2026-05-01
+
+### Fixed
+- DISABLE_WP_CRON truthiness: fixed boolean check in `api-seo.php` (line 1392) and `api-backup.php` (lines 1755, 2140) to correctly handle `define('DISABLE_WP_CRON', '')` empty-string pattern common on Hostinger/LiteSpeed hosts
+
 ## [2.9.28.61] - 2026-05-01
 
 ### Fixed
