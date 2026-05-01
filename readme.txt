@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.58
+Stable tag: 2.9.28.59
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -111,6 +111,19 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 * Added: confidence_score field to UpdateGuardLastVerdict TypeScript interface.
 * Added: admin_safelist_ips to config manifest SECURITY_SETTINGS.
 * Added: autoload=false for banned_ips, admin_safelist_ips, and 7 SMTP settings options.
+
+= 2.9.28.59 =
+* Fix: P0-1 post_status whitelist validation in sync upsert — blocks ghost-post injection from malicious capsules
+* Fix: P0-2 sync-scheduler now includes 'auto-draft' post_status — FSE templates synced correctly
+* Fix: P1-6 DISABLE_WP_CRON truthiness bug — inline fallback triggers when constant is empty string
+* Fix: P2-1 analyze_firewall_logs() uses esc_html() instead of wp_strip_all_tags() — XSS evidence preserved
+* Fix: P2-3 WooCommerce REST allowlist adds wc/store/v2, wc-analytics/v1, wc-admin/v1
+* Fix: P2-4 post_apply_verify() now re-validates license after plugin updates
+* Fix: P2-5 backup count query aligned with scan_for_links() post_status filter
+* Fix: P3-2 symlink-escape case now tracked in $failed[] array
+
+= 2.9.28.58 =
+* Fix: Identity hash protocol drift — generate_identity_hash() strips protocol before hashing; is_identity_valid() upgrades stored hash on update
 
 = 2.9.28.50 =
 * WP 7.0 migration Phase B — WP AI Client routing tier inside SwissWPSuite_Groq::call_api() (zero call sites changed), Abilities API registration for 4 capabilities (get-server-health, scan-malware, sync-to-remote, enhance-seo-content), free-tier WP AI Client gate, and admin notice for unconfigured Connectors on WP 7.0 sites. Phase B bugs fixed: PHP 7.4 union-type parse error, non-existent license method, Groq response shape mismatch.

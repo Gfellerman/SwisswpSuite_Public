@@ -6,7 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
-## [2.9.28.58] - 2026-04-30
+## [2.9.28.59] - 2026-05-01
+
+### Fixed
+- P0-1: post_status whitelist validation in sync upsert — blocks ghost-post injection from malicious capsules
+- P0-2: sync-scheduler post_status filter now includes 'auto-draft' — FSE templates synced correctly
+- P1-6: DISABLE_WP_CRON boolean truthiness fix — inline fallback triggers correctly when constant is empty string
+- P2-1: analyze_firewall_logs() now uses esc_html() instead of wp_strip_all_tags() — XSS forensic evidence preserved for AI analysis
+- P2-3: WooCommerce REST allowlist now includes wc/store/v2, wc-analytics/v1, wc-admin/v1
+- P2-4: post_apply_verify() now re-validates license after plugin updates
+- P2-5: backup count query aligned to use same post_status filter as scan_for_links()
+- P3-2: symlink-escape case now tracked in $failed[] array in bulk_security_action()
+
+## [2.9.28.58]
 
 ### Fixed
 - Identity hash protocol drift: `generate_identity_hash()` now strips protocol (`http://`/`https://`) before hashing, so HTTP→HTTPS migrations don't invalidate the stored hash
