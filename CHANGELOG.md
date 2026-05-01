@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.61] - 2026-05-01
+
+### Fixed
+- Contract sync: added `last_scan_source?: string` to `SecurityStatus` interface (PHP already returns this field at api-security.php:424)
+- Contract sync: removed phantom `quarantine_path` field from `QuarantineFile` (PHP never returns this field at quarantine.php:198-203)
+
+## [2.9.28.60] - 2026-05-01
+
+### Fixed
+- Contract sync: added `last_scan_source?: string` to `SecurityStatus` interface (PHP already returns this field)
+- Contract sync: removed phantom `quarantine_path` field from `QuarantineFile` (PHP never returns this field)
+
 ## [2.9.28.59] - 2026-05-01
 
 ### Fixed
