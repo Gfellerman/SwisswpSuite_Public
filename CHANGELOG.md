@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.28.64] - 2026-05-02
+
+### Fixed
+- **Dashboard/Security Status dual-source inconsistency**: `threats_blocked` in Security Status panel now reads from the authoritative `COUNT(*)` query instead of the stale `swisswpsuite_threats_blocked_count` option, matching the Dashboard panel
+
+### Changed
+- **Dead code cleanup**: Removed orphaned `swisswpsuite_threats_blocked_count` option write from `block_request()`; removed option from config manifest OPERATIONAL_STATE
+
 ---
 
 ## [2.9.28.63] - 2026-05-02
