@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.65
+Stable tag: 2.9.28.66
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,12 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.66 =
+* Fix: /security/status HTTP 500 resolved — missing global $wpdb in get_security_status().
+* Fix: Abandoned plugins label changed from "NOT ON WP.ORG" to "SLUG MISMATCH..." on plugin row cards.
+* Fix: File Integrity card now shows "Automatic daily checks enabled" when last scan is "Never" instead of showing stale timestamp.
+* Fix: Added swisswpsuite_daily_integrity_check cron hook to run daily core file integrity scans and update the last_scan_time option so the File Integrity card never shows "Never".
 
 = 2.9.28.53 =
 * Fix: Snapshot restore now server-authoritative — recover_plugin_file_from_snapshot() reads meta.json (fast path) or disk-scans inner directory (fallback) instead of trusting frontend-supplied plugin_file.

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.28.66] - 2026-05-02
+
+### Fixed
+- **/security/status HTTP 500**: Missing global `$wpdb` in `get_security_status()` — PHP fatal on fresh install
+- **File Integrity "Never" text**: Card now shows "Automatic daily checks enabled" instead of "Never" when no scan has run; daily cron hook `swisswpsuite_daily_integrity_check` added to keep last_scan_time current
+
 ## [2.9.28.65] - 2026-05-02
 
 ### Fixed
