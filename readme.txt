@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.62
+Stable tag: 2.9.28.63
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -114,6 +114,10 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 
 = 2.9.28.62 =
 * Fix: DISABLE_WP_CRON truthiness bug fixed in api-seo.php:1392, api-backup.php:1755, and api-backup.php:2140 — `constant('DISABLE_WP_CRON') !== false` now correctly handles empty-string define values
+
+= 2.9.28.63 =
+* Fix: CRIT-3 — ScanHistoryRecord severity count gap — get_sentinel_scan_history() now computes high_count, medium_count, and low_count from layer1_json findings alongside critical_count
+* Fix: ScanHistoryRecord TypeScript interface updated with high_count?, medium_count?, low_count? optional fields
 
 = 2.9.28.60 =
 * Fix: P0-1 post_status whitelist validation in sync upsert — blocks ghost-post injection from malicious capsules

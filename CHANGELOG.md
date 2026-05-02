@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [2.9.28.63] - 2026-05-02
+
+### Fixed
+- CRIT-3: `get_sentinel_scan_history()` now computes `high_count`, `medium_count`, and `low_count` from layer1_json findings alongside `critical_count`
+- TypeScript `ScanHistoryRecord` interface updated with `high_count?`, `medium_count?`, `low_count?` optional fields
+
 ## [2.9.28.62] - 2026-05-01
 
 ### Fixed
