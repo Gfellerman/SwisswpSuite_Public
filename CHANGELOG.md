@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.28.65] - 2026-05-02
+
+### Fixed
+- **Abandoned plugins UI label**: Changed "NOT ON WP.ORG" to "SLUG MISMATCH — Verify if the plugin is still available on WordPress.org if it has been removed" — the 404 is often a slug mismatch, not a removed plugin
+
+### Changed
+- **Dashboard/Security Status dual-source fix**: `threats_blocked` in Security Status panel now reads from authoritative `COUNT(*)` query instead of stale option (shipped in v2.9.28.64, documented here for completeness)
+
 ## [2.9.28.64] - 2026-05-02
 
 ### Fixed
