@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.28.67] - 2026-05-04
+
+### Fixed
+- **Version bump verification**: Confirmed all 16 key implementations from v2.9.28.50 through v2.9.28.66 are correctly shipped — CRIT-3 severity count gap closed, SecurityStatus.last_scan_source contract synced, DISABLE_WP_CRON truthiness fixed, identity hash read-back verified, threats_blocked dual-source authoritative, RemediateResponse TS interface aligned to PHP response
+
 ## [2.9.28.66] - 2026-05-02
 
 ### Fixed
