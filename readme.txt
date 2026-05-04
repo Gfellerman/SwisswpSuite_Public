@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.67
+Stable tag: 2.9.28.68
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -202,6 +202,9 @@ Each license key is locked to one domain. Contact support for multi-site licensi
 * Fixed: Scan-tab banner "Last grade" no longer stale after a manual Full AI Scan (Bug 3) — swisswpsuite_last_scan_report is stamped at Phase 2 completion
 * Internal: New get_posture_snapshot() / build_posture_snapshot() helpers centralise posture reading across orchestrator + sentinel-security; manifest-verified key reads only
 
+
+= 2.9.28.68 =
+* Changed: Rebrand "Security Audit" → "Sentinel Audit" across all user-facing labels — scan card titles, email subjects and headings, dashboard notification titles and footers, error messages, and remediation step strings now consistently use "Sentinel" branding.
 
 = 2.9.28.36 =
 * Fixed (Bug 1 — Grade Jitter): When the Full AI Scan's Layer 2 (AI) analyzer call fails, the grade stored in history is no longer computed from L1 finding counts alone. Instead, `run_l2_phase()` now looks up the most recent genuine L2-assigned grade from the last 30 days; if it is strictly better than the current L1 fallback, it is inherited (tagged `grade_source='inherited'`). When no prior good grade is available, the fallback grade is capped at 'C' minimum (`grade_source='l1_capped'`) — the error path never writes D or F to history again. Earned A or B grades are preserved; the floor only raises toward C.

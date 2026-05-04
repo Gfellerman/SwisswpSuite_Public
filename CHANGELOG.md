@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.28.68] - 2026-05-04
+
+### Changed
+- **Rebrand "Security Audit" → "Sentinel Audit"**: All user-facing labels, email subjects, notification titles, and error messages now consistently use "Sentinel" branding — restoring the original sentinel identity that built the product's reputation
+
 ## [2.9.28.67] - 2026-05-04
 
 ### Fixed
