@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.28.69] - 2026-05-04
+
+### Fixed
+- **Dashboard "Last Backup" accuracy**: Stats endpoint now reads from the automation store (`SwissWPSuite_Backup_Automations::get_all()`) instead of scanning the filesystem with `glob()`+`filemtime()`. The filesystem reflects ALL `.zip` files (manual backups, migration exports, failed runs) and doesn't distinguish automation state. The automation store's `last_run_at` is the canonical record of when a scheduled backup last ran.
+
 ## [2.9.28.68] - 2026-05-04
 
 ### Changed
