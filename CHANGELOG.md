@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.28.72] - 2026-05-06
+
+### Security
+- **B1+B2:** `run_sentinel_remediation()` now adds quarantined file to `swisswpsuite_security_ignored_paths` and removes it from `swisswpsuite_security_scan_results` — quarantined files no longer reappear on every scan
+
 ## [2.9.28.71] - 2026-05-06
 
 ### Security
