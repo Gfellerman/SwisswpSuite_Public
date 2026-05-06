@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.70
+Stable tag: 2.9.28.71
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,12 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.71 =
+* Security: Quarantine now adds path to swisswpsuite_security_ignored_paths (B1)
+* Security: Quarantine immediately clears scan_results for that path (B2)
+* Security: is_safe_folder() now skips quarantine directory (B3)
+* Security: ai_verdict field renamed to detection_method — no AI is involved (B4)
 
 = 2.9.28.70 =
 * Fix: Backup encryption wiring — `SwissWPSuite_Encryption::encrypt_file()` now wired into backup pipeline via new `phase_encrypt()` phase. Encrypted backups saved as `.zip.enc` files.

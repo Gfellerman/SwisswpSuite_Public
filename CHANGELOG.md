@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.28.71] - 2026-05-06
+
+### Security
+- **B1:** Quarantine now adds path to `swisswpsuite_security_ignored_paths` so it survives page reload
+- **B2:** Immediate `scan_results` cleanup on quarantine — findings for the quarantined path are cleared right away
+- **B3:** `is_safe_folder()` now skips the quarantine directory — quarantined malware is not rescanned
+- **B4:** `ai_verdict` field renamed to `detection_method` — no AI is involved in basic scan
+
 ## [2.9.28.70] - 2026-05-06
 
 ### Fixed
