@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.28.70] - 2026-05-06
+
+### Fixed
+- **Backup encryption wiring**: `SwissWPSuite_Encryption::encrypt_file()` now wired into the backup pipeline via a new `phase_encrypt()` phase. Archives encrypted with AES-256-CBC (OpenSSL) or xChaCha20-Poly1305 (Sodium) are saved as `.zip.enc` files when an encryption password is configured.
+- **Encryption password clear**: Settings API now accepts `clearEncryptionPassword: true` to remove the stored encryption password.
+- **Dead code removal**: `get_option('swisswpsuite_backup_last_run', null)` block removed from `get_backup_schedule()` — this option was never written and `last_run_status` was always null.
+
+### Added
+- **Encryption Settings card**: New Security-tab card for setting/clearing the backup encryption password with status badge (Active / Not configured / Key corrupted).
+- **Encrypted badge in BackupControl**: "Encrypted" emerald badge displayed next to "Save Backup Now" button when encryption password is active.
+
+### Security
+- Staging decryption always uses `$sql_temp_dir_early` (deny-all `.htaccess` protected), not ABSPATH.
+- Staging filename uses `wp_generate_password(24)` — random, unpredictable.
+- Magic byte detection (`WSENC` header) routes `.zip.enc` files through decrypt before extraction.
+
+### Docs
+- BACKUP_CAPABILITIES_REFERENCE.md: New Section 6 "Encryption-at-Rest" documenting password storage, job-state safety, and the not-yet-wired restorer caveat. Mode A/B/C terminology cross-reference disambiguation added.
+
 ## [2.9.28.69] - 2026-05-04
 
 ### Fixed

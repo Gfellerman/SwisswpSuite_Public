@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.69
+Stable tag: 2.9.28.70
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,14 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.28.70 =
+* Fix: Backup encryption wiring — `SwissWPSuite_Encryption::encrypt_file()` now wired into backup pipeline via new `phase_encrypt()` phase. Encrypted backups saved as `.zip.enc` files.
+* Fix: Encryption password can now be cleared via Settings API (new `clearEncryptionPassword` flag).
+* Fix: Dead `swisswpsuite_backup_last_run` read block removed from backup schedule endpoint (never populated, always null).
+* UI: New "Encryption" card in Security settings tab — set/clear encryption password with status badge.
+* UI: BackupControl now shows "Encrypted" badge when encryption password is configured.
+* Docs: BACKUP_CAPABILITIES_REFERENCE.md updated with Encryption-at-Rest section and Mode A/B/C terminology disambiguation.
 
 = 2.9.28.66 =
 * Fix: /security/status HTTP 500 resolved — missing global $wpdb in get_security_status().
