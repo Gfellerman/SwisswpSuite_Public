@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.28.72
+Stable tag: 2.9.30.72
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,20 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.30.72 =
+* Feat: M1-H VPS hash lookup integration — Deep Malware Scan now calls VPS `/v1/scan/batch` endpoint (Phase 3) to check file SHA256 hashes against MalwareBazaar + URLhaus database (hourly-refreshed). First-time plugin connection to the `/v1/scan/batch` endpoint — not a regression, new integration.
+* Feat: Source-badge deduplication — M1-H malicious hash matches skip M1-C regex for that file to avoid false positives from pattern matching on confirmed known-malware files.
+* Feat: Soft-degrade on VPS hash lookup — 5s timeout returns clean verdict; 403 (invalid/expired license) skips silently; scan completes without M1-H results if VPS unreachable.
+* Docs: Audit report `VPS_MALWARE_HASH_LOOKUP_DROPPED_v2.9.6.0_AUDIT_2026-05-06.md` corrected — executive summary now reflects that `/v1/scan/batch` was never connected prior to this sprint (new integration, not reconnection).
+
+= 2.9.29.0 =
+* Feat: Deep Malware Scan async polling state machine — new POST /security/scan/malware/start + GET /security/scan/malware/status endpoints (Pro only). 8-phase pipeline: enumerate → hashing → vps_lookup → local_scan → wpscan → patchstack → ai_analysis → complete.
+* Feat: Source-tag badges on scan result rows (Hash DB / Pattern / WPScan / Patchstack / AI).
+* Changed: POST /security/scan/malware?mode=deep now returns 410 Gone — use /malware/start.
+* Changed: POST /security/scan/full-ai (sync) returns 410 Gone — use /malware/start.
+* Changed: POST /security/deep-scan/start + GET /security/deep-scan/status return 410 Gone (final removal).
+* Compat: /scan/full-ai/start and /scan/full-ai/status kept as backward-compat aliases.
 
 = 2.9.28.71 =
 * Security: Quarantine now adds path to swisswpsuite_security_ignored_paths (B1)

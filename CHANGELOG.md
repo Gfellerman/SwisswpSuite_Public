@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.72] - 2026-05-08
+
+### Added
+- **M1-H VPS Hash Lookup:** Deep Malware Scan now calls VPS `/v1/scan/batch` in Phase 3 — batched SHA256 hash lookups (≤500/call) against the PostgreSQL `malware_signatures` table (MalwareBazaar + URLhaus, hourly-refreshed). This is the first connection between the plugin and the `/v1/scan/batch` endpoint — new integration, not a regression reconnection.
+- **Source-badge deduplication:** When M1-H returns `malicious` for a file, M1-C regex is skipped for that file. Hash matches are deterministic (100% confidence); regex is heuristic — deduplication avoids false positives on confirmed known-malware files.
+- **Soft-degrade on hash lookup:** VPS unreachable (5s timeout) → all clean verdicts; invalid/expired license (403) → hash lookup skipped silently. Scan completes with remaining phases. No hard failure.
+
+### Changed
+- **Malware Scan Free (Free tier):** Now uses bounded signature scan (50–100 recently-modified plugin/theme PHP files, regex only) instead of WordPress.org checksum diff.
+- **Sentinel Audit M4-D2:** WPScan + Patchstack live API calls removed from the AI Security Audit's L1 path; these APIs are now exclusively used in Deep Malware Scan Phases 5+6 with full CVE correlation. Sentinel Audit uses the hardcoded CVE fallback list for L1 CVE detection.
+
+### Deprecated
+- `POST /security/scan/full-ai` (sync) → use `POST /security/scan/malware/start`
+- `POST /security/scan/malware?mode=deep` → use `POST /security/scan/malware/start`
+
+### Security
+- Audit report corrected: `VPS_MALWARE_HASH_LOOKUP_DROPPED_v2.9.6.0_AUDIT_2026-05-06.md` executive summary incorrectly called this a "regression." The `/v1/scan/batch` endpoint was never connected to the plugin prior to this sprint — it was added in v2.9.27.0 (Sprint 1.5) and sat orphaned. The M1-H integration is a **new feature**, not a reconnection.
+
+## [2.9.29.0] - 2026-05-08
+
+### Added
+- **Deep Malware Scan (Pro):** New async polling state machine — `POST /security/scan/malware/start` + `GET /security/scan/malware/status`. Eight-phase pipeline: `enumerate → hashing → vps_lookup → local_scan → wpscan → patchstack → ai_analysis → complete`. Soft-degrades on VPS/WPScan/Patchstack/AI unavailability.
+- **Source-tag badges:** Scan result rows now show detection-source badges (Hash DB / Pattern / WPScan / Patchstack / AI) for deep-scan findings.
+- **`MalwareScanResult` extended:** New fields `sources`, `wpscan_status`, `patchstack_status`, `ai_status`, `vps_lookup_status` for multi-source deep scan results.
+- **`malware_deep` scan type:** Recognised in scan history table as "Deep Malware".
+
+### Changed
+- `POST /security/scan/malware?mode=deep` → HTTP 410 Gone (breaking change — use `/malware/start`).
+- `POST /security/scan/full-ai` (synchronous endpoint) → HTTP 410 Gone — use `/malware/start`.
+- `POST /security/deep-scan/start` + `GET /security/deep-scan/status` → HTTP 410 Gone (final removal after deprecation cycle).
+- Compat aliases `POST /scan/full-ai/start` and `GET /scan/full-ai/status` kept for one release cycle.
+
 ## [2.9.28.72] - 2026-05-06
 
 ### Security
