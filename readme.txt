@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.73
+Stable tag: 2.9.30.74
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,9 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.30.74 =
+* Fix: Removed orphaned Quick/Deep mode toggle from Malware Scan card — clicking "Deep" no longer silently runs Quick scan. The dedicated Deep Malware Scan card (async pipeline) is the correct entry point.
 
 = 2.9.30.73 =
 * Fix: Quick scan self-exclusion bug — is_safe_folder() now correctly walks ancestor directories so the plugin's own security classes are no longer flagged as malware (FilesMan webshell false positive).

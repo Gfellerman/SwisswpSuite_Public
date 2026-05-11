@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.74] - 2026-05-11
+
+### Fixed
+- **Deep scan ran Quick scan (orphaned toggle):** `ScanCard.tsx` still rendered a legacy v2.9.28.x Quick/Deep mode toggle. Clicking "Deep" called `onTrigger("deep")`, which `SecurityHub.tsx` silently coerced to `"quick"` (defensive guard from v2.9.29.0 when the old `?mode=deep` endpoint was retired). Removed the entire toggle, `malwareMode` useState, and dead exports from `scanConstants.ts`. The dedicated Deep Malware Scan card with its async `/scan/malware/start` pipeline is the correct entry point.
+
 ## [2.9.30.73] - 2026-05-11
 
 ### Fixed
