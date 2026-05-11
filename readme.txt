@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.72
+Stable tag: 2.9.30.73
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,11 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.30.73 =
+* Fix: Quick scan self-exclusion bug — is_safe_folder() now correctly walks ancestor directories so the plugin's own security classes are no longer flagged as malware (FilesMan webshell false positive).
+* Fix: Deep Malware Scan results panel now renders ai_grade badge, wpscan/patchstack/ai status pills, and sources row (fields were returned by API but never displayed in live results).
+* Fix: ai_grade added to REST result envelope — previously only written to scan history; now also returned in the polling status response body.
 
 = 2.9.30.72 =
 * Feat: M1-H VPS hash lookup integration — Deep Malware Scan now calls VPS `/v1/scan/batch` endpoint (Phase 3) to check file SHA256 hashes against MalwareBazaar + URLhaus database (hourly-refreshed). First-time plugin connection to the `/v1/scan/batch` endpoint — not a regression, new integration.

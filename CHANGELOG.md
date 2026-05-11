@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.73] - 2026-05-11
+
+### Fixed
+- **Quick scan false positives (F-A):** `is_safe_folder()` in `class-swisswpsuite-security-scanner.php` now performs an ancestor directory walk instead of a single `basename()` on whatever path is passed. Plugin's own security classes (e.g. `class-swisswpsuite-sentinel-security.php`) are no longer flagged as the FilesMan webshell.
+- **Deep scan result panel (F-B):** `MalwareResultView` in `ScanResultPanel.tsx` now renders `ai_grade` badge (A–F), four status pills (`vps_status`, `wpscan_status`, `patchstack_status`, `ai_status`), and the `sources` row. These fields were returned by the backend since v2.9.29.0 but were never rendered in the live results panel.
+- **`ai_grade` in REST envelope (F-C):** The polling status response (`GET /security/scan/malware/status`) now includes `ai_grade` in `result` alongside the existing `files_scanned` / `threats_found` fields. Previously `ai_grade` was only written to `swisswpsuite_last_scan_report` (scan history), causing the live panel to always be missing the grade.
+
 ## [2.9.30.72] - 2026-05-08
 
 ### Added
