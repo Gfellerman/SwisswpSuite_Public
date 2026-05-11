@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.74
+Stable tag: 2.9.30.75
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,10 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
 == Changelog ==
+
+= 2.9.30.75 =
+* Feat: Persistent "Mark Safe" (id-based safelist) for Sentinel Audit findings — findings without a file path (e.g. "WordPress Version Detected", "Bundled Plugin File Missing") can now be permanently dismissed. Dismissed findings are filtered server-side on every scan; a disclosure banner shows how many were hidden with a "Manage" link to review or undo dismissals.
+* Feat: Stable finding IDs — Sentinel Audit findings now use stable IDs (module form, AI-synthetic SHA256-based, or legacy positional) instead of positional indices that shifted on sort order change. Safelist entries survive re-scans and sort changes.
 
 = 2.9.30.74 =
 * Fix: Removed orphaned Quick/Deep mode toggle from Malware Scan card — clicking "Deep" no longer silently runs Quick scan. The dedicated Deep Malware Scan card (async pipeline) is the correct entry point.

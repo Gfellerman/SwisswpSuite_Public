@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.75] - 2026-05-11
+
+### Added
+- **Persistent Mark Safe (id-based safelist):** Sentinel Audit findings without a file path (e.g. "WordPress Version Detected", "PHP Version", "Bundled Plugin File Missing") can now be permanently dismissed. Dismissed findings are filtered server-side on every subsequent scan so they never reappear. A disclosure banner above the results list shows how many findings are hidden, with a "Manage" link to review or undo any dismissal.
+- **Stable finding IDs:** Sentinel Audit findings now carry stable IDs (module-assigned `m[1-5]-NNN`, AI-synthetic `auto-{sha256-12}`, or legacy `l1-N` for backward compat) instead of positional indices. Safelist entries survive sort-order changes and re-scans correctly.
+
 ## [2.9.30.74] - 2026-05-11
 
 ### Fixed
