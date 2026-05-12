@@ -85,6 +85,19 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 = Can I use this on multiple sites? =
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
+== Third-party Services ==
+
+This plugin connects to the SwissWPSuite licensing and AI server (swisswpsecure.com) to:
+
+* Validate your license key
+* Process AI-powered security scan requests
+* Sync your token balance
+
+Data transmitted: your site domain, license key, and scan request payloads. This service is only contacted after you enter a license key in the plugin settings — the plugin does not phone home on a fresh install with no key.
+
+Privacy Policy: https://swisswpsuite.com/privacy-policy
+Terms of Service: https://swisswpsuite.com/terms-of-service
+
 == Changelog ==
 
 = 2.9.30.75 =
