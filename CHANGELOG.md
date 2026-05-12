@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.77] - 2026-05-12
+
+### Added
+- **In-plugin "Get Free License" flow:** New section on the Settings → License tab lets users enter an email and one-click provision a free license without leaving WordPress. The license is locked to the site's domain by the VPS, and the key is emailed to the user for recovery.
+- **Free-license email delivery:** VPS now sends the newly generated license key to the user's email on first creation (fire-and-forget via the existing SMTP configuration; never blocks the activation response).
+- **Reinstall recovery:** If the domain already has an active free license (reinstall / redesign scenario), the existing key is silently recovered and reactivated instead of creating a duplicate. The plugin shows a "recovered" success message to distinguish from a fresh activation.
+
+### Changed
+- VPS `POST /v1/license/activate` Scenario 2 response now includes a `recovered: true|false` flag on the `license` object so the plugin can choose the appropriate user-facing message.
+
 ## [2.9.30.76] - 2026-05-11
 
 ### Fixed

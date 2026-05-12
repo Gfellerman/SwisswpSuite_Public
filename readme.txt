@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.76
+Stable tag: 2.9.30.77
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -99,6 +99,11 @@ Privacy Policy: https://swisswpsuite.com/privacy-policy
 Terms of Service: https://swisswpsuite.com/terms-of-service
 
 == Changelog ==
+
+= 2.9.30.77 =
+* Feat: New in-plugin "Get Free License" flow on the License tab — enter your email, click once, the plugin auto-provisions a free license locked to your domain and emails the key to you.
+* Feat: Reinstall recovery — if your domain already has a free license, the existing key is silently recovered and reactivated instead of creating a duplicate.
+* Feat: VPS now emails the license key to the user on new free-license creation (fire-and-forget; never blocks the activation response).
 
 = 2.9.30.76 =
 * Fix: Daily L1 scan now costs zero tokens (L1 uses no AI — 1,500 token deduction was incorrect billing). Weekly rate gate and token balance pre-check removed.
