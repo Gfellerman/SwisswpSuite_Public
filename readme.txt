@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.77
+Stable tag: 2.9.30.78
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -99,6 +99,10 @@ Privacy Policy: https://swisswpsuite.com/privacy-policy
 Terms of Service: https://swisswpsuite.com/terms-of-service
 
 == Changelog ==
+
+= 2.9.30.78 =
+* Fix: Sentinel Audit malware signature false positive — tightened hex-escape regex from 3 to 6+ consecutive sequences (the old pattern flagged legitimate plugin files with binary data as critical malware).
+* Fix: Sentinel Audit description now accurately reflects that it includes basic file signature checks alongside posture auditing.
 
 = 2.9.30.77 =
 * Feat: New in-plugin "Get Free License" flow on the License tab — enter your email, click once, the plugin auto-provisions a free license locked to your domain and emails the key to you.

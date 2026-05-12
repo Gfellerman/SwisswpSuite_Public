@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.78] - 2026-05-12
+
+### Fixed
+- **Sentinel false-positive malware alert:** Tightened the hex-escape signature pattern from matching 3 consecutive `\xNN` sequences to requiring 6+. The old pattern flagged legitimate plugin files that use hex encoding for binary data, producing a critical finding that the dedicated malware scanner correctly reported as clean.
+- **Sentinel description accuracy:** Updated UI description to accurately reflect that Sentinel includes basic file signature checks alongside posture auditing (previously claimed it did not inspect file contents).
+
 ## [2.9.30.77] - 2026-05-12
 
 ### Added
