@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.76] - 2026-05-11
+
+### Fixed
+- **Zero-cost L1 scan:** Removed incorrect 1,500 token deduction from daily L1 security scan (L1 uses no AI — deduction was erroneous billing). Free-tier users' token balance is no longer consumed by daily scans.
+- **Remove weekly L1 rate gate:** Weekly rate-limit check on L1 scans removed; L1 is free so daily runs are unrestricted.
+- **Remove L1 token pre-check:** Token balance check before L1 scan removed — no balance required for non-AI operations.
+- **Error guard in daily report:** Added null-safety guard in `run_daily_report()` to prevent blank grade in scheduled email reports.
+- **Free-tier token allocation:** Monthly free-tier token limit raised from 1,500 → 50,000 on VPS, giving free users adequate headroom for AI features (Check-with-AI, content tools).
+
 ## [2.9.30.75] - 2026-05-11
 
 ### Added

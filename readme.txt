@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.75
+Stable tag: 2.9.30.76
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -99,6 +99,11 @@ Privacy Policy: https://swisswpsuite.com/privacy-policy
 Terms of Service: https://swisswpsuite.com/terms-of-service
 
 == Changelog ==
+
+= 2.9.30.76 =
+* Fix: Daily L1 scan now costs zero tokens (L1 uses no AI — 1,500 token deduction was incorrect billing). Weekly rate gate and token balance pre-check removed.
+* Fix: Error guard added in run_daily_report() to prevent blank grade in daily email reports.
+* Fix: Free-tier monthly token limit raised from 1,500 → 50,000 on VPS for AI features (Check-with-AI, content tools).
 
 = 2.9.30.75 =
 * Feat: Persistent "Mark Safe" (id-based safelist) for Sentinel Audit findings — findings without a file path (e.g. "WordPress Version Detected", "Bundled Plugin File Missing") can now be permanently dismissed. Dismissed findings are filtered server-side on every scan; a disclosure banner shows how many were hidden with a "Manage" link to review or undo dismissals.

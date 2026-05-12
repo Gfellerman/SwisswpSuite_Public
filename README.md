@@ -1,6 +1,6 @@
 # SwissWPSuite - The Ultimate All-in-One WordPress Plugin
 
-**Version:** 2.9.30.75
+**Version:** 2.9.30.76
 **Requires WordPress:** 5.6+
 **Tested up to:** 6.7
 **Requires PHP:** 7.4+
