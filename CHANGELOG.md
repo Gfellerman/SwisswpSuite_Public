@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.79] - 2026-05-18
+
+### Fixed
+- **PHPUnit test suite fully repaired:** 31 errors + 5 failures → 0 errors + 0 failures (135 tests / 359 assertions).
+- **Backup domain replacement word-boundary bug:** `recursive_replace()` now uses a negative lookbehind regex to prevent a search domain (e.g. `mysite.com`) from matching inside longer hostnames that contain it as a substring (e.g. `mynew-site.com`).
+- **Composer PHP version compatibility:** Downgraded `doctrine/instantiator` 2.1.0 → 1.5.0; v2.1 uses PHP 8.3 typed class constants which are not supported on PHP 8.1.
+
+### Changed
+- Expanded WP stub mock layer in test bootstrap with missing functions (`wp_json_encode`, `wp_parse_url`, `sanitize_file_name`, `wp_unslash`, etc.) and missing `MockWPDB` properties/methods.
+- Aligned unit tests with post-monolith-split API class structure (`SwissWPSuite_Api_Content`, `SwissWPSuite_Api_Settings`).
+
 ## [2.9.30.78] - 2026-05-12
 
 ### Fixed

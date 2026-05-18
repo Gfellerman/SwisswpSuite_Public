@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.78
+Stable tag: 2.9.30.79
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -99,6 +99,12 @@ Privacy Policy: https://swisswpsuite.com/privacy-policy
 Terms of Service: https://swisswpsuite.com/terms-of-service
 
 == Changelog ==
+
+= 2.9.30.79 =
+* Fix: PHPUnit test suite fully repaired — 31 errors + 5 failures resolved (135 tests / 359 assertions, 0 errors, 0 failures).
+* Fix: recursive_replace() word-boundary regression — mysite.com was incorrectly matching inside mynew-site.com substrings during domain replacement.
+* Fix: Downgrade doctrine/instantiator 2.1.0 → 1.5.0 (PHP 8.3 typed constants incompatible with PHP 8.1 runtime).
+* Chore: Expand WP stub mock layer and align tests with post-monolith-split API class structure.
 
 = 2.9.30.78 =
 * Fix: Sentinel Audit malware signature false positive — tightened hex-escape regex from 3 to 6+ consecutive sequences (the old pattern flagged legitimate plugin files with binary data as critical malware).
