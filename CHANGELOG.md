@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.82] - 2026-05-20
+
+### Changed
+- feat: gate Site Sync and Site Migration modules behind Beta Features toggle — both tabs show a Beta badge; content is unlocked only when Beta Features is enabled in Settings > General
+
 ## [2.9.30.81] - 2026-05-20
 
 ### Fixed
