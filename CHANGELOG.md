@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.81] - 2026-05-20
+
+### Fixed
+- fix: restore is_wp_error guard in post_import_recovery cron check
+
+## [2.9.30.80] - 2026-05-19
+
+### Changed
+- chore: code quality sprint — PHPStan baseline, PHPCS clean, Playwright graceful skip
+
 ## [2.9.30.79] - 2026-05-18
 
 ### Fixed
