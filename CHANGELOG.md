@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.85] - 2026-05-20
+
+### Fixed
+- **Banned IPs no longer wiped on plugin update** — a stale v2.9.28.07 emergency-WAF-unlock migration was clearing `swisswpsuite_banned_ips` on installs where `swisswpsuite_db_version` defaulted to `'0'`. The migration now has a one-shot guard (`swisswpsuite_waf_unlock_v2_9_28_07_done`) so it runs at most once per install, and the banned-IPs clear has been removed entirely — the migration was for a v2.9.28.06 incident now 200+ versions stale and should never destroy user data.
+- **Release IP button now works on stale or already-released bans** — `unban_ip()` is now idempotent. Previously, if a row was already removed (parallel tab, expired auto-ban, foreign cleanup), the endpoint returned a 400 which the frontend mis-rendered as "Network error." The unban handler also surfaces the backend error message instead of a generic transport-error string.
+- **Threat log writes restored after the v2.9.30.81 PHPCS sweep** — `exit;` was removed after two `wp_die()` calls in the WAF (IP-reputation block and the request-blocker). When a `wp_die_handler` filter returns instead of exits (REST contexts, certain mu-plugin handlers, test harnesses), execution would fall through past the block decision, suppressing the `log_threat()` write inside `block_request()`. Restored the explicit `exit;` so the threat log fills again.
+
+## [2.9.30.84] - 2026-05-20
+
+### Added
+- **IP Allowlist** — new permanent user-managed safelist of trusted IP addresses (Security Hub → Quarantine tab → Allowed IPs). IPs in the allowlist are never auto-banned by the brute-force / login-protection module. The current visitor's IP is shown as a one-click helper so admins can easily safelist their own connection. Adding an already-banned IP to the allowlist immediately clears the ban state. New REST routes: `GET/POST/DELETE /swisswpsuite/v1/security/allowed-ips` (Pro-gated for write operations). New option key: `swisswpsuite_allowed_ips` (SITE_LOCAL_CONFIG, autoload=false).
+
+### Fixed
+- **Blocked IPs UI now surfaces auto-bans** — the Quarantine tab's "Blocked IPs" section previously showed only IPs added via the manual "Block IP" button. Auto-bans written to `swisswpsuite_banned_ips` by the firewall (5 violations in 10 minutes → 30-minute ban) were invisible. Admins could be locked out of their own site with the UI reporting "No blocked IPs yet". Auto-bans now appear in the same table with an "AUTO" badge; manual entries get a "MANUAL" badge. Both can be released via the same "Release" button.
+
+## [2.9.30.83] - 2026-05-20
+
+### Fixed
+- Eliminate `exec()`/`shell_exec()` from backup pipeline — database export (`SwissWPSuite_Database_Dumper`) and restore (`SwissWPSuite_Restorer`) now use pure-PHP only. Removes WP.org hard blocker TD-WP-ORG-001/002 and fixes silent backup failures on shared hosts with `exec()` disabled.
+
+### Changed
+- `readme.txt` now has a `== External Services ==` section listing Groq AI API and swisswpsecure.com Command Center with data-sent details, privacy policy links, and opt-in behaviour (WP.org requirement TD-WP-ORG-004).
+- GPL vendor license audit complete — all 44 composer dev dependencies are MIT/BSD/LGPL-compatible; `vendor/` confirmed excluded from plugin zip (TD-WP-ORG-003 resolved).
+
 ## [2.9.30.82] - 2026-05-20
 
 ### Changed

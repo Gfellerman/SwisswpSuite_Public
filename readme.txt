@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.82
+Stable tag: 2.9.30.85
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,20 +85,36 @@ SwissWPSuite is designed and tested for shared hosting environments including Ho
 = Can I use this on multiple sites? =
 Each license key is locked to one domain. Contact support for multi-site licensing.
 
-== Third-party Services ==
+== External Services ==
 
-This plugin connects to the SwissWPSuite licensing and AI server (swisswpsecure.com) to:
+This plugin connects to the following external services. No data is transmitted unless you initiate an action that requires it.
 
-* Validate your license key
-* Process AI-powered security scan requests
-* Sync your token balance
-
-Data transmitted: your site domain, license key, and scan request payloads. This service is only contacted after you enter a license key in the plugin settings — the plugin does not phone home on a fresh install with no key.
-
+= SwissWPSuite Command Center (swisswpsecure.com) =
+Used for: License key validation, AI request proxying, token balance sync.
+Data sent: Your site domain, license key, and AI scan request payloads.
+This service is only contacted after you enter a license key — the plugin does not phone home on a fresh install with no key.
 Privacy Policy: https://swisswpsuite.com/privacy-policy
 Terms of Service: https://swisswpsuite.com/terms-of-service
 
+= Groq AI API (proxied via swisswpsecure.com) =
+Used for: Malware pattern analysis, AI content enhancement, vision AI for automatic alt text generation.
+Data sent: File content snippets, URLs, or post content — only when you explicitly trigger an AI-powered action (e.g. "Analyze with AI", bulk SEO meta generation, alt text generation).
+No background data collection or tracking.
+Groq Privacy Policy: https://groq.com/privacy-policy
+
+For full details on what data is transmitted and your rights, see our Privacy Policy linked above.
+
 == Changelog ==
+
+= 2.9.30.85 =
+* Fix: Banned IPs no longer wiped on plugin update — added one-shot guard so the stale v2.9.28.07 WAF-unlock migration cannot re-fire and destroy the user's ban list.
+* Fix: "Release IP" button now succeeds on stale/already-released bans — `unban_ip()` is idempotent and the frontend surfaces the real backend message instead of "Network error."
+* Fix: Threat log writes restored — explicit `exit;` re-added after the WAF `wp_die()` calls (removed by mistake during the v2.9.30.81 PHPCS sweep) so security events are logged even when a `wp_die_handler` filter returns instead of exits.
+
+= 2.9.30.83 =
+* Fix: Eliminate exec()/shell_exec() from backup pipeline — database export and restore now use pure-PHP only (WP.org compliance).
+* Docs: Add == External Services == section to readme.txt listing Groq AI API and swisswpsecure.com (WP.org requirement).
+* Docs: GPL vendor license audit complete — all 44 composer dependencies are MIT/BSD/LGPL, none ship in plugin zip.
 
 = 2.9.30.79 =
 * Fix: PHPUnit test suite fully repaired — 31 errors + 5 failures resolved (135 tests / 359 assertions, 0 errors, 0 failures).
