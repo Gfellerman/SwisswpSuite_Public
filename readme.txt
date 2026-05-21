@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.85
+Stable tag: 2.9.30.86
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -105,6 +105,10 @@ Groq Privacy Policy: https://groq.com/privacy-policy
 For full details on what data is transmitted and your rights, see our Privacy Policy linked above.
 
 == Changelog ==
+
+= 2.9.30.86 =
+* Eliminated all remaining `exec()`/`shell_exec()` calls from the plugin (archiver, backup, sentinel-safety, transport) — completes WP.org Phase 4b cleanup. Plugin is now genuinely shell-free; replaces shell-based binary probing and zip operations with pure-PHP implementations.
+* Removed obsolete GROUP 6 phpcs suppressions tied to the eliminated calls.
 
 = 2.9.30.85 =
 * Fix: Banned IPs no longer wiped on plugin update — added one-shot guard so the stale v2.9.28.07 WAF-unlock migration cannot re-fire and destroy the user's ban list.

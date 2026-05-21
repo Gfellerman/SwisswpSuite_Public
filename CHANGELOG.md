@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.86] - 2026-05-21
+
+### Fixed
+- **Complete elimination of `exec()`/`shell_exec()` from plugin code** — Phase 4b cleanup across `class-swisswpsuite-archiver.php`, `class-swisswpsuite-backup.php`, `class-swisswpsuite-sentinel-safety.php`, and `class-swisswpsuite-transport.php`. v2.9.30.83 marked TD-WP-ORG-001/002 RESOLVED but only covered the database dumper and restorer; four additional files still contained shell calls used for binary probing (`which`), disk usage (`du`), and shell-based archive operations. All call sites now use pure-PHP equivalents (e.g., `ZipArchive`, `RecursiveDirectoryIterator`, internal byte counting). Plugin is now genuinely shell-free, restoring WP.org submission readiness.
+
+### Changed
+- Removed obsolete GROUP 6 phpcs suppressions in `plugin/phpcs.xml` that referenced the now-eliminated shell calls.
+
 ## [2.9.30.85] - 2026-05-20
 
 ### Fixed
