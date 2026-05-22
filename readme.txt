@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.86
+Stable tag: 2.9.30.87
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -102,9 +102,61 @@ Data sent: File content snippets, URLs, or post content — only when you explic
 No background data collection or tracking.
 Groq Privacy Policy: https://groq.com/privacy-policy
 
+= Google Drive / Google OAuth =
+Host: googleapis.com, accounts.google.com, oauth2.googleapis.com, www.googleapis.com
+Used for: Optional Google Drive backup destination (upload/download/list backup archives) and OAuth 2.0 authorization.
+Data sent: Backup archive contents (your site files + database export, only when you click "Upload to Google Drive"), OAuth refresh/access tokens, file metadata (name, size).
+When contacted: Only after you connect a Google account under Settings → Backup → Cloud → Google Drive and trigger or schedule a backup upload. Not contacted on a fresh install or if Google Drive is not configured.
+Privacy Policy: https://policies.google.com/privacy
+Terms of Service: https://policies.google.com/terms
+
+= Backblaze B2 Cloud Storage =
+Host: api.backblazeb2.com (and per-bucket upload hosts returned by the B2 API, e.g. *.backblazeb2.com)
+Used for: Optional Backblaze B2 backup destination (upload/download/list backup archives).
+Data sent: Backup archive contents (your site files + database export, only when uploading), B2 application key ID + application key (sent in the authorization request only), bucket/file metadata.
+When contacted: Only after you enter B2 credentials under Settings → Backup → Cloud → Backblaze B2 and trigger or schedule a backup upload. Not contacted on a fresh install or if B2 is not configured.
+Privacy Policy: https://www.backblaze.com/company/policies.html
+Terms of Service: https://www.backblaze.com/company/policies.html
+
+= Dropbox =
+Host: api.dropboxapi.com, content.dropboxapi.com
+Used for: Optional Dropbox backup destination (upload/download/list backup archives).
+Data sent: Backup archive contents (your site files + database export, only when uploading), Dropbox OAuth access token, file metadata.
+When contacted: Only after you connect a Dropbox account under Settings → Backup → Cloud → Dropbox and trigger or schedule a backup upload. Not contacted on a fresh install or if Dropbox is not configured.
+Privacy Policy: https://www.dropbox.com/privacy
+Terms of Service: https://www.dropbox.com/terms
+
+= WPScan Vulnerability Database API =
+Host: wpscan.com (https://wpscan.com/api/v3/)
+Used for: Optional vulnerability lookup of installed plugin/theme slugs + versions during deep malware scans.
+Data sent: Plugin/theme slugs and version numbers of components installed on your site (no file contents, no PII), and the WPScan API key you provided.
+When contacted: Only when you provide a WPScan API key under Settings → Security → Vulnerability Feeds AND a deep scan or vulnerability sweep runs. Not contacted if no API key is configured.
+Privacy Policy: https://wpscan.com/privacy/
+Terms of Service: https://wpscan.com/terms-of-service
+
+= Patchstack Vulnerability Database API =
+Host: api.patchstack.com (https://api.patchstack.com/)
+Used for: Optional vulnerability lookup of installed plugin/theme slugs + versions during deep malware scans.
+Data sent: Plugin/theme slugs and version numbers of components installed on your site (no file contents, no PII), and the Patchstack API key you provided.
+When contacted: Only when you provide a Patchstack API key under Settings → Security → Vulnerability Feeds AND a deep scan or vulnerability sweep runs. Not contacted if no API key is configured.
+Privacy Policy: https://patchstack.com/privacy-policy/
+Terms of Service: https://patchstack.com/terms-of-service/
+
 For full details on what data is transmitted and your rights, see our Privacy Policy linked above.
 
 == Changelog ==
+
+= 2.9.30.87 =
+* Security: Tightened X-Forwarded-For and HTTP_CLIENT_IP validation in WAF — added FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE to block private/loopback IP spoofing (documented bypass by external scanner).
+* Security: Removed HTTP_CLIENT_IP header processing — non-standard header adds IP-injection surface with no operational benefit on Cloudflare+LiteSpeed deployments.
+* Security: Trusted-proxy filter output now validated — each entry from `swisswpsuite_trusted_proxies` filter is checked as a valid IP or CIDR before being trusted; wildcard entries (0.0.0.0/0) rejected.
+* Security: Scan orchestrator catch blocks no longer expose exception messages in HTTP responses — full exception logged internally, generic error returned to client.
+* Security: GDrive OAuth token storage now fails hard if Encryption class is unavailable — removes plaintext fallback that could expose refresh tokens in wp_options.
+* Fix: Completed exec() removal — removed remaining `@exec()` call in `estimate_site_size_mb()` (backup-engine.php); pure-PHP RecursiveIteratorIterator fallback now sole code path.
+* Fix: Admin diagnostic log sanitizes exception messages — file path segments stripped before writing to swisswpsuite_debug_log.
+* Fix: Test-connection log no longer discloses license key byte-length.
+* WP.org: External Services disclosure in readme.txt now covers all 5 user-configured cloud/vulnerability-feed services (Google Drive, Backblaze B2, Dropbox, WPScan, Patchstack).
+* VPS: Added rate limiter to /upgrade license route (was missing, all other routes had limiters).
 
 = 2.9.30.86 =
 * Eliminated all remaining `exec()`/`shell_exec()` calls from the plugin (archiver, backup, sentinel-safety, transport) — completes WP.org Phase 4b cleanup. Plugin is now genuinely shell-free; replaces shell-based binary probing and zip operations with pure-PHP implementations.

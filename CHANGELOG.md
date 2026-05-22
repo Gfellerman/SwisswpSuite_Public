@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.87] - 2026-05-22
+
+### Security
+- Tightened X-Forwarded-For validation in `get_client_ip()` — added `FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE` to block loopback/private IP spoofing through trusted proxies (documented active bypass by external scanner).
+- Removed HTTP_CLIENT_IP header processing — non-standard header adds IP-injection attack surface with no operational benefit on Cloudflare+LiteSpeed stack.
+- Validated `swisswpsuite_trusted_proxies` filter output — each entry from third-party filters is now validated as a proper IP or CIDR before being accepted; wildcard entries (`0.0.0.0/0`) explicitly rejected.
+- Scan orchestrator catch blocks no longer propagate raw PHP exception messages in HTTP responses — full exception logged to `swisswpsuite_debug_log` internally, generic error code returned to client.
+- GDrive OAuth token storage now returns `WP_Error('encryption_unavailable', ...)` if the Encryption class is unavailable instead of silently falling back to plaintext `wp_options` storage.
+- Admin diagnostic log now strips file-path segments from exception messages before writing to `swisswpsuite_debug_log`.
+- Test-connection diagnostic log entry reduced to presence-only (`'Present'`) — no longer discloses license key byte-length.
+
+### Fixed
+- Completed `exec()` elimination — removed remaining `@exec('du -sm ...')` call in `estimate_site_size_mb()` (`class-swisswpsuite-backup-engine.php`). Pure-PHP `RecursiveIteratorIterator` path (already present as fallback) is now the sole implementation. Plugin is genuinely shell-free across all files.
+
+### Changed
+- External Services section in `readme.txt` now discloses all 5 user-configured cloud and vulnerability-feed services: Google Drive/OAuth, Backblaze B2, Dropbox, WPScan API, and Patchstack API. Each entry includes host, data sent, activation condition, and privacy policy URL (WP.org §7 compliance).
+
+### VPS
+- Added `activateLimiter` rate-limiting middleware to `POST /v1/license/upgrade` route — the only license route that previously had no rate limiter.
+
 ## [2.9.30.86] - 2026-05-21
 
 ### Fixed
