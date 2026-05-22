@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.88] - 2026-05-22
+
+### Security
+- Hardened `.htaccess` protection in all `swisswpsuite-*` data directories to dual Apache 2.2+2.4 syntax (`Require all denied` with `<IfModule !mod_authz_core.c>` fallback to legacy `Deny from all`) — fixes silent bypass on Apache 2.4 hosts without `mod_access_compat`. Affects 5 legacy `.htaccess` writers across the archiver, backup, sentinel, transport, and journal modules.
+- Added `SwissWPSuite_Archiver::upgrade_htaccess_if_weak()` and an activation-time upgrade loop in `class-swisswpsuite-activator.php` so existing installs receive the dual-syntax `.htaccess` on plugin update without manual intervention.
+- Normalized `index.php` directory-listing stubs to canonical `<?php // Silence is golden` form in transport and journal directories.
+
 ## [2.9.30.87] - 2026-05-22
 
 ### Security

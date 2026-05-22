@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.87
+Stable tag: 2.9.30.88
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,11 @@ Terms of Service: https://patchstack.com/terms-of-service/
 For full details on what data is transmitted and your rights, see our Privacy Policy linked above.
 
 == Changelog ==
+
+= 2.9.30.88 =
+* Security: Hardened .htaccess protection in all swisswpsuite-* data directories to dual Apache 2.2+2.4 syntax (`Require all denied` with fallback) — fixes silent bypass on Apache 2.4 hosts without `mod_access_compat`.
+* Security: Added automatic upgrade of weak (Apache 2.2-only) .htaccess files on existing installs at plugin activation.
+* Security: Normalized `index.php` directory-listing stubs to canonical form in transport and journal directories.
 
 = 2.9.30.87 =
 * Security: Tightened X-Forwarded-For and HTTP_CLIENT_IP validation in WAF — added FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE to block private/loopback IP spoofing (documented bypass by external scanner).
