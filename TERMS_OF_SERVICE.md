@@ -92,7 +92,8 @@ We offer the following subscription tiers (prices as of the effective date):
 ### 5.2 Token Economy
 
 - Tokens are the unit of AI processing capacity. Each AI action consumes tokens based on the complexity and length of the request.
-- Token balances are **additive** — purchasing additional tokens or renewing adds to your existing balance. Unused tokens carry over.
+- **Subscription token allowance resets each billing cycle.** At every monthly renewal (or yearly anniversary, billed monthly), your subscription balance is reset to the plan's monthly token allowance. Unused subscription tokens do **not** carry over from one cycle to the next.
+- **Top-Up tokens are additive and do not expire.** Top-up packs (Section 5.3) add to your balance on top of the subscription allowance, and any unused top-up tokens persist across billing cycles.
 - When your token balance reaches zero, AI features will return an HTTP 402 error until tokens are replenished.
 - Token balances are tracked on our servers. The server balance is the authoritative record.
 

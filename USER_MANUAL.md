@@ -1,7 +1,7 @@
 # SwissWPSuite AI — User Manual
 
-**Version:** 2.9.15.0
-**Last Updated:** March 2026
+**Refer to `plugin/swisswpsuite-ai.php` for the authoritative current version.**
+**Last Updated:** May 2026
 
 ---
 
@@ -496,6 +496,8 @@ This snapshot is used for automatic recovery if anything goes wrong during the i
 
 Migration transfers your entire WordPress site from one server to another. This is a Pro feature.
 
+> **Beta feature (as of v2.9.30.82):** Site Migration is gated behind the **Beta Features** toggle in **Settings → General**. Enable Beta Features before accessing the Migration tab. The toggle is stored in the `swisswpsuite_beta_features` option.
+
 ### 5.1 What Gets Transferred
 
 | Included | Details |
@@ -578,6 +580,8 @@ Complete all 5 steps to finalize the migration.
 ## 6. Content Sync
 
 Content Sync keeps two WordPress sites synchronized. It's designed for staging-to-production workflows, multi-site content distribution, or team collaboration across environments.
+
+> **Beta feature (as of v2.9.30.82):** Site Sync is gated behind the **Beta Features** toggle in **Settings → General**. Enable Beta Features before accessing the Sync tab. The toggle is stored in the `swisswpsuite_beta_features` option.
 
 ### 6.1 Setting Up Sync
 
