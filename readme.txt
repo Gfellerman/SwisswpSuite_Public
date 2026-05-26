@@ -1,10 +1,10 @@
-=== SwissWPSuite ===
+=== SwissWPSuite AI ===
 Contributors: swisswpsecure
 Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentication, migration, sync
 Requires at least: 5.6
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.88
+Stable tag: 2.9.30.89
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,12 @@ Terms of Service: https://patchstack.com/terms-of-service/
 For full details on what data is transmitted and your rights, see our Privacy Policy linked above.
 
 == Changelog ==
+
+= 2.9.30.89 =
+* Fixed: Mode B migration receiver template placeholder (`%%RECEIVER_EXPIRES_AT%%`) had spaces inserted in prior cleanup, silently breaking all generated receiver scripts since v2.9.30.81.
+* Fixed: Plugin display name consistently updated to SwissWPSuite AI throughout all plugin files and public documentation.
+* Tooling: Rewrote plugin check script — now produces real WP.org PCP report with 0 errors (was non-functional). PCP score: 0 errors / 62 warnings (warnings are acceptable, not submission blockers).
+* Tooling: wp_parse_url(), wp_strip_all_tags(), wp_is_writable(), wp_delete_file() replacements across API files to satisfy WP.org AlternativeFunctions coding standard.
 
 = 2.9.30.88 =
 * Security: Hardened .htaccess protection in all swisswpsuite-* data directories to dual Apache 2.2+2.4 syntax (`Require all denied` with fallback) — fixes silent bypass on Apache 2.4 hosts without `mod_access_compat`.

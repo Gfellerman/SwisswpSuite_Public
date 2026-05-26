@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.89] - 2026-05-26
+
+### Changed
+- Plugin display name updated to **SwissWPSuite AI** throughout — plugin header, readme.txt title, and public README now consistently reflect the AI branding.
+- Renamed `.distignore` added at project root for future WP.org SVN deployment.
+
+### Fixed
+- Mode B migration receiver template: placeholder `%%RECEIVER_EXPIRES_AT%%` had spaces inserted during prior cleanup (`% % RECEIVER_EXPIRES_AT % %`), silently breaking every generated receiver script since v2.9.30.81. Restored to correct double-percent form.
+- `class-swisswpsuite-backup.php` bare `// phpcs:enable` at line 834 re-enabled ALL previously disabled sniffs file-wide (including `WordPress.WP.AlternativeFunctions`), causing 142 false-positive PCP errors. Fixed by re-asserting the disable scope after the bare enable.
+
+### Tooling
+- Rewrote `plugin/bin/run-plugin-check.sh` — now bootstraps PCP locally, runs static checks against the built zip without requiring a live WordPress install, and exits with structured status codes. Previous version was non-functional (no `--path`, missing plugin-check package).
+- Fixed PHPCS `installed_paths` regression caused by path-with-space truncation in the composer post-install script; added `phpcsstandards/phpcsextra` dev dependency.
+- Replaced `parse_url()` with `wp_parse_url()`, `strip_tags()` with `wp_strip_all_tags()`, `is_writable()` with `wp_is_writable()`, `@unlink()` with `wp_delete_file()` across affected files — PCP (WP.org review ruleset) now reports **0 errors**.
+
 ## [2.9.30.88] - 2026-05-22
 
 ### Security
