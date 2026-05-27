@@ -4,7 +4,7 @@ Tags: security, backup, seo, ai, malware scanner, firewall, two-factor authentic
 Requires at least: 5.6
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.89
+Stable tag: 2.9.30.90
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,11 @@ Terms of Service: https://patchstack.com/terms-of-service/
 For full details on what data is transmitted and your rights, see our Privacy Policy linked above.
 
 == Changelog ==
+
+= 2.9.30.90 =
+* Fixed: Backup cron regression — scheduled backups silently stopped when license cache returned stale value. BackupScheduler hooks now register unconditionally; capability check moved inside run_automation_backup().
+* Fixed: Backup automations dashboard showed last attempt time instead of last completion time. New last_successful_at field set only on status='success'.
+* Fixed: Backup automation "X ago" display showed wrong time for UTC+ users due to MySQL datetime strings being parsed as local time. Appending UTC suffix fixes the timezone offset.
 
 = 2.9.30.89 =
 * Fixed: Mode B migration receiver template placeholder (`%%RECEIVER_EXPIRES_AT%%`) had spaces inserted in prior cleanup, silently breaking all generated receiver scripts since v2.9.30.81.

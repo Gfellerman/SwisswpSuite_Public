@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.90] - 2026-05-27
+
+### Fixed
+- **Backup cron regression** — automated scheduled backups silently stopped when the license capability cache returned a stale/false value during a `wp-cron.php` request. `SwissWPSuite_Backup_Scheduler` is now instantiated unconditionally so WP-Cron hook listeners always register; the `backup_cloud` capability check was moved inside `run_automation_backup()` where a skipped backup writes a visible warning to the Diagnostics log.
+- **Dashboard shows attempt time, not completion time** — backup automation cards showed the timestamp of when the backup job was started (`last_run_at` set at `status='running'`), not when it completed. New `last_successful_at` field is written only on `status='success'`; dashboard and UI card now prefer this field. Pre-upgrade rows fall back to `last_run_at` when that row has `status='success'`.
+- **"X hours ago" off by timezone offset** — `formatRelativeTime()` in `BackupAutomationsPanel.tsx` parsed MySQL UTC datetime strings (no timezone suffix) as local time. For UTC+2 users, a backup completed 24h ago displayed as "22h ago". Fixed by appending `' UTC'` to bare MySQL datetime strings before parsing; ISO 8601 strings already containing `T`/`Z` are left untouched.
+
 ## [2.9.30.89] - 2026-05-26
 
 ### Changed
