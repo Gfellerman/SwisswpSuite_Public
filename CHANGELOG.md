@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.91] - 2026-05-27
+
+### Fixed
+- **Backup ZIP 3 stall on overloaded shared hosting** — `time_remaining()` now returns `min(wall_clock, CPU)` so the engine yields before the PHP execution deadline kills the process with no state saved. Jobs on LOAD 40-58 servers were restarting ZIP 3 from the same position on every recovery tick.
+- **Category manifests eliminate skip-scan overhead** — `archive_scan` now writes per-category manifest files; `archive_chunk` reads the category-only manifest (53K lines for `others`) instead of scanning all 96K lines with 43% skip ratio. Eliminates the CPU waste that was the secondary stall cause.
+- **Wall-clock safety yield** — secondary yield check fires every 2000 manifest lines scanned (all lines, not just files added) to catch deadline expiry during high-skip-ratio passes.
+- **Sentinel stale-running watchdog** raised from 2h to 4h — large sites legitimately need 3+ hours on overloaded shared servers with 5-7 min inter-tick recovery gaps.
+
+### Added
+- **Adaptive Backup Intelligence** (`SwissWPSuite_Backup_Site_Profile`) — persistent per-site hosting profile stored in `swisswpsuite_backup_site_profile` wp_option. Tracks `host_tier`, `tick_budget_seconds`, `successful_files_per_tick`, `chain_fail_rate`, and updates after every job outcome.
+- **Host probe on first run** — classifies hosting tier (`vps` / `shared_fast` / `shared_slow` / `shared_overloaded`) from loopback RTT and server load average; sets initial tick budget automatically (18-35s range).
+- **Adaptive `files_per_tick`** — recalculated at the start of each tick using `prev_files × (budget_ms × 0.75 / prev_tick_ms)`, clamped 500-5000. Self-tunes to actual server speed without user intervention.
+- **Double-tap chain retry** — when `chain_next_tick` returns HTTP 0, the dispatcher waits 3s and retries once, cutting the median 5-7 min health-check gap to ~3 seconds in most cases.
+- **Consecutive chain failure backoff** — after 3 consecutive HTTP 0s, engine stops self-pinging and defers to health-check recovery to avoid hammering an overloaded server.
+- **`GET /backup/probe-ping`** — lightweight loopback latency probe endpoint.
+- **`adaptive` field in backup status response** — surfaces `host_tier`, `tick_budget_seconds`, `files_per_tick`, `chain_fail_rate` for UI display.
+
 ## [2.9.30.90] - 2026-05-27
 
 ### Fixed
