@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.92
+Stable tag: 2.9.30.93
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -216,6 +216,9 @@ For full details on what data is transmitted and your rights, see our Privacy Po
 
 == Upgrade Notice ==
 
+= 2.9.30.93 =
+Critical fix: archive scan was restarting from scratch on every recovery tick instead of resuming from where it stopped. Sites with 50K+ files on overloaded shared hosting would burn all 5 scan attempts and circuit-break. Mandatory update for users experiencing repeated scan failures on large sites.
+
 = 2.9.30.92 =
 Critical fix: backup was re-archiving its own previous backup zips on every run, causing exponential size growth. Mandatory update for all users.
 
@@ -226,6 +229,11 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.93 =
+* Fixed: CRITICAL — archive_scan was restarting from scratch on every recovery tick (status='incomplete') instead of resuming at the last scanned path. Sites with 50K+ files on LOAD 50-77 servers would yield mid-scan 5-7 times, burn all 5 attempt slots, and circuit-break with no backup produced.
+* Fixed: New status='resuming' saves last_scanned_path cursor to job state. On recovery, manifest reopens in append mode and fast-skips already-scanned paths using alphabetic string compare (no stat() calls). Attempt counter is NOT burned on a resuming yield — only a true iterator inconsistency promotes to incomplete.
+* Fixed: Partial file/byte counts now persist across scan yields so final totals are always cumulative.
 
 = 2.9.30.92 =
 * Fixed: CRITICAL — backup archive scan was including the swisswpsuite-backups/ output folder, causing every backup to contain all previous backup zips. A site with 271MB of content would accumulate 3GB+ of backup archives over time. Fixed with realpath-based exclusion set derived from wp_upload_dir() at runtime — immune to symlinked uploads dirs and custom UPLOADS constants.

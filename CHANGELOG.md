@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.93] - 2026-05-27
+
+### Fixed
+- **archive_scan restart loop on overloaded hosts** — the scan phase was yielding mid-scan at 50K–85K files and restarting from scratch on recovery, burning all 5 attempts and triggering the circuit breaker. Root cause: `status='incomplete'` on yield forced a full restart. Fix: a new `status='resuming'` state saves a `last_scanned_path` cursor in job state and reopens the category manifest in append mode (`'a'`). On resume, the iterator fast-skips paths alphabetically ≤ cursor using a string compare (no `stat()` calls), then continues writing new entries. Does not burn the attempt counter — only a true iterator inconsistency (filesystem error) promotes to `'incomplete'` and counts as an attempt.
+- **Partial scan counts preserved across yields** — `partial_files` and `partial_bytes` are saved to state on yield and restored on resume, so the final totals are always cumulative across all ticks regardless of how many times the scan yielded.
+
 ## [2.9.30.92] - 2026-05-27
 
 ### Fixed
