@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.91
+Stable tag: 2.9.30.92
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -216,6 +216,9 @@ For full details on what data is transmitted and your rights, see our Privacy Po
 
 == Upgrade Notice ==
 
+= 2.9.30.92 =
+Critical fix: backup was re-archiving its own previous backup zips on every run, causing exponential size growth. Mandatory update for all users.
+
 = 2.9.30.91 =
 Major backup engine reliability update. The engine now self-tunes to your hosting environment: detects host tier on first run, adapts files-per-tick and tick budget after each job, and handles overloaded shared servers automatically. Recommended for all users.
 
@@ -223,6 +226,10 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.92 =
+* Fixed: CRITICAL — backup archive scan was including the swisswpsuite-backups/ output folder, causing every backup to contain all previous backup zips. A site with 271MB of content would accumulate 3GB+ of backup archives over time. Fixed with realpath-based exclusion set derived from wp_upload_dir() at runtime — immune to symlinked uploads dirs and custom UPLOADS constants.
+* Fixed: Diagnostic log now confirms active exclusion paths and reports count of skipped entries at scan end.
 
 = 2.9.30.91 =
 * Fixed: Backup engine ZIP 3 stall on overloaded shared hosting — time_remaining() now returns min(wall_clock, CPU) so the engine yields before the PHP execution deadline kills the process mid-loop with no state saved.

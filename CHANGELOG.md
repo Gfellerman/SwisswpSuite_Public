@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.92] - 2026-05-27
+
+### Fixed
+- **Critical: Backup self-inclusion** — the archive scan was including the `swisswpsuite-backups/` output directory itself, causing every new backup to contain all previous backup zips. Sites with multiple completed backups would see exponential size growth (e.g. 271MB site → 3GB backup). Fixed with a two-layer realpath-based exclusion set that is immune to custom `UPLOADS` constants, cPanel path remaps, and symlinked upload directories.
+- **Realpath-safe exclusions** — the previous hardcoded `'wp-content/uploads/swisswpsuite-backups'` prefix check failed silently on any hosting where `realpath()` resolves through a symlink to a different absolute path. Exclusions are now built from `wp_upload_dir()['basedir']` at runtime and compared against resolved absolute paths.
+
 ## [2.9.30.91] - 2026-05-27
 
 ### Fixed
