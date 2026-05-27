@@ -142,6 +142,13 @@ When contacted: Only when you provide a Patchstack API key under Settings → Se
 Privacy Policy: https://patchstack.com/privacy-policy/
 Terms of Service: https://patchstack.com/terms-of-service/
 
+= WordPress.org APIs =
+Host: api.wordpress.org
+Used for: Core file checksum verification (to detect modified or infected WordPress core files) and plugin/theme metadata lookups during vulnerability scans.
+Data sent: WordPress version number (for checksum requests), plugin/theme slugs and version numbers (for metadata lookups). No personal data or site content is sent.
+When contacted: Only when you run a security scan that includes core file integrity checking. Not contacted on page load or without a user-initiated scan.
+Privacy Policy: https://wordpress.org/about/privacy/
+
 For full details on what data is transmitted and your rights, see our Privacy Policy linked above.
 
 == Changelog ==
