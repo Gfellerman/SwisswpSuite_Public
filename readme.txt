@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.93
+Stable tag: 2.9.30.102
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -229,6 +229,42 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.102 =
+* Fixed: Scheduled (automatic) backups occasionally started a second backup of the same automation at the same time on busy servers, leaving several concurrent jobs running. Two scheduled runs firing at once could both pass the "is one already running?" check before either recorded itself as running. An atomic lock now lets only the first start through, so a single automation can never spawn duplicate backups.
+* Fixed: The Cancel button now appears for scheduled/automatic backups while they are running, not only for backups you start manually with "Run Now". Cancelling a scheduled backup also stops the watchdog from restarting it.
+
+= 2.9.30.101 =
+* Fixed: Backup progress now reappears in the Backups screen after a refresh or tab-switch for AUTOMATION backups too (not only manual ones). A running automation backup re-adopts its live progress bar in its automation row instead of appearing to show "no backup running".
+* Fixed: Triggering "Run Now" on an automation no longer mints duplicate backup jobs. If a backup for that automation is already running, the trigger now re-attaches to the existing job instead of starting a second one — preventing the multiple concurrent jobs that previously multiplied load on busy servers.
+* Changed: The backup engine now continuously watches live server load (per-CPU-core) during a running job and shrinks each tick's time budget under heavy load, so backups keep making steady forward progress and complete reliably on overloaded shared hosting instead of stalling. A guaranteed minimum-progress floor ensures every tick still writes files even under extreme load. Existing time and memory safety limits are preserved.
+
+= 2.9.30.100 =
+* Fixed: Backups failing to complete on overloaded shared hosting (high server load) — the file-archiving phase checked its time/memory budget only every 100 files, so under heavy load the per-tick budget was exhausted during the first 100 files and the engine stopped at exactly 100 files every tick regardless of how much headroom it actually had. This pinned the adaptive throughput estimator at 100 and prevented it from ever recovering, so large sites never finished. The budget is now checked finely (every 25 files) and a tick writes as many files as fit its real time + memory budget, so healthy ticks archive hundreds-to-thousands of files and backups complete in far fewer ticks. Time and memory safety yields are preserved.
+* Added: Backup progress now reappears after switching tabs or reloading — a new admin-only endpoint lets the dashboard rediscover an in-progress backup and resume showing its live progress bar instead of appearing to show "no backup running".
+
+= 2.9.30.99 =
+* Fixed: Critical disk leak — failed/abandoned backup jobs left their entire `.engine-temp_<job_id>` working directory (gigabytes of partial archive parts) on disk forever. When the Sentinel watchdog abandoned or circuit-broke a stuck job it only flipped the job status in the database and never deleted the temp folder, so leftovers piled up (37GB observed on a heavily-tested site). The temp directory is now deleted on every terminal outcome, including Sentinel-abandoned jobs, and a daily janitor sweeps any orphaned `.engine-temp_*` directories whose job is finished or whose state no longer exists. Running jobs are protected by an age + status guard so an in-progress backup is never touched.
+
+= 2.9.30.98 =
+* Fixed: Scheduled & "Run Now" backups never advancing on Hostinger/LiteSpeed — the engine job is now started synchronously in the triggering request instead of inside the loopback-HTTP worker (which never runs when loopback returns HTTP 0). The browser tick driver now receives the engine job_id and advances the backup directly from the admin page. Without this, the backup state was never created on loopback-blocked hosts and admin-tick returned "Job not found".
+
+= 2.9.30.97 =
+* Added: Bounded multi-part backup archives — oversized categories now roll into write-once parts (e.g. backup-others-<id>.001.zip, .002.zip) with a 256MB-per-part budget. Each part is closed permanently, eliminating the O(n²) ZIP central-directory rebuild that stalled large-site backups.
+* Added: Per-part SHA-256 integrity index. Every part is hashed (streaming, flat memory) at close and recorded in the backup set.
+* Added: Universal "tick-on-traffic" driver — a lightweight shutdown hook advances an in-flight backup on ordinary site traffic, so backups complete even when WP-Cron and Action Scheduler are unavailable and no admin tab is open.
+* Added: Browser-side tick driver — while the Backups panel is open, the backup is driven directly from the admin page (admin-nonce authenticated), with an in-flight guard.
+* Changed: Restore is now atomic. Every part's SHA-256 is verified against the index BEFORE any extraction; if any part is missing or tampered, the restore is refused with no files changed (the previous best-effort partial restore is removed).
+* Fixed: Backup stall on Hostinger/LiteSpeed — replaced loopback wp_remote_post tick chain with Action Scheduler as primary execution path. Loopback HTTP returns HTTP 0 on IPv6 reverse-proxy hosts; AS drains on cron/admin-ajax without requiring a self-reachable endpoint.
+* Fixed: Sentinel resurrection spawning duplicate engine jobs — watchdog now re-dispatches a tick for the existing engine state instead of calling execute_automation_backup() (which minted a fresh job each time). Prevents 4+ concurrent jobs accumulating on loopback-blocked hosts.
+* Fixed: execute_automation_backup() now guards against minting a new engine job when an active job for the same automation already exists.
+
+= 2.9.30.95 =
+* Added: Cancel button for running automation backups — POST /backup/automations/{id}/cancel resolves all live engine states, calls engine->cancel(), deregisters the Sentinel watchdog job (circuit_open=true), and marks the automation run as failed.
+
+= 2.9.30.94 =
+* Fixed: Backup engine never completed on large sites — resume cursor used an invalid lexicographic comparison assuming sorted directory iteration (readdir is unsorted), causing every tick to re-scan from the top and append duplicate manifest entries until stall. Replaced with a deterministic positional cursor.
+* Fixed: Excluded swisswpsuite-snapshots, swisswpsuite-backups, and swisswpsuite-exports-temp directories from archive scan (incl. nested staging clones) to stop multi-GB self-inclusion bloat.
 
 = 2.9.30.93 =
 * Fixed: CRITICAL — archive_scan was restarting from scratch on every recovery tick (status='incomplete') instead of resuming at the last scanned path. Sites with 50K+ files on LOAD 50-77 servers would yield mid-scan 5-7 times, burn all 5 attempt slots, and circuit-break with no backup produced.
