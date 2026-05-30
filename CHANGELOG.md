@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.103] - 2026-05-30
+
+### Fixed
+- **O(n) archive scan replaces O(n²) re-walk.** On every resume tick the previous scanner re-walked the entire file tree from position 0 (paying realpath + stat per already-processed file). At 215k files forward progress collapsed from ~40k to ~500 files/tick; the watchdog auto-cancelled the job at tick 11. The scanner now uses a dir-stack cursor (dir_queue + current_dir + intra_offset) that advances exactly once per file across the whole job. Manifest format is byte-identical; all exclusions (swisswpsuite-backups, snapshots, exports-temp) preserved.
+- **`/backup/local/analyze` never returns HTTP 500.** Replaced the unbounded synchronous tree walk with a hard 9s + 50k-iteration cap; returns `{file_count, size_bytes, is_estimate, elapsed_ms}` with `is_estimate=true` when capped.
+- **React error #185 ("Maximum update depth exceeded") eliminated.** Three compounding causes in `BackupAutomationsPanel.tsx` fixed: `automations` array stabilised with `useMemo`; `setPollingIds` extracted out of the `setAutomationJobIds` functional updater; `engineStatus === null` treated as active only while the query has not yet resolved (not after the engine row is confirmed deleted).
+- **Orphaned temp directories cleaned on cancel.** `delete_temp_dir_for_job()` (path-traversal-guarded) now called from Sentinel zombie-cancel, 24h stale-state sweep, and `clear_stuck_jobs` REST endpoint so partial manifests and ZIP parts do not accumulate on disk after stuck or cancelled jobs.
+
 ## [2.9.30.102] - 2026-05-30
 
 ### Fixed

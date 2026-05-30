@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.102
+Stable tag: 2.9.30.103
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -229,6 +229,12 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.103 =
+* Fixed: Backups on large sites (200k+ files) now complete instead of being auto-cancelled. The file-scan phase previously re-walked the entire tree from scratch on every resume tick, paying a filesystem stat per already-processed file — at 215k files each tick spent its entire time budget re-checking files it had already written, and forward progress collapsed to near zero. The scan now uses a directory-stack cursor that picks up exactly where the previous tick left off, so each file is touched exactly once across the whole job.
+* Fixed: The `backup/analyze` preflight endpoint no longer crashes with a PHP fatal error on large sites. It now applies a hard 9-second + 50k-file cap and returns a best-effort size estimate with an `is_estimate` flag instead of trying to walk the entire tree synchronously.
+* Fixed: The Backups panel no longer freezes the browser ("Maximum update depth exceeded") when a backup job is auto-cancelled by the watchdog. Three compounding React render-loop causes were fixed: a stable reference for the automations list, sequential (not nested) state updates, and a proper distinction between "engine row not yet fetched" and "engine row was deleted".
+* Fixed: Orphaned backup temp directories (partial manifests and ZIPs from cancelled/stuck jobs) are now deleted when a job is cancelled via the watchdog, the REST cancel endpoint, or the emergency clear-stuck-jobs tool — not just on normal completion.
 
 = 2.9.30.102 =
 * Fixed: Scheduled (automatic) backups occasionally started a second backup of the same automation at the same time on busy servers, leaving several concurrent jobs running. Two scheduled runs firing at once could both pass the "is one already running?" check before either recorded itself as running. An atomic lock now lets only the first start through, so a single automation can never spawn duplicate backups.
