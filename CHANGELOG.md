@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.112] - 2026-06-04
+
+### Fixed
+- **App no longer crashes (React error #185) when a backup finishes.** When a manual or automation backup reached a terminal state (complete/failed/cancelled), the React admin app could enter an infinite re-render loop and crash the whole page with "Maximum update depth exceeded". The cause: clearing the active job id re-enabled the active-jobs query, which returned the just-finished job from its stale cache (up to 5 min), causing the UI to re-adopt the completed job and re-trigger the terminal handler in a loop. The completion handlers now record each terminated job id in a ref and the rehydration effects skip any job already terminated this session, so stale cache can never re-adopt a finished job. Fixes the crash in both `BackupControl` (manual) and `BackupAutomationsPanel` (automation) progress paths.
+
 ## [2.9.30.111] - 2026-06-04
 
 ### Fixed

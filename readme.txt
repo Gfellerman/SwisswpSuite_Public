@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.111
+Stable tag: 2.9.30.112
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -229,6 +229,9 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.112 =
+* Fixed: The plugin admin page no longer crashes with "Unexpected Application Error" (React #185, Maximum update depth exceeded) when a backup finishes. A stale-cache re-adoption loop on the completion transition has been eliminated for both manual backups and automations.
 
 = 2.9.30.111 =
 * Fixed: Deleting a backup in the plugin UI now removes ALL parts of a multi-part archive and its cloud copy. Previously only the single clicked file was deleted, leaving the remaining parts (database, plugins, others) on disk — causing disk accumulation on multi-part backups (e.g. lacasa.market: 4-part archives, 3 parts left behind per delete).
