@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.111] - 2026-06-04
+
+### Fixed
+- **Deleting a backup now removes ALL parts of a multi-part archive and its cloud copy.** The legacy `/backup/local/delete` endpoint previously deleted exactly one file by filename, leaving the remaining parts (database, plugins, others, split chunks) on disk. The endpoint now resolves the clicked filename to its parent backup set via nonce matching and removes all associated files atomically — matching the behaviour of the set-row delete. Cloud copies (Google Drive, S3, etc.) are also deleted.
+- **Silent file leak on missing-file entries eliminated.** When a recorded filename was absent on disk during set deletion (`delete_backup_set`), the file was silently skipped with no log entry and the set record was still removed — creating an orphaned file with no set record. Files absent on disk are now logged at INFO level via `SwissWPSuite_Diagnostics` and tracked in the skipped list, making record/disk mismatches visible to administrators.
+- **Legacy flat-file delete row works correctly.** The flat-file row (rendered when `sets.length === 0`) now resolves to the parent set and deletes all parts. If no set record exists (genuine pre-sets legacy file), the original single-file fallback is retained.
+
+### Added
+- **Orphan cleanup is user-triggered and already present in the UI.** The existing "Clean Up" banner in the Backups panel uses `SwissWPSuite_Backup_Sets::find_orphans()` to identify loose ZIPs not tracked by any set record and unlinks them with NFS re-check. The backend path was already complete; this release improves the delete logic that feeds it.
+
 ## [2.9.30.110] - 2026-06-04
 
 ### Fixed

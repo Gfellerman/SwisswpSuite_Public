@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.110
+Stable tag: 2.9.30.111
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -229,6 +229,12 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.111 =
+* Fixed: Deleting a backup in the plugin UI now removes ALL parts of a multi-part archive and its cloud copy. Previously only the single clicked file was deleted, leaving the remaining parts (database, plugins, others) on disk — causing disk accumulation on multi-part backups (e.g. lacasa.market: 4-part archives, 3 parts left behind per delete).
+* Fixed: Delete via the legacy flat-file row now resolves to the parent backup set and removes all associated files atomically, matching the behavior of set-row deletes.
+* Fixed: When a recorded filename is absent on disk during set deletion, the file is now logged as missing instead of silently skipped, making record/disk mismatches visible to administrators.
+* Added: Orphan cleanup tool already visible in the Backups UI (Clean Up button) now correctly identifies and removes leftover backup files from interrupted engine jobs.
 
 = 2.9.30.110 =
 * Fixed: Self-drive loopback re-arms after every tick. handle_as_tick() now calls chain_next_tick() so the non-blocking loopback continues firing tick-over-tick. Previously the loopback silently dropped after the first tick, reverting to Action Scheduler cadence (80–105 min gaps on low-traffic sites).
