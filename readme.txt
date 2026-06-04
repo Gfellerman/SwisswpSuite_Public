@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.103
+Stable tag: 2.9.30.110
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -229,6 +229,55 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.110 =
+* Fixed: Self-drive loopback re-arms after every tick. handle_as_tick() now calls chain_next_tick() so the non-blocking loopback continues firing tick-over-tick. Previously the loopback silently dropped after the first tick, reverting to Action Scheduler cadence (80–105 min gaps on low-traffic sites).
+* Fixed: Multi-job fanout — concurrent backups no longer starve. When one job fires its self-drive loopback it now checks all other active engine jobs whose tick-lock is not fresh and fires a separate loopback for each, so concurrent backups advance in parallel rather than waiting for AS/cron.
+* Fixed: Large-database backups no longer falsely flagged as stuck. During db_dump the progress marker previously showed 0 (no files scanned/written yet), causing the Sentinel and watchdog to count 3 consecutive stuck cycles and trip the circuit breaker on healthy jobs. The marker now includes filesize of the growing SQL dump file (KiB) so a large DB dump is visible as live forward progress.
+* Fixed: Upload retry counter now resets after each successful chunk. retry_count previously accumulated across the entire multi-part upload — 10 transient network errors spread across thousands of chunks could exhaust MAX_RETRIES and fail the upload. The counter now resets to 0 whenever a chunk delivers real forward progress (bytes_uploaded advances).
+* Fixed: Orphaned temp directories from abandoned jobs are now cleaned. Running/pending jobs older than 2 hours with no fresh tick-lock have their temp directory swept, preventing multi-GB accumulation on sites with repeated stuck uploads.
+* Fixed: Dead Google Drive token cleared on auth error. When the GDrive access and refresh tokens expire or are revoked, the stored credentials are now cleared immediately so the Drive connection indicator resets to disconnected and future backups do not die on the first chunk. Previously the stale token persisted and every subsequent backup failed at chunk 1.
+* Other: swisswpsuite_engine_tick_% option key pattern registered in the config manifest.
+
+= 2.9.30.109 =
+* Fixed: Sentinel circuit breaker now resets on forward progress. Previously, 3 stuck-detection cycles opened the circuit and permanently abandoned the job — even when the engine was still writing files (it just missed the 10-minute heartbeat window, e.g. during a slow ZipArchive::close()). The circuit breaker now computes the engine's forward-progress marker (files scanned + files written) before counting a stuck cycle; if the marker advanced since the last resurrection, stuck_count resets to 0 and a pace reduction is applied instead of tripping the circuit.
+* Fixed: Pace reduction now applied on EVERY Sentinel stall detection, not just progressing jobs. When the watchdog detects a stalled job it writes a reduced ramp_factor (×0.70 AIMD step, floored at 0.40) to the engine state on every stall cycle — whether progress advanced or not. A PHP-killed (zero-progress) tick is now re-kicked at a progressively smaller budget across the three resurrection attempts (1.0 → 0.70 → 0.49), so a tiny-budget tick has the best chance to write at least one file and reach a heartbeat before the circuit breaker trips. The 3-strike breaker remains the final backstop for a genuinely-wedged job.
+* Fixed: Exception retry loop now recovers instead of failing for resumable phases. When a transient Throwable (disk I/O spike, LVE memory burst) occurs in archive_scan or archive_chunk — which both have a saved manifest/cursor position — the engine now resets retry_count, applies a pace reduction, and yields to let the next tick try at reduced pace. Hard failure is reserved for phases with no safe resume cursor (init, unknown phase). MAX_RETRIES raised from 3 to 10 to absorb bursts of LVE jitter without hitting the terminal path.
+* Fixed: ZipArchive::close() failures during time and safety yields now yield instead of failing. The manifest byte offset is already saved before close() is called; if close() fails (transient disk spike) the engine records the error, applies AIMD pace reduction, and returns for the next tick to retry. Previously these called handle_phase_failure() and terminated the job.
+* Fixed: Partial ZIP move failures in phase_complete now retry up to 3 times before hard-failing. When rename()/copy() fails for some parts but not all (cross-device race, momentary I/O contention), the engine stays in the complete phase and retries the failed parts on the next tick rather than reporting an incomplete backup.
+
+= 2.9.30.108 =
+* Fixed: Backups on quiet, low-traffic sites no longer stall and fail. The tick engine relied on Action Scheduler, whose queue runner only drains when wp-cron.php is hit by a visitor — on a site with little traffic this opened 80–105 minute gaps between ticks, after which the watchdog wrongly abandoned a job whose resume cursor was still advancing. The engine now self-drives: after enqueueing each Action Scheduler tick it also fires a non-blocking loopback to continue the chain within ~1-3 seconds regardless of traffic. Action Scheduler remains the reliability backstop; the per-job tick lock makes whichever arrives second a no-op.
+* Fixed: Progress-aware watchdog. Before declaring a delayed job dead, the watchdog now checks for real forward progress (files scanned + files written to the archive). A job that is still advancing is re-kicked, not reaped. Only a job that fails to advance across 3 consecutive re-kicks is treated as genuinely dead. This stops the watchdog + Sentinel resurrection + circuit-breaker chain from killing healthy-but-slow backups.
+
+= 2.9.30.107 =
+* Performance: Replaced node-load-average throttle with an empirical self-correcting AIMD ramp. On CloudLinux/LVE shared hosting (Hostinger) sys_getloadavg() reflects the whole physical node — at load 40–52 the old logic floored the tick budget to 40% even when the tenant's container had >90% headroom, producing ~25 files/tick. The new ramp_factor starts at 1.0 (full budget) and adjusts per-tick: +0.10 on every clean tick, ×0.70 on a detected PHP kill. It converges to the highest rate the container can actually sustain.
+* Performance: CloudLinux/LVE per-tenant cgroup detection. If a per-tenant CPU signal is available (LVE cgroup v1 or v2), node loadavg is ignored entirely as a throttle signal — the host's real container headroom drives the ramp instead of noisy-neighbour load.
+* Added: budget_factor field in backup status response showing current AIMD ramp multiplier (1.0 = full budget). Lets you see in real time that the engine is now running at full speed.
+
+= 2.9.30.106 =
+* Performance: Backup throughput on overloaded shared hosts (LOAD 40–52, 30s PHP exec cap) now processes ~150–200 files per tick instead of ~25. The yield threshold is now proportional to the actual available time budget rather than a fixed value that was always tripped on the first check.
+* Performance: Already-compressed media files (JPG, PNG, WebP, MP4, etc.) are now stored without recompression in the ZIP archive. On a media-heavy WooCommerce store this cuts CPU per file substantially — the extra CPU was spent deflating incompressible bytes with ~0 size benefit.
+* Performance: Continuous ticking: the in-process cron now immediately chains the next Action Scheduler tick after completing a tick, eliminating the ~30s idle gap between ticks on WooCommerce sites.
+* Fixed: Backup progress bar (bytes_done, percent, ETA) now updates in real time during the archive phase. bytes_done was stuck at 0 and eta_seconds was null throughout archive_chunk — now both reflect live progress.
+* Fixed: Cancel from the REST endpoint is now job-scoped, matching the engine's own scoped-cancel implementation from v2.9.30.105.
+* Added: Per-tick throughput (files/sec) is now included in the status response so monitoring tools and future UI can show live speed.
+
+= 2.9.30.105 =
+* Added: Clicking "Save a Backup" now checks for a separate (nested) WordPress install inside your site that is not yet excluded, and offers to exclude it before the backup starts — so a hidden staging copy no longer silently doubles your backup size. Choose Exclude it, Include everything, or Cancel. If detection fails, the backup proceeds normally.
+* Fixed: Backup throughput on overloaded shared hosts. A per-tick minimum was unintentionally acting as a maximum under high server load, pinning each tick to ~50 files and turning large backups into a multi-hour crawl. The adaptive byte/time budget now drives real volume per tick while still staying inside the PHP execution window.
+* Fixed: Resumed/adopted finished jobs no longer fail with "Unknown phase:". The job phase is now persisted into the final saved state, and the engine cleanly short-circuits already-finished jobs instead of erroring.
+* Fixed: The backup watchdog no longer keeps resurrecting jobs that already failed or were cancelled. It now recognises all terminal outcomes (complete, failed, cancelled) and stops re-adopting dead jobs.
+* Fixed: Cancelling a backup is now job-specific. The cancel signal is scoped to the individual job instead of a single global flag, so cancelling one backup no longer affects another running at the same time.
+* Fixed: Zombie cleanup no longer deletes the working directory of a backup that is actually still running on a slow host; it defers deletion while a tick is in flight and notifies the watchdog so the cancelled job is not resurrected.
+* Fixed: Finalizing a backup no longer reports success when one or more ZIP parts failed to move into place. Such a backup is now marked failed (with the missing parts listed) instead of appearing complete with missing data.
+
+= 2.9.30.104 =
+* Added: In-process WP-Cron tick driver — a dedicated every-minute cron hook calls the backup engine directly (no loopback HTTP), so backups run to completion on hosts like Hostinger where self-directed HTTP calls fail (IPv6/connection-refused). Coexists with Action Scheduler and the traffic tick driver; self-unschedules automatically when the job completes or is cancelled.
+* Added: Configurable backup exclusion paths. A new "Configure backup exclusions" panel lets you exclude any subdirectory from backups, and automatically detects nested WordPress installs (e.g. staging sites) so you can exclude them with one click. Reduces backup size and avoids including test environments you don't want to back up.
+* Fixed: Large legitimate backup jobs (100k+ files) are no longer killed by the watchdog zombie guard. The zombie threshold now scales from the base 30 minutes up to 3 hours for large archive/upload jobs with confirmed forward progress, preventing false-positive cancellation on slow shared hosting.
+* Fixed: The "Maximum update depth exceeded" React error no longer recurs when the watchdog auto-cancels a zombie job. A fourth triggering path (unstable Set reference in polling IDs dependency array) has been fixed by reading polling state through a stable ref.
+* Fixed: Zombie-cancelled jobs now clean up their temp directory (partial manifest and ZIP parts) — previously the orphan-cleanup path invoked on watchdog auto-cancel missed the temp dir deletion added in v2.9.30.103.
 
 = 2.9.30.103 =
 * Fixed: Backups on large sites (200k+ files) now complete instead of being auto-cancelled. The file-scan phase previously re-walked the entire tree from scratch on every resume tick, paying a filesystem stat per already-processed file — at 215k files each tick spent its entire time budget re-checking files it had already written, and forward progress collapsed to near zero. The scan now uses a directory-stack cursor that picks up exactly where the previous tick left off, so each file is touched exactly once across the whole job.
