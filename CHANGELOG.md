@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.113] - 2026-06-05
+
+### Fixed
+- **Dashboard "Last Backup" now reflects manual backups, not just automations.** The dashboard stat previously read only the automation run records (`SwissWPSuite_Backup_Automations`), so a site whose backups were all triggered manually showed "Never" forever despite successful backups. The backup engine now persists a single source of truth — `swisswpsuite_last_successful_backup` (UTC `Y-m-d H:i:s`) — on every successful completion (manual OR automation), and the `/stats` endpoint reads that timestamp and takes the most-recent of it and any automation record. Note: the stat populates on the **next** successful backup after upgrading to this version — backups taken before 2.9.30.113 are not retroactively counted because the option did not exist when they ran.
+
 ## [2.9.30.112] - 2026-06-04
 
 ### Fixed

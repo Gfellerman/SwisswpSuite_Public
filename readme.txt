@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.112
+Stable tag: 2.9.30.113
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -229,6 +229,9 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.113 =
+* Fixed: The Dashboard "Last Backup" stat now reflects manual backups, not only scheduled automations. Sites that only ran manual backups previously showed "Never" forever. A persisted last-successful-backup timestamp is now written on every successful backup (manual or automation) and read by the dashboard. Note: it populates on the next successful backup after upgrading — backups taken before this version are not retroactively counted.
 
 = 2.9.30.112 =
 * Fixed: The plugin admin page no longer crashes with "Unexpected Application Error" (React #185, Maximum update depth exceeded) when a backup finishes. A stale-cache re-adoption loop on the completion transition has been eliminated for both manual backups and automations.
