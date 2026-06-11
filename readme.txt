@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.113
+Stable tag: 2.9.30.114
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -152,9 +152,9 @@ Each license key is locked to one domain. For multi-site management, contact sup
 
 This plugin connects to the following external services. No data is transmitted unless you initiate an action that requires it.
 
-= SwissWPSuite Command Center (swisswpsecure.com) =
-Used for: License key validation, AI request proxying, token balance sync.
-Data sent: Your site domain, license key, and AI scan request payloads.
+= SwissWPSuite Command Center (api.swisswpsecure.com) =
+Used for: License key validation, AI request proxying, token balance sync, and Deep Malware Scan hash lookups.
+Data sent: Your license key and AI scan request payloads. Your site domain is sent in an X-Domain header on every request to api.swisswpsecure.com for license verification (the server uses it to confirm the key is active for your domain). During the Deep Malware Scan (Pro license required), SHA-256 hashes of PHP files on your site are sent to api.swisswpsecure.com/v1/scan/batch to check them against a malware signature database (sources: URLhaus, MalwareBazaar). File contents are never transmitted, and hashes are not logged per-site.
 This service is only contacted after you enter a license key — the plugin does not phone home on a fresh install with no key.
 Privacy Policy: https://swisswpsuite.com/privacy-policy
 Terms of Service: https://swisswpsuite.com/terms-of-service
@@ -229,6 +229,11 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.114 =
+* Security: malware signature scan is now fail-closed — database errors can no longer produce false "clean" verdicts, and degraded scans are clearly flagged in the results panel
+* Security: full-hash verdict caching, redirect/TLS transport hardening, Redis-backed rate limiting, HMAC false-positive reports
+* Fixed: quarantine and snapshot folders excluded from Deep Malware Scan enumeration
 
 = 2.9.30.113 =
 * Fixed: The Dashboard "Last Backup" stat now reflects manual backups, not only scheduled automations. Sites that only ran manual backups previously showed "Never" forever. A persisted last-successful-backup timestamp is now written on every successful backup (manual or automation) and read by the dashboard. Note: it populates on the next successful backup after upgrading — backups taken before this version are not retroactively counted.

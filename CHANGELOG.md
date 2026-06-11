@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.114] - 2026-06-11
+
+### Security
+- **Malware signature scan is now fail-closed end-to-end.** The VPS signature-database endpoint no longer returns "clean" verdicts when its database query fails — files now come back as "unknown" and are checked by the local scanner instead. Degraded responses are never cached (server or plugin side).
+- **Scan degradation is now visible.** If the signature database is unreachable or the free-plan rate limit is hit during a Deep Malware Scan, the result panel shows an amber "degraded" / "rate limited" status with a plain-English explanation instead of a misleading green "OK".
+- **Hash verdict cache hardened.** The per-file verdict cache key now uses the full SHA-256 hash (previously truncated), eliminating a crafted-collision bypass window.
+- **Transport hardening for hash lookups.** Redirects disabled and TLS verification made explicit on the signature-lookup call; off-allowlist API host overrides are logged.
+- **Server-side hardening.** Free-tier rate limiting moved to Redis (survives restarts); false-positive reports now use an HMAC with a server secret instead of a hardcoded salt.
+
+### Fixed
+- Deep Malware Scan no longer re-scans the quarantine and Update Guard snapshot folders, so quarantined malware is not re-reported as an active threat on every scan.
+- HTTP 403 from the signature service is now logged at warning level (previously hidden at debug level).
+
 ## [2.9.30.113] - 2026-06-05
 
 ### Fixed
