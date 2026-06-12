@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.115] - 2026-06-12
+
+### Fixed
+- **License panel is now resilient to transient connectivity blips.** A short server restart or a dropped status request no longer makes the license card flash "no license" / Free. The UI now retains the last-known-good license state while reconnecting (showing a quiet "Checking license status…" indicator) and only switches to an unlicensed state when the server explicitly returns one. No license was ever actually lost — this removes the misleading display.
+
 ## [2.9.30.114] - 2026-06-11
 
 ### Security

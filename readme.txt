@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.114
+Stable tag: 2.9.30.115
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -229,6 +229,9 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.115 =
+* Fixed: The license panel no longer briefly shows "no license" / Free during a temporary connectivity blip (e.g. a server restart or a dropped request). It now keeps showing your real license while reconnecting, and only switches to unlicensed when the server explicitly confirms it.
 
 = 2.9.30.114 =
 * Security: malware signature scan is now fail-closed — database errors can no longer produce false "clean" verdicts, and degraded scans are clearly flagged in the results panel
