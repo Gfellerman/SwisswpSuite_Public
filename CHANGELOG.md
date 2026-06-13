@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.116] - 2026-06-13
+
+### Fixed
+- **Deep Malware Scan no longer intermittently times out on large sites / under heavy load.** The file-hashing and VPS cloud-verdict phases are now chunked across multiple poll cycles (≈1500 files hashed and 3 hash-batches looked up per step) instead of running all ~5000 files / ~10 batches in a single request. A single phase previously ran ~39s in one request, which the host's ~60s PHP/LiteSpeed kill could cut off under high load, leaving the scan in an error state. Each step is now capped to ~10–18s. The scan flow, results, and the fail-closed degradation handling are unchanged — it just completes reliably. (Internal: new `hashing_phase_tick()` / `vps_lookup_phase_tick()` with persisted offsets.)
+
 ## [2.9.30.115] - 2026-06-12
 
 ### Fixed

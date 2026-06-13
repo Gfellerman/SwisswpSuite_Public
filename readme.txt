@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.115
+Stable tag: 2.9.30.116
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -229,6 +229,9 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.116 =
+* Fixed: The Deep Malware Scan no longer intermittently fails with an error on large sites or under heavy server load. The file-hashing and cloud-verdict phases now process in smaller slices across multiple steps, so no single request runs long enough to be cut off by the host's PHP time limit. The scan itself is unchanged — it just completes reliably now.
 
 = 2.9.30.115 =
 * Fixed: The license panel no longer briefly shows "no license" / Free during a temporary connectivity blip (e.g. a server restart or a dropped request). It now keeps showing your real license while reconnecting, and only switches to unlicensed when the server explicitly confirms it.
