@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.116
+Stable tag: 2.9.30.117
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -229,6 +229,9 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.117 =
+* Performance: the admin dashboard is now much faster to navigate between tabs. The plugin no longer waits on blocking server checks during page loads (the license re-check now runs in the background), reuses cached status data between tab switches instead of re-fetching everything, and combined two scan-history requests into one. Security is unchanged — every action (toggling a setting, banning an IP, finishing a scan) still updates the screen immediately.
 
 = 2.9.30.116 =
 * Fixed: The Deep Malware Scan no longer intermittently fails with an error on large sites or under heavy server load. The file-hashing and cloud-verdict phases now process in smaller slices across multiple steps, so no single request runs long enough to be cut off by the host's PHP time limit. The scan itself is unchanged — it just completes reliably now.

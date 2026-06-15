@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.117] - 2026-06-15
+
+### Changed
+- **Admin SPA navigation performance (security-preserving).** Eliminated the per-tab API chatter and blocking VPS calls that made tab-to-tab navigation slow (the host/account was confirmed idle — this was purely the plugin's request pattern). Backend: the license re-check now runs **async** (`wp_schedule_single_event`) instead of a synchronous `wp_remote_post()` inside the request (removes a 0–15s page-load stall and the prior page-load-downgrade risk); the Sentinel free-quota VPS call is cached in a 1h transient; a consolidated `GET /security/sentinel/latest-scan` replaces a 2-hop request; the backup/migration `Pacer` now gates on per-process memory instead of `sys_getloadavg()` (meaningless on shared hosting). Frontend: Dashboard `/stats`, SecurityHub status reads, and SMTP settings move to cached `useQuery` with named TTLs (30–120s); the UpdateGuard poll drops from 30s to 5min; cloud-status stops refetching every visit. Security is **not** weakened — these are display-only reads, enforcement runs server-side, and every admin action invalidates its cache so changes reflect immediately. RB-526–531.
+
 ## [2.9.30.116] - 2026-06-13
 
 ### Fixed
