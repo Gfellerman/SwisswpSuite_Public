@@ -4,6 +4,69 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.120] - 2026-06-18
+
+### Refactored
+- **TD-1 (partial):** Extracted the inline `quarantine` tab JSX (4 sub-tables, ~400 lines) from `SecurityHub.tsx` into a new `QuarantineTab` organism at `plugin/src/components/organisms/Security/QuarantineTab.tsx`. The tab is now a controlled component (props-based) so the parent retains state ownership during the incremental migration. Net: 78 added, 402 deleted = 324-line reduction in `SecurityHub.tsx`. File is now 5,977 lines (was 6,010).
+- **TD-1 (partial):** Added three new Zustand stores under `plugin/src/store/` to centralise cross-tab state:
+  - `useSecurityStateStore` — banned / allowed IPs, quarantined files, ignored paths / findings, geo settings, hardening options cache.
+  - `useLicenseStore` — sentinel credits, identity check, derived `hasSentinelPro` / `hasSecurity` / `currentTier`, PHP-injected `hasAdvancedWaf` + `homeUrl`.
+  - `useUiStore` — `activeTab`, confirm dialog, advisor modals, M5 consent, AI elapsed counter.
+- **TD-1 (partial):** Added two custom hooks under `plugin/src/hooks/`:
+  - `useQuarantine` — `banIp` / `unbanIp` / `allowIp` / `removeAllowedIp` / `restoreQuarantine` / `deleteQuarantine` / `unIgnore` + matching `refresh*` functions. All mutations invalidate the `["security-banned-ips"]` query.
+  - `useHardening` — `refreshHardening` / `toggleOption` (with optimistic update) / `applyAll` (gated on confirm dialog).
+- **TD-1 (infrastructure):** Fixed the broken root `vitest.config.ts` — `setupFiles` now points at the existing `plugin/tests/setup.ts` and adds a `@` → `plugin/src` alias. The pre-existing `Welcome.test.tsx` was failing to load with "Cannot find module /tests/setup.ts"; the path mismatch had been silently broken since the plugin layout changed.
+
+### Added
+- **Vitest unit tests for the new stores** (28 tests, all passing):
+  - `plugin/tests/Unit/useSecurityStateStore.test.ts` (11 tests) — IP / quarantine / geo / hardening setters, optimistic toggle, no-op on unknown key.
+  - `plugin/tests/Unit/useUiStore.test.ts` (7 tests) — all 7 tab transitions, confirm-dialog lifecycle, AI elapsed counter, modal independence.
+  - `plugin/tests/Unit/useLicenseStore.test.ts` (9 tests) — derives `hasSentinelPro` from both credits + PHP `sentinelIsPro` flag, `hasSecurity` from `waf` capability, `currentTier` none/free/pro transition.
+  - `useSecurityStateStore` test caught a real bug on first run — `initFromWindow` did not read the `sentinelIsPro` PHP flag, so the initial `hasSentinelPro` was `false` even on a paid site. Fixed before commit.
+
+### Notes
+- **TD-1 NOT complete:** `SecurityHub.tsx` is still 5,977 lines (target was ≤500). The new stores + hooks are present and tested, but `SecurityHub.tsx` has not yet been rewired to consume them — that is the next sub-task. File is unchanged in behavior; the new `QuarantineTab` organism is a controlled component so all existing state + handlers continue to flow through SecurityHub unchanged.
+- **Manual 100%-deep-test of 6 tabs NOT performed** in this session. Requires a running WordPress with the plugin deployed and a browser connected via Playwright/CDP. Will be performed as a follow-up task after the wiring refactor.
+- **Pre-existing PHPUnit failures** (`BackupDomainReplacementTest` × 3 — `Call to undefined method SwissWPSuite_Archiver::upgrade_htaccess_if_weak()`) are unrelated to this change. They predate the TD-1 work and remain in the codebase. The 135 other tests pass.
+- **Build verified:** `npx vite build` succeeds (2456 modules transformed, SecurityPage chunk 225 kB).
+- **TypeScript clean:** `npx tsc --noEmit` exit 0.
+- **Vitest:** 28/28 pass across 4 test files.
+
+### Regression baselines
+- RB-545: SECURITY-STATE-STORE-DEFAULTS
+- RB-546: SECURITY-STATE-STORE-OPTIMISTIC-TOGGLE
+- RB-547: UI-STORE-TAB-TRANSITIONS
+- RB-548: LICENSE-STORE-DERIVES-FROM-PHP-FLAG
+- RB-549: LICENSE-STORE-CAPABILITY-GATE
+- RB-550: VITEST-SETUP-PATH-FIX
+
+## [2.9.30.119] - 2026-06-18
+
+### Fixed
+- **Stripe + Licensing sprint — entitlement gates now respect paid-tier, payment-failed, and trial-then-paid states.** Three bugs in the licensing state machine were bundled into a single fix so they could be validated against the same webhook flow:
+  - **TD-VPS-STRIPE-001(b):** `/v1/scan/batch` now accepts `past_due` during the Stripe retry window. A subscriber whose card bounces for 1–3 days is no longer instantly 403'd on the scan route while other routes (AI, Sentinel) happily keep serving them. Matches the existing `ai.js` + `sentinel.js` `past_due` acceptance.
+  - **TD-VPS-STRIPE-001(c):** `sentinel.js verifyLicense()` now checks the paid `expires_at` **before** `trial_ends_at`, and only falls through to `trial_ends_at` when `expires_at` is null. Previously a paid yearly plan that flowed through a 7-day Stripe trial window was denied Sentinel the moment the trial elapsed — even though the paid plan still had 358 days remaining.
+  - **TD-VPS-STRIPE-001(a) baseline** (`scan_batch.js:237`) was already fixed in v2.9.30.118 via `PlanService.isPaidTier()` — no change required, RB-541/542 are the regression guard for (b)/(c).
+
+- **TD-VPS-ALLOWLIST-001:** Dropped the never-implemented VPS `/v1/scan/allowlist` call from the Update Guard. The route returned 404 on every scan, producing noise in the diagnostics log with no functional value. `get_safe_slugs()` now uses the curated hardcoded fallback only (cached 1h via `set_transient` to keep transient-option reads low). The fallback is reviewed on every Update Guard release and only contains high-traffic, actively-maintained plugins — functionally equivalent to a hand-curated VPS endpoint, with no attack surface.
+
+### Documented
+- **TD-BACKUP-STALL-001 root cause:** 2026-06-13 sandbox-site backup stall (`bkeng_a81e7173`, last tick 4343s ago) traced to the v2.9.30.101-era `current_load_factor()` floor (0.40) under sustained node load ~45 on a CloudLinux LVE — combined with the v2.9.30.104-era scaled zombie threshold that held off auto-cancel for 72 min because the job's pre-stall `lines_scanned` metadata made it look "progressing". The AIMD ramp fix in v2.9.30.110 (RB-488) supersedes this whole class of stall by converging to a sustainable per-tick rate on overloaded hosts. Self-heal worked correctly; production tenants are protected. Full report at `.claude/audit-reports/backup-stall-investigation-2026-06-13.md`.
+
+### Regression baselines
+- RB-541: STRIPE-BATCH-ACCEPT-PAST-DUE
+- RB-542: STRIPE-SENTINEL-EXPIRES-FIRST
+- RB-543: ALLOWLIST-DROPPED-NO-VPS-CALL
+- RB-544: ALLOWLIST-FALLBACK-CACHED
+
+## [2.9.30.118] - 2026-06-18
+
+### Fixed
+- **License entitlement gating — modular plans no longer expose Security-plan features.** Separated the two security layers: *Sentinel* (deep malware scan + quarantine/delete) stays available to **any paid plan**, while *Fortress* security (WAF/firewall, geo-blocking, hardening, login protection, IP allow/block, AI security analysis, Update Guard) now requires the **Security or Suite plan**. Previously these gated on `sentinel_pro` (granted to every paid plan), so an SEO/Content/Backup customer saw and could attempt Fortress features. Now enforced consistently on the frontend (`hasSecurity` = the `waf` capability) and the backend (`has_capability('waf')` on the relevant REST routes + service layer). Deep scan and malware quarantine remain available to all paid plans.
+
+### Security
+- Added missing `waf` capability gates to the login-protection toggle and the IP allowlist/blocklist write endpoints (previously `manage_options`-only).
+
 ## [2.9.30.117] - 2026-06-15
 
 ### Changed

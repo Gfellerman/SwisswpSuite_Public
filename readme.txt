@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.117
+Stable tag: 2.9.30.120
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -139,14 +139,9 @@ Each license key is locked to one domain. For multi-site management, contact sup
 
 1. Security Hub dashboard — threat count, scan status, and hardening score at a glance.
 2. Malware scan results — file list with threat classifications and inline AI analysis.
-3. WAF rules and IP blocking — live firewall log with blocked request details.
-4. Hardening options — 11 one-click security toggles, most enabled.
-5. Two-factor authentication — TOTP setup screen for WordPress admin accounts.
-6. Backup Fortress — backup list with Google Drive and S3 cloud status indicators.
-7. Sync Teleport — diff comparison table between staging and production.
-8. Migration Station — step-by-step migration wizard progress screen.
-9. AI SEO tools — bulk meta optimisation table with AI-generated suggestions.
-10. Mobile-responsive admin — plugin UI on a tablet viewport at 768px.
+3. Hardening options — 11 one-click security toggles, most enabled.
+4. Backup Fortress — backup list with Google Drive and S3 cloud status indicators.
+5. AI SEO tools — bulk meta optimisation table with AI-generated suggestions.
 
 == External Services ==
 
@@ -229,6 +224,10 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.118 =
+* Fixed: modular plans (SEO / Content / Backup) no longer expose Security-plan features. WAF/firewall, geo-blocking, hardening, login protection, IP management, AI security analysis, and Update Guard now correctly require the Security or Suite plan. Malware scanning and quarantine remain available to all paid plans.
+* Security: added capability gates to the login-protection and IP allow/block write endpoints.
 
 = 2.9.30.117 =
 * Performance: the admin dashboard is now much faster to navigate between tabs. The plugin no longer waits on blocking server checks during page loads (the license re-check now runs in the background), reuses cached status data between tab switches instead of re-fetching everything, and combined two scan-history requests into one. Security is unchanged — every action (toggling a setting, banning an IP, finishing a scan) still updates the screen immediately.
