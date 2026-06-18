@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 5.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.120
+Stable tag: 2.9.30.121
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,11 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.121 =
+* Changed: the deep-malware Layer-2 AI scan now requires the Security or Suite plan (was any paid plan). SEO / Content / Backup plans run the free Layer-1 heuristic scan; malware quarantine and file deletion remain available to all paid plans.
+* Changed: the automatic 24-hour Sentinel audit no longer consumes AI tokens on any plan — it runs a local check and emails a report. Token-consuming AI deep analysis is now manual-only, preventing automatic token drain on higher-token plans.
+* Fixed: Stripe checkout now resolves the purchased plan durably from price ID metadata instead of defaulting every payment to the yearly plan.
 
 = 2.9.30.118 =
 * Fixed: modular plans (SEO / Content / Backup) no longer expose Security-plan features. WAF/firewall, geo-blocking, hardening, login protection, IP management, AI security analysis, and Update Guard now correctly require the Security or Suite plan. Malware scanning and quarantine remain available to all paid plans.

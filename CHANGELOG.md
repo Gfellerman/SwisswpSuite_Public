@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.121] - 2026-06-18
+
+### Changed
+- **Entitlement gating — deep-malware scan:** the Layer-2 AI malware scan now requires the **Security** or **Suite** plan (previously any paid plan). SEO / Content / Backup plans run the free Layer-1 heuristic scan. Enforced on both the frontend (deep-malware `ScanCard` locked unless `waf` capability) and the backend (`$include_layer2` gated on `check_capability('waf')`). Malware quarantine and file deletion remain available to all paid plans (`sentinel_pro`).
+- **Token-drain prevention — automatic Sentinel audit:** the scheduled 24-hour audit (`run_scheduled_audit()` → `perform_deep_audit(false)`) no longer triggers AI token consumption on any plan. It runs a local check and emails a report. Token-consuming AI deep analysis is now manual-only. This prevents a higher-token plan (e.g. 2.5M tokens) from being silently drained by the daily cron.
+- **Update Guard / login-protection / IP management / geo / AI-log endpoints** now require the `waf` capability (Security/Suite), aligning the backend gates with the frontend tab gating.
+
+### Fixed
+- **Stripe plan resolution:** checkout now resolves the purchased plan durably from the Stripe price ID (`PRICE_ID_TO_PLAN` map → `planForPriceId()`) instead of defaulting every payment to `PAID_YEARLY` when `plan_type` metadata is absent. Confirmed live where a $4.99 SEO purchase had activated the yearly plan.
+- **VPS paid-tier check:** `scan_batch.js` and `api_new.js` now use `PlanService.isPaidTier()` instead of the brittle `tier !== "pro"` string comparison.
+
 ## [2.9.30.120] - 2026-06-18
 
 ### Refactored
