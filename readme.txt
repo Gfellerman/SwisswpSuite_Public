@@ -1,10 +1,10 @@
-=== SwissWPSuite AI — WordPress Security, Backup & AI SEO Plugin ===
+=== SwissSuite AI — WordPress Security, Backup & AI SEO Plugin ===
 Contributors: swisswpsecure
 Tags: security, backup, malware scanner, firewall, two-factor authentication
-Requires at least: 5.6
+Requires at least: 6.2
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.121
+Stable tag: 2.9.30.122
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,11 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.122 =
+* Changed: the plugin is now distributed as "SwissSuite AI" (slug: swisssuite-ai) to meet WordPress.org plugin directory naming guidelines. This is a name/branding change only — your settings, license, and data are fully preserved on update.
+* Changed: minimum required WordPress version raised to 6.2.
+* Fixed: WordPress.org Plugin Check compliance — removed developer scripts from the distributed package, shipped readme.txt at the package root, and moved debug/error log files out of the plugin folder into the uploads directory.
 
 = 2.9.30.121 =
 * Changed: the deep-malware Layer-2 AI scan now requires the Security or Suite plan (was any paid plan). SEO / Content / Backup plans run the free Layer-1 heuristic scan; malware quarantine and file deletion remain available to all paid plans.

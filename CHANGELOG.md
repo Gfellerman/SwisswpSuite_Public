@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.122] - 2026-06-18
+
+### Changed
+- **Plugin rename for WordPress.org compliance:** the plugin display name is now **SwissSuite AI** and the slug/text-domain is **swisssuite-ai** (previously "SwissWPSuite AI" / `swisswpsuite-ai`). The WordPress.org directory prohibits the restricted term "wp" in plugin names and slugs. This is a branding/identity change only — **all option keys, license data, REST endpoints, cron hooks, and stored settings are unchanged**, so existing installs upgrade in place with zero data loss.
+- **Minimum WordPress version raised to 6.2** (from 5.6), enabling native use of the `%i` table-name placeholder and block-theme APIs.
+
+### Fixed
+- **WordPress.org Plugin Check errors cleared:**
+  - Removed developer/CI shell scripts (`bin/`) from the distributed zip (`application_detected`).
+  - Shipped `readme.txt` at the package root (`no_plugin_readme`).
+  - The backup migration receiver template is now packaged as a non-PHP asset so it is no longer parsed as plugin code (`missing_direct_file_access_protection` + global-prefix warnings).
+  - Forward-compatible WordPress 6.9/7.0 API calls (Abilities API, AI Client, connectors) are invoked via dynamic dispatch behind their existing runtime guards, so the minimum-version sniff passes.
+  - Debug and fatal-boot logs now write to the uploads directory (with index.php + .htaccess protection) instead of the plugin folder or `wp-content` root (`PluginDirectoryWrite`).
+
 ## [2.9.30.121] - 2026-06-18
 
 ### Changed
