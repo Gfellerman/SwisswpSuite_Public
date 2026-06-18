@@ -1,4 +1,4 @@
-# SwissWPSuite AI — Terms of Service
+# SwissSuite AI — Terms of Service
 
 > **Last Updated:** 2026-03-23
 > **Effective Date:** 2026-03-23
@@ -7,15 +7,15 @@
 
 ## 1. Introduction
 
-These Terms of Service ("Terms") govern your use of the SwissWPSuite AI WordPress plugin ("Plugin"), the associated services provided through swisswpsecure.com ("Service"), and any related APIs, documentation, and support (collectively, the "Platform"). By activating a license key, creating an account, or using any paid feature, you agree to these Terms.
+These Terms of Service ("Terms") govern your use of the SwissSuite AI WordPress plugin ("Plugin"), the associated services provided through swisswpsecure.com ("Service"), and any related APIs, documentation, and support (collectively, the "Platform"). By activating a license key, creating an account, or using any paid feature, you agree to these Terms.
 
-The Plugin is developed and operated by Swisswpsecure, a company incorporated under the laws of Switzerland, with its registered office at Le Moulin 3, 1312 Eclepens, Switzerland ("we", "us", "our", "SwissWPSuite").
+The Plugin is developed and operated by Swisswpsecure, a company incorporated under the laws of Switzerland, with its registered office at Le Moulin 3, 1312 Eclepens, Switzerland ("we", "us", "our", "SwissSuite").
 
 ## 2. Definitions
 
-- **"Plugin"** — The SwissWPSuite AI WordPress plugin, distributed under the GNU General Public License v2.0 or later (GPL-2.0+).
+- **"Plugin"** — The SwissSuite AI WordPress plugin, distributed under the GNU General Public License v2.0 or later (GPL-2.0+).
 - **"Service"** — The cloud-based services accessible via api.swisswpsecure.com, including license validation, AI content generation, security scanning, and token management.
-- **"Account"** — Your registration with SwissWPSuite, identified by your email address and license key.
+- **"Account"** — Your registration with SwissSuite, identified by your email address and license key.
 - **"Token"** — A unit of AI processing capacity purchased or allocated under your subscription plan.
 - **"Site"** — The WordPress installation where you have activated the Plugin.
 - **"Content"** — Any text, data, files, or other material you submit to the Service for processing.
@@ -215,7 +215,7 @@ These limitations apply regardless of the legal theory (contract, tort, strict l
 
 ## 12. Indemnification
 
-You agree to indemnify and hold harmless SwissWPSuite, its officers, directors, and employees from any claims, losses, or damages (including reasonable legal fees) arising from:
+You agree to indemnify and hold harmless SwissSuite, its officers, directors, and employees from any claims, losses, or damages (including reasonable legal fees) arising from:
 
 - Your use of the Service in violation of these Terms.
 - Your failure to comply with applicable data protection laws.
@@ -274,7 +274,7 @@ If any provision of these Terms is found to be invalid or unenforceable, the rem
 
 ## 18. Entire Agreement
 
-These Terms, together with our Privacy Policy and Data Processing Agreement, constitute the entire agreement between you and SwissWPSuite regarding the Service.
+These Terms, together with our Privacy Policy and Data Processing Agreement, constitute the entire agreement between you and SwissSuite regarding the Service.
 
 ## 19. Contact
 

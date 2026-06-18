@@ -1,4 +1,4 @@
-# SwissWPSuite AI — Privacy Policy
+# SwissSuite AI — Privacy Policy
 
 > **Last Updated:** 2026-04-24
 > **Effective Date:** 2026-04-24
@@ -7,7 +7,7 @@
 
 ## 1. Who We Are
 
-Swisswpsecure ("we", "us", "SwissWPSuite") operates the SwissWPSuite AI WordPress plugin and the associated cloud service at swisswpsecure.com.
+Swisswpsecure ("we", "us", "SwissSuite") operates the SwissSuite AI WordPress plugin and the associated cloud service at swisswpsecure.com.
 
 **Registered office:** Le Moulin 3, 1312 Eclepens, Switzerland
 **Data Protection Officer:** support@swisswpsecure.com
@@ -18,7 +18,7 @@ Swisswpsecure ("we", "us", "SwissWPSuite") operates the SwissWPSuite AI WordPres
 This Privacy Policy covers:
 
 - **swisswpsecure.com** — Our website and cloud service API.
-- **SwissWPSuite AI Plugin** — Data processing that involves our servers (license validation, AI features, security scanning).
+- **SwissSuite AI Plugin** — Data processing that involves our servers (license validation, AI features, security scanning).
 
 This Privacy Policy does **not** cover data that the Plugin processes entirely on your WordPress server without contacting our Service (e.g., local WAF, local backups, login protection). For those local features, you — the site owner — are the data controller, and your own privacy policy applies.
 

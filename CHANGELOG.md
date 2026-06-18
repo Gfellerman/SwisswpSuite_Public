@@ -1,4 +1,4 @@
-# SwissWPSuite — Changelog
+# SwissSuite — Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [2.9.30.122] - 2026-06-18
 
 ### Changed
-- **Plugin rename for WordPress.org compliance:** the plugin display name is now **SwissSuite AI** and the slug/text-domain is **swisssuite-ai** (previously "SwissWPSuite AI" / `swisswpsuite-ai`). The WordPress.org directory prohibits the restricted term "wp" in plugin names and slugs. This is a branding/identity change only — **all option keys, license data, REST endpoints, cron hooks, and stored settings are unchanged**, so existing installs upgrade in place with zero data loss.
+- **Plugin rename for WordPress.org compliance:** the plugin display name is now **SwissSuite AI** and the slug/text-domain is **swisssuite-ai** (previously "SwissSuite AI" / `swisssuite-ai`). The WordPress.org directory prohibits the restricted term "wp" in plugin names and slugs. This is a branding/identity change only — **all option keys, license data, REST endpoints, cron hooks, and stored settings are unchanged**, so existing installs upgrade in place with zero data loss.
 - **Minimum WordPress version raised to 6.2** (from 5.6), enabling native use of the `%i` table-name placeholder and block-theme APIs.
 
 ### Fixed
@@ -322,7 +322,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [2.9.30.89] - 2026-05-26
 
 ### Changed
-- Plugin display name updated to **SwissWPSuite AI** throughout — plugin header, readme.txt title, and public README now consistently reflect the AI branding.
+- Plugin display name updated to **SwissSuite AI** throughout — plugin header, readme.txt title, and public README now consistently reflect the AI branding.
 - Renamed `.distignore` added at project root for future WP.org SVN deployment.
 
 ### Fixed
@@ -1007,7 +1007,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Changed
 
-- Restored filled button theme across all new Sprint 1.5 components: batch action buttons (Mark Safe, Quarantine, Delete, Analyze) in ScanResultPanel now use solid `swiss-navy`, `amber-600`, and `red-600` fills matching the canonical SwissWPSuite button design language
+- Restored filled button theme across all new Sprint 1.5 components: batch action buttons (Mark Safe, Quarantine, Delete, Analyze) in ScanResultPanel now use solid `swiss-navy`, `amber-600`, and `red-600` fills matching the canonical SwissSuite button design language
 - UpdateReviewPanel Approve button: `bg-swiss-navy text-white` (was `bg-green-50 text-green-700`)
 - UpdateBlockedBanner Override button: `bg-amber-600 text-white` (was `bg-white text-amber-700` outline)
 - SeoManager action button aligned to secondary/navy theme
@@ -1172,7 +1172,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Fixed
 
-- **Quick malware scan PHP crash.** Replaced non-existent `SWISSWPSUITE_AI_NAME` constant with `'swisswpsuite-ai'` string literal in orchestrator — every Quick scan was returning a PHP undefined-constant error while UI falsely showed "clean".
+- **Quick malware scan PHP crash.** Replaced non-existent `SWISSWPSUITE_AI_NAME` constant with `'swisssuite-ai'` string literal in orchestrator — every Quick scan was returning a PHP undefined-constant error while UI falsely showed "clean".
 - **All primary buttons and CTAs rendering transparent.** Added `@theme` block to `plugin/src/index.css` registering `swiss-navy`, `swiss-red`, `swiss-gold` as Tailwind v4 theme tokens — without `@theme`, utility classes (`bg-swiss-navy` etc.) were not generated.
 - **"Groq" branding removed from all user-facing strings.** Replaced with "AI" throughout scan card descriptions and SEO batch status text.
 - **Email report toggle colors.** Toggle now shows red track (OFF) and green track (ON) for instant visual state clarity.
@@ -1196,7 +1196,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Fixed
 
-- **Security Audit card description.** Description now clearly states the scan runs via SwissWPSuite's own Groq AI quota — no user API key required. Free and Pro users both get the scan; the distinction from the Pro-only "Full AI Scan" is now explicit.
+- **Security Audit card description.** Description now clearly states the scan runs via SwissSuite's own Groq AI quota — no user API key required. Free and Pro users both get the scan; the distinction from the Pro-only "Full AI Scan" is now explicit.
 - **History tab scan type and grade.** AI Security Audit scans now write `scan_type='ai_audit'` and the correct grade (A–F derived from L1 findings) to the `wp_swisswpsuite_sentinel_scans` table. The History tab maps `ai_audit` → blue "AI Audit" badge, `full_ai` → green "Full + AI" badge, and retains `layer1`/`full` as backward-compatible labels for older records.
 - **Scan result navigation.** After a scan completes, results stay inline on the Scan tab. The "View in History" button is now a secondary action that navigates to History AND refreshes the list so the new scan appears at top. No more forced tab navigation.
 - **2FA settings visibility.** `TwoFactorSettings.tsx` now checks three signals (`capabilities`, `sentinelIsPro`, `tier`) to determine Pro status — reduces cases where 2FA settings were incorrectly hidden.
@@ -1496,7 +1496,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Added
 
-- **Plugin safety wrapper (Change E).** Top-level bootstrap in `swisswpsuite-ai.php` and the activator's `activate()` body are now wrapped in `try/catch(\Throwable)`. Fatal errors are appended to `wp-content/swisswpsuite-error.log` (flat file, not wp_options or Diagnostics — those may be unavailable at the failure point) and surfaced as a `manage_options`-gated admin notice. Activation no longer white-screens on third-party plugin conflicts, missing PHP extensions, or partially loaded classes.
+- **Plugin safety wrapper (Change E).** Top-level bootstrap in `swisssuite-ai.php` and the activator's `activate()` body are now wrapped in `try/catch(\Throwable)`. Fatal errors are appended to `wp-content/swisswpsuite-error.log` (flat file, not wp_options or Diagnostics — those may be unavailable at the failure point) and surfaced as a `manage_options`-gated admin notice. Activation no longer white-screens on third-party plugin conflicts, missing PHP extensions, or partially loaded classes.
 - **Built-in SMTP settings (Change F).** New panel under Settings > General. 13 provider presets (Hostinger, SiteGround, Bluehost, GoDaddy, DreamHost, IONOS, OVH, Namecheap, Gmail, Outlook, Brevo, SendGrid, Custom). Auto-fills host/port/encryption. Password encrypted at rest via `SwissWPSuite_Encryption::encrypt_string()` (Sodium preferred, OpenSSL fallback). Hooks into `phpmailer_init` at priority 20 — completely inert when no host is configured (wp_mail() falls back to default mailer). "Send Test Email" button dispatches a diagnostic to `admin_email` and captures PHPMailer errors via the `wp_mail_failed` action.
 
 ### Changed
@@ -2406,7 +2406,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Fixed
 - **Deactivator cleanup** -- restrict_google_indexing and restrict_llm_crawlers settings cleared on deactivation (prevents silent reactivation of Google deindexing)
-- **uploads/.htaccess cleanup** -- deactivator now removes SwissWPSuite markers from uploads/.htaccess
+- **uploads/.htaccess cleanup** -- deactivator now removes SwissSuite markers from uploads/.htaccess
 
 ### Changed
 - **18 security regression baselines** added to REGRESSION_BASELINE.md -- every future audit verifies these
@@ -2535,7 +2535,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **Page-builder content length analysis** -- SEO scanner extracts and counts text from Elementor, Divi, and Beaver Builder meta data instead of reporting 0 words
 
 ### Fixed
-- **Schema markup false positives eliminated** -- SEO audit now recognizes that SwissWPSuite Frontend already injects Article/WebPage/FAQ schema via wp_head (was checking post_content only)
+- **Schema markup false positives eliminated** -- SEO audit now recognizes that SwissSuite Frontend already injects Article/WebPage/FAQ schema via wp_head (was checking post_content only)
 
 ---
 
@@ -3009,7 +3009,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [2.9.27.9] - 2026-04-03
 
 ### Fixed
-- **Closed/Abandoned Plugins false positives** — `swisswpsuite-ai` (commercial plugin, intentionally not on WordPress.org) and plugins with the `hostinger-` prefix (hosting-provider bundled tools) are now permanently excluded from the abandoned plugins check
+- **Closed/Abandoned Plugins false positives** — `swisssuite-ai` (commercial plugin, intentionally not on WordPress.org) and plugins with the `hostinger-` prefix (hosting-provider bundled tools) are now permanently excluded from the abandoned plugins check
 - **"Not found" vs "removed" distinction** — the check now correctly distinguishes between plugins that were removed from WordPress.org (`closed: true` API flag) vs plugins that were never submitted (404 response); different severity and message text for each case
 - **Basic scan results visibility** — scan findings are now fully rendered in the Security Hub Sentinel tab
 - **Pro/AI scan completeness** — Pro scan now surfaces all findings that the basic scan detects, plus additional AI-powered analysis
@@ -3048,7 +3048,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [2.9.27.7] - 2026-04-02
 
 ### Fixed
-- "Disable Visitor-Triggered Scheduling" hardening toggle now explicitly warns that SwissWPSuite's backup automations will stop, and shows server cron setup instructions (cPanel → Cron Jobs, every 5 minutes) before the user confirms — prevents silent backup failures after enabling this option
+- "Disable Visitor-Triggered Scheduling" hardening toggle now explicitly warns that SwissSuite's backup automations will stop, and shows server cron setup instructions (cPanel → Cron Jobs, every 5 minutes) before the user confirms — prevents silent backup failures after enabling this option
 
 ---
 
@@ -3092,8 +3092,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - "Drop Orphaned Tables" action in Settings → Maintenance — safely drops abandoned plugin tables with 5-layer protection: core table allowlist, active plugin slug matching, protected prefix guard (WooCommerce, Elementor, Yoast, Wordfence, etc.), regex validation, and `esc_sql()` defense-in-depth
 
 ### Fixed
-- Sentinel AI no longer suggests using SwissWPSuite Database Cleanup for orphaned plugin tables (the two features solve different problems — clarified in remediation text and AI prompts)
-- AI security audit no longer tells Free-tier users to enable 2FA or Geo-Blocking via SwissWPSuite without disclosing these are Pro-only features
+- Sentinel AI no longer suggests using SwissSuite Database Cleanup for orphaned plugin tables (the two features solve different problems — clarified in remediation text and AI prompts)
+- AI security audit no longer tells Free-tier users to enable 2FA or Geo-Blocking via SwissSuite without disclosing these are Pro-only features
 - AI audit now covers all 11 hardening options (previously missing User Enumeration, WP Cron Public, Content Security Policy)
 - Pro-only hardening options (Security Headers, REST API Guest Block, Author Archives, Bad Bots, WP Cron, CSP) now include Pro upgrade disclosure in AI remediation steps
 - WAF and Login Protection AI recommendations now include Pro tier disclosure for Free-tier users
@@ -3771,7 +3771,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [2.9.19.0] - 2026-03-25
 
 ### Improved
-- Cloud Backup: Google Drive one-click connection — users no longer need to create their own Google OAuth app. Connect with a single click via SwissWPSuite servers.
+- Cloud Backup: Google Drive one-click connection — users no longer need to create their own Google OAuth app. Connect with a single click via SwissSuite servers.
 - Cloud Backup: Dropbox one-click connection ready — activates automatically when Dropbox production approval is granted.
 - Cloud Backup: Status endpoints now detect VPS OAuth proxy availability for fresh installs.
 - Cloud Backup: Fixed self-hosted OAuth callbacks redirecting to wrong admin page.
@@ -4196,4 +4196,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [2.8.9.9] - 2026-02-17
 
 ### Added
-- Initial release of SwissWPSuite.
+- Initial release of SwissSuite.

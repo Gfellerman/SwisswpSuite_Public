@@ -12,9 +12,9 @@ All-in-one WordPress security plugin. Malware scanner, firewall, 2FA, site backu
 
 == Description ==
 
-SwissWPSuite AI is an all-in-one WordPress security plugin that bundles a malware scanner, web application firewall, two-factor authentication, scheduled site backup, site migration, and AI-powered SEO tools into a single install. One plugin. One settings screen. No add-ons to chase.
+SwissSuite AI is an all-in-one WordPress security plugin that bundles a malware scanner, web application firewall, two-factor authentication, scheduled site backup, site migration, and AI-powered SEO tools into a single install. One plugin. One settings screen. No add-ons to chase.
 
-Most sites end up with five plugins doing what one plugin should do — a security plugin, a backup plugin, a migration plugin, an SEO plugin, and a cache plugin. Every extra plugin is another auto-update, another DB table, another performance hit, another attack surface. SwissWPSuite replaces the security, backup, migration, and SEO layer with one tightly integrated codebase.
+Most sites end up with five plugins doing what one plugin should do — a security plugin, a backup plugin, a migration plugin, an SEO plugin, and a cache plugin. Every extra plugin is another auto-update, another DB table, another performance hit, another attack surface. SwissSuite replaces the security, backup, migration, and SEO layer with one tightly integrated codebase.
 
 [youtube https://www.youtube.com/watch?v=PLACEHOLDER]
 <!-- TODO: Replace PLACEHOLDER with real YouTube video ID after recording -->
@@ -44,7 +44,7 @@ Most sites end up with five plugins doing what one plugin should do — a securi
 * Selective push: posts, products, media, FSE templates
 
 = Migration Station =
-* Mode A: plugin-to-plugin migration when both sites have SwissWPSuite installed
+* Mode A: plugin-to-plugin migration when both sites have SwissSuite installed
 * Mode B: standalone receiver script for migrating to an empty or broken destination
 * Serialization-safe domain replacement (handles serialized arrays and JSON-in-meta)
 * Chunked transfer tuned for shared hosting (Hostinger, SiteGround, IONOS)
@@ -58,13 +58,13 @@ Most sites end up with five plugins doing what one plugin should do — a securi
 * On-page SEO audit and score
 * llms.txt generator so AI crawlers can find your authoritative content
 
-= Why SwissWPSuite? =
+= Why SwissSuite? =
 
-**vs Wordfence:** Wordfence is security-only. You still need a separate backup plugin (UpdraftPlus, BlogVault), a separate migration plugin (Duplicator, All-in-One WP Migration), and a separate SEO plugin (Yoast, RankMath). That's four plugins, four update channels, four monthly costs. SwissWPSuite covers all four layers in one install.
+**vs Wordfence:** Wordfence is security-only. You still need a separate backup plugin (UpdraftPlus, BlogVault), a separate migration plugin (Duplicator, All-in-One WP Migration), and a separate SEO plugin (Yoast, RankMath). That's four plugins, four update channels, four monthly costs. SwissSuite covers all four layers in one install.
 
-**vs UpdraftPlus:** UpdraftPlus is backup-only. It does not scan for malware, does not provide a firewall, does not handle 2FA, and has no SEO tools. SwissWPSuite includes a full backup engine plus everything UpdraftPlus does not.
+**vs UpdraftPlus:** UpdraftPlus is backup-only. It does not scan for malware, does not provide a firewall, does not handle 2FA, and has no SEO tools. SwissSuite includes a full backup engine plus everything UpdraftPlus does not.
 
-**vs Yoast / RankMath:** Yoast and RankMath are SEO-only. They cannot detect a hacked site, cannot back up your content before an algorithm penalty, and cannot block a brute-force attack on your admin login. SwissWPSuite includes AI-powered SEO plus the security layer that protects your rankings.
+**vs Yoast / RankMath:** Yoast and RankMath are SEO-only. They cannot detect a hacked site, cannot back up your content before an algorithm penalty, and cannot block a brute-force attack on your admin login. SwissSuite includes AI-powered SEO plus the security layer that protects your rankings.
 
 = Perfect for =
 
@@ -76,14 +76,14 @@ Most sites end up with five plugins doing what one plugin should do — a securi
 
 = Privacy & Data =
 
-SwissWPSuite does not phone home on install. No background telemetry. External services are contacted only when you explicitly enable them (cloud backup, AI analysis, vulnerability lookup). Every external service is disclosed below.
+SwissSuite does not phone home on install. No background telemetry. External services are contacted only when you explicitly enable them (cloud backup, AI analysis, vulnerability lookup). Every external service is disclosed below.
 
 == Installation ==
 
 1. In WordPress Admin, go to Plugins → Add New → Upload Plugin.
-2. Upload the SwissWPSuite AI zip and click Install Now.
+2. Upload the SwissSuite AI zip and click Install Now.
 3. Activate the plugin.
-4. Open the SwissWPSuite menu in the WordPress sidebar.
+4. Open the SwissSuite menu in the WordPress sidebar.
 5. Click "Get Free License" on the License tab — enter your email and the plugin auto-provisions a free license locked to your domain.
 6. Run your first malware scan from the Security Hub → Scan tab.
 
@@ -95,25 +95,25 @@ SwissWPSuite does not phone home on install. No background telemetry. External s
 
 == Frequently Asked Questions ==
 
-= Is SwissWPSuite AI free? =
+= Is SwissSuite AI free? =
 
 Yes. The free tier includes daily malware scans, the web application firewall, 5 hardening options, two-factor authentication, and the on-page SEO audit. You do not need a credit card to get started. Paid tiers unlock advanced features like cloud backup, site migration, AI content rewriting, and the deep AI security audit.
 
 = How do I block countries in WordPress? =
 
-Open SwissWPSuite → Security Hub → Geo-Blocking. Pick "Block list" mode and select the countries you want to deny. The list is enforced at the firewall layer before WordPress loads, so blocked countries cannot brute-force your login page or hit your REST API. You can also use "Allow list" mode to restrict access to a single country (useful for staging sites).
+Open SwissSuite → Security Hub → Geo-Blocking. Pick "Block list" mode and select the countries you want to deny. The list is enforced at the firewall layer before WordPress loads, so blocked countries cannot brute-force your login page or hit your REST API. You can also use "Allow list" mode to restrict access to a single country (useful for staging sites).
 
 = What is the best WordPress 2FA plugin? =
 
-If you already use SwissWPSuite for security, the built-in TOTP two-factor authentication is the simplest answer — no extra plugin to install, no compatibility risk between the WAF and the 2FA layer. It works with Google Authenticator, Authy, 1Password, Bitwarden, and any other TOTP app. Enable it from Security Hub → Two-Factor Authentication and scan the QR code with your authenticator.
+If you already use SwissSuite for security, the built-in TOTP two-factor authentication is the simplest answer — no extra plugin to install, no compatibility risk between the WAF and the 2FA layer. It works with Google Authenticator, Authy, 1Password, Bitwarden, and any other TOTP app. Enable it from Security Hub → Two-Factor Authentication and scan the QR code with your authenticator.
 
 = How do I scan my WordPress site for malware? =
 
-Open SwissWPSuite → Security Hub → Scan tab. You have three scan types: Quick Scan (local signature check, fast, free), AI Security Audit (configuration and integrity audit, daily auto-scan, free), and Deep Malware Scan with AI (file hashes checked against MalwareBazaar plus AI analysis, Pro tier). The first scan typically takes 30-90 seconds depending on site size.
+Open SwissSuite → Security Hub → Scan tab. You have three scan types: Quick Scan (local signature check, fast, free), AI Security Audit (configuration and integrity audit, daily auto-scan, free), and Deep Malware Scan with AI (file hashes checked against MalwareBazaar plus AI analysis, Pro tier). The first scan typically takes 30-90 seconds depending on site size.
 
 = Does this replace Wordfence? =
 
-Yes. SwissWPSuite includes everything Wordfence does — malware scanner, firewall, login protection, two-factor authentication, country blocking — and adds backup, migration, and SEO that Wordfence does not have. If you are running Wordfence and a separate backup plugin and a separate SEO plugin, SwissWPSuite is a one-for-three swap.
+Yes. SwissSuite includes everything Wordfence does — malware scanner, firewall, login protection, two-factor authentication, country blocking — and adds backup, migration, and SEO that Wordfence does not have. If you are running Wordfence and a separate backup plugin and a separate SEO plugin, SwissSuite is a one-for-three swap.
 
 = How do I back up my WordPress site automatically? =
 
@@ -121,13 +121,13 @@ Open Settings → Backup → Schedule. Pick a frequency (hourly, daily, weekly) 
 
 = Can I migrate my WordPress site without manual SQL edits? =
 
-Yes. SwissWPSuite handles serialized string replacement automatically — no need to run wp-cli search-replace or hand-edit the SQL dump. Use Mode A if the destination site already has SwissWPSuite installed. Use Mode B if the destination is empty or broken: the plugin generates a standalone receiver script you upload to the destination, then push the migration.
+Yes. SwissSuite handles serialized string replacement automatically — no need to run wp-cli search-replace or hand-edit the SQL dump. Use Mode A if the destination site already has SwissSuite installed. Use Mode B if the destination is empty or broken: the plugin generates a standalone receiver script you upload to the destination, then push the migration.
 
 = What AI features are included in the free version? =
 
 The AI Security Audit runs daily on the free tier at zero token cost (Layer 1 is signature-based, not AI). The on-page SEO audit and XML sitemap generator are free. AI-powered features that consume tokens — deep malware analysis, bulk SEO meta generation, content rewriting, image alt text — are gated to paid tiers. Free accounts include 50,000 tokens per month for occasional AI use.
 
-= Is SwissWPSuite compatible with WooCommerce? =
+= Is SwissSuite compatible with WooCommerce? =
 
 Yes. The firewall has an explicit allowlist for WooCommerce REST routes (wc/v3, wc/store/v1, wc/store/v2, wc-analytics/v1, wc-admin/v1, wc-auth/v1) so cart, checkout, and the Store API work normally even with hardening enabled. The backup engine handles WooCommerce-specific tables (orders, customers, sessions) and the sync layer pushes products between staging and production.
 
@@ -147,7 +147,7 @@ Each license key is locked to one domain. For multi-site management, contact sup
 
 This plugin connects to the following external services. No data is transmitted unless you initiate an action that requires it.
 
-= SwissWPSuite Command Center (api.swisswpsecure.com) =
+= SwissSuite Command Center (api.swisswpsecure.com) =
 Used for: License key validation, AI request proxying, token balance sync, and Deep Malware Scan hash lookups.
 Data sent: Your license key and AI scan request payloads. Your site domain is sent in an X-Domain header on every request to api.swisswpsecure.com for license verification (the server uses it to confirm the key is active for your domain). During the Deep Malware Scan (Pro license required), SHA-256 hashes of PHP files on your site are sent to api.swisswpsecure.com/v1/scan/batch to check them against a malware signature database (sources: URLhaus, MalwareBazaar). File contents are never transmitted, and hashes are not logged per-site.
 This service is only contacted after you enter a license key — the plugin does not phone home on a fresh install with no key.
@@ -385,7 +385,7 @@ Restores scheduled backup cron after a regression that silently stopped automate
 
 = 2.9.30.89 =
 * Fixed: Mode B migration receiver template placeholder (`%%RECEIVER_EXPIRES_AT%%`) had spaces inserted in prior cleanup, silently breaking all generated receiver scripts since v2.9.30.81.
-* Fixed: Plugin display name consistently updated to SwissWPSuite AI throughout all plugin files and public documentation.
+* Fixed: Plugin display name consistently updated to SwissSuite AI throughout all plugin files and public documentation.
 * Tooling: Rewrote plugin check script — now produces real WP.org PCP report with 0 errors (was non-functional). PCP score: 0 errors / 62 warnings (warnings are acceptable, not submission blockers).
 * Tooling: wp_parse_url(), wp_strip_all_tags(), wp_is_writable(), wp_delete_file() replacements across API files to satisfy WP.org AlternativeFunctions coding standard.
 

@@ -1,9 +1,9 @@
-# SwissWPSuite AI — Plugin Intro Video Script Outline
+# SwissSuite AI — Plugin Intro Video Script Outline
 
 **Target length:** 3.5–4 minutes  
 **Format:** Screen recording + voiceover (no camera required)  
 **Audience:** WordPress site owners who are not developers  
-**Goal:** Install SwissWPSuite AI from the WordPress.org directory
+**Goal:** Install SwissSuite AI from the WordPress.org directory
 
 ---
 
@@ -33,10 +33,10 @@
 ## Segment 3 — Solution Reveal (0:45–1:15)
 
 ### Voiceover
-"SwissWPSuite AI is one plugin that replaces all four. Malware scanner, firewall, two-factor authentication, site backup, site migration, and AI SEO — built and tested together, all from one screen."
+"SwissSuite AI is one plugin that replaces all four. Malware scanner, firewall, two-factor authentication, site backup, site migration, and AI SEO — built and tested together, all from one screen."
 
 ### Screen
-- Navigate to: **SwissWPSuite → Dashboard**
+- Navigate to: **SwissSuite → Dashboard**
 - Slow pan across the dashboard: Security score tile, Last backup tile, Token balance tile, Quick actions row
 - Click through each sidebar tab (Security Hub, Backup, Migration, Sync, SEO) at 2 seconds each — do not stop, just sweep through to show breadth
 - Return to Dashboard
@@ -48,10 +48,10 @@
 ## Segment 4a — Security Scan Demo (1:15–1:45, 30 seconds)
 
 ### Voiceover
-"Let's start with security. One click runs a full malware scan — SwissWPSuite checks every file on your site against a database of known malware hashes, then runs AI analysis on anything suspicious. Results appear in under two minutes on most sites."
+"Let's start with security. One click runs a full malware scan — SwissSuite checks every file on your site against a database of known malware hashes, then runs AI analysis on anything suspicious. Results appear in under two minutes on most sites."
 
 ### Screen
-1. Navigate to: **SwissWPSuite → Security Hub → Scan tab**
+1. Navigate to: **SwissSuite → Security Hub → Scan tab**
 2. Click **"Run Deep Malware Scan with AI"**
 3. Show the progress bar animating through phases: Enumerating → Hashing → VPS Lookup → AI Analysis
 4. Show the completed results panel — file list with threat badges (grade pill, source tags)
@@ -64,10 +64,10 @@
 ## Segment 4b — Backup Demo (1:45–2:05, 20 seconds)
 
 ### Voiceover
-"Backup is one click. SwissWPSuite compresses your entire site — files and database — and optionally uploads it straight to Google Drive, S3, Backblaze, or Dropbox. Scheduled backups run automatically while you sleep."
+"Backup is one click. SwissSuite compresses your entire site — files and database — and optionally uploads it straight to Google Drive, S3, Backblaze, or Dropbox. Scheduled backups run automatically while you sleep."
 
 ### Screen
-1. Navigate to: **SwissWPSuite → Settings → Backup tab**
+1. Navigate to: **SwissSuite → Settings → Backup tab**
 2. Click **"Backup Now"** — show the progress indicator
 3. Show the completed backup entry in the list: filename, size, timestamp
 4. Pan right to the Google Drive "Connected" badge in the Cloud column
@@ -77,10 +77,10 @@
 ## Segment 4c — Migration Demo (2:05–2:25, 20 seconds)
 
 ### Voiceover
-"Need to move a site to a new host, or push staging to production? SwissWPSuite handles the whole migration — including database serialized strings — without a single line of command-line work."
+"Need to move a site to a new host, or push staging to production? SwissSuite handles the whole migration — including database serialized strings — without a single line of command-line work."
 
 ### Screen
-1. Navigate to: **SwissWPSuite → Migration Station → New Migration**
+1. Navigate to: **SwissSuite → Migration Station → New Migration**
 2. Show step 1: source site URL entry
 3. Advance to step 3: transfer in progress, progress bar at ~50%, file counter ticking up
 4. Show the "Migration complete — verify your new site" confirmation screen
@@ -93,7 +93,7 @@
 "The AI SEO tools let you generate meta titles and descriptions for your entire post library in one shot. Select the posts, click Generate, and the AI writes SEO-optimised copy for each one based on the content it finds on your site."
 
 ### Screen
-1. Navigate to: **SwissWPSuite → SEO Manager → Bulk Optimise**
+1. Navigate to: **SwissSuite → SEO Manager → Bulk Optimise**
 2. Show 10–15 posts loaded in the table
 3. Click **"Generate AI Suggestions"**
 4. Show the AI Suggestion column filling in with green cells — each cell showing a generated meta description
@@ -107,10 +107,10 @@
 "Security hardening takes about 30 seconds. You get 11 one-click options — disable XML-RPC, block file editing from the dashboard, prevent user enumeration, enforce HTTPS, and more. And for your admin account, two-factor authentication works with Google Authenticator, Authy, 1Password — any TOTP app."
 
 ### Screen
-1. Navigate to: **SwissWPSuite → Security Hub → Hardening tab**
+1. Navigate to: **SwissSuite → Security Hub → Hardening tab**
 2. Toggle ON three hardening options in quick succession — show each toggle animating to green
 3. Show the Hardening Score counter incrementing (e.g. 7/11 → 8/11 → 9/11)
-4. Navigate to: **SwissWPSuite → Security Hub → Two-Factor Authentication**
+4. Navigate to: **SwissSuite → Security Hub → Two-Factor Authentication**
 5. Click **"Set up 2FA"** — show the QR code modal
 6. (Optional: show scanning the QR code with a phone — use a test/fake QR code)
 
@@ -119,15 +119,15 @@
 ## Segment 5 — Social Proof + Call to Action (3:15–3:45, 30 seconds)
 
 ### Voiceover
-"SwissWPSuite AI is free to get started — the free tier includes the malware scanner, the firewall, 2FA, and the SEO audit with no time limit and no credit card. Premium plans unlock cloud backup, site migration, AI content rewriting, and the deep AI security audit."
+"SwissSuite AI is free to get started — the free tier includes the malware scanner, the firewall, 2FA, and the SEO audit with no time limit and no credit card. Premium plans unlock cloud backup, site migration, AI content rewriting, and the deep AI security audit."
 
 ### Screen
-- Navigate to: **SwissWPSuite → License & Tokens tab**
+- Navigate to: **SwissSuite → License & Tokens tab**
 - Show the "Get Free License" button — click it and show the email-entry modal
-- Cut to: the WordPress.org plugin directory page for SwissWPSuite AI (or the swisswpsecure.com home page)
+- Cut to: the WordPress.org plugin directory page for SwissSuite AI (or the swisswpsecure.com home page)
 
 ### Text overlay
-- "Search 'SwissWPSuite' on WordPress.org"
+- "Search 'SwissSuite' on WordPress.org"
 - "Or visit swisswpsecure.com"
 
 ---
@@ -136,15 +136,15 @@
 
 ### Screen
 - Solid Swiss Navy background (#0A1628)
-- **SwissWPSuite AI** wordmark centred, white, large
+- **SwissSuite AI** wordmark centred, white, large
 - Tagline below: "Security. Backup. Migration. AI SEO. One Plugin."
 - Two text lines:
-  - `wordpress.org/plugins/swisswpsuite-ai`
+  - `wordpress.org/plugins/swisssuite-ai`
   - `swisswpsecure.com`
 - Swiss cross + shield icon, bottom-right corner
 
 ### Voiceover
-"SwissWPSuite AI. One plugin. Everything your WordPress site needs."
+"SwissSuite AI. One plugin. Everything your WordPress site needs."
 
 ---
 
@@ -169,7 +169,7 @@
 - Export: H.264, 1080p, target < 500 MB file size for YouTube upload
 
 ### YouTube metadata (fill in before upload)
-- **Title:** `SwissWPSuite AI — WordPress Security, Backup & AI SEO Plugin (Full Demo)`
+- **Title:** `SwissSuite AI — WordPress Security, Backup & AI SEO Plugin (Full Demo)`
 - **Description:** Start with a keyword-rich paragraph (malware scanner, WordPress firewall, site backup, two-factor authentication, site migration, AI SEO), then link to each chapter timestamp
 - **Tags:** wordpress security plugin, wordpress backup plugin, malware scanner, two factor authentication wordpress, wordpress migration plugin, wordpress seo plugin, wordfence alternative, updraftplus alternative
 - **Thumbnail:** A frame from the Security Hub dashboard (high contrast, readable text at small size)

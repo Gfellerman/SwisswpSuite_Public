@@ -1,6 +1,6 @@
-# SwissWPSuite AI — WP.org SVN Assets
+# SwissSuite AI — WP.org SVN Assets
 
-This folder contains the WordPress.org directory assets for SwissWPSuite AI. These files go into the `/assets/` directory of the WP.org SVN repository — **not** into the plugin zip.
+This folder contains the WordPress.org directory assets for SwissSuite AI. These files go into the `/assets/` directory of the WP.org SVN repository — **not** into the plugin zip.
 
 ---
 
@@ -47,14 +47,14 @@ See [ASSET_BRIEF.md](ASSET_BRIEF.md) for the full production spec for each file.
 
 ```bash
 # Check out your plugin's SVN repository
-svn checkout https://plugins.svn.wordpress.org/swisswpsuite-ai/ ~/wpsvn/swisswpsuite-ai
-cd ~/wpsvn/swisswpsuite-ai
+svn checkout https://plugins.svn.wordpress.org/swisssuite-ai/ ~/wpsvn/swisssuite-ai
+cd ~/wpsvn/swisssuite-ai
 ```
 
 ### Adding assets
 
 ```bash
-cd ~/wpsvn/swisswpsuite-ai/assets/
+cd ~/wpsvn/swisssuite-ai/assets/
 
 # Copy your finished files here
 cp /path/to/banner-772x250.png .
@@ -73,7 +73,7 @@ svn commit -m "Add directory assets: banner, icon, screenshots"
 ### Updating existing assets
 
 ```bash
-cd ~/wpsvn/swisswpsuite-ai/assets/
+cd ~/wpsvn/swisssuite-ai/assets/
 cp /path/to/updated-file.png .
 svn commit -m "Update screenshot-3: refreshed WAF log state"
 ```

@@ -7,7 +7,7 @@
 **License:** GPL-2.0-or-later
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
-SwissWPSuite is a comprehensive WordPress toolkit powered by Groq AI, combining Security, Backup, SEO, and Site Synchronization into a single, high-performance plugin.
+SwissSuite is a comprehensive WordPress toolkit powered by Groq AI, combining Security, Backup, SEO, and Site Synchronization into a single, high-performance plugin.
 
 ## Features
 
@@ -42,7 +42,7 @@ SwissWPSuite is a comprehensive WordPress toolkit powered by Groq AI, combining 
 
 ## Licensing & Tiers
 
-SwissWPSuite operates on a tiered licensing model. The core plugin is free, with advanced features unlocked by your license key.
+SwissSuite operates on a tiered licensing model. The core plugin is free, with advanced features unlocked by your license key.
 
 | Tier | Key Features |
 | :--- | :--- |
@@ -61,7 +61,7 @@ Paid plans include an AI Token allowance for generative features (Rewriting, Ana
 2. In WordPress Admin, go to **Plugins > Add New > Upload Plugin**.
 3. Upload the zip file and click **Install Now**.
 4. Activate the plugin.
-5. Navigate to **SwissWPSuite > License & Tokens** and enter your License Key.
+5. Navigate to **SwissSuite > License & Tokens** and enter your License Key.
 
 ## Requirements
 

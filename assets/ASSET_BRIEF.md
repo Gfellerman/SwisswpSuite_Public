@@ -1,4 +1,4 @@
-# SwissWPSuite AI — WP.org Asset Production Brief
+# SwissSuite AI — WP.org Asset Production Brief
 
 This brief contains every spec a designer (freelancer, in-house, or Canva user) needs to produce all WP.org directory assets without follow-up questions. Hand this file off as-is.
 
@@ -27,7 +27,7 @@ This brief contains every spec a designer (freelancer, in-house, or Canva user) 
 ### Logo / Iconography Cues
 - The brand mark is a **Swiss cross integrated into a security shield**. The shield is the security signal; the cross is the country-of-origin signal (Swiss = quality, neutrality, trust)
 - Avoid generic padlock icons — every security plugin uses one, and we want to stand out
-- The wordmark "SwissWPSuite" should be set in Inter SemiBold or Bold
+- The wordmark "SwissSuite" should be set in Inter SemiBold or Bold
 
 ---
 
@@ -56,7 +56,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 │      with                Migration. AI SEO.        │UI│ │UI│ │UI│         │
 │   Swiss cross            ──────────────────        │ 1│ │ 2│ │ 3│         │
 │                          One Plugin.               └──┘ └──┘ └──┘         │
-│   SwissWPSuite AI                                                          │
+│   SwissSuite AI                                                          │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
    Dark Swiss Navy gradient background (#0A1628 → #1A2A45)
@@ -69,7 +69,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
   - Shield + Swiss cross mark, ~140 px tall on the standard banner (280 px on retina)
   - Shield body in Swiss Navy with 2 px Swiss Red stroke
   - Swiss cross inside the shield in pure white (#FFFFFF)
-  - Below the mark: "SwissWPSuite AI" in Inter Bold, white, ~28 px (standard) / ~56 px (retina)
+  - Below the mark: "SwissSuite AI" in Inter Bold, white, ~28 px (standard) / ~56 px (retina)
 - **Centre block (tagline):**
   - Line 1: "Security. Backup. Migration. AI SEO." — Inter ExtraBold, white, ~32 px (standard) / ~64 px (retina), tight line height
   - Divider rule: 60 px wide, 2 px tall, Swiss Red, beneath line 1
@@ -130,7 +130,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 ---
 
 **Screenshot 1: Security Hub overview**
-- **Navigate to:** SwissWPSuite → Security Hub → Dashboard tab
+- **Navigate to:** SwissSuite → Security Hub → Dashboard tab
 - **State to create before capture:**
   1. Run an AI Security Audit so a recent scan appears (grade B or A)
   2. Enable at least 8 of the 11 hardening options
@@ -141,7 +141,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 ---
 
 **Screenshot 2: Malware scan results**
-- **Navigate to:** SwissWPSuite → Security Hub → Scan tab
+- **Navigate to:** SwissSuite → Security Hub → Scan tab
 - **State to create:**
   1. Click "Run Deep Malware Scan with AI" and wait for completion
   2. Ensure at least one finding is present (test environment: drop a harmless file containing the string "eval(base64_decode(" into wp-content/uploads/test.php — REMOVE after capture)
@@ -152,7 +152,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 ---
 
 **Screenshot 3: WAF / IP blocking**
-- **Navigate to:** SwissWPSuite → Security Hub → Logs tab
+- **Navigate to:** SwissSuite → Security Hub → Logs tab
 - **State to create:**
   1. Have 5-10 entries in the "Blocked Requests" log (let the WAF run for a day, or trigger by curl-ing wp-admin with a SQL injection payload from a test IP)
   2. At least 2 entries should show "SQL injection blocked" or "XSS blocked"
@@ -163,7 +163,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 ---
 
 **Screenshot 4: Hardening options**
-- **Navigate to:** SwissWPSuite → Security Hub → Hardening tab
+- **Navigate to:** SwissSuite → Security Hub → Hardening tab
 - **State to create:**
   1. Enable 8-10 of the 11 hardening toggles
   2. Leave 1-2 disabled so the user can see the toggle UI in both states
@@ -174,7 +174,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 ---
 
 **Screenshot 5: 2FA setup**
-- **Navigate to:** SwissWPSuite → Security Hub → Two-Factor Authentication
+- **Navigate to:** SwissSuite → Security Hub → Two-Factor Authentication
 - **State to create:**
   1. As the admin user, click "Set up 2FA"
   2. The QR code modal should be visible
@@ -185,7 +185,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 ---
 
 **Screenshot 6: Backup list**
-- **Navigate to:** SwissWPSuite → Settings → Backup tab
+- **Navigate to:** SwissSuite → Settings → Backup tab
 - **State to create:**
   1. Have 3 recent backups in the list (run "Backup Now" 3 times over a few days, or let the daily cron run for 3 days)
   2. Connect Google Drive under Cloud → Google Drive so the Google Drive icon shows "Connected" green
@@ -196,7 +196,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 ---
 
 **Screenshot 7: Sync diff view**
-- **Navigate to:** SwissWPSuite → Sync Teleport → Compare tab
+- **Navigate to:** SwissSuite → Sync Teleport → Compare tab
 - **State to create:**
   1. Connect two test sites (staging + production) via Sync Teleport
   2. Make 2-3 content changes on staging (edit a post title, add a product, upload a media item)
@@ -207,7 +207,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 ---
 
 **Screenshot 8: Migration wizard**
-- **Navigate to:** SwissWPSuite → Migration Station → New Migration
+- **Navigate to:** SwissSuite → Migration Station → New Migration
 - **State to create:**
   1. Start a migration to a test destination
   2. Capture on step 2 or 3 of the wizard (after destination is selected, during transfer)
@@ -218,7 +218,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 ---
 
 **Screenshot 9: AI SEO bulk table**
-- **Navigate to:** SwissWPSuite → SEO Manager → Bulk Optimise
+- **Navigate to:** SwissSuite → SEO Manager → Bulk Optimise
 - **State to create:**
   1. Have 10-15 posts loaded in the bulk table
   2. Run "Generate AI Suggestions" on the visible rows
@@ -229,7 +229,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 ---
 
 **Screenshot 10: Tablet view at 768px**
-- **Navigate to:** SwissWPSuite → Security Hub → Dashboard (same as screenshot 1)
+- **Navigate to:** SwissSuite → Security Hub → Dashboard (same as screenshot 1)
 - **State to create:**
   1. Resize browser to exactly 768 px wide (Chrome DevTools → Toolbar → iPad)
   2. The plugin UI should reflow: sidebar tabs become a horizontal scroll, cards stack vertically

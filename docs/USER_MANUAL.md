@@ -1,6 +1,6 @@
-# SwissWPSuite AI — User Manual
+# SwissSuite AI — User Manual
 
-**Refer to `plugin/swisswpsuite-ai.php` for the authoritative current version.**
+**Refer to `plugin/swisssuite-ai.php` for the authoritative current version.**
 **Last Updated:** May 2026
 
 ---
@@ -30,11 +30,11 @@
 3. Select the ZIP file and click **Install Now**
 4. Click **Activate Plugin**
 
-After activation, a new **SwissWPSuite** menu item appears in your WordPress sidebar.
+After activation, a new **SwissSuite** menu item appears in your WordPress sidebar.
 
 ### 1.2 First-Time Setup
 
-When you first open SwissWPSuite, you'll see the **Critical Next Steps** guide on the Dashboard. Follow these steps:
+When you first open SwissSuite, you'll see the **Critical Next Steps** guide on the Dashboard. Follow these steps:
 
 1. **Activate your license** — Enter your license key in Settings → License Manager
 2. **Run a security scan** — Navigate to Security Hub and click "Run Sentinel Scan"
@@ -86,7 +86,7 @@ The Dashboard is your command center — it shows a real-time overview of your s
 
 ## 3. Security Hub
 
-The Security Hub is the heart of SwissWPSuite's protection system. It's organized into six tabs.
+The Security Hub is the heart of SwissSuite's protection system. It's organized into six tabs.
 
 ### 3.1 Dashboard Tab (Security Overview)
 
@@ -211,7 +211,7 @@ When suspicious files are detected, they can be quarantined (moved to a safe iso
 
 Hardening strengthens your WordPress installation by closing doors that attackers commonly use. Think of it as locking windows and reinforcing walls — each option shuts down a specific way that someone could break in.
 
-SwissWPSuite organizes hardening into three tiers:
+SwissSuite organizes hardening into three tiers:
 
 1. **Auto-enabled** — One option (Disable File Editor) is turned on automatically when you first install the plugin. You do not need to do anything.
 2. **Protect My Site (Essential)** — Five straightforward options that are safe for virtually all websites. Free users have access to all of these.
@@ -243,7 +243,7 @@ These five options are safe for nearly every WordPress site.
 **2. Disable File Editor** (`disable_file_editor`)
 
 - **What it does:** Removes the built-in code editor from your WordPress dashboard (Appearance > Theme File Editor and Plugins > Plugin File Editor). If an attacker gains admin access, they cannot inject malicious code through the editor.
-- **Auto-enabled:** This option is turned on automatically when you first install SwissWPSuite. You can turn it off if needed.
+- **Auto-enabled:** This option is turned on automatically when you first install SwissSuite. You can turn it off if needed.
 - **Risk level:** Safe for all sites. You can still edit files via FTP, SFTP, or your hosting provider's file manager.
 - **What might break:** Nothing. The only thing removed is the in-dashboard code editor, which most site owners should never use anyway.
 
@@ -335,11 +335,11 @@ These six options provide deeper protection but can interfere with certain plugi
 
 #### Runtime Conflict Monitor
 
-SwissWPSuite automatically watches for conflicts between your hardening settings and your installed plugins.
+SwissSuite automatically watches for conflicts between your hardening settings and your installed plugins.
 
 **How it works:**
 
-- When you activate a new plugin, SwissWPSuite checks whether it conflicts with any of your currently enabled hardening options.
+- When you activate a new plugin, SwissSuite checks whether it conflicts with any of your currently enabled hardening options.
 - If a conflict is detected, a **yellow warning banner** appears at the top of your WordPress admin area. The banner names the specific hardening option you should review and explains why there may be a problem.
 - A **daily safety check** runs in the background to catch plugins that were installed via FTP, WP-CLI, or other methods that bypass the normal plugin activation hook.
 
@@ -486,7 +486,7 @@ Click **"Run Now"** on any automation to trigger it immediately outside its sche
 
 Before any import or restore operation, the plugin automatically creates a **safety snapshot** containing:
 - Your critical WordPress settings (site URL, site name, admin email, etc.)
-- All SwissWPSuite plugin settings
+- All SwissSuite plugin settings
 
 This snapshot is used for automatic recovery if anything goes wrong during the import/restore process. You don't need to manage it manually.
 
@@ -534,7 +534,7 @@ Migration transfers your entire WordPress site from one server to another. This 
 
 #### On the DESTINATION site (where you're migrating TO):
 
-1. Install and activate SwissWPSuite on the new site
+1. Install and activate SwissSuite on the new site
 2. Activate your Pro license
 3. Go to **Backups → Migration**
 4. Click **"Upload Passport"** and select the passport file
@@ -786,7 +786,7 @@ If you're not happy with an AI rewrite:
 
 ### 9.2 API Configuration
 
-The AI features connect through SwissWPSuite's secure proxy server. You don't need to manage API keys directly — your license key handles authentication.
+The AI features connect through SwissSuite's secure proxy server. You don't need to manage API keys directly — your license key handles authentication.
 
 - **Test Connection** — Click to verify the AI connection is working
 - If the test fails, check your license status and internet connectivity
@@ -907,7 +907,7 @@ If you're on a trial, a yellow banner appears showing your trial status and expi
 
 ### Sync shows "Connection Failed"
 - Verify the destination URL is correct and accessible
-- Ensure SwissWPSuite is installed and activated on the destination site
+- Ensure SwissSuite is installed and activated on the destination site
 - Verify the sync key is correct (regenerate if needed)
 - Check that the destination site's REST API is accessible (not blocked by a security plugin)
 
@@ -918,7 +918,7 @@ If you only see the Security tab and nothing else, your site is in **Standalone 
 
 ## Quick Reference: Keyboard Shortcuts
 
-SwissWPSuite does not currently use keyboard shortcuts. All actions are performed via the web interface.
+SwissSuite does not currently use keyboard shortcuts. All actions are performed via the web interface.
 
 ---
 
@@ -930,4 +930,4 @@ SwissWPSuite does not currently use keyboard shortcuts. All actions are performe
 
 ---
 
-*SwissWPSuite AI — Protecting WordPress, Powered by Intelligence.*
+*SwissSuite AI — Protecting WordPress, Powered by Intelligence.*
