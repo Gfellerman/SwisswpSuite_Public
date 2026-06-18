@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.122
+Stable tag: 2.9.30.123
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,9 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.123 =
+* Changed: rebranded all visible UI strings from "SwissWPSuite" to "SwissSuite" throughout the admin interface. Functional identifiers (HTTP headers, PHP class names, option keys) are unchanged.
 
 = 2.9.30.122 =
 * Changed: the plugin is now distributed as "SwissSuite AI" (slug: swisssuite-ai) to meet WordPress.org plugin directory naming guidelines. This is a name/branding change only — your settings, license, and data are fully preserved on update.

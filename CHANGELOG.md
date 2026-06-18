@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.123] - 2026-06-18
+
+### Changed
+- Rebranded all visible UI strings from "SwissWPSuite" to "SwissSuite" throughout the admin interface (admin notices, page titles, labels, i18n strings, React components). Functional identifiers — HTTP headers (`X-SwissWPSuite-*`), PHP class names (`SwissWPSuite_*`), option keys (`swisswpsuite_*`), and the `.htaccess` marker — are unchanged. No functional change.
+
 ## [2.9.30.122] - 2026-06-18
 
 ### Changed
