@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.124
+Stable tag: 2.9.30.125
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,9 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.125 =
+* Fixed: activating a second feature license key no longer hides other active feature subscriptions in the UI. The plugin's capabilities list now merges per-feature subscription data so all purchased features remain visible regardless of which key is currently active.
 
 = 2.9.30.124 =
 * Added: Option A per-feature licensing — each purchased feature (SEO, Backup, Security, Content) now has its own independent expiry date, stored in a new `feature_subscriptions` table on the licensing server.

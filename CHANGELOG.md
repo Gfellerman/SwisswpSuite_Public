@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.125] - 2026-06-20
+
+### Fixed
+- Activating a second feature license key no longer hides other purchased features in the plugin UI. `get_status()` now merges active `feature_subscriptions` into the `capabilities` list, so SEO, Content Enhancer, Backup, and Security all remain visible regardless of which key is the active master key.
+
 ## [2.9.30.124] - 2026-06-20
 
 ### Added
