@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.30.123
+Stable tag: 2.9.30.124
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,11 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.124 =
+* Added: Option A per-feature licensing — each purchased feature (SEO, Backup, Security, Content) now has its own independent expiry date, stored in a new `feature_subscriptions` table on the licensing server.
+* Fixed: Activating a second feature license key no longer orphans previously purchased features — the activate handler now consolidates all feature subscriptions under the new active key.
+* Fixed: License Manager UI — the "Change License Key" input is now visible by default when a license is active (was collapsed as a low-emphasis text link, making it unfindable).
 
 = 2.9.30.123 =
 * Changed: rebranded all visible UI strings from "SwissWPSuite" to "SwissSuite" throughout the admin interface. Functional identifiers (HTTP headers, PHP class names, option keys) are unchanged.

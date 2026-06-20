@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.124] - 2026-06-20
+
+### Added
+- Option A per-feature licensing: each purchased feature (SEO, Backup, Security, Content) now has its own independent expiry date via a new `feature_subscriptions` table on the VPS licensing server.
+- License Manager now displays per-feature subscription rows with individual expiry dates and an "↑ Annual" upgrade button for monthly tiers.
+- New VPS endpoint `POST /v1/license/feature-upgrade` for pro-rata annual upgrades via Stripe proration.
+
+### Fixed
+- Activating a second feature license key no longer orphans previously purchased features. The activate handler consolidates all `feature_subscriptions` from prior licenses under the new active key.
+- License Manager UI: "Change License Key" input is now visible by default when a license is active (was collapsed behind a low-emphasis text link).
+- PHP `has_capability()` now gates per-feature expiry independently — SEO expiring does not affect Backup access.
+
 ## [2.9.30.123] - 2026-06-18
 
 ### Changed
