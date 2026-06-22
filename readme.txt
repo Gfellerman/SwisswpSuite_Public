@@ -2,9 +2,9 @@
 Contributors: swisswpsecure
 Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
-Tested up to: 6.7
+Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.125
+Stable tag: 2.9.30.126
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,10 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.126 =
+* Fixed: bump "Tested up to" to WordPress 7.0 in plugin header and readme.
+* Fixed: suppress phpcs PluginDirectoryWrite false-positive on update-rollback — writing to WP_PLUGIN_DIR is intentional for the plugin restore feature.
 
 = 2.9.30.125 =
 * Fixed: activating a second feature license key no longer hides other active feature subscriptions in the UI. The plugin's capabilities list now merges per-feature subscription data so all purchased features remain visible regardless of which key is currently active.

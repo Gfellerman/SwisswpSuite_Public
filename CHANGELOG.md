@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.126] - 2026-06-22
+
+### Fixed
+- Bump "Tested up to" to WordPress 7.0 in plugin header and readme (clears `outdated_tested_upto_header` Plugin Check error).
+- Add `phpcs:ignore` directive on `update-rollback.php:180` — writing to `WP_PLUGIN_DIR` is intentional for the plugin restore feature; suppression includes reviewer-facing justification comment.
+
 ## [2.9.30.125] - 2026-06-20
 
 ### Fixed
