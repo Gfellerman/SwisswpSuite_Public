@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.129] - 2026-06-22
+
+### Fixed
+- Amazon S3 / S3-compatible cloud backups of files larger than 10 MB (the multipart-upload threshold) failed with HTTP 403 `SignatureDoesNotMatch`. The AWS Signature V4 canonical query string for the multipart-initiate request omitted the required trailing `=` on the valueless `uploads` parameter (signed `uploads` instead of `uploads=`), so the signature never matched. Small single-PUT uploads were unaffected, which is why it went unnoticed. Fix validated end-to-end against MinIO (13 MB multipart upload now succeeds). Same code path is used by all S3-compatible providers (Wasabi, DigitalOcean Spaces).
+
 ## [2.9.30.128] - 2026-06-22
 
 ### Fixed

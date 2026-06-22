@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.128
+Stable tag: 2.9.30.129
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,9 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.129 =
+* Fixed: Amazon S3 (and S3-compatible) cloud backups of files larger than 10 MB failed with a "SignatureDoesNotMatch" error. The multipart upload signature is now AWS Signature V4 compliant, restoring large-file S3 backups.
 
 = 2.9.30.128 =
 * Fixed: Google Drive / Dropbox cloud backup connection failed with "Sorry, you are not allowed to access this page" after authorizing — the post-consent redirect now targets the current admin menu slug.
