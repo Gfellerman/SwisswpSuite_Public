@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.127] - 2026-06-22
+
+### Fixed
+- WordPress.org readme compliance: corrected the readme.txt plugin name line to match the plugin header exactly (`=== SwissSuite AI ===`), clearing the `mismatched_plugin_name` and `trademarked_term` warnings.
+- Trimmed the `== Changelog ==` section in readme.txt to the 5 most recent releases to stay under the WP.org 5000-character parser limit. The full release history remains in this CHANGELOG.md.
+
 ## [2.9.30.126] - 2026-06-22
 
 ### Fixed
