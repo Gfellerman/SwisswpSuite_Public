@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.127
+Stable tag: 2.9.30.128
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,11 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.128 =
+* Fixed: Google Drive / Dropbox cloud backup connection failed with "Sorry, you are not allowed to access this page" after authorizing — the post-consent redirect now targets the current admin menu slug.
+* Changed: extended the cloud-OAuth nonce lifetime from 30 to 60 minutes so slower consent flows no longer expire mid-authorization.
+* Changed: removed an unused legacy OAuth callback handler (dead code cleanup; no user-facing behavior change).
 
 = 2.9.30.127 =
 * Fixed: WordPress.org readme compliance — corrected the readme plugin name to match the plugin header, removed a restricted term from the name line, and trimmed the changelog to the 5 most recent releases (full history remains in CHANGELOG.md).

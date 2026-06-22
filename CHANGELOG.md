@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.128] - 2026-06-22
+
+### Fixed
+- Cloud backup OAuth: connecting Google Drive or Dropbox failed with "Sorry, you are not allowed to access this page" after the user authorized access. The VPS OAuth proxy redirected back to the old admin menu slug (`swisswpsuite-ai`), which no longer exists after the v2.9.30.125 WordPress.org rename to `swisssuite-ai`; WordPress core denied access before the plugin's callback could run. The redirect (VPS-side) now uses the correct slug.
+
+### Changed
+- Extended the cloud-OAuth nonce transient lifetime from 30 to 60 minutes (Google Drive + Dropbox) so slower consent flows no longer expire mid-authorization.
+- Removed the unused legacy `handle_oauth_callback` admin_init handler and its dead registration (it gated on a `state` value that is never set anywhere in the codebase). Corrected a stale docblock referencing the obsolete OAuth `state` literal. No user-facing behavior change.
+
 ## [2.9.30.127] - 2026-06-22
 
 ### Fixed
