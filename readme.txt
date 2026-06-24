@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.130
+Stable tag: 2.9.30.131
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,11 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.131 =
+* Changed: When you hold more than one license, the main token counter now shows your combined (pooled) balance across all licenses, with the per-site spendable balance shown as a secondary line.
+* Fixed (billing): A single feature's failed or cancelled payment no longer downgrades the other features on the same license; each feature now renews and expires independently.
+* Fixed (admin): The management dashboard now shows each license's owner name/email and a per-feature breakdown (status, expiry, token limit).
 
 = 2.9.30.130 =
 * Added: "Total available tokens" view — the license screen now shows your combined token balance across all licenses on your account (shown when you hold more than one license).

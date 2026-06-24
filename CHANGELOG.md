@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.131] - 2026-06-24
+
+### Changed
+- **Pooled token headline** — when a user owns more than one license, the main "Tokens Remaining" figure now shows the pooled `/license/portfolio` total across all their licenses, with the per-site spendable balance demoted to a clearly-labeled secondary line. Single-license users are unaffected. (`LicenseManager.tsx`)
+
+### Fixed
+- **Per-feature billing isolation (VPS webhooks)** — `handlePaymentFailed` and `handleSubscriptionCancelled` now flip the license-level status to `past_due`/`cancelled` only when ALL active feature subscriptions on that license are failing/cancelled; a single feature's failure marks only its own `feature_subscriptions` row. Falls back to legacy whole-license behavior for licenses with no feature rows (manual/legacy).
+- **Per-feature token reset** — `handleInvoicePaid` computes the renewed token limit by summing over DISTINCT `stripe_subscription_id` (so a full-suite license sharing one subscription across four feature rows is not over-counted), SET-no-rollover; `licenses.expires_at` is now extend-only (never shortened by one feature's renewal).
+- **Admin dashboard** — surfaces each license's owner name/email (resolved from the `users` row for Stripe-provisioned licenses) and a per-feature subscription breakdown (feature, status, expiry, token limit).
+
 ## [2.9.30.130] - 2026-06-24
 
 ### Added
