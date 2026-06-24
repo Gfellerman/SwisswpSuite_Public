@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.130] - 2026-06-24
+
+### Added
+- **Total available tokens across licenses** — a new "Total Across Licenses" view on the license screen sums your token balance over every active license on your account (rendered only when you hold more than one license). Backed by a new read-only VPS endpoint `POST /v1/license/portfolio` that groups licenses by account owner and returns masked keys plus an atomic SUM of balances and limits.
+
+### Fixed
+- **Revoked-license re-activation hole** — a license whose status was `cancelled`, `refunded`, `banned`, or `deleted` could be silently re-activated by the `/activate` endpoint. Such licenses are now rejected with a structured `LICENSE_CANCELLED` response (HTTP 200 so the plugin surfaces the real reason instead of a generic "server down").
+- **Refund processing** — `charge.refunded` webhooks crashed because neither the `license_status` nor the `token_action` database enum contained the value `refunded`, so refunds silently failed and a refunded customer kept an active license. Both enums now include `refunded` (migration v22) and the refund handler correctly revokes the affected license.
+- **Admin-created licenses** are now linked to their owner (`user_id`), so they group correctly into the new total-tokens view; existing admin licenses were backfilled.
+
 ## [2.9.30.129] - 2026-06-22
 
 ### Fixed

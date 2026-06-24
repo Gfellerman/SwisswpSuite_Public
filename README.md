@@ -1,6 +1,6 @@
 # SwissSuite AI - The Ultimate All-in-One WordPress Plugin
 
-**Version:** 2.9.30.129
+**Version:** 2.9.30.130
 **Requires WordPress:** 6.2+
 **Tested up to:** 7.0
 **Requires PHP:** 7.4+

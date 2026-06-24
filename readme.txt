@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.129
+Stable tag: 2.9.30.130
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,11 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.130 =
+* Added: "Total available tokens" view — the license screen now shows your combined token balance across all licenses on your account (shown when you hold more than one license).
+* Fixed: A refunded or cancelled license could be silently re-activated on a new site; revoked licenses are now correctly rejected.
+* Fixed: Refund processing failed silently for some purchases; refunds now correctly mark the affected license.
 
 = 2.9.30.129 =
 * Fixed: Amazon S3 (and S3-compatible) cloud backups of files larger than 10 MB failed with a "SignatureDoesNotMatch" error. The multipart upload signature is now AWS Signature V4 compliant, restoring large-file S3 backups.
