@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.132
+Stable tag: 2.9.30.133
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,9 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.133 =
+* Fixed (critical security): The firewall (WAF) could silently stop protecting your site after the plugin loaded with geo-blocking available. A startup ordering bug caused the security module to abort before the firewall switched on — with no visible error — so attacks were no longer blocked or logged. The firewall, geo-blocking, hardening and other protections now initialise reliably on every request.
 
 = 2.9.30.132 =
 * Added: Cancel auto-renewal — each feature subscription on the License screen now has a "Cancel renewal" button. Your access continues until the paid period ends; it just won't renew. A "Resume" button turns auto-renewal back on.

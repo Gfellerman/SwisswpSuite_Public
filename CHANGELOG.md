@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.133] - 2026-06-25
+
+### Fixed
+- **Critical: WAF silently disabled after boot (geo-blocking pluggable-function fatal).** `SwissWPSuite_GeoBlocking::__construct()` called the pluggable function `wp_generate_password()` during `define_security_hooks()`, which runs at plugin-load time — *before* WordPress includes `wp-includes/pluggable.php`. The resulting `Error: Call to undefined function wp_generate_password()` was swallowed by the top-level `try/catch (\Throwable)` boot guard in `run_swisswpsuite()` ("prevent WSOD"), which aborted the remainder of `define_security_hooks()` — including `add_action('init', firewall_check, 1)`. Net effect on sites whose license grants the `waf` capability: the WAF (and geo-blocking/hardening) never registered, so no attacks were blocked or logged, while pages still rendered normally (no 500) and the REST status API still reported the firewall as "enabled" (those routes are wired in the constructor, before `run()`). The bug was self-perpetuating because the bypass-token option was never written, so the fatal recurred on every uncached request. Fixed by deferring bypass-token generation off the plugin-load phase: generate immediately when `wp_generate_password()` is already available, otherwise on `init` priority 0 (before `check_site_access` at priority 1). Only `GeoBlocking` was affected.
+
+### Security
+- Restored Web Application Firewall, geo-blocking, and server-hardening initialisation on every request for Pro/`waf`-capable licenses.
+
 ## [2.9.30.132] - 2026-06-25
 
 ### Added
