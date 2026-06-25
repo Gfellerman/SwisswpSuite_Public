@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.131
+Stable tag: 2.9.30.132
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -225,6 +225,11 @@ Restores scheduled backup cron after a regression that silently stopped automate
 
 == Changelog ==
 
+= 2.9.30.132 =
+* Added: Cancel auto-renewal — each feature subscription on the License screen now has a "Cancel renewal" button. Your access continues until the paid period ends; it just won't renew. A "Resume" button turns auto-renewal back on.
+* Added: Shared-subscription safety — if several features are billed on one subscription, cancelling shows exactly which features will be affected and asks you to confirm before stopping them all.
+* Added: Expiry badges — feature subscriptions now show a "days left" badge (yellow within 14 days, red within 3) and read "Cancels on {date}" instead of "Renews on {date}" once auto-renewal is off.
+
 = 2.9.30.131 =
 * Changed: When you hold more than one license, the main token counter now shows your combined (pooled) balance across all licenses, with the per-site spendable balance shown as a secondary line.
 * Fixed (billing): A single feature's failed or cancelled payment no longer downgrades the other features on the same license; each feature now renews and expires independently.
@@ -242,23 +247,5 @@ Restores scheduled backup cron after a regression that silently stopped automate
 * Fixed: Google Drive / Dropbox cloud backup connection failed with "Sorry, you are not allowed to access this page" after authorizing — the post-consent redirect now targets the current admin menu slug.
 * Changed: extended the cloud-OAuth nonce lifetime from 30 to 60 minutes so slower consent flows no longer expire mid-authorization.
 * Changed: removed an unused legacy OAuth callback handler (dead code cleanup; no user-facing behavior change).
-
-= 2.9.30.127 =
-* Fixed: WordPress.org readme compliance — corrected the readme plugin name to match the plugin header, removed a restricted term from the name line, and trimmed the changelog to the 5 most recent releases (full history remains in CHANGELOG.md).
-
-= 2.9.30.126 =
-* Fixed: bump "Tested up to" to WordPress 7.0 in plugin header and readme.
-* Fixed: suppress phpcs PluginDirectoryWrite false-positive on update-rollback — writing to WP_PLUGIN_DIR is intentional for the plugin restore feature.
-
-= 2.9.30.125 =
-* Fixed: activating a second feature license key no longer hides other active feature subscriptions in the UI. The plugin's capabilities list now merges per-feature subscription data so all purchased features remain visible regardless of which key is currently active.
-
-= 2.9.30.124 =
-* Added: Option A per-feature licensing — each purchased feature (SEO, Backup, Security, Content) now has its own independent expiry date, stored in a new `feature_subscriptions` table on the licensing server.
-* Fixed: Activating a second feature license key no longer orphans previously purchased features — the activate handler now consolidates all feature subscriptions under the new active key.
-* Fixed: License Manager UI — the "Change License Key" input is now visible by default when a license is active (was collapsed as a low-emphasis text link, making it unfindable).
-
-= 2.9.30.123 =
-* Changed: rebranded all visible UI strings from "SwissWPSuite" to "SwissSuite" throughout the admin interface. Functional identifiers (HTTP headers, PHP class names, option keys) are unchanged.
 
 For the full version history (every release from v2.9.0 to current), see CHANGELOG.md in the plugin folder or visit https://github.com/Gfellerman/SwisswpSuite_Public/blob/main/CHANGELOG.md

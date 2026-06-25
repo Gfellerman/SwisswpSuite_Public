@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.132] - 2026-06-25
+
+### Added
+- **Cancel auto-renewal at period end (Feature A)** — each feature subscription on the License screen has a "Cancel renewal" / "Resume" control. Cancelling flips Stripe `cancel_at_period_end=true` on the resolved subscription (primary or per-feature), mirrors the flag onto all `feature_subscriptions` rows sharing that Stripe subscription plus the `licenses` row, and writes a `token_logs` audit entry (action `admin_adj`, amount 0). Access continues until `expires_at`; no renewal charge. New VPS route `POST /v1/license/cancel-subscription` (per-subscription granularity with a `SHARED_SUBSCRIPTION` confirmation guard + `NOT_STRIPE_MANAGED` handling); proxied by the nonce-auth WordPress route `POST /license/cancel-feature` (key resolved server-side). The `customer.subscription.updated` webhook now syncs `cancel_at_period_end` both ways (incl. Stripe-portal resume). Migration v23 adds the `cancel_at_period_end` boolean to `feature_subscriptions` and `licenses`.
+- **Per-feature expiry countdown (Feature D)** — the `/check` heartbeat now returns `days_remaining` per feature; the UI shows a "days left" badge (yellow ≤14 days, red ≤3) and reads "Cancels on {date}" instead of "Renews on {date}" once auto-renewal is off.
+
 ## [2.9.30.131] - 2026-06-24
 
 ### Changed
