@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.134
+Stable tag: 2.9.30.135
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,9 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.135 =
+* Fixed: Removed the cross-domain "Total Across Licenses" pooled token display. A license bound to a different site could appear in this site's token total, which was misleading because tokens are spent per-site. The License screen now shows only this site's balance.
 
 = 2.9.30.134 =
 * Changed: Groundwork for per-feature token tracking — AI and security-scan requests now record which feature they belong to (Security, SEO, Content, Backup) so usage and limits can be tracked per feature. How tokens are spent is unchanged until the matching server update is live.

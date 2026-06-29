@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.135] - 2026-06-29
+
+### Fixed
+- **Removed cross-domain token pooling from the License UI (BUG-1).** The `GET /license/portfolio` fetch + the "Total Across Licenses" pooled card aggregated balances across ALL of an owner's licenses regardless of domain, so a different site's license (e.g. a yearly suite key on another domain) appeared in this site's token total. Tokens are spent per-domain, so the pooled figure was misleading. The portfolio fetch is removed (`portfolio` is permanently null, so every pooled UI block is hidden); the per-site balance is the only token figure shown. Frontend-only; no VPS dependency.
+
 ## [2.9.30.134] - 2026-06-29
 
 ### Changed
