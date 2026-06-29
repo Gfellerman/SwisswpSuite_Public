@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.134] - 2026-06-29
+
+### Changed
+- **Per-feature token attribution (plugin side).** Every AI-proxy and Sentinel-scan request now carries a `feature` tag (`security|seo|content|backup`) so the VPS can debit the correct per-feature token wallet. Applied across all 10 `SwissWPSuite_Groq` methods, the batch client (`SwissWPSuite_Groq_Batch`), and the 3 external callers (`class-swisswpsuite-sentinel.php`, `class-swisswpsuite-api-migration.php`, `class-swisswpsuite-core.php`). Migration & Sync AI bill to the Backup wallet. No user-visible change until the VPS per-feature rollout is deployed.
+
+### Added
+- Graceful handling of two new VPS responses in `SwissWPSuite_Groq::call_api()`: `FEATURE_TOKENS_EXHAUSTED` (surfaced as "out of {feature} tokens") and `PLUGIN_UPDATE_REQUIRED` (surfaced as a WP_Error prompting a plugin update).
+
 ## [2.9.30.133] - 2026-06-25
 
 ### Fixed
