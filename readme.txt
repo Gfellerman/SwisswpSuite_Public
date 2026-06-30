@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.135
+Stable tag: 2.9.30.136
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,11 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.136 =
+* Added: Per-feature token balances — à-la-carte licenses now show each feature's own token balance (Security / SEO / Content) beneath its renewal date, so you can see exactly what's left per feature.
+* Fixed: Full-suite (SwissSuite) licenses now show their included features (Backup, Security, SEO, Content) sharing one token pool, instead of an empty Feature Subscriptions section.
+* Changed: The "Upgrade to Annual" button is now clearly labeled (was a confusing "↑ Annual").
 
 = 2.9.30.135 =
 * Fixed: Removed the cross-domain "Total Across Licenses" pooled token display. A license bound to a different site could appear in this site's token total, which was misleading because tokens are spent per-site. The License screen now shows only this site's balance.

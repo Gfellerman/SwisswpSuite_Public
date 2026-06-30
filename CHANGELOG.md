@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.136] - 2026-06-30
+
+### Added
+- **Per-feature token balances** in the License UI. À-la-carte licenses now render each feature subscription's own `token_balance` / `token_limit` (a mini bar + "X / Y tokens") beneath its renewal date. Backed by the deployed `/check` per-feature fields + the PHP allowlist (`class-swisswpsuite-license.php`) passing `token_balance`/`token_limit` through, and `types.ts` `FeatureSubscription`.
+
+### Fixed
+- **Full-suite licenses showed an empty Feature Subscriptions section** (regression from the suite-pool collapse — `/check subscriptions` is `null` for a suite). Suites now render an "Included in your SwissSuite" read-only list (Backup/Security/SEO/Content, derived from the capabilities array) sharing the single pool + one renewal date.
+
+### Changed
+- The per-feature "↑ Annual" button is relabeled "Upgrade to Annual" (it was misread as a status).
+
 ## [2.9.30.135] - 2026-06-29
 
 ### Fixed
