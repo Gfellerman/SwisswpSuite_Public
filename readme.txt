@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.136
+Stable tag: 2.9.30.137
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,9 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.137 =
+* Fixed: WAF threat logging now self-heals when the security_logs database table is missing (e.g., after a messy reinstall or manual cleanup). Previously the WAF blocked requests correctly (returning 403) but silently failed to record them — the Threats Blocked counter stayed at zero. The table is now recreated automatically on the first blocked request, and any future insert failure is logged to the plugin diagnostics.
 
 = 2.9.30.136 =
 * Added: Per-feature token balances — à-la-carte licenses now show each feature's own token balance (Security / SEO / Content) beneath its renewal date, so you can see exactly what's left per feature.

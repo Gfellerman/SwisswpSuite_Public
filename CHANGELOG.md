@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.137] - 2026-06-30
+
+### Fixed
+- **WAF threat logging self-heal when `security_logs` table is missing.** After a messy plugin reinstall or manual table deletion, the WAF correctly blocked requests (returned HTTP 403) but `log_threat()` silently failed — `$wpdb->insert()` returned false with no error check, so the Threats Blocked counter stayed at zero. Fixed: `log_threat()` now checks table existence via `SHOW TABLES` before each insert; if the table is absent, it calls `SwissWPSuite_Activator::ensure_security_logs_table()` (new static method) which runs `dbDelta()` to recreate the table. Any subsequent insert failure is logged to `SwissWPSuite_Diagnostics` rather than swallowed silently. Clean installs are unaffected (the activator path is unchanged). Extracted `ensure_security_logs_table()` from `activate_inner()` so the schema definition is canonical and shared between the install path and the runtime self-heal.
+
 ## [2.9.30.136] - 2026-06-30
 
 ### Added
