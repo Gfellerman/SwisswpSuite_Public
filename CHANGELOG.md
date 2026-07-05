@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.139] - 2026-07-04
+
+### Changed
+- **License-action feedback is never silent.** Renewal-type changes and cancel/resume actions on the License tab now always surface a visible toast — a success confirmation, or a specific human-readable error mapped from the server response (16 error codes mapped; e.g. `NO_STRIPE_SUB` → a plain-English explanation) — with a null/malformed-response guard and a silent background resync when the server returns a 5xx (so a transient error that actually applied doesn't leave the UI stale). Replaces the prior behavior where certain error responses rendered nothing.
+
+## [2.9.30.138] - 2026-07-01
+
+### Fixed
+- **Backup restore no longer wipes the site license.** A local or cloud restore drops and recreates `wp_options`, and license rows are excluded from every export by design, so every restore previously erased the license and silently downgraded a paid site to the free tier (surfacing only on the next admin page load). The restorer now captures the `identity_restore` block (license key/status/data/identity hash) from the live pre-restore options via the shared `SwissWPSuite_Backup::capture_identity_restore_block()`, and `post_import_recovery()` Step 2b re-applies it after every restore — reusing the exact AES-256-CBC capture the migration path uses (no crypto duplication).
+- **License tab refreshes in place.** The tab now fetches fresh license + token state on mount (and on manual Refresh) and updates React state, so the headline balance, per-feature bars, and status update without a full page reload. `force_license_refresh()` additively returns the full `license` and `tokens` shape.
+
+### Changed
+- **"Tokens Used" now counts all AI spend this period.** The counter previously tallied only primary Groq completions and missed Sentinel L2 deep scans and batch jobs. It is now computed as `token_limit − token_balance` from the authoritative VPS balance (debited on every AI path) and relabeled "Tokens Used (This Period)".
+
 ## [2.9.30.137] - 2026-06-30
 
 ### Fixed

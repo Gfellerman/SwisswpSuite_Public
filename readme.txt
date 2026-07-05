@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.137
+Stable tag: 2.9.30.139
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,14 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.139 =
+* Improved: License actions (change renewal type, cancel/resume auto-renewal) now always show a clear, plain-English result — either a success confirmation or a specific error message — instead of ever failing silently.
+
+= 2.9.30.138 =
+* Fixed: Restoring a backup no longer removes your license. Backup restore now preserves and re-applies your license key, status, and site identity, so a restored site keeps its plan and AI tokens instead of dropping to the free tier.
+* Fixed: The License screen now updates your token balance, per-feature bars, and license status as soon as it loads — no page refresh needed.
+* Changed: "Tokens Used" now counts every AI operation this billing period (including Sentinel deep scans and batch jobs), and is relabeled "Tokens Used (This Period)".
 
 = 2.9.30.137 =
 * Fixed: WAF threat logging now self-heals when the security_logs database table is missing (e.g., after a messy reinstall or manual cleanup). Previously the WAF blocked requests correctly (returning 403) but silently failed to record them — the Threats Blocked counter stayed at zero. The table is now recreated automatically on the first blocked request, and any future insert failure is logged to the plugin diagnostics.
