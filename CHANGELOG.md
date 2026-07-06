@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.140] - 2026-07-06
+
+### Fixed
+- **The "Manage Billing" link was broken for every Stripe customer, not just some.** It was built as `billing.stripe.com/p/login/<customer_id>` — that URL format requires a one-time portal login-link code minted in the Stripe Dashboard, not a raw customer ID, so it 404'd unconditionally. The plugin now requests a real, server-minted Stripe billing portal session on click.
+
+### Added
+- **Stripe-managed license origin awareness.** The plugin now knows, per license and per feature, whether it is billed through Stripe or was issued manually (comped, invoiced, or support-granted). Manually-issued licenses no longer show a "Manage Billing" link or an "Upgrade to Annual" button that would error — they see a "managed manually, contact support" notice instead.
+
 ## [2.9.30.139] - 2026-07-04
 
 ### Changed

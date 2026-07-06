@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.139
+Stable tag: 2.9.30.140
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,10 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.140 =
+* Fixed: The "Manage Billing" link on the License screen was broken for every customer — it now opens a real Stripe billing portal session instead of a dead link.
+* Added: The plugin now recognizes whether a license was purchased through Stripe or issued manually (e.g. a support-granted license), and only shows Stripe billing actions when they will actually work — manually-issued licenses see a "contact support" notice instead of a broken button.
 
 = 2.9.30.139 =
 * Improved: License actions (change renewal type, cancel/resume auto-renewal) now always show a clear, plain-English result — either a success confirmation or a specific error message — instead of ever failing silently.
