@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.141] - 2026-07-11
+
+### Added
+- **Automatic SEO plugin conflict resolution.** New compatibility module (`SwissWPSuite_SEO_Compat`) detects competing SEO plugins and resolves output conflicts. When a dedicated SEO plugin (Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework) is active, SwissSuite AI defers its own on-page output and shows an admin notice to prevent duplicate tags. Host-bundled generic SEO plugins (e.g. Hostinger AI Assistant) are actively overridden so the plugin's optimized tags win. The plugin registry is filterable via `swisswpsuite_seo_compat_registry`.
+- Secondary `document_title_parts` filter for themes/plugins that compose the document title from parts rather than short-circuiting `pre_get_document_title`.
+
+### Changed
+- The on-page SEO output decision (output / defer / override) now runs on `init` instead of at plugin load, so SEO plugins that load alphabetically after SwissSuite AI are correctly detected.
+- The `<title>` override filter now runs at the highest priority (`PHP_INT_MAX`) so the plugin's SEO title reliably wins over a theme's hardcoded title.
+
+### Fixed
+- Corrected the SEO capabilities documentation, which wrongly stated on-page SEO output runs on all tiers without a capability check. It is gated behind the `seo_meta` capability (not included in the free tier).
+
 ## [2.9.30.140] - 2026-07-06
 
 ### Fixed

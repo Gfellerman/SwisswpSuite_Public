@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.140
+Stable tag: 2.9.30.141
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,10 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.141 =
+* Fixed: SEO title and meta tags now reliably appear on your live pages. The plugin's SEO output now runs late enough to win over a theme's own hardcoded title, using the highest hook priority.
+* Added: Automatic SEO plugin conflict handling. If you run a dedicated SEO plugin (Yoast, Rank Math, All in One SEO, SEOPress, The SEO Framework), SwissSuite AI now steps aside to avoid duplicate tags and shows a notice explaining why. Generic SEO tags injected by host-bundled plugins (e.g. Hostinger AI Assistant) are automatically overridden so your optimized tags take precedence.
 
 = 2.9.30.140 =
 * Fixed: The "Manage Billing" link on the License screen was broken for every customer — it now opens a real Stripe billing portal session instead of a dead link.
