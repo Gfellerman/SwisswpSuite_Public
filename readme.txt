@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.141
+Stable tag: 2.9.30.142
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -184,6 +184,20 @@ When contacted: Only after you connect a Dropbox account under Settings → Back
 Privacy Policy: https://www.dropbox.com/privacy
 Terms of Service: https://www.dropbox.com/terms
 
+= Amazon S3 / S3-compatible storage =
+Host: s3.amazonaws.com, regional AWS S3 endpoints, or a custom S3-compatible endpoint you configure.
+Used for: Optional Amazon S3 (or S3-compatible) backup destination (upload/download/list backup archives).
+Data sent: Backup archive contents (your site files + database export, only when uploading), your S3 access key ID + secret key (used to sign requests), and bucket/object metadata.
+When contacted: Only after you enter S3 credentials under Settings → Backup → Cloud → Amazon S3 and trigger or schedule a backup upload. Not contacted on a fresh install or if S3 is not configured.
+Privacy Policy: https://aws.amazon.com/privacy/
+Terms of Service: https://aws.amazon.com/service-terms/
+
+= FTP / SFTP backup destination (user-specified server) =
+Host: The remote server address you provide. This is not a fixed third-party service — the destination is entirely under your control.
+Used for: Optional upload of backup archives to a remote FTP/SFTP server whose address and credentials you provide.
+Data sent: Backup archive contents (your site files + database export) to the host you specify, only when a backup upload runs.
+When contacted: Only after you enter FTP/SFTP details under Settings → Backup → Cloud and trigger or schedule an upload. Not contacted on a fresh install or if no FTP/SFTP destination is configured.
+
 = WPScan Vulnerability Database API =
 Host: wpscan.com (https://wpscan.com/api/v3/)
 Used for: Optional vulnerability lookup of installed plugin/theme slugs + versions during deep malware scans.
@@ -199,6 +213,14 @@ Data sent: Plugin/theme slugs and version numbers of components installed on you
 When contacted: Only when you provide a Patchstack API key under Settings → Security → Vulnerability Feeds AND a deep scan or vulnerability sweep runs. Not contacted if no API key is configured.
 Privacy Policy: https://patchstack.com/privacy-policy/
 Terms of Service: https://patchstack.com/terms-of-service/
+
+= ipwho.is (IP geolocation) =
+Host: ipwho.is (https://ipwho.is/)
+Used for: Determining the country of a visitor's IP address for the optional Geo-Blocking security feature, and only as a fallback when a Cloudflare country header is not already present.
+Data sent: The visitor's IP address (sent to resolve its country). No other data, no site content, no API key. The resolved country code is cached locally on your site for 7 days; the IP itself is not stored by us or retained per-request.
+When contacted: Only when Geo-Blocking is enabled AND the visitor's country is not already supplied by Cloudflare AND the result is not already cached. Private/reserved IPs are never sent. Not contacted if Geo-Blocking is disabled.
+Legal basis (EU/UK/CH site owners): legitimate interest in network and information security (GDPR Art. 6(1)(f), Recital 49).
+Privacy Policy: https://ipwho.is/ (review the provider's terms before enabling)
 
 = WordPress.org APIs =
 Host: api.wordpress.org
@@ -224,6 +246,11 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.142 =
+* Compliance: Disclosed three additional external services in the External Services section — ipwho.is (IP geolocation used by Geo-Blocking as a Cloudflare fallback), Amazon S3 / S3-compatible storage, and FTP/SFTP backup destinations — for full WordPress.org and GDPR transparency.
+* Privacy/Fixed: Removed a Google Fonts hotlink that shipped inside an unused build template file. Fonts were never actually loaded at runtime, but the reference is now stripped from the distributed package so no visitor IP can reach Google Fonts.
+* Housekeeping: Internal developer documentation is no longer bundled in the distributed plugin zip.
 
 = 2.9.30.141 =
 * Fixed: SEO title and meta tags now reliably appear on your live pages. The plugin's SEO output now runs late enough to win over a theme's own hardcoded title, using the highest hook priority.

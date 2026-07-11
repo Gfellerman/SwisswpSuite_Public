@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.142] - 2026-07-11
+
+### Fixed
+- **Removed a Google Fonts hotlink** that shipped inside the Vite build template (`assets/index.html`). The file is never loaded at runtime (the admin enqueues JS/CSS via `manifest.json`), so no visitor IP was ever transmitted to Google — but `build_plugin.sh` now strips the file from the distributed zip so the hotlink is gone from the package entirely (WordPress.org asset-offloading + GDPR hygiene).
+
+### Changed
+- **External Services disclosure completed.** Added `readme.txt` entries for **ipwho.is** (visitor-IP → country lookup used by Geo-Blocking, only as a Cloudflare fallback; legitimate-interest basis under GDPR Art. 6(1)(f)), **Amazon S3 / S3-compatible storage**, and **FTP/SFTP** backup destinations. These outbound services were active but previously undisclosed.
+- `build_plugin.sh` no longer bundles internal developer docs (`PROJECT_MEMORIES.md`, `workflow.md`) into the distributed plugin zip.
+
+### Security
+- Closed a WordPress.org submission blocker (undisclosed external service) and a GDPR Art. 13 transparency gap around visitor-IP transmission to ipwho.is.
+
 ## [2.9.30.141] - 2026-07-11
 
 ### Added
