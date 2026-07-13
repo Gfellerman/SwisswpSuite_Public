@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.143] - 2026-07-13
+
+### Fixed
+- **Text-domain consistency.** Corrected the last two translatable strings in `includes/class-swisswpsuite-groq.php` that still used the pre-rebrand `swisswpsuite-ai` text domain; they now use `swisssuite-ai`. This clears the only two `WordPress.WP.I18n.TextDomainMismatch` **errors** reported by the WordPress.org Plugin Check tool (the remaining Plugin Check items are non-blocking best-practice warnings).
+
+### Changed
+- **Privacy disclosure consistency.** The `readme.txt` "Privacy & Data" summary line now lists Geo-Blocking among the features that may contact an external service, matching the full ipwho.is entry already present in the External Services section.
+
 ## [2.9.30.142] - 2026-07-11
 
 ### Fixed

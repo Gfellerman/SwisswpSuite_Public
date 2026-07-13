@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.142
+Stable tag: 2.9.30.143
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -76,7 +76,7 @@ Most sites end up with five plugins doing what one plugin should do — a securi
 
 = Privacy & Data =
 
-SwissSuite does not phone home on install. No background telemetry. External services are contacted only when you explicitly enable them (cloud backup, AI analysis, vulnerability lookup). Every external service is disclosed below.
+SwissSuite does not phone home on install. No background telemetry. External services are contacted only when you explicitly enable them (cloud backup, AI analysis, vulnerability lookup, geo-blocking). Every external service is disclosed below.
 
 == Installation ==
 
@@ -246,6 +246,10 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.143 =
+* Fixed: Corrected two remaining text strings that used the plugin's old text domain, so all translations now resolve under the current `swisssuite-ai` domain (clears the last WordPress.org Plugin Check errors).
+* Compliance: The Privacy & Data summary now lists Geo-Blocking alongside the other features that may contact an external service, matching the detailed External Services disclosure.
 
 = 2.9.30.142 =
 * Compliance: Disclosed three additional external services in the External Services section — ipwho.is (IP geolocation used by Geo-Blocking as a Cloudflare fallback), Amazon S3 / S3-compatible storage, and FTP/SFTP backup destinations — for full WordPress.org and GDPR transparency.
