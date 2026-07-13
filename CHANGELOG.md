@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.30.144] - 2026-07-13
+
+### Fixed
+- **Duplicate header URIs.** The `Plugin URI` and `Author URI` in the main plugin header were identical (`https://www.swisswpsecure.com`), which the WordPress.org uploader rejects. The `Plugin URI` now points to the plugin's own resource page (`https://www.swisswpsecure.com/resources/swisssuite-ai`) while the `Author URI` remains the company homepage, so the two are distinct.
+
 ## [2.9.30.143] - 2026-07-13
 
 ### Fixed

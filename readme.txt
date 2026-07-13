@@ -4,7 +4,7 @@ Tags: security, backup, malware scanner, firewall, two-factor authentication
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.143
+Stable tag: 2.9.30.144
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -246,6 +246,9 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.30.144 =
+* Fixed: The Plugin URI and Author URI in the plugin header were identical; the Plugin URI now points to the plugin's own resource page so the two are distinct (clears the WordPress.org "Plugin and author URIs are the same" upload error).
 
 = 2.9.30.143 =
 * Fixed: Corrected two remaining text strings that used the plugin's old text domain, so all translations now resolve under the current `swisssuite-ai` domain (clears the last WordPress.org Plugin Check errors).
