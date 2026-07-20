@@ -139,7 +139,27 @@ If you have not yet activated your license key, you may request a full refund wi
 
 ### 6.5 Refunds
 
-Outside of the EU/EEA withdrawal right, refunds are handled on a case-by-case basis at our discretion. We generally offer refunds within 14 days of purchase if the Service has not been substantially used.
+**6.5.1 Your statutory rights come first.** Nothing in this Section 6.5 limits or replaces any right you have that cannot be excluded under applicable law. In particular, this Section does not affect: (a) your right of withdrawal under Section 6.4 where it has not yet been lost, including a full refund where you have **not** yet activated your license key; and (b) your mandatory remedies if the Plugin or Service is defective or does not conform to the contract, including, for consumers in the EU/EEA, the remedies under Directive (EU) 2019/770 (bringing the digital content into conformity, a proportionate price reduction, or termination with a refund). Any refund owed under (a) or (b) is provided as a matter of right and is **not** limited by, and does **not** count against, the goodwill policy in Sections 6.5.2 to 6.5.4.
+
+**6.5.2 Goodwill refunds (beyond your statutory rights).** Separately from, and in addition to, Section 6.5.1, we may offer a voluntary "goodwill" refund even where no statutory refund is owed. Goodwill refunds are granted **at our sole discretion, following our own review, on a case-by-case basis**. As a guideline, we will generally consider a goodwill refund within 14 days of purchase where the Service has not been substantially used. A goodwill refund is a discretionary gesture and creates no entitlement to any further refund.
+
+**6.5.3 One goodwill refund per customer.** Our goodwill refund policy is limited to **one refund per customer**. Once a goodwill refund under 6.5.2 has been made on your account, or a payment dispute or chargeback has been resolved in your favour, any future purchase associated with your account is **final and non-refundable as a matter of goodwill**. This limit does **not** affect your statutory rights under 6.5.1: if a later purchase is defective or non-conforming, or a valid withdrawal right applies before activation, you remain entitled to the corresponding statutory remedy regardless of any earlier refund.
+
+**6.5.4 New licenses after a refund.** Having received a refund never prevents you from purchasing or activating a new license, and never prevents you from using the free edition of the Plugin, which requires no license. A new paid license purchased after a prior refund is provided on the same terms as any other license, **except that it is non-refundable as a matter of goodwill** (your statutory rights under 6.5.1 still apply in full). Where this applies, we will tell you clearly, **before you pay**, at checkout and in your order confirmation, that the purchase is final.
+
+**6.5.5 Cancellation is always available.** The limits in this Section 6.5 apply only to **refunds** (money back). They never affect your ability to **cancel**. You may cancel your subscription at any time under Section 6.3, whatever your refund history, and cancellation is always at least as easy as subscribing. Cancelling stops future billing; it does not, by itself, entitle you to a refund of amounts already paid.
+
+**6.5.6 Consumers outside the EU/EEA.** If you are not a consumer in the EU/EEA, the statutory rights referenced in 6.5.1 may not apply, and refunds are governed solely by 6.5.2 to 6.5.4. Swiss consumers are not granted a statutory cooling-off right for contracts concluded online (Article 40a of the Swiss Code of Obligations excludes e-commerce); for Swiss consumers the goodwill policy in 6.5.2 to 6.5.4 is the applicable refund policy, without prejudice to remedies for defective or non-conforming digital content.
+
+### 6.6 Jurisdiction-Specific Consumer Rights
+
+This Section supplements Section 6.5 and applies in addition to it. Where your local law grants you rights beyond Section 6.5 or this Section, that law prevails (see Section 6.5.1).
+
+**6.6.1 Consumers in the EU/EEA and the United Kingdom.** You have a statutory right to withdraw from your purchase within 14 days without giving a reason (Directive 2011/83/EU for the EU/EEA; the Consumer Contracts Regulations 2013 for the UK). Because the Plugin and Service are digital content supplied immediately, at checkout you will be asked to (i) expressly request immediate supply and (ii) acknowledge that you thereby lose this 14-day withdrawal right once supply begins. If you give both acknowledgements and we begin supply, your withdrawal right ends at that point. If you do not give them, or if we have not yet begun supply, you may withdraw within 14 days for a full refund. Your remedies for defective or non-conforming digital content (Directive (EU) 2019/770; the Consumer Rights Act 2015 in the UK) are unaffected and cannot be waived.
+
+**6.6.2 Consumers in the United States.** Your subscription renews automatically as described in Section 6.2. Before you pay, we disclose the renewal frequency and price and obtain your affirmative consent to enrol. You may cancel at any time through your billing portal or by contacting us, with no cancellation fee, effective as described in Section 6.3. These practices are intended to comply with applicable federal and state automatic-renewal and negative-option requirements, including the California Automatic Renewal Law.
+
+**6.6.3 Other jurisdictions.** If the law of your country of residence grants you mandatory consumer rights that cannot be excluded by contract — such as the consumer guarantees under the Australian Consumer Law, or a statutory cancellation or "regret" right for online purchases — those rights apply to you in full and override anything in Section 6.5 or this Section that would give you less. Nothing in these Terms limits any right that cannot lawfully be excluded.
 
 ## 7. Acceptable Use
 
@@ -249,6 +269,16 @@ Upon termination:
 - Free Plugin features continue to function (GPL software cannot be revoked).
 - We will delete your account data within 30 days, except where retention is required by law (see Privacy Policy).
 - Any remaining token balance is forfeited.
+
+### 13.5 Suspension, Termination and Refusal of Service for Abuse
+
+**(a) Grounds.** We may suspend or terminate your access to paid features and the Service, and/or decline to sell, activate, or provide any future paid license to you or to any account, domain, email address, or payment instrument associated with you, if we reasonably determine that you have: (i) breached these Terms, including the Acceptable Use provisions in Section 7; (ii) engaged in fraud, misrepresentation, or unauthorized use; (iii) abused our refund or goodwill policy, including seeking refunds in bad faith or after the one-refund limit in Section 6.5.3; (iv) initiated chargebacks or payment disputes for charges you legitimately owe; or (v) used the Service for unlawful purposes.
+
+**(b) Effect.** Where we act under this Section, we may deactivate your paid license, disable paid features and the Service, withhold further discretionary (goodwill) refunds, and refuse future paid purchases or activations from you or your associated account, domain, or payment instrument. If we terminate a paid subscription period you have already paid for, and we are not doing so because of your own material breach, we will refund the unused portion of that period, less any amounts you owe us (including chargeback and dispute fees).
+
+**(c) What is not affected.** This Section does not, and cannot, limit: (i) your right to continue using the free edition of the Plugin, which is licensed to you under the GPL-2.0+ and cannot be revoked; or (ii) your mandatory statutory rights, including any valid right of withdrawal, any remedy for defective or non-conforming digital content, and any single legitimate refund or payment dispute. **We will not suspend, terminate, penalise, or refuse service to you solely because you have lawfully exercised such a right.**
+
+**(d) Proportionality and notice.** We will apply this Section in good faith and proportionately and, where practicable and lawful, will give you notice and an opportunity to remedy a breach before terminating. Notice is not required in cases of fraud, unlawful use, or where immediate action is necessary to protect the Service or other users.
 
 ## 14. Changes to Terms
 

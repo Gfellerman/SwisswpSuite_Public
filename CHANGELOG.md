@@ -4,6 +4,78 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.31.4] - 2026-07-20
+
+### Changed
+- **Free edition "Advanced Controls" hardening section** now renders a clear "Pro feature" upgrade panel (ownership-aware: shows "You already own this — install Pro" when a paid license is detected) instead of a grid of greyed-out, non-functional toggles. This removes a "fake broken control" pattern that reads as trialware to a WordPress.org reviewer. The six essential hardening controls remain fully interactive in the free edition; the seven Pro-only controls are presented as an upsell, not as disabled switches.
+
+### Fixed
+- **WordPress.org Plugin Check errors cleared** in `class-swisswpsuite-api-settings.php`: replaced four `parse_url()` calls with `wp_parse_url()` (the WP-recommended wrapper), and added documented `phpcs:ignore` annotations to the raw-TCP SMTP connectivity probe in `smtp_probe_port()` (a socket-level connect test that has no `wp_remote_*`/WP_Filesystem equivalent; its host input is the site owner's saved SMTP option, not request data).
+- **Accessibility (WCAG 1.3.1):** corrected the heading level of the new hardening upgrade panel to `h4` so it nests correctly under the "System Hardening" (h3) section for screen-reader heading navigation.
+
+### Security
+- Spot-checked and annotated 11 `PluginCheck.Security.DirectDB.UnescapedDBParameter` warnings in `class-swisswpsuite-api-seo.php`; all confirmed false positives (each SQL fragment is pre-prepared via `$wpdb->prepare()` and its inputs are `(int)`-cast page IDs or allowlist-validated type filters — no user-controlled string reaches SQL). Annotated with specific justifications; no live SQL-injection risk was found.
+
+## [2.9.31.3] - 2026-07-20
+
+### Fixed
+- **"Start Security Audit" dead-click (Free edition):** the button did nothing on a fresh/free install because `ai-audit` was incorrectly listed in the frontend `isTokenGated` set — with a zero-token free wallet the affordability check (`canAfford(0 >= 1500)`) returned false and short-circuited the click before any request was made. The free Security Audit backend (`run_ai_audit` → `run_free_l1_audit`) is entirely local, uses zero AI and zero tokens, so the token gate was never valid for this action. Removed `ai-audit` from `isTokenGated`; the button now runs the local Layer-1 grade as intended. Frontend-only fix; no backend/behavioral change to the audit itself.
+
+### Changed
+- Corrected the Security Audit scan copy so it no longer claims it "Uses AI via the SwissSuite quota" — the free-edition audit is fully local and token-free.
+
+## [2.9.31.2] - 2026-07-20
+
+### Added
+- Ownership-aware upgrade prompt: Free installs that already own a Pro feature now see "You already own this — download & install Pro" (linking to the account download page) instead of a generic purchase CTA — across the premium upsell placeholders, the deep-scan degradation card, and the License tab.
+
+### Changed
+- **Edition Integrity Clamp:** a Free-edition build can never activate a paid capability, regardless of the license stored locally. `has_capability()` and the exported capability payload are clamped to the free set in Free; owned entitlements remain visible (display-only) via the separate subscriptions channel. Pro builds are byte-for-byte unchanged.
+- `edition_mismatch` now also fires for per-feature customers (active paid feature subscriptions) running the Free build, not only legacy paid plans.
+- Free-edition copy clarity: edition-aware SEO description, reworded "Scan Capabilities", "AI Crawler Guide" → "AI Assistant Guide", and removed Pro-only geo-blocking claims from Free advisory text.
+
+### Fixed
+- SEO tab in Free no longer shows non-functional AI actions ("Generate SEO for All", "Queue All Overnight") — they are Pro-only and were dead/misleading in Free.
+- Eliminated benign `/content` 404 console errors on every Free SEO page load (the fetch is now Pro-gated).
+- The License "Your Plan Features" matrix incorrectly showed the basic WAF firewall as locked in Free even though it ships free; it now reads as active.
+- Hardening upsell toast now uses a real clickable link instead of a plain-text URL.
+
+### Security
+- The edition clamp makes the "paid capability active while its Pro class is physically absent" fatal class structurally impossible in the Free build (previously mitigated one call site at a time with `class_exists()` guards, which remain as defense-in-depth).
+
+## [2.9.31.1] - 2026-07-18
+
+### Fixed
+- Free-edition Security Audit now produces a real local Layer-1 grade instead of a 500 "scan failed" (the Pro-only scanner class is absent from the free build; the free path now runs deterministically with zero tokens).
+- Free-edition SEO Health Check no longer triggers a PHP fatal; all error paths return JSON, never an HTML error page.
+- Free edition no longer fetches Pro-only REST routes (`/seo/background-status`, `/update-guard/*`, `/geo/*`), eliminating benign 403/404 noise.
+
+### Changed
+- Free build no longer bundles Pro-only JavaScript chunks (Sync, AI Content, token-balance); the "AI Configuration" settings tab renders a Pro upsell placeholder, and the Pro-only "Connect your own AI provider" admin notice is no longer registered in the free edition.
+
+### Security
+- Hardened every `SwissWPSuite_Groq` instantiation site against a missing-class fatal when a Pro license key is active on a free install (the AI-capability gate was edition-blind).
+
+## [2.9.31.0] - 2026-07-17
+
+### Added
+- **Freemium dual-build**: one source tree now builds two editions — free (WordPress.org, slug `swisssuite-ai`) and Pro (download-only, slug `swisssuite-ai-pro`). Premium and AI code is physically absent from the free build, not merely disabled.
+- Free tier gains local backup & restore, malware quarantine, on-page SEO audit/score, and the XML sitemap generator.
+- Pro self-hosted updater (Plugin Update Checker) + a license-checked update endpoint.
+- React edition flag with non-nagging upgrade placeholders where premium features would appear in the free edition; WPForms-style Free↔Pro activation handshake.
+
+### Changed
+- Local backup + restore re-gated to the free tier; cloud backup, sync/staging, scheduling, 2FA, hardening, geo-blocking, advanced firewall, and all AI features are Pro.
+- WPScan/Patchstack vulnerability lookup is Pro-only (it functions only within the Pro deep scan).
+- Free tier has 0 AI tokens and makes no AI calls.
+
+### Fixed
+- Extracted the Google Drive/Dropbox cloud-OAuth surface out of the free build so it makes no undisclosed external calls.
+- Guarded several activation and module-load paths so the free build never fatals when premium files are physically absent.
+
+### Security
+- The free build contains zero Groq/AI/VPS-scan code; its only outbound calls are license verification (api.swisswpsecure.com) and WordPress.org.
+
 ## [2.9.30.144] - 2026-07-13
 
 ### Fixed

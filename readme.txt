@@ -1,82 +1,67 @@
 === SwissSuite AI ===
 Contributors: swisswpsecure
-Tags: security, backup, malware scanner, firewall, two-factor authentication
+Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.30.144
+Stable tag: 2.9.31.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-All-in-one WordPress security plugin. Malware scanner, firewall, 2FA, site backup, migration, and AI SEO — one plugin, zero bloat.
+WordPress security & backup core — malware scanner, firewall, local backup & restore, login protection, and on-page SEO. Zero bloat.
 
 == Description ==
 
-SwissSuite AI is an all-in-one WordPress security plugin that bundles a malware scanner, web application firewall, two-factor authentication, scheduled site backup, site migration, and AI-powered SEO tools into a single install. One plugin. One settings screen. No add-ons to chase.
+SwissSuite AI (free edition) is the security and backup core for WordPress. It gives you a local malware scanner, a web application firewall, full local backup and one-click restore, malware quarantine, login protection, an on-page SEO audit, and an XML sitemap — all running on your own server, with no account and no AI calls.
 
-Most sites end up with five plugins doing what one plugin should do — a security plugin, a backup plugin, a migration plugin, an SEO plugin, and a cache plugin. Every extra plugin is another auto-update, another DB table, another performance hit, another attack surface. SwissSuite replaces the security, backup, migration, and SEO layer with one tightly integrated codebase.
+Everything in the free plugin runs locally. It does not phone home on install, it sends no telemetry, and it performs no AI processing. When you are ready for more, SwissSuite AI Pro adds cloud backup, hardening, two-factor authentication, geo-blocking, migration, sync, and AI-powered malware, SEO, and content tools.
 
-[youtube https://www.youtube.com/watch?v=PLACEHOLDER]
-<!-- TODO: Replace PLACEHOLDER with real YouTube video ID after recording -->
+= Security (free) =
+* Malware scanner — 38+ local signature patterns, on-demand and daily; runs entirely on your server, no file contents leave your site
+* Web Application Firewall — blocks SQL injection, XSS, and path-traversal attempts, with a threat log
+* Login protection — brute-force login lockout plus comment and contact-form honeypot spam blocking
+* Malware quarantine — isolate suspicious files locally before you remove them
+* Security dashboard, threat log, and daily email security report
 
-= Sentinel Security =
-* Malware scanner with 38+ detection patterns plus optional AI deep analysis (Groq-powered)
-* Web Application Firewall with SQL injection, XSS, and path traversal blocking
-* IP reputation and rate limiting with admin IP safelist
-* 11 one-click WordPress hardening options (XML-RPC, file editing, user enumeration, REST API, application passwords, and more)
-* Two-Factor Authentication (TOTP) for every user role — works with Google Authenticator, Authy, 1Password
+= Backup & restore (free) =
+* Full WordPress backup — files plus database — with a pure-PHP zip engine (no shell exec required)
+* One-click restore with serialization-safe URL and domain replacement (no manual SQL edits)
+* Adaptive backup engine that adjusts to slow shared hosting instead of failing mid-job
+
+= SEO (free) =
+* On-page SEO audit and score — runs locally, no AI
+* XML sitemap generator with custom post type support
+
+= SwissSuite AI Pro =
+
+Upgrade at https://swisswpsecure.com/products/ to unlock these features, which run only in the Pro edition:
+
+* Two-Factor Authentication (TOTP) for every user role
+* 11 one-click hardening options (XML-RPC, file editing, user enumeration, REST API, application passwords, and more)
 * Geo-blocking with country-level allow and deny rules
-* Real-time email alerts and daily security report
+* Advanced firewall rule sets with IP reputation and rate limiting
+* Cloud backup destinations — Google Drive, Amazon S3, Backblaze B2, Dropbox, and FTP/SFTP
+* Scheduled automated backups with rolling retention and AES-256 encryption at rest
+* Site migration — plugin-to-plugin and standalone-receiver modes, tuned for shared hosting
+* Two-way content sync between staging and production
+* Update-guard suite — safe updates with automatic rollback and pre-update snapshots
+* AI deep malware analysis (Groq-powered)
+* AI SEO — bulk meta title and description generation, plus vision AI for image alt text
+* AI content — rewriting, tone control, and generation
 * Vulnerability lookups via WPScan and Patchstack (bring your own API key)
 
-= Backup Fortress =
-* Full WordPress backup (files + database) with hybrid zip engine — pure PHP, no shell exec
-* Scheduled site backup with rolling retention and auto-prune
-* Cloud destinations: Google Drive, AWS S3, Backblaze B2, Dropbox
-* One-click restore with serialized-string-safe domain replacement
-* Optional AES-256 encryption-at-rest for backup archives
-* Adaptive health check that adjusts to slow shared hosts instead of killing in-progress jobs
-
-= Sync Teleport =
-* Two-way content sync between WordPress sites (staging ↔ production)
-* HMAC-signed encrypted transport — no plaintext credentials cross the wire
-* Smart diff comparison before any change is written
-* Selective push: posts, products, media, FSE templates
-
-= Migration Station =
-* Mode A: plugin-to-plugin migration when both sites have SwissSuite installed
-* Mode B: standalone receiver script for migrating to an empty or broken destination
-* Serialization-safe domain replacement (handles serialized arrays and JSON-in-meta)
-* Chunked transfer tuned for shared hosting (Hostinger, SiteGround, IONOS)
-* Post-migration verification step that confirms site URL, theme, and plugin count
-
-= AI SEO & Content =
-* Bulk meta title and description generation
-* AI content rewriting and tone control
-* Vision AI for automatic image alt text
-* XML sitemap generator with custom post type support
-* On-page SEO audit and score
-* llms.txt generator so AI crawlers can find your authoritative content
-
-= Why SwissSuite? =
-
-**vs Wordfence:** Wordfence is security-only. You still need a separate backup plugin (UpdraftPlus, BlogVault), a separate migration plugin (Duplicator, All-in-One WP Migration), and a separate SEO plugin (Yoast, RankMath). That's four plugins, four update channels, four monthly costs. SwissSuite covers all four layers in one install.
-
-**vs UpdraftPlus:** UpdraftPlus is backup-only. It does not scan for malware, does not provide a firewall, does not handle 2FA, and has no SEO tools. SwissSuite includes a full backup engine plus everything UpdraftPlus does not.
-
-**vs Yoast / RankMath:** Yoast and RankMath are SEO-only. They cannot detect a hacked site, cannot back up your content before an algorithm penalty, and cannot block a brute-force attack on your admin login. SwissSuite includes AI-powered SEO plus the security layer that protects your rankings.
+The AI and remote-service features above run only in SwissSuite AI Pro. The free plugin does no AI processing and makes no AI calls.
 
 = Perfect for =
 
-* **Freelancers** managing 5-50 client sites who do not want to install and configure five plugins per site
-* **Agencies** that need a single security and backup standard across an entire portfolio
-* **WooCommerce stores** that need PCI-friendly security plus reliable nightly backups
-* **High-traffic blogs** that cannot afford downtime from a hack or a botched plugin update
-* **Site owners** who would rather pay for one plugin than five
+* **Site owners** who want a solid malware scanner, firewall, and local backup without juggling several plugins
+* **Freelancers and agencies** standardizing basic security and backups across client sites
+* **WooCommerce stores** that need firewall protection compatible with the Store API plus reliable local backups
+* **Anyone** who wants to start free and add AI scanning, cloud backup, and hardening later
 
 = Privacy & Data =
 
-SwissSuite does not phone home on install. No background telemetry. External services are contacted only when you explicitly enable them (cloud backup, AI analysis, vulnerability lookup, geo-blocking). Every external service is disclosed below.
+The free plugin does not phone home on install. No telemetry, no tracking, no analytics. All scanning, backup, and SEO analysis runs locally on your server, and the plugin makes no AI calls. The only external services it may contact are WordPress.org (plugin updates and core-file checksum verification during a scan) and the SwissSuite Command Center (only if you enter a license key, to verify it). Both are disclosed in full under External Services below.
 
 == Installation ==
 
@@ -84,152 +69,79 @@ SwissSuite does not phone home on install. No background telemetry. External ser
 2. Upload the SwissSuite AI zip and click Install Now.
 3. Activate the plugin.
 4. Open the SwissSuite menu in the WordPress sidebar.
-5. Click "Get Free License" on the License tab — enter your email and the plugin auto-provisions a free license locked to your domain.
-6. Run your first malware scan from the Security Hub → Scan tab.
+5. Run your first malware scan from Security → Scan. No account or license key is required — the free features work immediately.
+6. To add Pro features later, enter a license key on the License tab. Get Pro at https://swisswpsecure.com/products/ .
 
 = Minimum Requirements =
 
-* WordPress 5.6 or higher
+* WordPress 6.2 or higher
 * PHP 7.4 or higher
-* HTTPS recommended for two-factor authentication
 
 == Frequently Asked Questions ==
 
 = Is SwissSuite AI free? =
 
-Yes. The free tier includes daily malware scans, the web application firewall, 5 hardening options, two-factor authentication, and the on-page SEO audit. You do not need a credit card to get started. Paid tiers unlock advanced features like cloud backup, site migration, AI content rewriting, and the deep AI security audit.
+Yes. This free edition gives you a local malware scanner, a web application firewall, full local backup and one-click restore, malware quarantine, login brute-force protection, an on-page SEO audit, and an XML sitemap. No account, no credit card, and no license key are required to use these features. The premium features listed below are part of SwissSuite AI Pro.
 
-= How do I block countries in WordPress? =
+= Why is it called SwissSuite AI if the free plugin doesn't use AI? =
 
-Open SwissSuite → Security Hub → Geo-Blocking. Pick "Block list" mode and select the countries you want to deny. The list is enforced at the firewall layer before WordPress loads, so blocked countries cannot brute-force your login page or hit your REST API. You can also use "Allow list" mode to restrict access to a single country (useful for staging sites).
-
-= What is the best WordPress 2FA plugin? =
-
-If you already use SwissSuite for security, the built-in TOTP two-factor authentication is the simplest answer — no extra plugin to install, no compatibility risk between the WAF and the 2FA layer. It works with Google Authenticator, Authy, 1Password, Bitwarden, and any other TOTP app. Enable it from Security Hub → Two-Factor Authentication and scan the QR code with your authenticator.
+SwissSuite AI is the name of the platform. The free plugin is its security core — malware scanning, firewall, backups — and performs no AI processing and sends no data to AI services. The AI features (deep malware analysis, AI SEO, AI content) run exclusively in SwissSuite AI Pro.
 
 = How do I scan my WordPress site for malware? =
 
-Open SwissSuite → Security Hub → Scan tab. You have three scan types: Quick Scan (local signature check, fast, free), AI Security Audit (configuration and integrity audit, daily auto-scan, free), and Deep Malware Scan with AI (file hashes checked against MalwareBazaar plus AI analysis, Pro tier). The first scan typically takes 30-90 seconds depending on site size.
+Open SwissSuite → Security → Scan. The free malware scan checks your files against 38+ local signature patterns and runs entirely on your server — no file contents leave your site. A deeper scan that checks file hashes against a remote malware database and adds AI review is available in SwissSuite AI Pro.
 
-= Does this replace Wordfence? =
+= How do I back up my WordPress site? =
 
-Yes. SwissSuite includes everything Wordfence does — malware scanner, firewall, login protection, two-factor authentication, country blocking — and adds backup, migration, and SEO that Wordfence does not have. If you are running Wordfence and a separate backup plugin and a separate SEO plugin, SwissSuite is a one-for-three swap.
+Open SwissSuite → Backup and click Back Up Now to create a full backup of your files and database. Restore any backup with one click — SwissSuite handles serialized-string replacement automatically, so your site URLs update cleanly with no manual SQL edits. Scheduled automated backups and cloud destinations (Google Drive, Amazon S3, Backblaze B2, Dropbox, FTP/SFTP) are part of SwissSuite AI Pro.
 
-= How do I back up my WordPress site automatically? =
+= Can I use SwissSuite alongside a dedicated security plugin like Wordfence? =
 
-Open Settings → Backup → Schedule. Pick a frequency (hourly, daily, weekly) and a retention count. Optionally connect a cloud destination (Google Drive, S3, B2, or Dropbox) under Settings → Backup → Cloud. The backup cron runs unattended; you can check the last completion time on the Dashboard.
-
-= Can I migrate my WordPress site without manual SQL edits? =
-
-Yes. SwissSuite handles serialized string replacement automatically — no need to run wp-cli search-replace or hand-edit the SQL dump. Use Mode A if the destination site already has SwissSuite installed. Use Mode B if the destination is empty or broken: the plugin generates a standalone receiver script you upload to the destination, then push the migration.
-
-= What AI features are included in the free version? =
-
-The AI Security Audit runs daily on the free tier at zero token cost (Layer 1 is signature-based, not AI). The on-page SEO audit and XML sitemap generator are free. AI-powered features that consume tokens — deep malware analysis, bulk SEO meta generation, content rewriting, image alt text — are gated to paid tiers. Free accounts include 50,000 tokens per month for occasional AI use.
+Yes. SwissSuite's free firewall and scanner run independently and can coexist with other security plugins; if you would rather use a single tool, SwissSuite covers malware scanning, a firewall, login protection, and local backups in one install.
 
 = Is SwissSuite compatible with WooCommerce? =
 
-Yes. The firewall has an explicit allowlist for WooCommerce REST routes (wc/v3, wc/store/v1, wc/store/v2, wc-analytics/v1, wc-admin/v1, wc-auth/v1) so cart, checkout, and the Store API work normally even with hardening enabled. The backup engine handles WooCommerce-specific tables (orders, customers, sessions) and the sync layer pushes products between staging and production.
+Yes. The firewall has an explicit allowlist for WooCommerce REST routes (wc/v3, wc/store/v1, wc/store/v2, wc-analytics/v1, wc-admin/v1, wc-auth/v1) so cart, checkout, and the Store API keep working with protection enabled. The backup engine also handles WooCommerce-specific tables (orders, customers, sessions).
 
-= How many sites can I use one license on? =
+= Do I need a license key or an account? =
 
-Each license key is locked to one domain. For multi-site management, contact support — agency tiers are available with discounted per-site pricing. The free license is also domain-locked, so you can run a free install on every site you manage at no cost.
+No. Every feature in this free plugin works immediately with no account and no license key. A license key is only needed to unlock SwissSuite AI Pro features, and a Pro license is locked to one domain. Learn more at https://swisswpsecure.com/products/ .
 
 == Screenshots ==
 
-1. Security Hub dashboard — threat count, scan status, and hardening score at a glance.
-2. Malware scan results — file list with threat classifications and inline AI analysis.
-3. Hardening options — 11 one-click security toggles, most enabled.
-4. Backup Fortress — backup list with Google Drive and S3 cloud status indicators.
-5. AI SEO tools — bulk meta optimisation table with AI-generated suggestions.
+1. Security dashboard — threat count and scan status at a glance.
+2. Malware scan results — file list with local signature-based threat classifications.
+3. Backup — local backup list with one-click restore.
+4. On-page SEO audit — page score and improvement recommendations (runs locally).
+5. Threat log — blocked firewall requests with rule and timestamp.
 
 == External Services ==
 
-This plugin connects to the following external services. No data is transmitted unless you initiate an action that requires it.
+This plugin connects to only the external services listed below, and only for the purposes described. No data is transmitted unless you take an action that requires it. The free plugin does no AI processing and makes no AI calls; its local features (malware scan, backup, restore, quarantine, on-page SEO audit, sitemap) run on your own server. Its only outbound calls are to the two services below.
 
 = SwissSuite Command Center (api.swisswpsecure.com) =
-Used for: License key validation, AI request proxying, token balance sync, and Deep Malware Scan hash lookups.
-Data sent: Your license key and AI scan request payloads. Your site domain is sent in an X-Domain header on every request to api.swisswpsecure.com for license verification (the server uses it to confirm the key is active for your domain). During the Deep Malware Scan (Pro license required), SHA-256 hashes of PHP files on your site are sent to api.swisswpsecure.com/v1/scan/batch to check them against a malware signature database (sources: URLhaus, MalwareBazaar). File contents are never transmitted, and hashes are not logged per-site.
-This service is only contacted after you enter a license key — the plugin does not phone home on a fresh install with no key.
-Privacy Policy: https://swisswpsuite.com/privacy-policy
-Terms of Service: https://swisswpsuite.com/terms-of-service
-
-= Groq AI API (proxied via swisswpsecure.com) =
-Used for: Malware pattern analysis, AI content enhancement, vision AI for automatic alt text generation.
-Data sent: File content snippets, URLs, or post content — only when you explicitly trigger an AI-powered action (e.g. "Analyze with AI", bulk SEO meta generation, alt text generation).
-No background data collection or tracking.
-Groq Privacy Policy: https://groq.com/privacy-policy
-
-= Google Drive / Google OAuth =
-Host: googleapis.com, accounts.google.com, oauth2.googleapis.com, www.googleapis.com
-Used for: Optional Google Drive backup destination (upload/download/list backup archives) and OAuth 2.0 authorization.
-Data sent: Backup archive contents (your site files + database export, only when you click "Upload to Google Drive"), OAuth refresh/access tokens, file metadata (name, size).
-When contacted: Only after you connect a Google account under Settings → Backup → Cloud → Google Drive and trigger or schedule a backup upload. Not contacted on a fresh install or if Google Drive is not configured.
-Privacy Policy: https://policies.google.com/privacy
-Terms of Service: https://policies.google.com/terms
-
-= Backblaze B2 Cloud Storage =
-Host: api.backblazeb2.com (and per-bucket upload hosts returned by the B2 API, e.g. *.backblazeb2.com)
-Used for: Optional Backblaze B2 backup destination (upload/download/list backup archives).
-Data sent: Backup archive contents (your site files + database export, only when uploading), B2 application key ID + application key (sent in the authorization request only), bucket/file metadata.
-When contacted: Only after you enter B2 credentials under Settings → Backup → Cloud → Backblaze B2 and trigger or schedule a backup upload. Not contacted on a fresh install or if B2 is not configured.
-Privacy Policy: https://www.backblaze.com/company/policies.html
-Terms of Service: https://www.backblaze.com/company/policies.html
-
-= Dropbox =
-Host: api.dropboxapi.com, content.dropboxapi.com
-Used for: Optional Dropbox backup destination (upload/download/list backup archives).
-Data sent: Backup archive contents (your site files + database export, only when uploading), Dropbox OAuth access token, file metadata.
-When contacted: Only after you connect a Dropbox account under Settings → Backup → Cloud → Dropbox and trigger or schedule a backup upload. Not contacted on a fresh install or if Dropbox is not configured.
-Privacy Policy: https://www.dropbox.com/privacy
-Terms of Service: https://www.dropbox.com/terms
-
-= Amazon S3 / S3-compatible storage =
-Host: s3.amazonaws.com, regional AWS S3 endpoints, or a custom S3-compatible endpoint you configure.
-Used for: Optional Amazon S3 (or S3-compatible) backup destination (upload/download/list backup archives).
-Data sent: Backup archive contents (your site files + database export, only when uploading), your S3 access key ID + secret key (used to sign requests), and bucket/object metadata.
-When contacted: Only after you enter S3 credentials under Settings → Backup → Cloud → Amazon S3 and trigger or schedule a backup upload. Not contacted on a fresh install or if S3 is not configured.
-Privacy Policy: https://aws.amazon.com/privacy/
-Terms of Service: https://aws.amazon.com/service-terms/
-
-= FTP / SFTP backup destination (user-specified server) =
-Host: The remote server address you provide. This is not a fixed third-party service — the destination is entirely under your control.
-Used for: Optional upload of backup archives to a remote FTP/SFTP server whose address and credentials you provide.
-Data sent: Backup archive contents (your site files + database export) to the host you specify, only when a backup upload runs.
-When contacted: Only after you enter FTP/SFTP details under Settings → Backup → Cloud and trigger or schedule an upload. Not contacted on a fresh install or if no FTP/SFTP destination is configured.
-
-= WPScan Vulnerability Database API =
-Host: wpscan.com (https://wpscan.com/api/v3/)
-Used for: Optional vulnerability lookup of installed plugin/theme slugs + versions during deep malware scans.
-Data sent: Plugin/theme slugs and version numbers of components installed on your site (no file contents, no PII), and the WPScan API key you provided.
-When contacted: Only when you provide a WPScan API key under Settings → Security → Vulnerability Feeds AND a deep scan or vulnerability sweep runs. Not contacted if no API key is configured.
-Privacy Policy: https://wpscan.com/privacy/
-Terms of Service: https://wpscan.com/terms-of-service
-
-= Patchstack Vulnerability Database API =
-Host: api.patchstack.com (https://api.patchstack.com/)
-Used for: Optional vulnerability lookup of installed plugin/theme slugs + versions during deep malware scans.
-Data sent: Plugin/theme slugs and version numbers of components installed on your site (no file contents, no PII), and the Patchstack API key you provided.
-When contacted: Only when you provide a Patchstack API key under Settings → Security → Vulnerability Feeds AND a deep scan or vulnerability sweep runs. Not contacted if no API key is configured.
-Privacy Policy: https://patchstack.com/privacy-policy/
-Terms of Service: https://patchstack.com/terms-of-service/
-
-= ipwho.is (IP geolocation) =
-Host: ipwho.is (https://ipwho.is/)
-Used for: Determining the country of a visitor's IP address for the optional Geo-Blocking security feature, and only as a fallback when a Cloudflare country header is not already present.
-Data sent: The visitor's IP address (sent to resolve its country). No other data, no site content, no API key. The resolved country code is cached locally on your site for 7 days; the IP itself is not stored by us or retained per-request.
-When contacted: Only when Geo-Blocking is enabled AND the visitor's country is not already supplied by Cloudflare AND the result is not already cached. Private/reserved IPs are never sent. Not contacted if Geo-Blocking is disabled.
-Legal basis (EU/UK/CH site owners): legitimate interest in network and information security (GDPR Art. 6(1)(f), Recital 49).
-Privacy Policy: https://ipwho.is/ (review the provider's terms before enabling)
+Used for: License key verification.
+Data sent: Your license key, and your site domain (sent in an X-Domain header) so the server can confirm the key is valid and active for your domain. No site content, no file contents, and no visitor data are sent.
+When contacted: Only when you enter or verify a license key on the License tab. The free plugin does not contact this service for any of its local features, and does not phone home on a fresh install with no key.
+Privacy Policy: https://swisswpsecure.com/privacy-policy
+Terms of Service: https://swisswpsecure.com/terms-of-service
 
 = WordPress.org APIs =
 Host: api.wordpress.org
-Used for: Core file checksum verification (to detect modified or infected WordPress core files) and plugin/theme metadata lookups during vulnerability scans.
-Data sent: WordPress version number (for checksum requests), plugin/theme slugs and version numbers (for metadata lookups). No personal data or site content is sent.
-When contacted: Only when you run a security scan that includes core file integrity checking. Not contacted on page load or without a user-initiated scan.
+Used for: WordPress core file checksum verification during a malware scan (to detect modified or infected core files), and standard plugin update checks.
+Data sent: Your WordPress version number (for checksum requests) and the plugin slug and version (for update checks). No personal data or site content is sent.
+When contacted: During a security scan that includes core-file integrity checking, and when WordPress checks for plugin updates.
 Privacy Policy: https://wordpress.org/about/privacy/
 
 For full details on what data is transmitted and your rights, see our Privacy Policy linked above.
+
+== Source Code ==
+
+SwissSuite AI is free software licensed under GPLv2 or later. The complete, uncompiled, human-readable source code — including the React and TypeScript sources behind the admin interface and the build scripts used to generate the distributed minified JavaScript and CSS — is published at:
+
+https://github.com/Gfellerman/SwisswpSuite_Public
+
+That repository contains the build tooling and instructions for regenerating the compiled assets from source.
 
 == Upgrade Notice ==
 
@@ -247,16 +159,38 @@ Restores scheduled backup cron after a regression that silently stopped automate
 
 == Changelog ==
 
+= 2.9.31.4 =
+* Fixed: cleared the remaining WordPress.org Plugin Check code errors (switched `parse_url()` to `wp_parse_url()` in the settings API; documented the raw-socket SMTP connectivity probe that has no WordPress-filesystem equivalent).
+* Changed: the free edition's "Advanced Controls" hardening section now shows a clear "Pro feature" upgrade panel instead of greyed-out, non-working toggles — the six essential hardening controls remain fully functional in the free edition.
+
+= 2.9.31.3 =
+* Fixed: the "Start Security Audit" button in the free edition no longer does nothing when clicked. A stale token check was incorrectly gating the audit behind a paid-token balance, even though the free Security Audit runs a fully local Layer-1 grade and uses no tokens or AI. The button now works on a fresh/free install.
+* Changed: corrected the audit description so it no longer claims it "uses AI via the SwissSuite quota" — the free Security Audit is entirely local.
+
+= 2.9.31.2 =
+* Improved: the free edition now strictly separates free and Pro features — a Pro-only capability can never activate in the free build, even if a Pro license key is stored locally, so nothing behaves unpredictably.
+* Improved: if you already own a Pro feature but are running the free plugin, the upgrade panels now say "You already own this — download and install Pro" and link to your download page, instead of a generic purchase prompt.
+* Fixed: removed non-functional AI buttons from the SEO tab in the free edition (bulk AI generation and overnight queueing are Pro features) and eliminated a related console error on every SEO page load.
+* Fixed: the License screen now correctly shows the basic firewall as active in the free edition; also clarified a few labels ("Scan Capabilities", "AI Assistant Guide") so they read plainly.
+
+= 2.9.31.1 =
+* Fixed: Security Audit now runs a fully local Layer-1 grade in the free edition (previously returned a "scan failed" error because a Pro-only scanner class is absent from the free build). No tokens are used.
+* Fixed: SEO Health Check no longer errors on the free edition; error responses are now proper JSON instead of a blank page.
+* Fixed: the free edition no longer polls Pro-only endpoints, removing benign 403/404 console noise.
+* Changed: the free edition no longer bundles Pro-only admin scripts, and no longer shows a Pro AI-provider notice or a non-functional "Test AI Connection" control.
+
+= 2.9.31.0 =
+* New: SwissSuite AI now ships as two editions from one codebase — a free security & backup core (WordPress.org) and SwissSuite AI Pro (download-only) with all AI and premium features. The free plugin does no AI processing and sends no data to AI services.
+* New (now free): local backup & restore, malware quarantine, on-page SEO audit/score, and the XML sitemap generator.
+* Changed: cloud backup, sync/staging, migration, 2FA, hardening, geo-blocking, advanced firewall, and all AI features are part of SwissSuite AI Pro.
+* Compliance: the free plugin contains no premium/AI code; its only outbound calls are license verification and WordPress.org.
+
 = 2.9.30.144 =
 * Fixed: The Plugin URI and Author URI in the plugin header were identical; the Plugin URI now points to the plugin's own resource page so the two are distinct (clears the WordPress.org "Plugin and author URIs are the same" upload error).
 
 = 2.9.30.143 =
 * Fixed: Corrected two remaining text strings that used the plugin's old text domain, so all translations now resolve under the current `swisssuite-ai` domain (clears the last WordPress.org Plugin Check errors).
 * Compliance: The Privacy & Data summary now lists Geo-Blocking alongside the other features that may contact an external service, matching the detailed External Services disclosure.
-
-= 2.9.30.142 =
-* Compliance: Disclosed three additional external services in the External Services section — ipwho.is (IP geolocation used by Geo-Blocking as a Cloudflare fallback), Amazon S3 / S3-compatible storage, and FTP/SFTP backup destinations — for full WordPress.org and GDPR transparency.
-* Privacy/Fixed: Removed a Google Fonts hotlink that shipped inside an unused build template file. Fonts were never actually loaded at runtime, but the reference is now stripped from the distributed package so no visitor IP can reach Google Fonts.
 * Housekeeping: Internal developer documentation is no longer bundled in the distributed plugin zip.
 
 = 2.9.30.141 =

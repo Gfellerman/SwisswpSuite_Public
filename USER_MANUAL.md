@@ -1,7 +1,11 @@
 # SwissSuite AI — User Manual
 
+> Architecture: dual-build freemium — see docs/architecture/FREEMIUM_DUAL_BUILD_ARCHITECTURE.md
+
 **Refer to `plugin/swisssuite-ai.php` for the authoritative current version.**
 **Last Updated:** May 2026
+
+> **Two editions.** SwissSuite AI comes in two products built from one codebase: **SwissSuite AI** (free, installed from the WordPress.org directory) and **SwissSuite AI Pro** (downloaded from swisswpsecure.com after you purchase a plan). The free edition includes the free local features only. SwissSuite AI Pro unlocks 2FA, geo-blocking, advanced WAF, cloud backup, sync, migration, and all AI features (deep AI scan, AI SEO meta, AI content rewriting). Anything marked "Pro" below lives exclusively in the Pro edition, which you install as a separate download.
 
 ---
 
@@ -25,12 +29,17 @@
 
 ### 1.1 Installation
 
-1. Download the `swisswpsuite-v{VERSION}.zip` file
-2. In WordPress Admin, go to **Plugins → Add New → Upload Plugin**
-3. Select the ZIP file and click **Install Now**
-4. Click **Activate Plugin**
+**Free edition (SwissSuite AI):**
+1. In WordPress Admin, go to **Plugins → Add New**
+2. Search for **SwissSuite AI** and click **Install Now**, then **Activate**
 
-After activation, a new **SwissSuite** menu item appears in your WordPress sidebar.
+**Pro edition (SwissSuite AI Pro):**
+1. Purchase a plan at swisswpsecure.com and download the `swisssuite-ai-pro-v{VERSION}.zip` from your account
+2. In WordPress Admin, go to **Plugins → Add New → Upload Plugin**
+3. Select the ZIP file, click **Install Now**, then **Activate**
+4. Deactivate the free edition if it is installed — Pro is a full superset that contains the free features too
+
+After activation, a new **SwissSuite** menu item appears in your WordPress sidebar. Pro receives its updates directly from swisswpsecure.com (its distinct slug means a WordPress.org update can never downgrade it to the free edition).
 
 ### 1.2 First-Time Setup
 
@@ -43,26 +52,33 @@ When you first open SwissSuite, you'll see the **Critical Next Steps** guide on 
 
 ### 1.3 Free vs. Pro Features
 
-| Feature | Free | Pro |
+The **Free** column is what ships in the SwissSuite AI (WordPress.org) edition. The **Pro** column requires the separate SwissSuite AI Pro download from swisswpsecure.com — the Pro-only features are not present in the free edition at all.
+
+| Feature | Free (WordPress.org) | Pro (swisswpsecure.com) |
 |---------|------|-----|
-| Basic firewall (WAF) | Always active | Configurable |
-| Quick security scan | Available | Available |
-| Sentinel Layer 1 scan | Limited quota | Unlimited |
+| Basic firewall (WAF) | Always active | Included |
+| Advanced / smart WAF | Not available | Full access |
+| Quick / local malware scan | Available | Available |
+| Sentinel Layer 1 signature audit (daily) | Available | Available |
+| Malware quarantine | Available | Available |
+| Local backup + restore | Available | Available |
+| On-page SEO audit / score (no AI) | Available | Available |
+| XML sitemap generator | Available | Available |
+| Login rate-limit + honeypot (spam) | Available | Available |
+| WPScan / Patchstack vulnerability lookup (your key) | Available | Available |
 | Sentinel Layer 2 (AI analysis) | Not available | Full access |
-| Deep malware scan | Not available | Full access |
-| Essential hardening (5 options) | Available | Available |
-| Advanced hardening (6 options) | Locked | Full access |
-| Geo-blocking | Locked | Full access |
-| IP banning | Locked | Full access |
-| Quarantine management | Read-only | Full access |
-| Local backups | Available | Available |
-| Cloud backups (GDrive, S3, etc.) | Not available | Full access |
+| Deep malware scan (VPS hash DB + AI) | Not available | Full access |
+| Hardening (all 11 one-click options) | Not available | Full access |
+| Geo-blocking | Not available | Full access |
+| IP banning | Not available | Full access |
+| Cloud backups (GDrive, S3, B2, Dropbox, FTP) | Not available | Full access |
 | Backup automations (scheduling) | Not available | Full access |
 | Site migration | Not available | Full access |
 | Content sync | Not available | Full access |
-| SEO optimization | Not available | Full access |
+| AI SEO meta generation | Not available | Full access |
 | AI content rewriting | Not available | Full access |
-| Two-factor authentication | Available | Available |
+| Two-factor authentication (2FA/TOTP) | Not available | Full access |
+| Update Guard suite (rollback / scanner / snapshot) | Not available | Full access |
 
 ---
 
