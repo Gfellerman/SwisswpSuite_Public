@@ -1,17 +1,17 @@
 # SwissSuite AI — Privacy Policy
 
-> **Last Updated:** 2026-04-24
-> **Effective Date:** 2026-04-24
+> **Last Updated:** 2026-07-21
+> **Effective Date:** 2026-07-21
 
 ---
 
 ## 1. Who We Are
 
-Swisswpsecure ("we", "us", "SwissSuite") operates the SwissSuite AI WordPress plugin and the associated cloud service at swisswpsecure.com.
+**SwissWPSecure Sàrl** ("we", "us", "SwissWPSecure") operates the SwissSuite AI WordPress plugin and the associated cloud service at swisswpsecure.com.
 
-**Registered office:** Le Moulin 3, 1312 Eclepens, Switzerland
-**Data Protection Officer:** support@swisswpsecure.com
-**Supervisory Authority:** Federal Data Protection and Information Commissioner (FDPIC), Feldeggweg 1, 3003 Bern, Switzerland
+**Registered office:** Le Moulin 3, 1312 Éclépens, Switzerland
+**Data Protection Contact:** support@swisswpsecure.com
+**Swiss Supervisory Authority:** Federal Data Protection and Information Commissioner (FDPIC), Feldeggweg 1, 3003 Bern, Switzerland
 
 ## 2. Scope
 
@@ -21,6 +21,8 @@ This Privacy Policy covers:
 - **SwissSuite AI Plugin** — Data processing that involves our servers (license validation, AI features, security scanning).
 
 This Privacy Policy does **not** cover data that the Plugin processes entirely on your WordPress server without contacting our Service (e.g., local WAF, local backups, login protection). For those local features, you — the site owner — are the data controller, and your own privacy policy applies.
+
+For your own account, billing, and license data, SwissWPSecure Sàrl is the **data controller** and this Privacy Policy applies. For personal data of your site's visitors that reaches our Service only through a feature you actively use (for example, content submitted to AI features), SwissWPSecure Sàrl acts as your **data processor** under our Data Processing Agreement, and you are the controller.
 
 ## 3. Data We Collect
 
@@ -38,7 +40,7 @@ This Privacy Policy does **not** cover data that the Plugin processes entirely o
 | Data | Purpose | Legal Basis | Retention |
 |------|---------|-------------|-----------|
 | Content submitted to AI features (titles, descriptions, post bodies) | Generate AI-powered SEO meta, FAQ, content rewrites | Contract | Not retained after processing. Forwarded to AI sub-processor and discarded upon response. |
-| Token usage logs (action type, token amount, timestamp) | Billing audit trail, usage tracking | Contract + Legal obligation (Swiss OR Art. 958f) | Permanent (audit trail) |
+| Token usage logs (action type, token amount, timestamp) | Billing audit trail, usage tracking | Contract + Legal obligation (Swiss OR Art. 958f) | **10 years (Swiss OR Art. 958f), then deleted** |
 
 ### 3.3 Security Scanning Data
 
@@ -54,6 +56,7 @@ This Privacy Policy does **not** cover data that the Plugin processes entirely o
 | Payment card details | Payment processing | Contract | NOT stored by us. Processed by Stripe, Inc. |
 | Invoice data (name, email, address, amount) | Tax compliance, accounting | Legal obligation (Swiss OR Art. 958f) | 10 years (legal requirement) |
 | Stripe customer ID | Link payment records to account | Contract | Duration of account + 30 days |
+| A hashed identifier derived from your payment card, your normalised email address, and your site domain | Preventing repeated abuse of our refund/goodwill policy and fraudulent purchases; enforcing the one-refund limit in our Terms | Legitimate interest (GDPR Art. 6(1)(f)); nDSG Art. 31(1) | Retained for 24 months from your last purchase, then deleted |
 
 ### 3.5 Data Processed by the Plugin on Your Server
 
@@ -69,6 +72,8 @@ The following data is processed by the Plugin on **your** WordPress server. We d
 | Full database (migration/sync) | Site migration, staging sync | Sent directly to **your** destination site |
 | Geo-bypass cookie (`swisswpsuite_geo_bypass`) | Geo-blocking bypass | **No** (set on visitor's browser, 1 hour, httponly, secure) |
 | Admin UI preferences | Theme, sidebar state, consent flags | **No** (localStorage, admin browsers only) |
+
+The IP geolocation lookup (ipwho.is) is performed by the Plugin from your own server when you enable geo-blocking; **you are the controller for that lookup and ipwho.is is your service provider, not ours.**
 
 ## 4. How We Use Your Data
 
@@ -88,7 +93,7 @@ We use the data collected for the following purposes only:
 | AI content processing | Art. 6(1)(b) — Contract performance | Art. 6(3) |
 | Payment and invoicing | Art. 6(1)(b) — Contract + Art. 6(1)(c) — Legal obligation | Art. 6(3) + OR Art. 958f |
 | Token usage audit trail | Art. 6(1)(c) — Legal obligation | OR Art. 958f |
-| Abuse prevention | Art. 6(1)(f) — Legitimate interest | Art. 6(3) |
+| Fraud and abuse prevention (including refund-abuse) | Art. 6(1)(f) — Legitimate interest in securing the Service and preventing fraud and refund abuse | Art. 31(1) nDSG |
 
 ## 6. Third-Party Services (Sub-Processors)
 
@@ -96,15 +101,10 @@ We use the following third-party services to deliver the Service:
 
 | Service | Purpose | Data Shared | Location | DPA Status |
 |---------|---------|-------------|----------|------------|
-| **Groq LLC** | AI language model processing (SEO generation, security Layer 2 analysis, content enhancement) | Content submitted to AI features | USA | Available upon request |
+| **Groq LLC** | AI language model processing | Content submitted to AI features | USA | Groq DPA available (request via support@groq.com); transfers under Standard Contractual Clauses (GDPR Art. 46(2)(c)) |
 | **Stripe, Inc.** | Payment processing | Payment card data, email, amount | USA | Stripe DPA available |
-| **ipwho.is** | IP geolocation (geo-blocking feature) | Visitor IP addresses | USA | No DPA — public API, IP only |
-| **Patchstack** | Plugin/theme vulnerability database lookup (part of Sentinel Layer 1 scans) | Plugin/theme slug strings; your server's outbound IP as source | EU | Public API, no account required for read access |
-| **WPScan (Automattic)** | WordPress vulnerability database lookup (optional, requires your WPScan API key) | Plugin/theme slug strings; your WPScan API key; your server's outbound IP as source | USA | User-provided API key; Automattic DPA applies |
 
 **Cloud backup providers** (Google Drive, Dropbox, AWS S3, Backblaze B2, FTP servers) are configured by you and operate under your own agreements with those providers. We facilitate the connection but do not receive or store your backup data.
-
-**Patchstack and WPScan** are queried on your behalf from your own WordPress server (not from our VPS). They receive plugin/theme slug strings (e.g. "woocommerce", "jetpack") plus your server's outbound IP as a standard HTTP source — no visitor PII, no post content, no credentials beyond the WPScan API key you configure. We never proxy or log these queries.
 
 ### International Transfers
 
@@ -114,6 +114,8 @@ When data is transferred from Switzerland or the EU/EEA to the United States, we
 - The Swiss-US Data Privacy Framework where applicable, OR
 - Standard Contractual Clauses (SCCs) as adopted by the European Commission and recognized by the Swiss FDPIC.
 
+A copy of the safeguards (e.g. the Standard Contractual Clauses) is available on request.
+
 ## 7. Data Retention
 
 | Data Category | Retention Period | Deletion Method |
@@ -121,7 +123,7 @@ When data is transferred from Switzerland or the EU/EEA to the United States, we
 | Account data (email, license key, domain) | Account duration + 30 days after deletion | Automated purge |
 | AI content submitted for processing | Not retained (processed and discarded) | N/A |
 | Sentinel scan cache | 24 hours | Automated purge |
-| Token usage logs | Permanent (legal audit obligation) | Available upon request after legal retention expires |
+| Token usage logs | 10 years (Swiss OR Art. 958f) | Automated purge after retention period |
 | Invoice records | 10 years (Swiss OR Art. 958f) | Manual purge after retention period |
 | Payment data (Stripe) | Per Stripe's retention policy | Managed by Stripe |
 
@@ -138,6 +140,7 @@ Depending on your jurisdiction, you have the following rights:
 - **Right to Data Portability** (GDPR Art. 20) — Request your data in a structured, machine-readable format.
 - **Right to Object** (GDPR Art. 21 / nDSG Art. 32) — Object to processing based on legitimate interest.
 - **Right to Withdraw Consent** — Where processing is based on consent, you may withdraw it at any time.
+- **Right to lodge a complaint.** You have the right to lodge a complaint with a data-protection supervisory authority. If you are in the EU/EEA, this is the authority in your country of residence, place of work, or the place of the alleged infringement. If you are in Switzerland, you may contact the Federal Data Protection and Information Commissioner (FDPIC), Feldeggweg 1, 3003 Bern. If you are in the United Kingdom, you may contact the Information Commissioner's Office (ICO). Exercising this right does not affect any other legal remedy available to you.
 
 ### Under CCPA/CPRA (California):
 
@@ -145,9 +148,13 @@ Depending on your jurisdiction, you have the following rights:
 - **Right to Delete** — Request deletion of your personal information.
 - **Right to Opt-Out** — We do not "sell" or "share" personal information as defined by CCPA.
 
+**Fraud and refund-abuse prevention.** We may flag an account showing patterns consistent with refund abuse for review. Any decision to warn you, restrict future paid purchases, or refuse service is taken by a member of our staff — **not solely by automated means** — and you may contest it by contacting us. We use the hashed identifier described in Section 3 only to enforce our Terms and prevent fraud, never for advertising.
+
+**Providing your data.** Providing your email address and site domain is necessary to enter into and perform the subscription; without it we cannot provide paid features.
+
 ### How to Exercise Your Rights
 
-Contact our Data Protection Officer at support@swisswpsecure.com. We will respond within 30 days (GDPR) or 45 days (CCPA). We may request identity verification before processing your request.
+Contact us at support@swisswpsecure.com. We will respond within **one month** (GDPR, extendable by two further months where necessary) or 45 days (CCPA). We may request identity verification before processing your request.
 
 ### Limitation
 
@@ -189,13 +196,13 @@ We may update this Privacy Policy from time to time. Material changes will be co
 
 ## 13. Contact
 
-Swisswpsecure
-Le Moulin 3, 1312 Eclepens, Switzerland
+SwissWPSecure Sàrl
+Le Moulin 3, 1312 Éclépens, Switzerland
 
-Data Protection Officer: support@swisswpsecure.com
+Data Protection Contact: support@swisswpsecure.com
 General inquiries: support@swisswpsecure.com
 Website: https://swisswpsecure.com
 
 ---
 
-*This document was last reviewed on 2026-04-24.*
+*This document was last reviewed on 2026-07-21.*

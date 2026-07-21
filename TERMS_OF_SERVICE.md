@@ -1,7 +1,7 @@
 # SwissSuite AI — Terms of Service
 
-> **Last Updated:** 2026-03-23
-> **Effective Date:** 2026-03-23
+> **Last Updated:** 2026-07-21
+> **Effective Date:** 2026-07-21
 
 ---
 
@@ -9,36 +9,46 @@
 
 These Terms of Service ("Terms") govern your use of the SwissSuite AI WordPress plugin ("Plugin"), the associated services provided through swisswpsecure.com ("Service"), and any related APIs, documentation, and support (collectively, the "Platform"). By activating a license key, creating an account, or using any paid feature, you agree to these Terms.
 
-The Plugin is developed and operated by Swisswpsecure, a company incorporated under the laws of Switzerland, with its registered office at Le Moulin 3, 1312 Eclepens, Switzerland ("we", "us", "our", "SwissSuite").
+The Plugin is developed and operated by **SwissWPSecure Sàrl**, a limited liability company (*société à responsabilité limitée*) incorporated under the laws of Switzerland, with its registered office at **Le Moulin 3, 1312 Éclépens, Canton of Vaud, Switzerland** ("we", "us", "our", "SwissWPSecure").
 
 ## 2. Definitions
 
 - **"Plugin"** — The SwissSuite AI WordPress plugin, distributed under the GNU General Public License v2.0 or later (GPL-2.0+).
 - **"Service"** — The cloud-based services accessible via api.swisswpsecure.com, including license validation, AI content generation, security scanning, and token management.
-- **"Account"** — Your registration with SwissSuite, identified by your email address and license key.
+- **"Account"** — Your registration with SwissWPSecure, identified by your email address and license key.
 - **"Token"** — A unit of AI processing capacity purchased or allocated under your subscription plan.
 - **"Site"** — The WordPress installation where you have activated the Plugin.
 - **"Content"** — Any text, data, files, or other material you submit to the Service for processing.
 
 ## 3. Service Description
 
-### 3.1 Plugin (Free Tier)
+### 3.0 Editions and Distribution
 
-The Plugin includes free features that operate entirely on your server without requiring a license or external service connection:
+The Plugin is distributed as **two editions built from a single source tree**:
+
+- **SwissSuite AI (Free edition)** — distributed through the WordPress.org plugin directory (slug `swisssuite-ai`). It contains only the free features described in Section 3.1 and does not require a license key, an account, or a connection to our Service. It is governed solely by the GPL-2.0+ license.
+- **SwissSuite AI Pro (Paid edition)** — distributed **only** as a download from swisswpsecure.com to customers who have purchased a plan (slug `swisssuite-ai-pro`). It is a full superset that includes the free features plus the paid features described in Section 3.2. Pro receives updates directly from swisswpsecure.com (not WordPress.org). Access to Pro downloads, updates, and the Service requires a valid, active license key and acceptance of these Terms. The premium features are not present in the Free edition; they are delivered exclusively by installing the Pro edition.
+
+The Pro edition's source code remains available under the GPL-2.0+ license to licensed customers; the license key controls access to downloads, updates, and the Service, not your rights under the GPL to the code you have received.
+
+### 3.1 Plugin (Free Tier — SwissSuite AI, WordPress.org)
+
+The Free edition includes features that operate entirely on your server without requiring a license or external service connection:
 
 - Basic Web Application Firewall (WAF)
-- Login brute-force protection (3 attempts, 15-minute lockout)
-- Local database backup
-- Malware signature scanning (Layer 1)
+- Login brute-force protection (rate-limit lockout) and spam honeypot protection
+- Local database + files backup and restore
+- Malware signature scanning (Layer 1, local)
+- Malware quarantine (local remediation)
+- On-page SEO audit / score (no AI)
 - XML sitemap generation
-- SEO meta tag management
-- Spam honeypot protection
+- WPScan / Patchstack vulnerability lookup using your own third-party key
 
 Free features do not require acceptance of these Terms. They are governed solely by the GPL-2.0+ license.
 
-### 3.2 Service (Paid Tiers)
+### 3.2 Service (Paid Tiers — SwissSuite AI Pro, swisswpsecure.com)
 
-Paid features require a valid license key and connect to our Service:
+Paid features are delivered by the Pro edition, require a valid license key, and (for AI/serviceware features) connect to our Service:
 
 - Advanced WAF (63+ detection patterns)
 - AI-powered content generation (SEO meta, FAQ, content rewrite)
@@ -59,7 +69,7 @@ AI features use third-party large language models via our Service. When you use 
 - Your Content (titles, descriptions, post bodies) is transmitted to our servers and forwarded to our AI sub-processor (currently Groq LLC) for processing.
 - AI-generated output is provided "as-is." We do not guarantee the accuracy, completeness, originality, or legal compliance of AI-generated content.
 - **You are solely responsible** for reviewing, editing, and approving all AI-generated content before publishing.
-- Under the EU AI Act (Regulation 2024/1689), you may have obligations to disclose AI-generated content to your site visitors. We provide tools to facilitate this disclosure but compliance is your responsibility.
+- Under the EU AI Act (Regulation 2024/1689), you as the deployer may have obligations to disclose AI-generated content to your visitors. That disclosure is your responsibility.
 
 ## 4. Account and License
 
@@ -81,19 +91,23 @@ The Plugin periodically validates your license by contacting our Service (daily 
 
 We offer the following subscription tiers (prices as of the effective date):
 
-| Plan | Monthly | Yearly | Monthly Tokens |
-|------|---------|--------|----------------|
-| SwisswpSuite | $29.99 | $249.99 | 7,500,000 |
-| Security & Firewall | $9.99 | $99.99 | 2,500,000 |
-| Content SEO | $4.99 | $49.99 | 1,250,000 |
-| Content Forge | $9.99 | $99.99 | 2,500,000 |
-| Cloud Backup & Sync | $9.99 | $99.99 | 2,500,000 |
+| Plan | Monthly | Yearly | Monthly Tokens (monthly plan) | Monthly Tokens (yearly plan) |
+|------|---------|--------|-------------------------------|------------------------------|
+| SwissSuite AI | $29.99 | $249.99 | 7,500,000 | 5,200,000 |
+| Security & Firewall | $9.99 | $99.99 | 2,500,000 | 2,080,000 |
+| Content SEO | $4.99 | $49.99 | 1,250,000 | 1,040,000 |
+| Content Forge | $9.99 | $99.99 | 2,500,000 | 2,080,000 |
+| Cloud Backup & Sync | $9.99 | $99.99 | 2,500,000 | 2,080,000 |
+
+**How token allowances are calculated:** your monthly token allowance is proportional to the price you pay per month. Yearly plans are discounted — you pay less per month than on the monthly plan — and their monthly token allowance is lower by the same proportion. Example: the SwissSuite AI yearly plan costs $249.99/year (≈$20.83/month vs $29.99 monthly), so its monthly allowance is 5,200,000 tokens instead of 7,500,000.
+
+Prices are stated in US dollars and are exclusive of value-added tax (VAT) or equivalent consumption taxes unless stated otherwise. Where such tax applies to your purchase (for example, for consumers in the EU/EEA or the UK), it is calculated from your place of residence and the **total amount payable including tax is displayed before you confirm your order.**
 
 ### 5.2 Token Economy
 
 - Tokens are the unit of AI processing capacity. Each AI action consumes tokens based on the complexity and length of the request.
-- **Subscription token allowance resets each billing cycle.** At every monthly renewal (or yearly anniversary, billed monthly), your subscription balance is reset to the plan's monthly token allowance. Unused subscription tokens do **not** carry over from one cycle to the next.
-- **Top-Up tokens are additive and do not expire.** Top-up packs (Section 5.3) add to your balance on top of the subscription allowance, and any unused top-up tokens persist across billing cycles.
+- On each monthly renewal, your subscription token balance is **reset to your plan's monthly allowance**. Unused subscription tokens do **not** carry over to the next billing period.
+- Token top-up packs (Section 5.3) live in a separate, non-expiring balance that is not touched by the monthly reset.
 - When your token balance reaches zero, AI features will return an HTTP 402 error until tokens are replenished.
 - Token balances are tracked on our servers. The server balance is the authoritative record.
 
@@ -102,9 +116,9 @@ We offer the following subscription tiers (prices as of the effective date):
 You may purchase additional tokens at any time:
 
 - Small Pack: $9.99 for 2,500,000 tokens
-- Large Pack: $24.99 for 10,000,000 tokens
+- Large Pack: $9.99 for 10,000,000 tokens
 
-Top-up tokens do not expire and stack on top of your subscription balance.
+Top-up tokens are kept in a **separate top-up balance**, independent of your subscription allowance. Top-up tokens **do not expire** and are **not affected by the monthly reset** described in Section 5.2. They can be spent on any AI feature. Your subscription allowance is consumed first; top-up tokens are used when the subscription allowance is exhausted.
 
 ### 5.4 Pricing Changes
 
@@ -115,6 +129,8 @@ We may change pricing with 30 days' advance notice by email. Price changes apply
 ### 6.1 Payment Processing
 
 Payments are processed by Stripe, Inc. We do not store your credit card details. By providing payment information, you also agree to Stripe's Terms of Service (https://stripe.com/legal).
+
+We do not offer a free trial period; billing begins on the date of purchase (monthly or yearly).
 
 ### 6.2 Auto-Renewal
 
@@ -129,13 +145,9 @@ You may cancel your subscription at any time by:
 
 Cancellation takes effect at the end of the current billing period. You retain access to paid features until that date. We do not provide prorated refunds for partial billing periods.
 
-### 6.4 Right of Withdrawal (EU/EEA Customers)
+### 6.4 Right of Withdrawal (Consumers)
 
-If you are a consumer in the EU/EEA, you have a 14-day right of withdrawal from the date of purchase under Directive 2011/83/EU.
-
-**For digital content:** By activating your license key, you expressly consent to the immediate performance of the service and acknowledge that you lose your right of withdrawal once the digital content has been fully provided.
-
-If you have not yet activated your license key, you may request a full refund within 14 days of purchase by contacting support@swisswpsecure.com.
+If you are a consumer, you have a 14-day right of withdrawal under Directive 2011/83/EU (EU/EEA) or the Consumer Contracts Regulations 2013 (UK). Because the Plugin and Service are digital content and services supplied immediately, at checkout we ask you, by **two separate, un-pre-ticked acknowledgements**, to (i) expressly request that supply begin immediately and (ii) acknowledge that you thereby lose your right of withdrawal once supply has begun. We confirm these acknowledgements to you on a durable medium (order-confirmation email). If you give both acknowledgements and we begin supply, your withdrawal right ends at that point. If you do not give them, or if we have not yet begun supply, you may withdraw within 14 days of purchase for a full refund by contacting support@swisswpsecure.com. To the extent your purchase is treated as a service contract and you withdraw after requesting immediate performance, you may owe a proportionate amount for the service already provided. Your remedies for defective or non-conforming digital content or services (Section 6.5.1) are unaffected and cannot be waived.
 
 ### 6.5 Refunds
 
@@ -193,14 +205,14 @@ AI-generated content is provided to you without copyright claim by us. However, 
 
 ## 9. Data Protection
 
-Our processing of personal data is governed by our Privacy Policy (PRIVACY_POLICY.md) and, where applicable, our Data Processing Agreement.
+Our processing of personal data is governed by our Privacy Policy ([PRIVACY_POLICY_URL]) and, where applicable, our Data Processing Agreement ([DPA_URL]).
 
 By using the Service, you acknowledge that:
 
 - Your site domain and license key are transmitted to our servers for license validation.
 - Content submitted to AI features is transmitted to our servers and forwarded to our AI sub-processor.
-- You are the data controller for any personal data collected by the Plugin on your site.
-- We are the data processor for data transmitted to our Service.
+- For your own **account, billing, and license data** (your email, name, address, license key, payment records), **we are the data controller**, and our processing is described in our Privacy Policy.
+- For **personal data of your site's visitors** that is transmitted to our Service only when you use a Service feature (for example, content you submit to AI features that may incidentally contain personal data, or security-scan metadata), **we act as your data processor** under our Data Processing Agreement, and **you are the controller**.
 
 For full details, see our Privacy Policy.
 
@@ -224,6 +236,8 @@ While we make reasonable efforts to maintain Service availability and accuracy, 
 
 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW:
 
+**Subject to the final paragraph of this Section:**
+
 - Our total aggregate liability for any claims arising from or related to these Terms or the Service shall not exceed the total fees you paid to us in the 12 months preceding the event giving rise to the claim.
 - We shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or business opportunities.
 - We shall not be liable for data loss resulting from backup, migration, or sync operations. You are responsible for maintaining independent backups.
@@ -231,11 +245,11 @@ TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW:
 
 These limitations apply regardless of the legal theory (contract, tort, strict liability, or otherwise).
 
-**Nothing in these Terms limits liability for:** (a) death or personal injury caused by negligence, (b) fraud or fraudulent misrepresentation, or (c) any liability that cannot be excluded under applicable law.
+**Nothing in these Terms excludes or limits our liability where it cannot lawfully be excluded or limited.** In particular, and without limiting the foregoing: (a) under Swiss law (Article 100 of the Swiss Code of Obligations), we do **not** exclude or limit our liability for damage caused by our unlawful intent (*Absicht*) or gross negligence (*grobe Fahrlässigkeit*), including that of our auxiliaries; (b) we do not exclude or limit liability for death or personal injury caused by negligence, or for fraud or fraudulent misrepresentation; and (c) if you are a consumer, nothing in these Terms limits any mandatory statutory right or remedy that cannot be excluded by contract, including the remedies for defective or non-conforming digital content or services under Directive (EU) 2019/770, the Consumer Rights Act 2015 (United Kingdom), the Australian Consumer Law, or equivalent law applicable to you. The limitations in this Section apply only to the extent permitted by the law applicable to you, and the cap and exclusions above do not apply to any liability described in this paragraph.
 
 ## 12. Indemnification
 
-You agree to indemnify and hold harmless SwissSuite, its officers, directors, and employees from any claims, losses, or damages (including reasonable legal fees) arising from:
+If you are acting as a **consumer**, this Section applies to you only to the extent permitted by the mandatory consumer law applicable to you, and only in respect of third-party claims arising from your own unlawful content or unlawful use of the Service. If you use the Service for **business or professional purposes**, you agree to indemnify and hold harmless SwissWPSecure Sàrl, its officers, directors, and employees from any claims, losses, or damages (including reasonable legal fees) arising from:
 
 - Your use of the Service in violation of these Terms.
 - Your failure to comply with applicable data protection laws.
@@ -290,9 +304,11 @@ If you do not agree to the updated Terms, you may cancel your subscription befor
 
 These Terms are governed by and construed in accordance with the laws of Switzerland, without regard to conflict-of-law principles.
 
-Any disputes arising from or related to these Terms shall be submitted to the exclusive jurisdiction of the courts of the Canton of Zurich, Switzerland.
+Any disputes arising from or related to these Terms shall be submitted to the exclusive jurisdiction of the courts of the Canton of Vaud, Switzerland.
 
 If you are a consumer in the EU/EEA, this clause does not deprive you of the protection of mandatory consumer protection provisions in your country of residence.
+
+If you are a consumer domiciled in the EU/EEA, the United Kingdom, or another State bound by the Lugano Convention, nothing in this Section deprives you of the protection of the mandatory consumer-jurisdiction rules that apply to you. In particular, **we may bring proceedings against you only in the courts of your country of domicile, and you may bring proceedings against us either in the courts of the Canton of Vaud or in the courts of your own domicile.** Where the mandatory law of your country of residence grants you protection that this Section would reduce, that law prevails.
 
 ## 16. Dispute Resolution
 
@@ -304,13 +320,13 @@ If any provision of these Terms is found to be invalid or unenforceable, the rem
 
 ## 18. Entire Agreement
 
-These Terms, together with our Privacy Policy and Data Processing Agreement, constitute the entire agreement between you and SwissSuite regarding the Service.
+These Terms, together with our Privacy Policy and Data Processing Agreement, constitute the entire agreement between you and SwissWPSecure regarding the Service.
 
 ## 19. Contact
 
-Swisswpsecure
-Le Moulin 3
-1312 Eclepens, Switzerland
+SwissWPSecure Sàrl
+Le Moulin 3, 1312 Éclépens
+Switzerland
 
 Email: support@swisswpsecure.com
 Data Protection: support@swisswpsecure.com
@@ -318,4 +334,4 @@ Website: https://swisswpsecure.com
 
 ---
 
-*This document was last reviewed on 2026-03-23.*
+*This document was last reviewed on 2026-07-21.*
