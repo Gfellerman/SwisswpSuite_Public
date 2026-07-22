@@ -4,7 +4,7 @@ Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.31.4
+Stable tag: 2.9.31.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -158,6 +158,15 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.31.6 =
+* Changed: AI content tools (SEO metadata, FAQ, content rewrite, image alt-text) now write in your site's language automatically — non-English sites get output in their own language instead of English. (Pro edition only.)
+* Added: an optional "Brand voice" setting on the AI configuration tab lets you describe your tone in one line, applied across all AI-generated content.
+* Changed: sharper AI content quality — few-shot examples, lower generation temperature for more consistent results, and SEO titles are now kept within the ~60-character search-result limit.
+
+= 2.9.31.5 =
+* Fixed: migrated off two AI models Groq has deprecated. Image-SEO vision analysis now uses a current multimodal model with graceful "temporarily unavailable" handling, and the AI fallback model was updated — so AI features keep working after the old models are retired. (Pro edition only.)
+* Changed: the SwissSuite AI proxy now transparently remaps deprecated model IDs, so existing installs continue working without needing an immediate update.
 
 = 2.9.31.4 =
 * Fixed: cleared the remaining WordPress.org Plugin Check code errors (switched `parse_url()` to `wp_parse_url()` in the settings API; documented the raw-socket SMTP connectivity probe that has no WordPress-filesystem equivalent).

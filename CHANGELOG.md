@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.31.6] - 2026-07-22
+
+### Added
+- **Brand voice setting (Pro edition).** A new optional one-line "Brand voice" field on the AI configuration tab lets you describe your tone (e.g. "friendly, expert, no hype — write for busy shop owners"). It is injected into every AI content prompt so generated SEO metadata, FAQs, rewrites, and image alt-text match your house style.
+
+### Changed
+- **AI content is now language-aware (Pro edition).** SEO metadata, FAQ generation, content rewrite, and image alt-text now write in the site's output language automatically — resolved per post when a multilingual plugin (Polylang/WPML) is active, otherwise from the site locale. Non-English sites previously received English output; this was the single biggest content-quality gap.
+- **Higher-quality AI content prompts (Pro edition).** All five content prompts were rebuilt with few-shot examples and a lower generation temperature (0.25) for more consistent, on-brief output. Interactive SEO metadata now runs on the same primary model as the bulk batch path for parity. SEO titles are post-processed to stay within the ~60-character search-result display limit (truncated cleanly at a word boundary).
+
+## [2.9.31.5] - 2026-07-22
+
+### Changed
+- **AI model migration (Pro edition).** Migrated off two models Groq deprecated: image-SEO vision analysis now uses `qwen/qwen3.6-27b` (replacing the retired `llama-4-scout`), and the AI fallback now uses `openai/gpt-oss-20b` (replacing `llama-3.3-70b-versatile`, retiring 2026-08-16). The Sentinel Layer-2 fallback moved to `openai/gpt-oss-120b`.
+- **Self-healing model proxy.** The SwissSuite AI proxy now transparently remaps deprecated model IDs to their current equivalents, so already-installed versions keep working without an immediate update.
+
+### Fixed
+- Image-SEO AI analysis now degrades gracefully to a clear "temporarily unavailable" message if the (preview-tier) vision model is momentarily unavailable, instead of surfacing a raw error.
+
 ## [2.9.31.4] - 2026-07-20
 
 ### Changed
