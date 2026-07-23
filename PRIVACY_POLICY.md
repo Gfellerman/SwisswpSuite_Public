@@ -102,6 +102,7 @@ We use the following third-party services to deliver the Service:
 | Service | Purpose | Data Shared | Location | DPA Status |
 |---------|---------|-------------|----------|------------|
 | **Groq LLC** | AI language model processing | Content submitted to AI features | USA | Groq DPA available (request via support@groq.com); transfers under Standard Contractual Clauses (GDPR Art. 46(2)(c)) |
+| **Mistral AI SAS** | AI vision/multimodal processing (image alt-text generation) | Images and their post context submitted to the AI image-SEO feature | France (EU) | Mistral DPA available; as an EU-based processor there is no transfer of EU/EEA data to a third country, and Swiss transfers rely on the EU adequacy decision — a more favourable transfer position than our US processors |
 | **Stripe, Inc.** | Payment processing | Payment card data, email, amount | USA | Stripe DPA available |
 
 **Cloud backup providers** (Google Drive, Dropbox, AWS S3, Backblaze B2, FTP servers) are configured by you and operate under your own agreements with those providers. We facilitate the connection but do not receive or store your backup data.

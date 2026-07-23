@@ -4,7 +4,7 @@ Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.31.6
+Stable tag: 2.9.31.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -158,6 +158,13 @@ Major backup engine reliability update. The engine now self-tunes to your hostin
 Restores scheduled backup cron after a regression that silently stopped automated backups, and corrects the "last backup" time display for UTC+ timezones. Recommended for all users with backup automation enabled.
 
 == Changelog ==
+
+= 2.9.31.8 =
+* Added: Purchased token packs now appear on the License screen as "Purchased: Y" alongside your monthly allowance, so you can see both pools at a glance (shown only when you own a pack).
+* Fixed: Reworked how purchased token packs are stored and spent so pack tokens are never wiped by a monthly reset or a routine balance recalculation. Your monthly allowance is always spent first; purchased pack tokens are drawn only after it runs out, and they never expire. (Backend/Pro; no action needed.)
+
+= 2.9.31.7 =
+* Changed: AI image alt-text analysis (the vision feature) now runs on a European AI provider (Mistral, based in France), keeping that processing within the EU. The same graceful "temporarily unavailable" handling applies, and text-based AI features are unchanged. (Pro edition only.)
 
 = 2.9.31.6 =
 * Changed: AI content tools (SEO metadata, FAQ, content rewrite, image alt-text) now write in your site's language automatically — non-English sites get output in their own language instead of English. (Pro edition only.)

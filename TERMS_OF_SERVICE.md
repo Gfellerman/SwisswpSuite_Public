@@ -93,15 +93,15 @@ We offer the following subscription tiers (prices as of the effective date):
 
 | Plan | Monthly | Yearly | Monthly Tokens (monthly plan) | Monthly Tokens (yearly plan) |
 |------|---------|--------|-------------------------------|------------------------------|
-| SwissSuite AI | $29.99 | $249.99 | 7,500,000 | 5,200,000 |
-| Security & Firewall | $9.99 | $99.99 | 2,500,000 | 2,080,000 |
-| Content SEO | $4.99 | $49.99 | 1,250,000 | 1,040,000 |
-| Content Forge | $9.99 | $99.99 | 2,500,000 | 2,080,000 |
-| Cloud Backup & Sync | $9.99 | $99.99 | 2,500,000 | 2,080,000 |
+| SwissSuite AI | CHF 29.99 | CHF 249.99 | 7,500,000 | 5,200,000 |
+| Security & Firewall | CHF 9.99 | CHF 99.99 | 2,500,000 | 2,080,000 |
+| Content SEO | CHF 4.99 | CHF 49.99 | 1,250,000 | 1,040,000 |
+| Content Enhancer | CHF 9.99 | CHF 99.99 | 2,500,000 | 2,080,000 |
+| Cloud Backup & Sync | CHF 9.99 | CHF 99.99 | 2,500,000 | 2,080,000 |
 
-**How token allowances are calculated:** your monthly token allowance is proportional to the price you pay per month. Yearly plans are discounted — you pay less per month than on the monthly plan — and their monthly token allowance is lower by the same proportion. Example: the SwissSuite AI yearly plan costs $249.99/year (≈$20.83/month vs $29.99 monthly), so its monthly allowance is 5,200,000 tokens instead of 7,500,000.
+**How token allowances are calculated:** your monthly token allowance is proportional to the price you pay per month. Yearly plans are discounted — you pay less per month than on the monthly plan — and their monthly token allowance is lower by the same proportion. Example: the SwissSuite AI yearly plan costs CHF 249.99/year (≈CHF 20.83/month vs CHF 29.99 monthly), so its monthly allowance is 5,200,000 tokens instead of 7,500,000.
 
-Prices are stated in US dollars and are exclusive of value-added tax (VAT) or equivalent consumption taxes unless stated otherwise. Where such tax applies to your purchase (for example, for consumers in the EU/EEA or the UK), it is calculated from your place of residence and the **total amount payable including tax is displayed before you confirm your order.**
+Prices are stated in Swiss francs (CHF) and are exclusive of value-added tax (VAT) or equivalent consumption taxes unless stated otherwise. Where such tax applies to your purchase (for example, for consumers in the EU/EEA or the UK), it is calculated from your place of residence and the **total amount payable including tax is displayed before you confirm your order.**
 
 ### 5.2 Token Economy
 
@@ -115,8 +115,7 @@ Prices are stated in US dollars and are exclusive of value-added tax (VAT) or eq
 
 You may purchase additional tokens at any time:
 
-- Small Pack: $9.99 for 2,500,000 tokens
-- Large Pack: $9.99 for 10,000,000 tokens
+- Token Pack: CHF 9.99 for 10,000,000 tokens
 
 Top-up tokens are kept in a **separate top-up balance**, independent of your subscription allowance. Top-up tokens **do not expire** and are **not affected by the monthly reset** described in Section 5.2. They can be spent on any AI feature. Your subscription allowance is consumed first; top-up tokens are used when the subscription allowance is exhausted.
 

@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.31.8] - 2026-07-22
+
+### Added
+- **Purchased token packs are now visible on the License screen.** When you own a token pack, the License page shows "Monthly: X · Purchased: Y" so your monthly allowance and your purchased pack tokens are distinguishable at a glance. The "Purchased" line appears only when a pack is present.
+
+### Fixed
+- **Token-pack integrity (backend / Pro).** Reworked how the $9.99 10M token pack is stored and spent end-to-end so purchased tokens can no longer be wiped by a monthly reset or by the routine per-feature balance recalculation. Purchased packs now live in a dedicated, reset-proof pool; the monthly allowance is always spent FIRST and pack tokens are drawn only once it is exhausted (allowance-first); pack tokens never expire. A pack purchase can no longer create a self-refilling junk license, a pack refund now claws back only the pack (never the customer's subscription), admin top-ups credit the pack pool, and a duplicate purchase webhook can no longer double-credit. No plugin reconfiguration is needed.
+
+## [2.9.31.7] - 2026-07-22
+
+### Changed
+- **Vision AI moved to a European provider (Pro edition).** AI image alt-text/title generation (the image-SEO vision feature) now runs on Mistral AI (based in France, EU) instead of the interim vision model, keeping that image processing within the EU. The existing graceful "temporarily unavailable" degradation is preserved, and text-based AI features (SEO metadata, FAQ, content rewrite) are unchanged. Routing is handled server-side, so no plugin reconfiguration is needed.
+
 ## [2.9.31.6] - 2026-07-22
 
 ### Added
