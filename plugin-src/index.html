@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SwissWPSuite AI Admin</title>
+
+  <!-- Fonts: preconnect for performance, then full variable font load -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Playfair+Display:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+
+  <!-- App styles (Tailwind v4 + shadcn/ui theme) -->
+  <link rel="stylesheet" href="/src/index.css">
+
+  <!-- Custom scrollbar -->
+  <style>
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="swisswpsuite-app-root"></div>
+
+  <script>
+    // MOCK DATA FOR LOCAL DEVELOPMENT
+    if (!window.swisswpsuiteData) {
+      console.warn('⚠️ ROLLING OUT SWISSWAY SIMULATION MODE ⚠️');
+      window.swisswpsuiteData = {
+        root: 'http://localhost:3000/wp-json/',
+        homeUrl: 'http://localhost:3000',
+        nonce: 'mock-nonce-123',
+        apiUrl: 'https://api.swisswpsecure.com/v1',
+        apiKey: 'mock-api-key',
+        license: {
+          active: true,
+          status: 'active',
+          tier: 'agency_elite',
+          expires_at: '2099-12-31',
+          masked_key: 'SWISS-XXXXXXXX-DEV',
+          capabilities: ['seo_meta', 'content_rewrite', 'backup_cloud', 'sentinel_pro', 'waf_pro', 'ai_audit']
+        },
+        trial: { active: false, ends_at: null },
+        tokens: { balance: 5000000, usage: 125000 },
+        isStandalone: false
+      };
+    }
+  </script>
+
+  <script type="module" src="/src/index.tsx"></script>
+</body>
+
+</html>

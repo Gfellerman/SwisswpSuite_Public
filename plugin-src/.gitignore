@@ -1,0 +1,9 @@
+# plugin-src/.gitignore
+# This directory is the public, buildable mirror of the plugin's plugin/src/
+# React/TypeScript tree (WordPress.org Guideline 4 — public source + build
+# tooling for compiled assets). Keep it source-only: never commit installed
+# dependencies or build output here.
+
+node_modules/
+assets/
+.DS_Store
