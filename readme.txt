@@ -4,7 +4,7 @@ Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.33.7
+Stable tag: 2.9.33.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -148,6 +148,12 @@ Critical fix: archive scan was restarting from scratch on every recovery tick in
 Critical fix: backup was re-archiving its own previous backup zips on every run, causing exponential size growth. Mandatory update for all users.
 
 == Changelog ==
+
+= 2.9.33.9 =
+* Hardening: added direct-file-access protection to every remaining plugin PHP file (defence in depth).
+
+= 2.9.33.8 =
+* Fixed: added direct-file-access protection to two files that lacked it (WordPress.org Plugin Check requirement).
 
 = 2.9.33.7 =
 * Fixed: multi-part encrypted backups now encrypt every part (previously parts after the first could remain unencrypted) and are stored with the documented .zip.enc name; restore attempts on encrypted backups now show a clear message.

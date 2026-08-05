@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.9] - 2026-08-05
+
+### Security
+- Direct-file-access protection (`if ( ! defined( 'ABSPATH' ) ) exit;`) added to all 54 plugin PHP files under `includes/` that lacked it. Defence in depth: WordPress.org Plugin Check reported 0 errors on 2.9.33.8 (class-only files execute nothing when hit directly), but the guards remove any ambiguity for a manual reviewer. One file required the guard to be placed after its `declare(strict_types=1)` statement.
+
+## [2.9.33.8] - 2026-08-05
+
+### Fixed
+- `missing_direct_file_access_protection` (Plugin Check ERROR): `includes/swisswpsuite-bootstrap-functions.php` — the file introduced in 2.9.33.4 for the Free/Pro mutual-exclusion fix — had no `if ( ! defined( 'ABSPATH' ) ) exit;` guard. Added, and the same guard added defensively to `includes/templates/scan-report-email.php`. Verified the guard does not affect the Free→Pro takeover fix (runtime statement; declarations still compile under `require_once`).
+
 ## [2.9.33.7] - 2026-08-05
 
 ### Fixed
