@@ -34,8 +34,8 @@ import { Card } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { Badge } from "./ui/Badge";
 import { SectionHeader } from "./ui/SectionHeader";
-import { ProUpsellPlaceholder } from "./organisms/Upsell/ProUpsellPlaceholder";
-import { isProEdition, hasEditionMismatch } from "../lib/edition";
+import { FeaturePointer } from "./organisms/Upsell/FeaturePointer";
+import { isProEdition } from "../lib/edition";
 
 interface FaqItem {
   question: string;
@@ -86,17 +86,25 @@ const SeoManager: React.FC = () => {
     status?: string;
   } | null>(null);
 
-  // Sitemap
-  const [showSitemapModal, setShowSitemapModal] = useState(false);
+  // LiveQA §3.10 fix (2026-08-04): the 3 SEO modals (Sitemap, llms.txt, Scan/
+  // Health) previously each owned an independent boolean, so any combination
+  // could be simultaneously true — a WAI-ARIA single-active-dialog violation
+  // (multiple role="dialog" elements mounted at once, unpredictable Escape-key
+  // and focus-trap behavior between them). Consolidated into one union state;
+  // the showXModal consts below are derived so every existing render
+  // condition and the showLlmModal useEffect dependency stay unchanged.
+  type SeoModalKind = "sitemap" | "llm" | "scan" | null;
+  const [activeModal, setActiveModal] = useState<SeoModalKind>(null);
+  const showSitemapModal = activeModal === "sitemap";
+  const showLlmModal = activeModal === "llm";
+  const showScanModal = activeModal === "scan";
 
   // llms.txt
-  const [showLlmModal, setShowLlmModal] = useState(false);
   const [llmContent, setLlmContent] = useState("");
   const [generatingLlm, setGeneratingLlm] = useState(false);
   const [copied, setCopied] = useState(false);
 
   // Scan / Health
-  const [showScanModal, setShowScanModal] = useState(false);
   const [scanResult, setScanResult] = useState<SeoScanResult | null>(null);
   const [scanning, setScanning] = useState(false);
   const [showNonCompliantDetails, setShowNonCompliantDetails] = useState(false);
@@ -389,7 +397,7 @@ const SeoManager: React.FC = () => {
 
   const handleScan = async () => {
     setScanning(true);
-    setShowScanModal(true);
+    setActiveModal("scan");
     setShowNonCompliantDetails(false);
     try {
       const res = await fetch(`${apiUrl}/seo/scan`, {
@@ -427,7 +435,7 @@ const SeoManager: React.FC = () => {
             `${data.count} items queued for re-generation. New SEO descriptions will appear within ~${data.estimated_minutes} minutes.`
           );
           // Close the scan modal so the user can see the background queue progress
-          setShowScanModal(false);
+          setActiveModal(null);
         }
       } else {
         toast.error(data.message || "Failed to start non-compliant fix.");
@@ -442,8 +450,9 @@ const SeoManager: React.FC = () => {
   const fetchItems = async () => {
     // Freemium Dual-Build (1B, [6.2] fix): /content is Pro-only AI-metadata
     // storage and 404s in Free. The items table this populates only renders
-    // behind isProEditionBuild below (ProUpsellPlaceholder otherwise), so
-    // fetching here in Free was a pure wasted 404 on every SEO page load —
+    // behind isProEditionBuild below (a neutral FeaturePointer otherwise —
+    // upsell redesign 2026-08-04), so fetching here in Free was a pure
+    // wasted 404 on every SEO page load —
     // mirrors the isProEditionBuild early-return already shipped on the
     // background-status poll effect above.
     if (!isProEditionBuild) return;
@@ -1235,7 +1244,7 @@ const SeoManager: React.FC = () => {
         description={
           isProEditionBuild
             ? "Improve how your site appears in search engines and AI assistants — AI generates your titles, descriptions, and image captions automatically. For rewriting WooCommerce product descriptions with tone control, see AI Content."
-            : "Improve how your site appears in search engines and AI assistants. Run a free SEO Health Check, generate your Sitemap, and create an AI Assistant Guide below — AI-generated titles, descriptions, and image captions are a Pro feature."
+            : "Improve how your site appears in search engines and AI assistants. Run a free SEO Health Check, generate your Sitemap, and create an AI Assistant Guide below — AI-generated titles, descriptions, and image captions require an AI connection."
         }
         action={
           <div className="flex flex-col items-start gap-3 sm:items-end">
@@ -1251,7 +1260,7 @@ const SeoManager: React.FC = () => {
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => setShowSitemapModal(true)}
+                onClick={() => setActiveModal("sitemap")}
                 icon={Layout}
                 className="border-border hover:bg-background rounded-xl text-sm font-black tracking-widest uppercase transition-all"
               >
@@ -1259,7 +1268,7 @@ const SeoManager: React.FC = () => {
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => setShowLlmModal(true)}
+                onClick={() => setActiveModal("llm")}
                 icon={FileText}
                 className="border-border hover:bg-background rounded-xl text-sm font-black tracking-widest uppercase transition-all"
                 title="Generates an llms.txt guide that helps AI assistants like ChatGPT and Perplexity understand and cite your site correctly. Free, local — no AI tokens used."
@@ -1706,7 +1715,8 @@ const SeoManager: React.FC = () => {
                                       item.description ||
                                       "No alt text yet — click Generate SEO."
                                     : item.description ||
-                                      "No description found — click Generate SEO."}
+                                      item.metaDescription ||
+                                      "No description yet — click Generate SEO."}
                                 </div>
                               </div>
                             </div>
@@ -1902,17 +1912,12 @@ const SeoManager: React.FC = () => {
           </Card>
         </>
       ) : (
-        <ProUpsellPlaceholder
-          feature="AI SEO Meta Generation"
-          icon={Sparkles}
-          description="AI reads each product, post, page, or image and writes the SEO title, description, and alt text that appears in Google search results — no manual writing needed. Your Sitemap and free SEO Health Check above still work fully."
-          bullets={[
-            "AI-generated SEO titles & meta descriptions",
-            "AI alt-text for images (accessibility + Image Search)",
-            "Bulk-optimize your whole catalog, or queue it overnight",
-          ]}
-          editionMismatch={hasEditionMismatch()}
-        />
+        // Upsell redesign (2026-08-04, design point 1/2): the full "AI SEO
+        // Meta Generation" ProUpsellPlaceholder (bullets + CTA pair) is
+        // removed — bulk AI generation is the only Pro-gated part of this
+        // page (Health Check, Sitemap, and llms.txt above stay fully free),
+        // so this section carries one neutral "ai" FeaturePointer.
+        <FeaturePointer variant="ai" />
       )}
 
       {/* Scan Modal */}
@@ -1924,7 +1929,7 @@ const SeoManager: React.FC = () => {
           aria-labelledby="seo-audit-title"
           onKeyDown={(e) => {
             if (e.key === "Escape") {
-              setShowScanModal(false);
+              setActiveModal(null);
             }
           }}
         >
@@ -2049,7 +2054,7 @@ const SeoManager: React.FC = () => {
                               <button
                                 onClick={() => {
                                   const targetType = contentTypeMap[key];
-                                  setShowScanModal(false);
+                                  setActiveModal(null);
                                   setActiveTab(targetType);
                                   handleFastOptimizeAll(targetType, {
                                     skipConfirm: true,
@@ -2089,7 +2094,14 @@ const SeoManager: React.FC = () => {
 
                       {showNonCompliantDetails && (
                         <div className="animate-in slide-in-from-top-2 mt-4 space-y-6 duration-200">
-                          {/* Group: Thin Content — Expected */}
+                          {/* Group: Thin Content — Improvable.
+                              LIVEQA L3 FIX (2026-08-04, run-book 2.2 layer b): the previous
+                              copy ("The AI cannot generate 150+ character descriptions from
+                              insufficient source material... does not indicate a problem")
+                              asserted a limitation that was proven false live — the generator
+                              already falls back to site name/tagline for near-empty pages and
+                              produces a compliant description. These items are now included
+                              by the "Re-Generate Descriptions" action below. */}
                           {scanResult.non_compliant_items.some(
                             (i) => i.reason === "short_content"
                           ) && (
@@ -2097,14 +2109,15 @@ const SeoManager: React.FC = () => {
                               <div className="mb-2 flex items-center gap-2">
                                 <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                                 <span className="text-[11px] font-black tracking-widest text-amber-700 uppercase">
-                                  Thin Content — Expected Limitation
+                                  Thin Content — Improvable
                                 </span>
                               </div>
                               <p className="mb-3 text-[11px] leading-relaxed text-neutral-500">
-                                These pages have minimal content. The AI cannot
-                                generate 150+ character descriptions from
-                                insufficient source material. This is normal and
-                                does not indicate a problem.
+                                These pages have minimal source content, but the
+                                AI can still write a description for them using
+                                the page title and site context as a fallback.
+                                They're included in{" "}
+                                <strong>Re-Generate Descriptions</strong> below.
                               </p>
                               <div className="space-y-1.5">
                                 {scanResult.non_compliant_items
@@ -2263,40 +2276,45 @@ const SeoManager: React.FC = () => {
                               Everything looks great — all your content has SEO
                               titles and descriptions.
                             </>
-                          ) : scanResult.non_compliant_items.every(
-                              (i) => i.reason === "short_content"
-                            ) ? (
-                            <>
-                              The remaining items have very little content, so
-                              the AI cannot write full descriptions for them.
-                              Your score of{" "}
-                              <strong>{scanResult.score}/100</strong> is the
-                              best possible for your site&apos;s content — no
-                              action needed.
-                            </>
                           ) : scanResult.non_compliant_items.some(
                               (i) => i.reason === "missing"
                             ) ? (
                             <>
                               Use the <strong>Generate SEO</strong> buttons
-                              above to create titles and descriptions for items
-                              that have no SEO data yet.
+                              above to create titles, descriptions, and FAQs in
+                              one pass for items that have no SEO data yet — or
+                              use <strong>Re-Generate</strong> below, which now
+                              also covers items with no description at all.
                             </>
                           ) : (
+                            /* LIVEQA L3 FIX (2026-08-04, run-book 2.2 layer b): this branch
+                               used to be gated behind `every(reason === "short_content")`
+                               with copy claiming "the AI cannot write full descriptions...
+                               no action needed" — proven false live (both the interactive
+                               and background paths produced a compliant description for a
+                               genuine zero-content page). "short_content" items are now
+                               reachable by fix-noncompliant (the post_content length gate
+                               was removed backend-side), so they are counted here exactly
+                               like "below_threshold" items — one truthful branch instead of
+                               a false "nothing to do" one. */
                             <>
                               {
                                 scanResult.non_compliant_items.filter(
-                                  (i) => i.reason === "below_threshold"
+                                  (i) =>
+                                    i.reason === "below_threshold" ||
+                                    i.reason === "short_content"
                                 ).length
                               }{" "}
                               item
                               {scanResult.non_compliant_items.filter(
-                                (i) => i.reason === "below_threshold"
+                                (i) =>
+                                  i.reason === "below_threshold" ||
+                                  i.reason === "short_content"
                               ).length !== 1
                                 ? "s have"
                                 : " has"}{" "}
-                              short descriptions (under 150 characters) and can
-                              be re-generated for better results.
+                              a short or missing description and can be
+                              re-generated for better results.
                               {scanResult.faq_bonus < 5 ? (
                                 <>
                                   {" "}
@@ -2307,9 +2325,24 @@ const SeoManager: React.FC = () => {
                             </>
                           )}
                         </p>
-                        {/* Fix Non-Compliant action button — only when below_threshold items exist */}
+                        {/* Fix Non-Compliant action button.
+                            LIVEQA L3 FIX (2026-08-04, run-book 2.2 layers a+c): widened from
+                            reason === "below_threshold" only. The backend query this button
+                            calls (POST /seo/fix-noncompliant) no longer gates on post_content
+                            length (layer a) and now also reaches reason === "missing" items
+                            via a LEFT JOIN (layer c) — images are still untouched by that
+                            endpoint (it only ever queries post/page/product), so they stay
+                            excluded here via `type !== "image"` to keep the button's
+                            advertised count honest (an earlier version of this filter used
+                            reason alone, which would have also counted images whose alt-text
+                            reason happens to resolve to "below_threshold"/"missing" — those
+                            are never touched by this endpoint). */}
                         {scanResult.non_compliant_items.some(
-                          (i) => i.reason === "below_threshold"
+                          (i) =>
+                            i.type !== "image" &&
+                            (i.reason === "below_threshold" ||
+                              i.reason === "short_content" ||
+                              i.reason === "missing")
                         ) && (
                           <Button
                             variant="secondary"
@@ -2324,23 +2357,17 @@ const SeoManager: React.FC = () => {
                           >
                             {fixingNonCompliant
                               ? "Queuing..."
-                              : `Re-Generate Short Descriptions (${scanResult.non_compliant_items.filter((i) => i.reason === "below_threshold").length})`}
+                              : `Re-Generate Descriptions (${
+                                  scanResult.non_compliant_items.filter(
+                                    (i) =>
+                                      i.type !== "image" &&
+                                      (i.reason === "below_threshold" ||
+                                        i.reason === "short_content" ||
+                                        i.reason === "missing")
+                                  ).length
+                                })`}
                           </Button>
                         )}
-                        {/* Show notice when a missing-description issue exists alongside below_threshold */}
-                        {scanResult.non_compliant_items.some(
-                          (i) => i.reason === "missing"
-                        ) &&
-                          scanResult.non_compliant_items.some(
-                            (i) => i.reason === "below_threshold"
-                          ) && (
-                            <p className="mt-2 text-xs leading-relaxed font-medium opacity-60">
-                              Items with no descriptions at all require the
-                              per-category <strong>Generate SEO</strong> buttons
-                              above. The button here only re-generates items
-                              that already have a short description.
-                            </p>
-                          )}
                       </div>
                     </div>
                   </div>
@@ -2360,7 +2387,7 @@ const SeoManager: React.FC = () => {
               <Button
                 variant="ghost"
                 className="hover:text-swiss-navy text-sm font-black tracking-widest text-neutral-700 uppercase"
-                onClick={() => setShowScanModal(false)}
+                onClick={() => setActiveModal(null)}
                 aria-label="Close SEO health check"
               >
                 Close
@@ -2648,7 +2675,7 @@ const SeoManager: React.FC = () => {
           aria-labelledby="seo-sitemap-title"
           onKeyDown={(e) => {
             if (e.key === "Escape") {
-              setShowSitemapModal(false);
+              setActiveModal(null);
             }
           }}
         >
@@ -2717,7 +2744,7 @@ const SeoManager: React.FC = () => {
                 <Button
                   variant="ghost"
                   className="hover:text-swiss-navy text-sm font-black tracking-widest text-neutral-700 uppercase"
-                  onClick={() => setShowSitemapModal(false)}
+                  onClick={() => setActiveModal(null)}
                 >
                   Close
                 </Button>
@@ -2736,7 +2763,7 @@ const SeoManager: React.FC = () => {
           aria-labelledby="seo-llm-title"
           onKeyDown={(e) => {
             if (e.key === "Escape") {
-              setShowLlmModal(false);
+              setActiveModal(null);
             }
           }}
         >
@@ -2769,7 +2796,7 @@ const SeoManager: React.FC = () => {
                 </div>
               </div>
               <button
-                onClick={() => setShowLlmModal(false)}
+                onClick={() => setActiveModal(null)}
                 className="text-foreground hover:text-swiss-navy rounded-2xl p-3 transition-all"
               >
                 <X size={28} />
@@ -2835,7 +2862,7 @@ const SeoManager: React.FC = () => {
               <Button
                 variant="ghost"
                 className="hover:text-swiss-navy text-sm font-black tracking-widest text-neutral-700 uppercase"
-                onClick={() => setShowLlmModal(false)}
+                onClick={() => setActiveModal(null)}
               >
                 Close
               </Button>

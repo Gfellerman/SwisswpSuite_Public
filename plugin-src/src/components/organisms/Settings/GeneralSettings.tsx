@@ -8,11 +8,26 @@
  * - alertEmail saves on blur (debounced text field).
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useId } from "react";
 import { Card } from "../../ui/Card";
 import { SwissSettings } from "../../../hooks/useSettings";
+import { ApiError } from "../../../services/api";
 import { toast } from "sonner";
 import { Settings, Zap, Server, Mail, Loader2 } from "lucide-react";
+
+/**
+ * SET-04 FIX: client-side pre-flight format check for the Alert Email field.
+ * Mirrors the server's is_email() gate (class-swisswpsuite-api-settings.php
+ * save_settings()) closely enough to catch the common typo/garbage-input case
+ * before a network round-trip — the server remains the source of truth (a
+ * syntactically valid-but-nonexistent domain like "nicolaiapp.comx" will pass
+ * both this check and PHP's is_email(), since neither performs DNS/mailbox
+ * verification; that class of error is not detectable from format alone).
+ */
+const EMAIL_FORMAT_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isValidEmailFormat(value: string): boolean {
+  return EMAIL_FORMAT_RE.test(value.trim());
+}
 
 interface GeneralSettingsProps {
   settings: SwissSettings;
@@ -35,15 +50,28 @@ function ToggleRow({
   onChange,
   isSaving,
 }: ToggleRowProps) {
+  // WCAG 4.1.2: role="switch" is a plain div, not a native "labelable"
+  // element — wrapping it in a <label> (or leaving it as a sibling of the
+  // visible text, as before) does NOT give it a programmatic name. Wire the
+  // existing visible label/description via aria-labelledby/aria-describedby
+  // instead of duplicating the string into aria-label (APG switch pattern).
+  const labelId = useId();
+  const descId = useId();
   return (
     <div className="border-border dark:border-border flex items-center justify-between border-b py-3 last:border-0">
       <div>
-        <p className="text-sm font-medium">{label}</p>
-        <p className="mt-0.5 text-xs text-neutral-700">{desc}</p>
+        <p id={labelId} className="text-sm font-medium">
+          {label}
+        </p>
+        <p id={descId} className="mt-0.5 text-xs text-neutral-700">
+          {desc}
+        </p>
       </div>
       <div
         role="switch"
         aria-checked={checked}
+        aria-labelledby={labelId}
+        aria-describedby={descId}
         aria-busy={isSaving}
         tabIndex={0}
         className={`ml-4 h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-300 ${
@@ -96,7 +124,9 @@ export function GeneralSettings({
     (window as any).swisswpsuiteData?.adminEmail ?? ""
   );
   const [emailSaving, setEmailSaving] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const prevAlertEmailRef = useRef<string>("");
+  const emailErrorId = useId();
 
   useEffect(() => {
     if (settings) {
@@ -136,21 +166,40 @@ export function GeneralSettings({
 
   /**
    * Save alertEmail on blur — only if the value actually changed.
+   * SET-04 FIX: validates format client-side before saving (an empty value is
+   * valid — it clears the alert email, matching the server's delete_option
+   * branch), and surfaces the server's actual rejection message on failure
+   * instead of a generic string (the server's {success,message} shape is
+   * read via ApiError.message — see api-settings.php save_settings()).
    */
   const handleEmailBlur = useCallback(async () => {
+    const trimmed = alertEmail.trim();
+    if (trimmed !== "" && !isValidEmailFormat(trimmed)) {
+      setEmailError("Enter a valid email address, e.g. admin@example.com");
+      return;
+    }
+    setEmailError(null);
     if (alertEmail === prevAlertEmailRef.current) return;
     setEmailSaving(true);
     try {
       await onSave({ alertEmail });
       prevAlertEmailRef.current = alertEmail;
       toast.success("Alert email saved");
-    } catch {
-      toast.error("Failed to save alert email");
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : "Failed to save alert email";
+      toast.error(message);
+      setEmailError(message);
       setAlertEmail(prevAlertEmailRef.current);
     } finally {
       setEmailSaving(false);
     }
   }, [alertEmail, onSave]);
+
+  const handleEmailChange = useCallback((value: string) => {
+    setAlertEmail(value);
+    if (emailError) setEmailError(null);
+  }, [emailError]);
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -201,12 +250,19 @@ export function GeneralSettings({
               id="alertEmail"
               type="email"
               value={alertEmail}
-              onChange={(e) => setAlertEmail(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
               onBlur={handleEmailBlur}
               placeholder="admin@example.com"
               disabled={emailSaving}
-              className="border-border bg-background dark:text-foreground w-full rounded-lg border px-3 py-2 text-sm text-neutral-900 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-              aria-describedby="alertEmail-desc"
+              className={`border-border bg-background dark:text-foreground w-full rounded-lg border px-3 py-2 text-sm text-neutral-900 focus:ring-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${
+                emailError
+                  ? "border-red-500 focus:ring-red-500"
+                  : "focus:ring-blue-500"
+              }`}
+              aria-invalid={emailError ? true : undefined}
+              aria-describedby={
+                emailError ? `${emailErrorId} alertEmail-desc` : "alertEmail-desc"
+              }
             />
             {emailSaving && (
               <Loader2
@@ -216,6 +272,11 @@ export function GeneralSettings({
               />
             )}
           </div>
+          {emailError && (
+            <p id={emailErrorId} role="alert" className="mt-1 text-xs text-red-600">
+              {emailError}
+            </p>
+          )}
           <p id="alertEmail-desc" className="mt-1 text-xs text-neutral-700">
             Email address for security alerts and diagnostic notifications.
             Saved automatically when you leave the field.

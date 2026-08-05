@@ -107,17 +107,17 @@ interface ScanCardProps {
   locked?: boolean;
   /**
    * Custom heading shown in the lock overlay when `locked=true`.
-   * Defaults to "Pro Required".
+   * Defaults to "Not Available" (neutral copy — no "Pro"/"Upgrade" words).
    */
   lockLabel?: string;
   /**
    * Custom body text shown in the lock overlay when `locked=true`.
-   * Defaults to "{scanLabel} is available on the Pro plan."
+   * Defaults to "{scanLabel} is not included on this plan."
    */
   lockDescription?: string;
   /**
    * Custom CTA link text shown in the lock overlay when `locked=true`.
-   * Defaults to "Upgrade to Pro".
+   * Defaults to "Learn more".
    */
   lockCtaText?: string;
   /**
@@ -150,22 +150,40 @@ export const ScanCard: React.FC<ScanCardProps> = ({
   // Pro-lock: full-ai requires Pro; gate on free/none tier.
   // `locked` prop overrides this — used when capability check (not tier) is the gate.
   //
-  // WP.org round-3 (Sprint W2/T7, 2026-07-26): "deep-malware" REMOVED from
-  // this tier-based auto-lock. Sprint W1 de-gated its local phases
-  // (enumerate, hash, local scan) in the PHP — they run free for every
-  // tier now, so the card must not show as locked just because
-  // `tier !== "pro"`. deep-malware's lock state is controlled entirely by
-  // the explicit `locked` prop now (SecurityHub.tsx no longer passes one,
-  // so it defaults to unlocked). full-ai keeps the original behavior
-  // unchanged (it is currently unreachable — no ScanCard call site renders
-  // scanType="full-ai" — so this is a no-op in practice, kept for safety).
+  // WP.org round-3 (Sprint W2/T7, 2026-07-26): "deep-malware" was REMOVED
+  // from this tier-based auto-lock when Sprint W1 briefly de-gated its
+  // local phases (enumerate, hash, local scan) so they ran free for every
+  // tier.
+  // SUPERSEDED (LiveQA Fix Sprint, 2026-08-04, owner scan-edition ruling):
+  // the owner has since drawn the Free/Pro line at the whole-scan level —
+  // "Deep scan" is Pro-only again, and its backing routes
+  // (/security/scan/malware/start + /status) are registered ONLY on
+  // SWISSWPSUITE_EDITION === 'pro' (api-security.php ~:641). deep-malware
+  // is DELIBERATELY still absent from this clause, though: the
+  // upsell-redesign ruling forbids rendering a locked-teaser card (the
+  // dimmed-content + Lock icon + CTA overlay a few lines below) for a
+  // per-feature Pro gate, so on Free the card must not mount at all rather
+  // than mount locked. That gate now lives one layer up, at the
+  // SecurityHub.tsx call site (`isProEditionBuild &&` around the whole
+  // <ScanCard scanType="deep-malware" .../>), not here — `locked` for this
+  // scanType is always the caller's default (`false`) in practice, because
+  // the only caller only ever mounts this card in Pro. full-ai keeps the
+  // original tier-based behavior unchanged (it is currently unreachable —
+  // no ScanCard call site renders scanType="full-ai" — so this is a no-op
+  // in practice, kept for safety).
   const isProLocked = locked || (scanType === "full-ai" && tier !== "pro");
 
   // Resolve lock overlay copy — custom values take priority over defaults.
-  const resolvedLockLabel = lockLabel ?? "Pro Required";
+  // Upsell redesign (2026-08-04, T3): neutral defaults — no "Pro"/"Upgrade"
+  // words. This component has no edition awareness of its own (no caller
+  // currently passes `locked`, so this overlay is dead in practice today —
+  // see the isProLocked comment above), but its defaults are what a future
+  // caller gets for free, so they must be neutral-by-default rather than
+  // marketing-by-default.
+  const resolvedLockLabel = lockLabel ?? "Not Available";
   const resolvedLockDescription =
-    lockDescription ?? `${label} is available on the Pro plan.`;
-  const resolvedLockCtaText = lockCtaText ?? "Upgrade to Pro";
+    lockDescription ?? `${label} is not included on this plan.`;
+  const resolvedLockCtaText = lockCtaText ?? "Learn more";
   const resolvedLockCtaHref =
     lockCtaHref ?? "https://www.swisswpsecure.com/pricing";
 
@@ -255,8 +273,8 @@ export const ScanCard: React.FC<ScanCardProps> = ({
           A plain <div> with no role is not a labelable landmark — aria-label is
           silently ignored by AT on roleless divs. role="note" is the correct semantic
           role for supplementary/informational content (maps to <aside> semantics).
-          This ensures AT users hear "Full AI Scan requires a Pro license" when they
-          enter this region. The "Upgrade to Pro" link inside provides the CTA.
+          This ensures AT users hear the lock label when they enter this
+          region. The neutral "Learn more" link inside provides the CTA.
         */}
         <div
           role="note"
@@ -279,7 +297,7 @@ export const ScanCard: React.FC<ScanCardProps> = ({
           {(scanType === "full-ai" || scanType === "deep-malware") && (
             <ul
               className="w-full max-w-[260px] space-y-1.5"
-              aria-label="Pro features unlocked"
+              aria-label="Included with this plan"
             >
               <li className="flex items-center gap-2 text-xs font-medium text-neutral-700">
                 <Database

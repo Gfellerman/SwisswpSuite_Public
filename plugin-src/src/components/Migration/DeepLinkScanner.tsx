@@ -164,7 +164,7 @@ const DeepLinkScanner: React.FC<DeepLinkScannerProps> = ({
             <Search size={20} className="text-purple-600" /> AI Deep Link
             Scanner
           </h3>
-          <p className="text-sm text-muted-foregroundforeground">
+          <p className="text-sm text-muted-foreground dark:text-foreground">
             Detects hidden links to <strong>{oldDomain || "..."}</strong> inside
             JSON, serialized data, and complex HTML.
           </p>
@@ -232,7 +232,7 @@ const DeepLinkScanner: React.FC<DeepLinkScannerProps> = ({
                   key={idx}
                   className="border-b border-border hover:bg-background dark:bg-muted"
                 >
-                  <td className="p-3 text-gray-600foreground">
+                  <td className="p-3 text-gray-600 dark:text-foreground">
                     #{issue.source_id}{" "}
                     <span className="text-xs text-muted-foreground">
                       ({issue.location})
@@ -271,7 +271,7 @@ const DeepLinkScanner: React.FC<DeepLinkScannerProps> = ({
       )}
 
       {!scanning && issues.length === 0 && scannedCount > 0 && (
-        <div className="text-center py-8 text-muted-foregroundforeground">
+        <div className="text-center py-8 text-muted-foreground dark:text-foreground">
           <CheckCircle size={48} className="mx-auto text-green-500 mb-2" />
           <p>No deep link issues found in scanned batch.</p>
         </div>

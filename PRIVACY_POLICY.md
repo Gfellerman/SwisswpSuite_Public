@@ -72,6 +72,7 @@ The following data is processed by the Plugin on **your** WordPress server. We d
 | Full database (migration/sync) | Site migration, staging sync | Sent directly to **your** destination site |
 | Geo-bypass cookie (`swisswpsuite_geo_bypass`) | Geo-blocking bypass | **No** (set on visitor's browser, 1 hour, httponly, secure) |
 | Admin UI preferences | Theme, sidebar state, consent flags | **No** (localStorage, admin browsers only) |
+| Admin-side JS error diagnostics (message, script source, line/column, stack trace) | Frontend error logging (Settings → System Logs) | **No** (stored locally in the Plugin's own debug log; visible only to site administrators) |
 
 The IP geolocation lookup (ipwho.is) is performed by the Plugin from your own server when you enable geo-blocking; **you are the controller for that lookup and ipwho.is is your service provider, not ours.**
 

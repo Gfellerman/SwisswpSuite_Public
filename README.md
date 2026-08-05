@@ -1,71 +1,61 @@
-# SwissSuite AI - The Ultimate All-in-One WordPress Plugin
+# SwissSuite AI - WordPress Security & Backup Plugin
 
-**Version:** 2.9.31.8
+**Version:** 2.9.33.7
 **Requires WordPress:** 6.2+
 **Tested up to:** 7.0
 **Requires PHP:** 7.4+
 **License:** GPL-2.0-or-later
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
-SwissSuite is a comprehensive WordPress toolkit powered by Groq AI, combining Security, Backup, SEO, and Site Synchronization into a single, high-performance plugin.
+SwissSuite AI ships as two separate, independently distributed plugins built from one codebase:
+
+| Edition | Slug | Where to get it | What it is |
+| :--- | :--- | :--- | :--- |
+| **SwissSuite AI** (Free) | `swisssuite-ai` | WordPress.org | The security & backup core, standalone and fully functional on its own |
+| **SwissSuite AI Pro** | `swisssuite-ai-pro` | https://www.swisswpsecure.com/products/ (download-only) | A standalone superset — cloud backup, AI, sync, migration, and more |
+
+Pro is **not an add-on or unlock** for the Free plugin — it is installed in place of it. The premium and AI code is physically absent from the Free package; there is nothing in Free to "unlock" with a key, and Free has no license field at all.
 
 ## Features
 
-### Sentinel Security
-- **AI Malware Scanning:** Detects malicious patterns using Groq AI (Free: Heuristic Only / Paid: Full AI Analysis).
-- **Hardening:** One-click fixes for XML-RPC, File Editing, and more (11 hardening options).
-- **Web Application Firewall (WAF):** Basic free / Advanced tiered.
-- **Access Control:** Two-Factor Authentication (TOTP) and Geo-Blocking.
-- **Environment Aware:** Auto-tunes settings for your host.
+### SwissSuite AI (Free)
 
-### Backup "Fortress"
-- **Hybrid Engine:** Uses system `zip` for speed, falls back to PHP for compatibility.
-- **Cloud Vault:** Store backups on AWS S3 or Google Drive.
-- **Automation:** Set daily, weekly, or monthly schedules with auto-pruning.
-- **Restore:** Integrated one-click restoration.
+- **Malware scanner** — local signature-based scanning, on-demand and daily, entirely on your own server; no file contents ever leave your site
+- **Malware quarantine** — isolate suspicious files locally before removing them
+- **Web Application Firewall** — blocks SQL injection, XSS, and path-traversal attempts, with IP ban/unban/allowlist and a threat log
+- **Hardening** — all one-click hardening toggles (XML-RPC, file editing, user enumeration, REST API restrictions, and more), plus Security Level presets
+- **Login protection** — brute-force lockout and honeypot spam blocking
+- **Backup & restore** — full site backup (files + database) and one-click restore of your site files, run on demand. This version's restore never modifies your database.
+- **SEO** — on-page audit and score, plus XML sitemap generation, all computed locally
+- **Dashboard** — security dashboard, threat log, and a daily email security report
 
-### Sync "Teleport"
-- **Site-to-Site Sync:** Push Products, Posts, and Media directly between Staging and Production.
-- **Encrypted:** Uses HMAC signatures and HTTPS for secure transport.
-- **Smart Diff:** Compare content before syncing to prevent overwrites.
+Free does no AI processing, makes no AI calls, and does not phone home on install. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) and the External Services section below.
 
-### Migration Station
-- **Mode A:** Site-to-site migration via plugin on both ends.
-- **Mode B:** Standalone receiver for migrating to empty/broken destinations.
-- **Serialization-safe:** Single-pass domain replacement that preserves serialized data integrity.
+### SwissSuite AI Pro (adds, on top of everything in Free)
 
-### AI SEO & Content
-- **SEO Auditor:** Bulk meta optimization, keyword analysis, readability scoring.
-- **Content Enhancer:** Rewrite and enhance content using Groq AI.
-- **Vision AI:** Auto-generate Alt Text for images.
-- **llms.txt:** Auto-generates context files for AI crawlers.
-
-## Licensing & Tiers
-
-SwissSuite operates on a tiered licensing model. The core plugin is free, with advanced features unlocked by your license key.
-
-| Tier | Key Features |
-| :--- | :--- |
-| **Free** | Daily Auto-Scan, Basic Threat Blocking, 5 Hardening Options |
-| **Security** | Smart WAF, Deep AI Audit, Unlimited Scans, All 11 Hardening Options |
-| **Content SEO** | AI Meta Optimization, Vision AI, Full Sentinel Security |
-| **Enhancer** | AI Content Rewriter, Tone Customization, Full Sentinel Security |
-| **Backup** | Cloud Backups, Site Sync, Migration, Full Sentinel Security |
-| **Full Suite** | **All Features Unlocked** |
-
-Paid plans include an AI Token allowance for generative features (Rewriting, Analysis). Track your usage in the "License & Tokens" dashboard.
+- **Scheduled, automated backups** with rolling retention, plus cloud destinations — Google Drive, Amazon S3, Backblaze B2, Dropbox, and FTP/SFTP
+- **Two-Factor Authentication (TOTP)** for every user role
+- **Geo-blocking** with country-level allow/deny rules
+- **Advanced firewall** — IP reputation and rate limiting on top of the Free WAF
+- **Site sync** — two-way content sync between staging and production
+- **Migration** — plugin-to-plugin and standalone-receiver modes, tuned for shared hosting
+- **Update-guard suite** — safe updates with automatic rollback and pre-update snapshots
+- **AI features** (Groq-powered) — deep malware analysis, AI SEO meta generation, vision AI for image alt text, and AI content rewriting
+- **Vulnerability lookups** via WPScan and Patchstack (bring your own API key)
 
 ## Installation
 
-1. Download the latest `swisswpsuite-v{VERSION}.zip` from Releases.
-2. In WordPress Admin, go to **Plugins > Add New > Upload Plugin**.
+1. Choose your edition: Free from WordPress.org, or Pro from https://www.swisswpsecure.com/products/ .
+2. In WordPress Admin, go to **Plugins > Add New > Upload Plugin** (or install the Free edition directly from the WordPress.org directory).
 3. Upload the zip file and click **Install Now**.
 4. Activate the plugin.
-5. Navigate to **SwissSuite > License & Tokens** and enter your License Key.
+5. Free: no account or license key is required — run your first scan from **Security > Scan**. Pro: open **License & Tokens** to activate your license key.
+
+Free and Pro cannot be active at the same time — activating one automatically deactivates the other, since they share the same underlying data.
 
 ## Requirements
 
-- WordPress 5.6 or higher
+- WordPress 6.2 or higher
 - PHP 7.4 or higher
 - HTTPS recommended for all security features
 
@@ -73,12 +63,13 @@ Paid plans include an AI Token allowance for generative features (Rewriting, Ana
 
 This plugin connects to the following external services when specific features are activated:
 
-| Service | When | Data Sent |
-|---------|------|-----------|
-| SwissWPSecure API (`swisswpsecure.com`) | License validation, AI features, Sentinel L2 scanning | License key, site URL, scan data (for AI analysis) |
-| Groq AI (via SwissWPSecure proxy) | AI content generation, malware analysis | Content snippets, file hashes |
+| Service | Edition | When | Data Sent |
+|---------|---------|------|-----------|
+| WordPress.org | Free & Pro | Plugin update checks, core-file checksum verification during a scan, daily check for closed/abandoned plugins | Site URL, plugin/theme list |
+| SwissWPSecure API (`swisswpsecure.com`) | Pro only | License validation, AI features, Sentinel L2 scanning | License key, site URL, scan data (for AI analysis) |
+| Groq AI (via SwissWPSecure proxy) | Pro only | AI content generation, malware analysis | Content snippets, file hashes |
 
-No data is sent without user-initiated action. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for full details.
+No data is sent without user-initiated action. The Free edition makes none of the Pro-only calls above — see [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for full details.
 
 ## Support
 

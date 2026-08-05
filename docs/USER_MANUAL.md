@@ -6,7 +6,7 @@
 **Last Updated:** 2026-05-26
 **Audience:** WordPress site owners. No coding required.
 
-> **Two editions.** SwissSuite AI ships as two products built from one codebase: **SwissSuite AI** (free, installed from the WordPress.org directory) and **SwissSuite AI Pro** (downloaded from swisswpsecure.com after purchase). The free edition contains only the free local features; the paid features described in this manual as "Pro" — 2FA, geo-blocking, advanced WAF, cloud backup, sync, migration, and all AI features (deep AI scan, AI SEO meta, AI content) — live exclusively in the Pro edition, which you download and install separately. Entering a Pro license key in the free edition prompts you to download Pro.
+> **Two editions.** SwissSuite AI ships as two products built from one codebase: **SwissSuite AI** (free, installed from the WordPress.org directory) and **SwissSuite AI Pro** (downloaded from swisswpsecure.com after purchase). The free edition contains only the free local features; the paid features described in this manual as "Pro" — 2FA, geo-blocking, advanced WAF, cloud backup, scheduled backups, sync, migration, Update Guard, and all AI features (deep AI scan, AI SEO meta, AI content) — live exclusively in the Pro edition, which you download and install separately. The free edition has **no license key field, no account, and no sign-up**, and it makes no calls to SwissWPSecure servers: the Pro features are simply not present in it, so there is nothing a key could unlock. To get Pro, purchase at https://swisswpsecure.com/products/ and install the separate Pro plugin.
 
 ---
 
@@ -17,7 +17,7 @@
   - [1.2 Installation](#12-installation)
   - [1.3 First-Time Setup](#13-first-time-setup)
   - [1.4 The Sidebar — How You Navigate](#14-the-sidebar--how-you-navigate)
-  - [1.5 No-License vs Free License vs Pro — at a Glance](#15-no-license-vs-free-license-vs-pro--at-a-glance)
+  - [1.5 Free Edition vs Pro — at a Glance](#15-free-edition-vs-pro--at-a-glance)
 - [2. Dashboard](#2-dashboard)
   - [2.1 The Critical Next Steps Card](#21-the-critical-next-steps-card)
   - [2.2 The Health Tiles](#22-the-health-tiles)
@@ -46,7 +46,7 @@
   - [7.5 License](#75-license)
   - [7.6 Maintenance](#76-maintenance)
 - [8. Two-Factor Authentication (2FA)](#8-two-factor-authentication-2fa)
-- [9. License, Tokens, and Free Mode](#9-license-tokens-and-free-mode)
+- [9. Editions, Licensing, and Tokens](#9-editions-licensing-and-tokens)
 - [10. Status Indicators, Badges, Colors, and Icons](#10-status-indicators-badges-colors-and-icons)
 - [11. Troubleshooting](#11-troubleshooting)
 
@@ -58,13 +58,12 @@
 
 SwissSuite AI is an all-in-one WordPress plugin for **security**, **backups**, **migration**, **content sync**, **SEO**, and **AI content rewriting**. It runs entirely inside your WordPress admin — there is nothing to install on your server.
 
-The plugin has three states:
+The plugin comes in two editions:
 
-- **No license activated** — the core firewall (basic WAF), the Quick malware scan, manual local backups, essential hardening, and login/spam protection all work. The daily Sentinel Audit can be run on demand, but the **daily Scan Report email** and any AI-powered feature are not available because both require an active license.
-- **Free license** — request one from inside the plugin (enter your email, one click). It is **domain-locked** (one site only) and gives you **50,000 AI tokens per month** plus the daily Scan Report email. Tokens are used by AI-powered analysis features (for example, the "Check with AI" action on individual scan findings, and the AI Threat Analysis of recent logs). Tokens are **not** enough to unlock paid-tier features such as Deep AI Malware Scan, SEO meta generation, FAQ generation, or AI content rewriting — those require a paid plan.
-- **Pro mode** — unlocked by activating a paid license. Adds Deep AI Malware Scanning, advanced hardening, geo-blocking, cloud backups, scheduled backups, site migration, content sync, SEO automation, and AI content rewriting. The paid token allowance is higher and depends on your plan.
+- **SwissSuite AI (free)** — installed from the WordPress.org directory. There is **no license key, no account, and no sign-up**: every free feature works the moment you activate the plugin. You get the core firewall (basic WAF), the Quick malware scan, the Sentinel Audit (on demand and on its daily schedule, including the daily Scan Report email), manual local backups with one-click restore, malware quarantine, every one-click hardening option, IP banning and allowlisting, login/spam protection, the local on-page SEO audit, and the XML sitemap. The free edition performs **no AI processing whatsoever** — it contains no AI code, makes no AI calls, and has no token balance.
+- **SwissSuite AI Pro** — a separate licensed download from https://swisswpsecure.com/products/ . Adds Deep AI Malware Scanning, geo-blocking, the advanced WAF, cloud backup destinations, scheduled backup automations, site migration, content sync, Update Guard, Two-Factor Authentication, SEO automation, and AI content rewriting. Your monthly AI token allowance depends on the plan you buy.
 
-> **What "Free capabilities" really are.** Whether or not you have a license, every site starts with the same six baseline capabilities: `scan_basic`, `reports`, `threat_block_basic`, `dashboard_access`, `backup_local`, `firewall_basic`. Activating a *free* license adds the daily Scan Report email and the monthly AI token allowance, but does **not** add `2fa`, `hardening`, `seo_meta`, or any other paid capability — those are tier-gated. See **Section 9** for the full capability list.
+> **What "free" really means here.** The free edition is not a trial and is not time-limited. It has no License screen and nothing to unlock, because the Pro features are **physically absent** from the WordPress.org package rather than switched off inside it. Getting Pro means installing the separate Pro plugin, not entering a key into the free one. See **Section 9**.
 
 ### 1.2 Installation
 
@@ -88,12 +87,12 @@ After activation, a new menu item called **SwissSuite** appears in your WordPres
 
 The first time you open SwissSuite, the **Dashboard** shows a **Critical Next Steps** card. It guides you through the four most important things to do:
 
-1. **Activate (or request) a license** — Open **Settings → License** and either paste an existing license key, or scroll down to "No license? Start free" and enter your email. A free, domain-locked license is created and activated instantly.
+1. **Activate your license** (Pro edition only) — Open **Settings → License**, paste your Pro key, and click **Activate**. In the free edition there is no License screen and nothing to activate — skip straight to step 2.
 2. **Run your first scan** — Go to **Security → Scan** and click **Run Sentinel Audit**. Results appear within a few seconds.
 3. **Create your first backup** — Go to **Backup → Backups** and click **Create Backup Now**. Wait until the green "Complete" badge shows.
 4. **Turn on 2FA** — Two-Factor Authentication is a paid-tier feature. If your plan includes the `2fa` capability, go to **Settings → Security → Two-Factor Authentication** and follow the in-page setup. Without 2FA your admin password is the only thing protecting your site.
 
-You can dismiss the Critical Next Steps card at any time by clicking the small "x" in its corner. It comes back automatically if any of the four items become incomplete (for example, your license expires).
+You can dismiss the Critical Next Steps card at any time by clicking the small "x" in its corner. It comes back automatically if any of the items become incomplete (for example, your last backup ages past 30 days).
 
 ### 1.4 The Sidebar — How You Navigate
 
@@ -108,7 +107,7 @@ The left sidebar shows six main destinations (the order is fixed):
 | **Backup** | Backups, Move to New Host (Beta), Sync Two Sites (Beta). |
 | **Settings** | General, AI Configuration, Security, SEO, License, Maintenance. |
 
-If your license does not include a feature, that sidebar item shows a small **lock icon**. Clicking it still opens the page, but the actions inside are disabled with an "Upgrade to unlock" prompt.
+If a feature is not part of your edition or plan, that sidebar item shows a small **lock icon**. Clicking it still opens the page, but the actions inside are disabled with an "Upgrade to unlock" prompt linking to https://swisswpsecure.com/products/ .
 
 **Standalone mode.** If the plugin detects it is running in a standalone Sentinel-only build, the **SEO** and **AI Content** items are hidden, and the Dashboard route redirects to Security.
 
@@ -116,40 +115,44 @@ The sidebar can be **collapsed** with the small `<` button at the bottom-left. Y
 
 When a Pro **trial** is active, a small "Trial" pill appears under the plugin logo. The trial end date itself is shown in **Settings → License** (see Section 7.5), not in the sidebar.
 
-### 1.5 No-License vs Free License vs Pro — at a Glance
+### 1.5 Free Edition vs Pro — at a Glance
 
-| Feature | No license | Free license | Pro |
-|---|---|---|---|
-| Basic Web Application Firewall (WAF) | Yes | Yes | Yes |
-| Login protection (brute-force lockouts) | Yes | Yes | Yes |
-| Spam protection | Yes | Yes | Yes |
-| Quick Malware Scan (signatures only) | Yes | Yes | Yes |
-| Sentinel Audit on demand (heuristic + signatures, zero AI cost) | Yes | Yes | Yes |
-| **Daily Scan Report email** (automatic daily run + email) | No | Yes | Yes |
-| Monthly AI token allowance | 0 | 50,000 | Plan-dependent |
-| "Check with AI" on individual findings | No | Yes (uses tokens) | Yes (uses tokens) |
-| Deep Malware Scan (hash DB + WPScan + Patchstack + AI analysis) | No | No | Yes |
-| Essential hardening (8 options) | Yes | Yes | Yes |
-| Advanced hardening (5 options) | No | No | Yes |
-| Geo-blocking by country | No | No | Yes |
-| Manual IP banning | No | No | Yes |
-| IP allowlist | View only | View only | Edit |
-| Quarantine restore / delete | View only | View only | Edit |
-| Manual local backups | Yes | Yes | Yes |
-| Cloud backups (Google Drive, Dropbox, S3, Backblaze B2, FTP) | No | No | Yes |
-| Scheduled backup automations | No | No | Yes |
-| Backup encryption (AES-256 / XChaCha20) | No | No | Yes |
-| Site Migration (Move to New Host) | No | No | Yes (Beta) |
-| Content Sync (Sync Two Sites) | No | No | Yes (Beta) |
-| SEO scan + meta generation | No | No | Yes |
-| FAQ generation | No | No | Yes |
-| On-Page audit | No | No | Yes |
-| llms.txt + AI-aware sitemap | No | No | Yes |
-| AI content rewriting | No | No | Yes |
-| Two-Factor Authentication (TOTP + backup codes) | No | No | Yes |
-| WordPress.org Update Guard (virtual patching) | Yes | Yes | Yes |
+There is no third state and no "free license" — the free edition needs no key at all.
 
-> Capability codes (used in the API): `scan_basic`, `reports`, `threat_block_basic`, `dashboard_access`, `backup_local`, `firewall_basic` are always present — they exist whether or not a license is activated, and a free license adds nothing else to that list. Pro adds (depending on plan): `sentinel_pro`, `scan_deep`, `ai_access`, `ai_content`, `threat_block_pro`, `reports_advanced`, `waf`, `advanced_waf`, `geoblocking`, `advanced_malware`, `auto_quarantine`, `files_monitor`, `2fa`, `hardening`, `rate_limiting`, `seo_meta`, `seo_advanced`, `sitemap`, `broken_links`, `page_speed`, `backup_cloud`, `sync_staging`, `blog_generation`, `product_descriptions`, `meta_ai`, `scheduled_backups`, `content_rewrite`. See **Section 9**.
+| Feature | Free edition | Pro edition |
+|---|---|---|
+| License key / account required | No — none exists | Yes |
+| Basic Web Application Firewall (WAF) | Yes | Yes |
+| Login protection (brute-force lockouts) | Yes | Yes |
+| Spam protection | Yes | Yes |
+| Quick Malware Scan (signatures only) | Yes | Yes |
+| Sentinel Audit on demand (heuristic + signatures, zero AI cost) | Yes | Yes |
+| **Daily Scan Report email** (automatic daily run + email) | Yes | Yes |
+| Monthly AI token allowance | None — the free edition contains no AI code | Plan-dependent |
+| "Check with AI" on individual findings | Not present | Yes (uses tokens) |
+| Deep Malware Scan (hash DB + WPScan + Patchstack + AI analysis) | No | Yes |
+| One-click hardening (all 12 options) | Yes | Yes |
+| Geo-blocking by country | No | Yes |
+| Manual IP banning / unbanning | Yes | Yes |
+| IP allowlist | Edit | Edit |
+| Quarantine files locally | Yes | Yes |
+| Quarantine restore / delete | View only | Edit |
+| Manual local backups + one-click restore | Yes | Yes |
+| Cloud backups (Google Drive, Dropbox, S3, Backblaze B2, FTP) | No | Yes |
+| Scheduled backup automations | No | Yes |
+| Backup encryption (AES-256 / XChaCha20) | No | Yes |
+| Site Migration (Move to New Host) | No | Yes (Beta) |
+| Content Sync (Sync Two Sites) | No | Yes (Beta) |
+| Local on-page SEO audit + score (no AI) | Yes | Yes |
+| XML sitemap generator | Yes | Yes |
+| AI SEO scan + bulk meta generation | No | Yes |
+| FAQ generation | No | Yes |
+| llms.txt + AI-aware sitemap | No | Yes |
+| AI content rewriting | No | Yes |
+| Two-Factor Authentication (TOTP + backup codes) | No | Yes |
+| WordPress.org Update Guard (virtual patching) | No | Yes |
+
+> Capability codes (used in the API): `scan_basic`, `reports`, `threat_block_basic`, `dashboard_access`, `backup_local`, `firewall_basic`, `quarantine`, `seo_audit`, `hardening_basic` are always present in both editions and are never license-gated. Pro adds (depending on plan): `sentinel_pro`, `scan_deep`, `ai_access`, `ai_content`, `threat_block_pro`, `reports_advanced`, `waf`, `advanced_waf`, `geoblocking`, `advanced_malware`, `auto_quarantine`, `files_monitor`, `2fa`, `rate_limiting`, `seo_meta`, `seo_advanced`, `sitemap`, `broken_links`, `page_speed`, `backup_cloud`, `sync_staging`, `blog_generation`, `product_descriptions`, `meta_ai`, `scheduled_backups`, `content_rewrite`. See **Section 9**.
 
 ---
 
@@ -161,7 +164,7 @@ The Dashboard is the page you land on when you open SwissSuite. It shows the hig
 
 A teal card at the top of the Dashboard listing tasks you should complete to be secure. Items only appear here if they are still incomplete:
 
-- **No license active** — shows an "Activate License" button.
+- **No license active** (Pro edition only) — shows an "Activate License" button. The free edition has no license, so this item never appears there.
 - **No backup in the last 30 days** — shows "Create Backup".
 - **2FA not enabled** (Pro plans only) — shows "Enable 2FA".
 - **Critical Sentinel findings unfixed** — shows "Open Security Hub".
@@ -176,7 +179,7 @@ A row of tiles below the Critical Next Steps card. Exactly which tiles you see d
 - **SEO Health** — a score from 0 to 100 based on the last SEO scan (Pro). "—" means no SEO scan has been run yet.
 - High-level firewall and scan status indicators that link to the Security Hub.
 
-> Your remaining **AI token balance** for the month is **not** shown on the main Dashboard. It is shown only in **Settings → License**.
+> Your remaining **AI token balance** for the month is **not** shown on the main Dashboard. It is shown only in **Settings → License**, and only in the Pro edition — the free edition has no tokens and no License screen.
 
 ### 2.3 Recent Activity
 
@@ -198,7 +201,7 @@ This is the **security summary page** (different from the main app Dashboard in 
 
 - **Smart Firewall** card — toggle to enable/disable the WAF; a "Detection Only Mode" checkbox to log threats without blocking; a list of the active rule packs (Basic WAF shows 5 SQLi + 4 XSS patterns and path traversal; Advanced WAF, when your plan includes it, lists 28+ SQLi patterns, 40+ XSS patterns, 3-layer URL decoding, and double/triple-encoded payload detection).
 - **Geo-Lockdown** card (Pro) — country block/allow mode, "Block High-Risk Zones" preset, and a country picker.
-- **Update Guard** card — observe/auto-patch status for the WordPress.org virtual-patching feature.
+- **Update Guard** card (Pro) — observe/auto-patch status for the WordPress.org virtual-patching feature.
 - **Quick-toggles** for Login Protection, Spam Protection, and other firewall sub-features mirror the equivalent controls in the Logs tab.
 
 If your plan does not include a feature, its card shows an "Upgrade for full protection" panel instead of the toggle.
@@ -218,17 +221,17 @@ The Scan tab has **three scan cards** stacked vertically. Each card has its own 
 - **M3 — Config Audit** — checks for `WP_DEBUG` left on in production, exposed `debug.log`, backup files in the web root, directory listing enabled.
 - **M4 — Environment Audit** — reports WordPress / PHP / server versions, plugins, XML-RPC exposure, REST user enumeration, default `admin` username.
 
-**Cost.** Zero tokens. Available to everyone, including sites with no license.
+**Cost.** Zero tokens. Fully available in both editions.
 
 **Button:** **Run Sentinel Audit**. While running, the button is disabled and shows a spinner. Findings appear in the results panel below.
 
-> The automatic **daily** Sentinel Audit (the one that emails you a report each morning) requires an active license — see **Section 3.2.4**.
+> The automatic **daily** Sentinel Audit (the one that emails you a report each morning) is also available in both editions — see **Section 3.2.4**.
 
 #### 3.2.2 Quick Malware Scan
 
 **What it does.** Scans your WordPress core, themes, plugins, and uploads for known malware signatures using a local pattern library. No AI involved.
 
-**Cost.** Zero tokens. Available to everyone (with or without a license).
+**Cost.** Zero tokens. Fully available in both editions.
 
 **Button:** **Run Quick Scan**. Results show each suspicious file path with action buttons described in Section 3.2.5.
 
@@ -268,7 +271,7 @@ A card on the Scan tab labeled **Daily Scan Report**. It shows:
 
 When enabled, the daily cron at midnight site-time runs the day's scan and emails the results. If the email fails to send (for example, your host's `wp_mail()` is misconfigured), a persistent admin notice appears at the top of every WP-Admin page until the next successful send.
 
-> The daily Scan Report email requires an **active license** (free or paid). Without any license activated, you can still run a Sentinel Audit on demand, but you will not get the automatic daily email.
+> The daily Scan Report email works in **both editions** and requires no license. It is controlled solely by the toggle on this card.
 
 #### 3.2.5 Scan results — what you see
 
@@ -285,7 +288,7 @@ Per-finding action buttons (which appear depends on the finding type and your pl
 - **Mark safe** — adds this file path (or finding id, for non-file findings) to your ignore list so future scans skip it.
 - **Quarantine** — moves the file to the protected quarantine directory (file findings only).
 - **Delete** — permanently removes the file (file findings only).
-- **Check with AI** — sends the finding to Groq AI for a deeper verdict (consumes tokens; requires an active license with an AI token allowance).
+- **Check with AI** (Pro edition only) — sends the finding to Groq AI for a deeper verdict (consumes tokens from your plan's allowance). This control does not exist in the free edition, which ships no AI code and makes no AI calls.
 
 > There is no "Fix it" button. Earlier documentation referred to one — it was retired. Use the actions above to act on a finding.
 
@@ -304,7 +307,7 @@ The log table shows recent events with columns: **Time**, **IP**, **Event**, **S
 - **Block SQL injection patterns** — toggle for the SQLi rule pack.
 - **Block XSS patterns** — toggle for the XSS rule pack.
 
-No-license and free-license sites get a basic ruleset (5 SQLi patterns, 4 XSS patterns, path traversal). Pro plans with `advanced_waf` get the full ruleset (28+ SQLi patterns, 40+ XSS patterns, comment-injection bypass, command injection, common-CVE patterns, advanced anti-bot rules).
+The free edition gets the basic ruleset (5 SQLi patterns, 4 XSS patterns, path traversal). Pro plans with `advanced_waf` get the full ruleset (28+ SQLi patterns, 40+ XSS patterns, comment-injection bypass, command injection, common-CVE patterns, advanced anti-bot rules).
 
 #### 3.3.2 Login Protection
 
@@ -339,7 +342,7 @@ Each quarantined file appears in a table with:
 - **Restore** button (Pro) — moves it back to its original location.
 - **Delete forever** button (Pro) — permanently removes it.
 
-No-license and free-license sites can view this list but cannot restore or delete.
+The free edition can view this list but cannot restore or delete quarantined files.
 
 #### 3.4.2 Ignored Paths (Mark Safe)
 
@@ -357,9 +360,9 @@ A table of currently blocked IPs. Each row shows:
 - **IP address**
 - **Reason** — a short text label describing why the IP is blocked (for example, "Brute-force lockout" or whatever you typed when you blocked it manually)
 - **Expires** — for time-limited blocks (such as a 30-minute brute-force lockout), the time the block ends. Permanent blocks have no expiry.
-- **Release** button (Pro) — removes the block immediately. The button is idempotent — clicking it on an already-cleared block is harmless.
+- **Release** button — removes the block immediately. The button is idempotent — clicking it on an already-cleared block is harmless.
 
-**Block IP form (Pro)** — at the top of the table:
+**Block IP form** — at the top of the table:
 - IP input — accepts a single IPv4 or IPv6 address.
 - Reason input — a short note for your own reference.
 - **Block** button.
@@ -372,17 +375,17 @@ A permanent safelist of IPs that are **never** auto-banned by the brute-force pr
 
 - A button shows **your current visitor IP** ("Add my current IP") so you can one-click safelist yourself.
 - Add an IP from the input — it accepts IPv4 and IPv6.
-- **Remove** button per row (Pro).
+- **Remove** button per row.
 
-When you add an IP that is currently blocked, the block is cleared at the same time.
+Blocking, unblocking, and allowlist management all work in both editions. When you add an IP that is currently blocked, the block is cleared at the same time.
 
 ### 3.5 Hardening tab
 
-A grid of **hardening options**. Each is a card with the option name, a plain-English explanation, a risk badge (low / high), and a toggle switch. Some options have a small lock icon meaning they require Pro.
+A grid of **hardening options**. Each is a card with the option name, a plain-English explanation, a risk badge (low / high), and a toggle switch. All 12 hardening options are fully functional in **both editions** — none of them is Pro-gated.
 
-#### 3.5.1 Essential hardening (free)
+#### 3.5.1 Essential hardening
 
-Eight options always visible:
+Seven options, always visible:
 
 - **Block Legacy Remote Access** (`disable_xmlrpc`) — closes the XML-RPC back door. Only keep off if you use the WordPress mobile app or older Jetpack.
 - **Disable File Editor** (`disable_file_editor`) — removes the in-dashboard code editor.
@@ -392,15 +395,14 @@ Eight options always visible:
 - **Restrict AI Crawlers to Homepage** (`restrict_llm_crawlers`) — adds a `robots.txt` entry blocking ChatGPT, Claude, Perplexity, Bing AI, and others from crawling beyond your homepage.
 - **Restrict Google to Homepage Only** (`restrict_google_indexing`, high-risk) — adds `Disallow: /` for Googlebot and Bingbot for everything except `/`. WARNING: This removes your site from inner-page search results. The toggle shows a confirmation dialog before applying.
 
-#### 3.5.2 Advanced hardening (Pro)
+#### 3.5.2 Advanced hardening
 
-Five more options:
+Five more options — also free in both editions, but higher-impact, so read each description before enabling:
 
 - **Add Browser Security Rules** (`force_security_headers`, high-risk) — sends `X-Frame-Options`, `Content-Security-Policy`, `Strict-Transport-Security`, and friends. May prevent your site from being embedded in other websites. Requires confirmation.
 - **Limit What Strangers Can See** (`disable_rest_api_guests`, high-risk) — blocks anonymous REST API access. Can break checkout, contact forms, and many plugins. Requires confirmation.
 - **Hide Author Profile Pages** (`disable_author_archives`) — disables author pages (which leak admin usernames). Not recommended for multi-author blogs.
 - **Block Aggressive Web Crawlers** (`block_bad_bots`) — blocks scraping bots (Ahrefs, Semrush, MJ12, etc.) at the firewall level. Does NOT affect Google or Bing.
-- **Disable Visitor-Triggered Scheduling** (`disable_wp_cron_public`, high-risk) — disables WordPress's default cron-on-pageview behavior and blocks public access to `wp-cron.php`. You **must** set up a real server cron job first or your scheduled tasks (backups, scans) will stop firing. Requires confirmation.
 - **Content Source Monitoring** (`enable_csp`) — Report-only Content Security Policy. Doesn't block anything; just collects violation reports.
 
 #### 3.5.3 Conflict / Confirmation dialogs
@@ -408,7 +410,6 @@ Five more options:
 When you toggle on a high-risk option, the plugin first runs a **pre-toggle check** that scans your active plugins for known conflicts. For example:
 
 - Turning on **Limit What Strangers Can See** while WooCommerce is active triggers a warning that checkout uses the REST API.
-- Turning on **Disable Visitor-Triggered Scheduling** triggers a warning that you must add a server cron job first.
 
 The dialog shows:
 - The conflict title and a plain-English description.
@@ -431,7 +432,7 @@ Clicking the button shows a preview dialog with the options that would be turned
 
 A summary tab for advanced cloud-tier protection. Shows your current Cloud Shield mode (Off / Observe / Block) and lets you change it. Cloud Shield is a Pro-only intermediate layer that handles edge-blocking for known-bad IPs maintained by the VPS Command Center.
 
-If your license does not include this feature, the tab shows an "Upgrade to enable" placeholder.
+In the free edition — and on any Pro plan that does not include this capability — the tab shows an "Upgrade to enable" placeholder.
 
 ### 3.7 History tab
 
@@ -443,7 +444,7 @@ A timeline of every scan that has run on your site:
 | **Type** | `Sentinel Audit (L1)`, `Quick Scan`, `Full AI Scan`, or `Deep Malware Scan`. |
 | **Grade** | A / B / C / D / F (only for AI scans). |
 | **Findings** | Total findings (also broken down by severity in a tooltip). |
-| **Tier** | The license tier at the time of the scan (`free`, `pro`, or `none`). |
+| **Tier** | The edition/plan tier recorded at the time of the scan (`free`, `pro`, or `none`). |
 
 Click any row to open a detail panel that re-renders the full scan results from that point in history. The detail panel has a **Mark Safe** action per finding and a **Re-run** button.
 
@@ -451,7 +452,7 @@ Click any row to open a detail panel that re-renders the full scan results from 
 
 ## 4. SEO
 
-(Hidden if you are in Standalone mode. Locked icon if you do not have the `seo_meta` capability.)
+(Hidden if you are in Standalone mode.) The **local** on-page SEO audit/score and the XML sitemap work in both editions. The AI-powered cards on this page — bulk meta generation, FAQ generation, llms.txt — require the `seo_meta` capability and are Pro-only; in the free edition they are not present.
 
 The SEO page has four cards.
 
@@ -601,18 +602,19 @@ After a destination is configured, it appears in the Destination dropdown on the
 #### 6.1.5 Restore a backup
 
 Click **Restore** on any row in the Backup List. A confirmation dialog appears that summarizes:
-- What will be replaced (database, files, or both).
+- What will be restored: your site files.
 - Estimated time.
-- A red warning that this will overwrite your current site.
+- A red warning that this will overwrite your current site files.
+
+**This version restores files only.** Even though a full backup archive includes a database export, restoring it never imports that database and never modifies your site's database — only your files are replaced.
 
 After you confirm, the plugin:
-1. Snapshots your current security settings (so they survive the import).
+1. Snapshots your current security settings (so they survive the restore).
 2. Downloads the backup (if it's in cloud storage).
 3. Restores files (extracts the ZIP over your site).
-4. Imports the database in chunks.
-5. Re-registers all cron jobs.
-6. Restores your security settings from the snapshot.
-7. Recomputes your site's identity hash so the license stays valid.
+4. Re-registers all cron jobs.
+5. Restores your security settings from the snapshot.
+6. Recomputes your site's identity hash so the license stays valid.
 
 The progress bar shows each step. If a step fails, the plugin logs the exact error and keeps the snapshot so nothing is lost.
 
@@ -670,6 +672,8 @@ The General tab also contains the **Custom SMTP** card (for sending plugin email
 
 ### 7.2 AI Configuration
 
+> This tab exists **only in SwissSuite AI Pro**. The free edition ships no AI code and shows no AI Configuration tab.
+
 A single card called **AI Agent**, with one action:
 
 - **Test AI Connection** button — pings the SwissSuite VPS Bunker proxy to verify connectivity. Authentication is automatic via your active license — no API key is required and no model selector is exposed in the UI.
@@ -703,14 +707,15 @@ The sitemap.xml and llms.txt files are generated from the **SEO** page (Section 
 
 ### 7.5 License
 
-- **License Key** field — paste your key here and click **Activate**. Activation contacts the Command Center, validates the key, locks it to your domain, and returns your capabilities + monthly token allowance.
-- **No license? Start free** form — enter your email and click **Get Free License**. The Command Center creates a free, domain-locked license, emails you the key, and the plugin auto-activates it. If you reinstall later, the same email recovers the existing license rather than creating a duplicate.
+> This tab exists **only in SwissSuite AI Pro**. The free edition has no License screen, no license key field, no email sign-up form, and no account — it never contacts SwissWPSecure servers. There is no such thing as a free license.
+
+- **License Key** field — paste your Pro key here and click **Activate**. Activation contacts the Command Center, validates the key, locks it to your domain, and returns your capabilities + monthly token allowance.
 - **Already paid? Manage subscription** — a small link below the activation form that opens the SwissSuite pricing/account page in a new tab.
 - **License Status** card — shows tier name, expiry, token balance, monthly limit, and grace-period status (if any).
 - **Trial badge** — when a Pro trial is active, a yellow "Trial Ends: <date>" pill appears under the plan name.
 - **Refresh License** button — forces a heartbeat to the Command Center to sync your latest plan changes.
 - **Deactivate License** button — releases this domain so the key can be activated on another site. Use this **before** uninstalling on a site you are decommissioning.
-- **Manage Billing** link (paid plans only) — appears as a small indigo card under the status panel. Opens the Stripe customer portal in a new tab so you can update payment, cancel, or download invoices. The link only shows when your account has a Stripe customer record and your tier is not "Free".
+- **Manage Billing** link — appears as a small indigo card under the status panel. Opens the Stripe customer portal in a new tab so you can update payment, cancel, or download invoices. The link only shows when your account has a Stripe customer record.
 
 ### 7.6 Maintenance
 
@@ -764,42 +769,48 @@ Click **Disable 2FA**. You must enter a current code from your app (or a backup 
 
 ---
 
-## 9. License, Tokens, and Free Mode
+## 9. Editions, Licensing, and Tokens
 
-### What a license unlocks
+### The free edition has no license
+
+The free SwissSuite AI plugin from the WordPress.org directory needs **no license key, no account, and no sign-up**. There is no "free license" to request, no email form, and no free-tier token allowance: the free edition ships without any AI code at all, so it cannot make AI calls and never consumes tokens. It also makes no calls to SwissWPSecure servers.
+
+Everything else in this section — license keys, capabilities, tokens, domain locking, grace periods — applies to **SwissSuite AI Pro** only.
+
+### What a Pro license unlocks
 
 - A "capability" is a string flag like `seo_meta`, `backup_cloud`, `geoblocking`. Each Pro feature checks for its capability before letting you use it.
-- Every site starts with the **same six baseline capabilities**, with or without a license: `scan_basic`, `reports`, `threat_block_basic`, `dashboard_access`, `backup_local`, `firewall_basic`.
-- **Activating a Free license** adds the daily Scan Report email and a 50,000 AI-token allowance per month. It does **not** add any other capabilities — `2fa`, `hardening`, `seo_meta`, AI content rewriting, etc. all require a paid plan.
-- **Activating a paid license** adds tier-specific capabilities on top of the baseline.
+- The free local features are **not** capability-gated in any meaningful sense — `scan_basic`, `reports`, `threat_block_basic`, `dashboard_access`, `backup_local`, `firewall_basic`, `quarantine`, `seo_audit` and `hardening_basic` are granted unconditionally in both editions, license or not.
+- **Activating a paid license** in the Pro plugin adds tier-specific capabilities on top of those.
 
 ### Plan tiers
 
-- **No license** — baseline only. Quick Scan, Sentinel Audit on demand, essential hardening, basic WAF, manual local backups. No daily report email, no AI tokens.
-- **Free** — domain-locked, no payment. Same baseline + daily Scan Report email + 50,000 AI tokens / month.
-- **Security tier** ("fortress" plans) — adds `sentinel_pro`, `waf`, `advanced_waf`, `geoblocking`, `advanced_malware`, `auto_quarantine`, `files_monitor`, `2fa`, `hardening`, `rate_limiting`, plus AI access.
+- **Free edition** — no license, no payment, no expiry, no tokens. Quick Scan, Sentinel Audit (on demand and daily, with the report email), all 12 hardening options, basic WAF, IP banning and allowlisting, local backup and one-click restore, quarantine, local on-page SEO audit, XML sitemap.
+- **Security tier** ("fortress" plans) — adds `sentinel_pro`, `waf`, `advanced_waf`, `geoblocking`, `advanced_malware`, `auto_quarantine`, `files_monitor`, `2fa`, `rate_limiting`, plus AI access.
 - **SEO tier** — adds `seo_meta`, `seo_advanced`, `sitemap`, `broken_links`, `page_speed`.
 - **Content tier** — adds `content_rewrite`, `blog_generation`, `product_descriptions`, `meta_ai`.
 - **Suite ("swisswpsuite")** — everything.
 - **Pro (legacy generic name)** — also maps to the full feature set.
 
-### Token economy
+### Token economy (Pro only)
 
-- Every AI call (Deep Scan AI analysis, SEO meta generation, content rewriting, FAQ generation, "Check with AI" on findings) deducts tokens from your monthly balance.
-- The Sentinel Audit and Quick Malware Scan **do not** use AI and are therefore free.
+- Every AI call (Deep Scan AI analysis, SEO meta generation, content rewriting, FAQ generation, "Check with AI" on findings) deducts tokens from your plan's monthly balance.
+- The Sentinel Audit and Quick Malware Scan **do not** use AI and cost zero tokens in either edition.
 - Tokens reset on your billing date — they **do not roll over**. Unused tokens are lost.
 - The token balance is shown only in **Settings → License** (it is not shown on the main Dashboard). If you run out, AI features show "Out of tokens — upgrade or wait for reset".
+- The free edition has no token balance at all, because it contains no AI features to spend tokens on.
 
-### Domain locking
+### Domain locking (Pro only)
 
 - Each license key is bound to one domain (`example.com`). Trying to activate the same key on a different domain returns a **DOMAIN_LOCKED** error with a clear message: "go to the original site, click Deactivate License first".
 - If you migrate to a new domain, deactivate on the old site and reactivate on the new one. Deactivation is instant.
 
-### Grace period
+### Grace period (Pro only)
 
-- If the Command Center is unreachable during a daily license check (network error, 429 rate limit, 5xx errors), the plugin enters a **72-hour grace period** (three days) rather than immediately downgrading. Your features keep working during this window.
-- If the Command Center explicitly returns `valid: false`, the plugin downgrades to the no-license baseline immediately — there is no grace period for explicit rejection.
-- The grace period applies to any active tier (free or paid) — it covers the case where the Command Center is unreachable, not the case where the server explicitly says the license is invalid.
+- If the Command Center is unreachable during a daily license check (network error, 429 rate limit, 5xx errors), the Pro plugin enters a **72-hour grace period** (three days) rather than immediately downgrading. Your features keep working during this window.
+- If the Command Center explicitly returns `valid: false`, the Pro plugin downgrades to the free feature set immediately — there is no grace period for explicit rejection.
+- The grace period applies to any active paid tier — it covers the case where the Command Center is unreachable, not the case where the server explicitly says the license is invalid.
+- The free edition performs no license checks at all, so none of this applies to it.
 
 ---
 
@@ -811,8 +822,8 @@ Click **Disable 2FA**. You must enter a current code from your app (or a backup 
 | Amber / yellow badge | Warning. Not broken, but needs attention. |
 | Red badge / dot | Error. Action failed or critical issue present. |
 | Gray badge | Not run, not configured, or feature disabled. |
-| Lock icon next to a sidebar item | Your license does not include this feature. |
-| Lock icon on a toggle | Toggle requires Pro. |
+| Lock icon next to a sidebar item | That feature is not part of your edition or plan. |
+| Lock icon on a toggle | Toggle requires Pro. (No hardening toggle carries one — all 12 are free.) |
 | Beta badge (amber, flask icon) | Feature is in active testing. |
 | Trial pill under logo | Pro trial is active (the trial end date itself is shown in Settings → License). |
 | `?` grade pill | Scan finished but grade unavailable (AI did not return). |
@@ -828,13 +839,13 @@ Click **Disable 2FA**. You must enter a current code from your app (or a backup 
 
 ## 11. Troubleshooting
 
-### "Network error" when activating a license
+### "Network error" when activating a license (Pro edition)
 
-Cause: the Command Center is unreachable, or your host blocks outbound HTTPS to `api.swisswpsecure.com`. Fix:
+Cause: the Command Center is unreachable, or your host blocks outbound HTTPS to `api.swisswpsecure.com`. (The free edition never contacts this host, so it cannot hit this error.) Fix:
 1. **Settings → AI Configuration → Test AI Connection** — if this also fails, your host blocks outbound HTTPS. Contact your host or whitelist the domain.
 2. Try again in 5 minutes — the Command Center may be rate-limiting (429). The plugin will treat this as a transient error and enter grace period; your features keep working for up to 72 hours.
 
-### "Domain lock" error during activation
+### "Domain lock" error during activation (Pro edition)
 
 Your license key is already activated on another domain. Go to that other site, open **Settings → License**, click **Deactivate License**, then try activating again on this site.
 

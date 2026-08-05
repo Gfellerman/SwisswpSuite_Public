@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { ContentItem, ContentType } from "../types";
+import { ContentBulkApplyResponse, ContentItem, ContentType } from "../types";
 import { useTokenBalance } from "../hooks/useTokenBalance";
 import { isProEdition } from "../lib/edition";
 import {
@@ -310,8 +310,13 @@ const ContentEnhancer: React.FC = () => {
 
       let bulkApplied = 0;
       let bulkFailed: number[] = [];
+      // CE-CAT5-002/CE-CAT13-003 FIX: ids the server explicitly could not act on
+      // (no persisted AI proposal, or a malformed id) — previously these vanished
+      // from the response and the toast reported a false "Applied N successfully".
+      let bulkSkipped: ContentBulkApplyResponse["skipped_no_proposal"] = [];
       let bulkTotalReceived: number | undefined;
       let bulkTruncated = false;
+      let bulkAccountingMismatch = false;
 
       if (idsWithoutEdits.length > 0) {
         const bulkRes = await fetch(`${apiUrl}/content/bulk-apply`, {
@@ -322,12 +327,20 @@ const ContentEnhancer: React.FC = () => {
           },
           body: JSON.stringify({ ids: idsWithoutEdits, field: activeField }),
         });
-        const bulkData = await bulkRes.json();
+        const bulkData: ContentBulkApplyResponse = await bulkRes.json();
         bulkApplied = bulkData.applied ?? 0;
         bulkFailed = bulkData.failed ?? [];
+        bulkSkipped = bulkData.skipped_no_proposal ?? [];
         // PHP returns total_received (count before 100-item cap). If > 100, items were silently dropped.
         bulkTotalReceived = bulkData.total_received as number | undefined;
         bulkTruncated = (bulkTotalReceived ?? 0) > 100;
+        // CE-CAT5-002/CE-CAT13-003 FIX: every id the server actually processed (the
+        // capped set, not the pre-cap total_received) must land in exactly one of
+        // applied/failed/skipped. If it doesn't, something changed server-side that
+        // this frontend doesn't know how to categorize — never claim plain success.
+        const processedCount = Math.min(bulkTotalReceived ?? idsWithoutEdits.length, 100);
+        bulkAccountingMismatch =
+          bulkApplied + bulkFailed.length + bulkSkipped.length !== processedCount;
       }
 
       // F-184 FIX: Per-promise .catch() prevents one network failure from rejecting
@@ -365,9 +378,19 @@ const ContentEnhancer: React.FC = () => {
       const truncationNote = bulkTruncated
         ? ` (batch truncated — PHP cap of 100 applied; ${bulkTotalReceived} items were requested)`
         : "";
-      if (bulkFailed.length > 0) {
+      // CE-CAT5-002/CE-CAT13-003 FIX: never report plain success when the server
+      // skipped items or when applied+failed+skipped doesn't add up — say precisely
+      // what happened instead of letting a partial batch look like a full success.
+      if (bulkFailed.length > 0 || bulkSkipped.length > 0 || bulkAccountingMismatch) {
+        const skippedNote =
+          bulkSkipped.length > 0
+            ? `, skipped ${bulkSkipped.length} (no proposal generated)`
+            : "";
+        const mismatchNote = bulkAccountingMismatch
+          ? " — response accounting did not match items sent; please verify results manually"
+          : "";
         toast.warning(
-          `Applied ${totalApplied}, failed: ${bulkFailed.length}${truncationNote}`,
+          `Applied ${totalApplied}${skippedNote}, failed ${bulkFailed.length}${truncationNote}${mismatchNote}`,
         );
       } else {
         toast.success(
@@ -544,7 +567,7 @@ const ContentEnhancer: React.FC = () => {
               </select>
             )}
 
-            <div className="h-6 w-px bg-gray-300 mx-1 hidden md:block"></div>
+            <div className="h-6 w-px bg-gray-300 mx-1 hidden md:block!"></div>
 
             {/* Bulk Actions */}
             {isBulkProcessing ? (

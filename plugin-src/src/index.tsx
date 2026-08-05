@@ -33,21 +33,34 @@ if (!import.meta.hot && rootElement.hasAttribute("data-swisswpsuite-mounted")) {
   // ─────────────────────────────────────────────────────────────────────────────
 
   // ─── JS ERROR FORWARDING ──────────────────────────────────────────────────────
-  // Catches ALL unhandled JS errors and promise rejections and forwards them to the
-  // PHP plugin log (visible in System Config → Logs). These errors also trigger the
-  // email alert system. This is the primary tool for detecting plugin JS conflicts.
+  // Catches unhandled JS errors and promise rejections THROWN BY THIS PLUGIN'S OWN
+  // BUNDLE and forwards them to the PHP plugin log (visible in System Config → Logs).
+  // These errors also trigger the email alert system. This is the primary tool for
+  // detecting plugin JS conflicts — but window.onerror/unhandledrejection fire for
+  // EVERY script on the page, not just this one, so every error/rejection is checked
+  // against this plugin's own asset URL (localized as assetsBaseUrl by
+  // class-swisswpsuite-admin.php) before being forwarded. Without this filter, a
+  // completely unrelated plugin's JS error would be logged and alerted on as a
+  // SwissSuite issue (4.3 fix — the filtering this comment used to merely claim to
+  // do). log_js_error() (api-settings.php) re-validates the same on the server as a
+  // defensive second layer, in case a stale cached bundle predates this filter.
   (function setupSwissErrorForwarder() {
+    const assetsBaseUrl = window.swisswpsuiteData?.assetsBaseUrl;
+
+    // Returns true only when the given source URL is demonstrably inside this
+    // plugin's own asset directory. A missing/empty assetsBaseUrl (e.g. a stale
+    // cached bundle running against an older localized-data object) or a
+    // missing source both fail closed — under-reporting is preferable to
+    // mislabeling another plugin's error as a SwissSuite issue.
+    const isOwnScript = (source: string): boolean => {
+      if (!assetsBaseUrl || !source) return false;
+      return source.includes(assetsBaseUrl);
+    };
+
     const sendError = (payload: object) => {
       const data = window.swisswpsuiteData;
       if (!data?.apiUrl || !data?.nonce) return;
-      // Use sendBeacon for reliability — works even during page unload
-      const blob = new Blob([JSON.stringify(payload)], {
-        type: "application/json",
-      });
       const url = data.apiUrl + "/debug/js-error";
-      if (navigator.sendBeacon) {
-        // sendBeacon doesn't send custom headers; use fetch with keepalive instead
-      }
       fetch(url, {
         method: "POST",
         headers: {
@@ -62,20 +75,27 @@ if (!import.meta.hot && rootElement.hasAttribute("data-swisswpsuite-mounted")) {
     };
 
     window.onerror = (message, source, lineno, colno, error) => {
-      // Ignore errors from other plugins' scripts (not swisswpsuite)
-      sendError({
-        type: "onerror",
-        message: String(message),
-        source: String(source || ""),
-        lineno: lineno || 0,
-        colno: colno || 0,
-        stack: error?.stack || "",
-      });
+      const sourceStr = String(source || "");
+      if (isOwnScript(sourceStr)) {
+        sendError({
+          type: "onerror",
+          message: String(message),
+          source: sourceStr,
+          lineno: lineno || 0,
+          colno: colno || 0,
+          stack: error?.stack || "",
+        });
+      }
       return false; // don't suppress default error handling
     };
 
     window.addEventListener("unhandledrejection", (event) => {
       const reason = event.reason;
+      const stack: string = reason?.stack || "";
+      // Promise rejections carry no `source` field at all — the stack trace is
+      // the only available attribution signal. Only forward when a frame in
+      // the stack demonstrably points into this plugin's own bundle.
+      if (!isOwnScript(stack)) return;
       sendError({
         type: "unhandledrejection",
         message:
@@ -83,7 +103,7 @@ if (!import.meta.hot && rootElement.hasAttribute("data-swisswpsuite-mounted")) {
         source: "",
         lineno: 0,
         colno: 0,
-        stack: reason?.stack || "",
+        stack,
       });
     });
   })();

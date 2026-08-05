@@ -15,10 +15,8 @@ import {
   FirewallAnalysis,
   SentinelAuditResult,
   SentinelCredits,
-  SquadDiagnosticResult,
   HardeningOption,
   QuarantineFile,
-  BulkAnalysisResult,
   AbandonedPluginsStatus,
   LatestScanResponse,
 } from "../types";
@@ -37,15 +35,12 @@ import {
   Globe,
   Lock,
   ShieldCheck,
-  Activity,
   EyeOff,
   FileSearch,
   ScanSearch,
   KeyRound,
   AlertTriangle,
-  Scan,
   X,
-  Archive,
   CheckCircle,
   CheckCircle2,
   RotateCcw,
@@ -62,9 +57,7 @@ import { Badge } from "./ui/Badge";
 import { SectionHeader } from "./ui/SectionHeader";
 import { SentinelGradeBadge } from "./organisms/Sentinel/SentinelGradeBadge";
 import { SentinelAttackChains } from "./organisms/Sentinel/SentinelAttackChains";
-import { SentinelLayer1Findings } from "./organisms/Sentinel/SentinelLayer1Findings";
 import { SentinelM5ConsentModal } from "./organisms/Sentinel/SentinelM5ConsentModal";
-import { ScanResultsTable } from "./organisms/Security/ScanResultsTable";
 import { ScanHistoryTable } from "./organisms/Security/ScanHistoryTable";
 import { HardeningOptionsGrid } from "./organisms/Security/HardeningOptionsGrid";
 import { CloudShieldPanel } from "./organisms/Security/CloudShieldPanel";
@@ -78,12 +71,8 @@ import ScanReportPreviewModal from "./organisms/Scan/ScanReportPreviewModal";
 import ScanReportSettingsPanel from "./organisms/Scan/ScanReportSettingsPanel";
 import { ScanHistoricalRecord } from "./organisms/Scan/ScanHistoricalRecord";
 import UpdateGuardCard from "./organisms/UpdateGuard/UpdateGuardCard";
-import { ProUpsellPlaceholder } from "./organisms/Upsell/ProUpsellPlaceholder";
-import {
-  isProEdition,
-  PRO_UPGRADE_URL,
-  hasEditionMismatch,
-} from "../lib/edition";
+import { FeaturePointer } from "./organisms/Upsell/FeaturePointer";
+import { isProEdition } from "../lib/edition";
 import type {
   AiAuditResult,
   MalwareScanResult,
@@ -292,22 +281,6 @@ const calculatePercent = (value: number, total: number): number => {
 };
 
 // Module-scope constants — hoisted here to avoid re-creation on every render
-
-// Squad diagnostic: map probe member keys to display labels
-const SQUAD_LABELS: Record<string, string> = {
-  sentinel: "AI Sentry",
-  architect: "System Core",
-  linux_engineer: "Server Config",
-  compatibility: "Plugin Compat",
-};
-
-// Squad diagnostic: map status values to Tailwind color classes
-const SQUAD_STATUS_COLORS: Record<string, string> = {
-  healthy: "bg-emerald-500",
-  warning: "bg-amber-500",
-  critical: "bg-rose-500",
-  idle: "bg-slate-200",
-};
 
 // Log action button base styles (used in getLogActionButton)
 const LOG_BTN_BASE =
@@ -612,9 +585,13 @@ const SecurityHub: React.FC = () => {
     status: "idle",
   });
   // @deprecated v2.9.28.11 — The Deep Scan UI that populated this state was replaced by
-  // ScanResultPanel's own selection state (v2.9.28.11). Kept because orphaned helpers
-  // (handleBulkAction, toggleThreatSelection, toggleSelectAllThreats) and the legacy
-  // Bulk Analysis Modal still reference it. Remove in v2.9.30 alongside showDeepScanModal.
+  // ScanResultPanel's own selection state (v2.9.28.11). The dead consumers that used to
+  // justify keeping it (handleBulkAction, toggleThreatSelection, toggleSelectAllThreats,
+  // the legacy Bulk AI Analysis Modal) were removed in the LiveQA fix sprint (2026-08-04,
+  // §4.4). This state is now WRITE-ONLY: performBulkOperation() still clears processed
+  // items from it on every bulk action (shared with the live handleScanPanelBulkAction
+  // path), but nothing reads it anymore. Safe to remove alongside showDeepScanModal
+  // once performBulkOperation's setSelectedThreats() call is also cleaned up.
   const [selectedThreats, setSelectedThreats] = useState<string[]>([]); // For bulk actions
 
   // Quarantine & Ignore Lists
@@ -645,13 +622,6 @@ const SecurityHub: React.FC = () => {
   // v2.9.28.43: migrated to useScanStore (scan-related state consolidation)
   const analyzingFile = useScanStore((s) => s.analyzingFile);
   const setAnalyzingFile = useScanStore((s) => s.setAnalyzingFile);
-
-  // Bulk Analysis State
-  const [showBulkAnalysisModal, setShowBulkAnalysisModal] = useState(false);
-  const [bulkAnalysisResults, setBulkAnalysisResults] = useState<
-    BulkAnalysisResult[]
-  >([]);
-  const [isBulkAnalyzing, setIsBulkAnalyzing] = useState(false);
 
   // Log Advisor State
   const [showLogAdvisor, setShowLogAdvisor] = useState(false);
@@ -731,11 +701,6 @@ const SecurityHub: React.FC = () => {
     []
   );
   const [loadingHardening, setLoadingHardening] = useState(false);
-
-  // Squad Diagnostic State (Swissway)
-  const [squadResults, setSquadResults] =
-    useState<SquadDiagnosticResult | null>(null);
-  const [squadLoading, setSquadLoading] = useState(false);
 
   // Abandoned Plugin Detection State
   const [abandonedPlugins, setAbandonedPlugins] =
@@ -1236,15 +1201,20 @@ const SecurityHub: React.FC = () => {
     // Gone, so the request body now always sends {mode: "quick"} below.
 
     // WP.org round-3 (Sprint W2/T7, 2026-07-26): the "!hasSecurity blocks
-    // deep-malware" guard that used to sit here is REMOVED. Sprint W1
-    // already de-gated deep-malware's local phases (enumerate, hash, local
-    // scan) in the PHP — they run free in every edition; only the service
-    // phases (vps_lookup/wpscan/patchstack/ai_analysis) require Pro, and
-    // those already self-skip server-side via class_exists() when their
-    // backing classes are absent. Blocking the whole scan client-side on
-    // hasSecurity was exactly the "still locked" misrepresentation this
-    // sprint fixes. See the deep-malware ScanCard below (locked prop) for
-    // the matching UI-level unlock.
+    // deep-malware" guard that used to sit here was REMOVED, on the
+    // reasoning that Sprint W1 had de-gated deep-malware's local phases
+    // (enumerate, hash, local scan) in the PHP so they ran free in every
+    // edition, leaving only the service phases (vps_lookup/wpscan/
+    // patchstack/ai_analysis) needing Pro.
+    // SUPERSEDED (LiveQA Fix Sprint, 2026-08-04, owner scan-edition
+    // ruling): "Deep scan" is Pro-only again at the whole-scan level, so
+    // this function's deep-malware branch is now unreachable in Free by
+    // construction — the ScanCard that calls it is edition-gated at the
+    // SecurityHub.tsx call site (see the block below), not via a `locked`
+    // prop. No client-side hasSecurity re-guard was added back here
+    // deliberately: the render-level gate already makes this branch
+    // dead code on Free, and a second guard here would just be an
+    // unreachable duplicate of it.
 
     // H-3: Token balance gate for token-consuming scan types.
     // v2.9.29.0 — deep-malware is also token-consuming (AI analysis phase).
@@ -2165,7 +2135,6 @@ const SecurityHub: React.FC = () => {
       await wpApi<{
         success: boolean;
         message?: string;
-        upgrade_required?: boolean;
       }>("/security/toggle", {
         method: "POST",
         body: JSON.stringify({ option, value }),
@@ -2508,25 +2477,6 @@ const SecurityHub: React.FC = () => {
         }
       }
     );
-  };
-
-  const handleSquadScan = async () => {
-    setSquadLoading(true);
-    setSquadResults(null);
-    try {
-      const data = await wpApi<SquadDiagnosticResult>(
-        "/security/squad/diagnostic",
-        {
-          method: "POST",
-        }
-      );
-      setSquadResults(data);
-    } catch (e: unknown) {
-      console.error(e);
-      toast.error(e instanceof Error ? e.message : "Diagnostic failed");
-    } finally {
-      setSquadLoading(false);
-    }
   };
 
   // --- Action Handlers ---
@@ -2894,59 +2844,72 @@ const SecurityHub: React.FC = () => {
       finding.fix_type === "navigate_hardening"
     )
       return;
-    try {
-      const payload = {
-        ...parseFindingForFix(finding),
-        // SEC-4: Pass finding_code so the backend can persist it as "fixed" across refreshes.
-        // Bug fix: finding.code and finding.file_path may be undefined — fall back to id/evidence/title
-        finding_code:
-          (finding.code || finding.id || "") +
-          ":" +
-          (finding.evidence || finding.title || ""),
-        // WP.org round-3 (Sprint W3): disable_wp_debug now requires explicit
-        // confirmation server-side — this rewrites wp-config.php.
-        ...(finding.fix_type === "disable_wp_debug"
-          ? { confirm: true }
-          : {}),
-      };
-      const data = await wpApi<RemediateResponse>("/security/findings/fix", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      if (data.success) {
-        // SEC-4 FIX: Mark the finding as 'fixed' in local state AND persist to backend.
-        // Local state: hides the finding immediately in the current session.
-        // Backend: the fix endpoint appends the finding ID to swisswpsuite_security_fixed_findings
-        // wp_option, so fetchLatestScanReport() filters it on future page loads.
-        setSentinelReport((prev) => {
-          if (!prev) return prev;
-          const markFixed = (f: SentinelLayer1Finding) =>
-            f.id === finding.id ? { ...f, status: "fixed" } : f;
-          if (prev.layer === 1) {
-            return { ...prev, findings: prev.findings.map(markFixed) };
-          }
-          return {
-            ...prev,
-            individual_findings: (
-              prev as SentinelLayer2Report
-            ).individual_findings.map(markFixed),
-          };
+    const runFix = async () => {
+      try {
+        const payload = {
+          ...parseFindingForFix(finding),
+          // SEC-4: Pass finding_code so the backend can persist it as "fixed" across refreshes.
+          // Bug fix: finding.code and finding.file_path may be undefined — fall back to id/evidence/title
+          finding_code:
+            (finding.code || finding.id || "") +
+            ":" +
+            (finding.evidence || finding.title || ""),
+          // WP.org round-3 (Sprint W3): disable_wp_debug now requires explicit
+          // confirmation server-side — this rewrites wp-config.php.
+          ...(finding.fix_type === "disable_wp_debug" ? { confirm: true } : {}),
+        };
+        const data = await wpApi<RemediateResponse>("/security/findings/fix", {
+          method: "POST",
+          body: JSON.stringify(payload),
         });
-        toast.success(
-          data.message || "Fixed successfully. Re-run scan to confirm."
-        );
-      } else if (data.manual_fix) {
-        // Bug fix: chmod failures on Hostinger return a manual_fix guide — display it
-        setL1ManualFix(data.manual_fix);
-      } else {
+        if (data.success) {
+          // SEC-4 FIX: Mark the finding as 'fixed' in local state AND persist to backend.
+          // Local state: hides the finding immediately in the current session.
+          // Backend: the fix endpoint appends the finding ID to swisswpsuite_security_fixed_findings
+          // wp_option, so fetchLatestScanReport() filters it on future page loads.
+          setSentinelReport((prev) => {
+            if (!prev) return prev;
+            const markFixed = (f: SentinelLayer1Finding) =>
+              f.id === finding.id ? { ...f, status: "fixed" } : f;
+            if (prev.layer === 1) {
+              return { ...prev, findings: prev.findings.map(markFixed) };
+            }
+            return {
+              ...prev,
+              individual_findings: (
+                prev as SentinelLayer2Report
+              ).individual_findings.map(markFixed),
+            };
+          });
+          toast.success(
+            data.message || "Fixed successfully. Re-run scan to confirm."
+          );
+        } else if (data.manual_fix) {
+          // Bug fix: chmod failures on Hostinger return a manual_fix guide — display it
+          setL1ManualFix(data.manual_fix);
+        } else {
+          toast.error(
+            data.message ||
+              "Fix failed. See the manual steps for an alternative approach."
+          );
+        }
+      } catch {
         toast.error(
-          data.message ||
-            "Fix failed. See the manual steps for an alternative approach."
+          "Fix request failed — check your connection and try again."
         );
       }
-    } catch {
-      toast.error("Fix request failed — check your connection and try again.");
+    };
+    // WP.org round-3 (Sprint W3, T5): disable_wp_debug rewrites wp-config.php —
+    // confirm with the user before asserting `confirm: true` to the backend.
+    // Mirrors the identical gate in handleLogActionFix (debug_mode_enabled).
+    if (finding.fix_type === "disable_wp_debug") {
+      showConfirm(
+        "Disable WP_DEBUG mode? This rewrites your wp-config.php file.",
+        runFix
+      );
+      return;
     }
+    await runFix();
   };
 
   const handleL1NavigateHardening = () => {
@@ -2998,117 +2961,25 @@ const SecurityHub: React.FC = () => {
     }
   };
 
-  const closeScanResults = () => {
-    setDeepScanStatus({ ...deepScanStatus, status: "idle" });
-    setSelectedThreats([]);
-  };
-
-  const handleBulkAction = async (
-    action: "ignore" | "delete" | "analyze" | "quarantine"
-  ) => {
-    if (selectedThreats.length === 0) return;
-
-    if (action === "analyze") {
-      // v2.9.28.23 — Defensive guard (see handleAiAnalyze comment).
-      // The ScanResultsTable legacy "Analyze" button that calls this path was
-      // removed in v2.9.28.0 and the modal block at ~line 4973 is dead, but we
-      // guard defensively to ensure no analyze chain can run while a parent
-      // scan (fullAi / aiAudit / malware / deep) is still polling in the
-      // background. Blocks any ghost-click / stale state fire.
-      if (
-        aiAuditLoading ||
-        fullAiLoading ||
-        malwareLoading ||
-        deepScanStatus?.status === "running"
-      ) {
-        return;
-      }
-      setShowBulkAnalysisModal(true);
-      setIsBulkAnalyzing(true);
-      setBulkAnalysisResults([]);
-
-      // Analyze one by one to show progress
-      const results: BulkAnalysisResult[] = [];
-      for (const file of selectedThreats) {
-        setAnalyzingFile(file);
-        try {
-          const data = await wpApi<{
-            success: boolean;
-            analysis?: Omit<BulkAnalysisResult, "file">;
-            auto_whitelisted?: boolean;
-            message?: string;
-          }>("/security/analyze-file", {
-            method: "POST",
-            body: JSON.stringify({ file }),
-          });
-          if (data.success && data.analysis) {
-            const result: BulkAnalysisResult = {
-              file,
-              ...data.analysis,
-              auto_whitelisted: data.auto_whitelisted,
-            };
-            results.push(result);
-            setBulkAnalysisResults((prev) => [...prev, result]);
-          } else {
-            setBulkAnalysisResults((prev) => [
-              ...prev,
-              { file, error: data.message || "Failed" },
-            ]);
-          }
-        } catch (e) {
-          console.error(e);
-          setBulkAnalysisResults((prev) => [
-            ...prev,
-            { file, error: "Network Error" },
-          ]);
-        }
-      }
-      // Auto-remove whitelisted files from scan results
-      const autoWhitelisted = results.filter((r) => r.auto_whitelisted);
-      if (autoWhitelisted.length > 0) {
-        const whitelistedPaths = autoWhitelisted.map((r) => r.file);
-        setDeepScanStatus((prev) => ({
-          ...prev,
-          results: prev.results?.filter(
-            (r) => !whitelistedPaths.includes(r.file)
-          ),
-        }));
-        setSelectedThreats((prev) =>
-          prev.filter((f) => !whitelistedPaths.includes(f))
-        );
-        toast.success(
-          `${autoWhitelisted.length} safe file(s) auto-whitelisted — they won't appear on future scans.`
-        );
-      }
-      setAnalyzingFile(null);
-      setIsBulkAnalyzing(false);
-      return;
-    }
-
-    if (action === "quarantine") {
-      showConfirm(
-        `Move ${selectedThreats.length} file(s) to quarantine? They will be isolated but can be restored.`,
-        async () => {
-          if (await performBulkOperation("quarantine", selectedThreats)) {
-            toast.success(`Quarantined ${selectedThreats.length} file(s).`);
-          }
-        }
-      );
-      return;
-    }
-
-    showConfirm(
-      `Are you sure you want to ${action} ${selectedThreats.length} items?`,
-      () => {
-        performBulkOperation(action, selectedThreats);
-      }
-    );
-  };
-
+  /**
+   * v2.9.33.x (LiveQA Fix Sprint 2026-08-04, §1.5) — return shape widened from
+   * a plain boolean to { success, failed }. Bulk "Mark Safe" was silently
+   * dropping findings the server correctly reported as undismissable
+   * (description-only findings that fail the path-regex validation in
+   * bulk_security_action()) because callers only ever saw a boolean "did the
+   * overall request succeed" — never which individual items failed. All 5
+   * call sites below were updated from `if (await performBulkOperation(...))`
+   * to `if ((await performBulkOperation(...)).success)` to match — an object
+   * is always truthy, so leaving any call site un-migrated would have made it
+   * silently ALWAYS take the success branch regardless of outcome.
+   */
   const performBulkOperation = async (
     action: "ignore" | "delete" | "quarantine",
     items: string[]
-  ) => {
+  ): Promise<{
+    success: boolean;
+    failed: Array<{ path: string; reason: string }>;
+  }> => {
     try {
       const data = await wpApi<{
         success: boolean;
@@ -3139,15 +3010,15 @@ const SecurityHub: React.FC = () => {
           );
         }
 
-        return true;
+        return { success: true, failed: data.failed ?? [] };
       } else {
         toast.error("Bulk action failed: " + data.message);
-        return false;
+        return { success: false, failed: [] };
       }
     } catch (e) {
       console.error(e);
       toast.error("Bulk action failed.");
-      return false;
+      return { success: false, failed: [] };
     }
   };
 
@@ -3176,15 +3047,25 @@ const SecurityHub: React.FC = () => {
         quarantine: "quarantined",
         delete: "deleted",
       } as const;
-      const ok = await performBulkOperation(action, fileList);
-      if (ok) {
+      const result = await performBulkOperation(action, fileList);
+      if (result.success) {
+        // v2.9.33.x (LiveQA Fix Sprint 2026-08-04, §1.5) — bulk "Mark Safe" used
+        // to hide EVERY originally-selected item on any success:true response,
+        // even the ones the server just reported in `failed` (e.g.
+        // description-only findings that fail bulk_security_action()'s
+        // path-format regex). Filtering to only the items NOT in `failed`
+        // keeps undismissable findings visible instead of letting them
+        // silently vanish and then reappear on the next scan.
+        const failedPaths = new Set(result.failed.map((f) => f.path));
+        const succeededList = fileList.filter((f) => !failedPaths.has(f));
+
         // Remove the acted-upon findings from AI audit result panels.
         updateAiAuditResult((prev) =>
           prev
             ? {
                 ...prev,
                 findings: prev.findings.filter(
-                  (f) => !fileList.includes(f.evidence ?? "")
+                  (f) => !succeededList.includes(f.evidence ?? "")
                 ),
               }
             : prev
@@ -3194,7 +3075,7 @@ const SecurityHub: React.FC = () => {
             ? {
                 ...prev,
                 findings: prev.findings.filter(
-                  (f) => !fileList.includes(f.evidence ?? "")
+                  (f) => !succeededList.includes(f.evidence ?? "")
                 ),
               }
             : prev
@@ -3206,22 +3087,26 @@ const SecurityHub: React.FC = () => {
             ? {
                 ...prev,
                 threats: (prev.threats ?? []).filter(
-                  (t) => !fileList.includes(t.file)
+                  (t) => !succeededList.includes(t.file)
                 ),
                 threats_found: Math.max(
                   0,
                   (prev.threats_found ?? 0) -
                     (prev.threats ?? []).filter((t) =>
-                      fileList.includes(t.file)
+                      succeededList.includes(t.file)
                     ).length
                 ),
               }
             : prev
         );
         if (action === "ignore") fetchIgnored();
-        toast.success(
-          `${fileList.length} finding${fileList.length === 1 ? "" : "s"} ${verbMap[action]}.`
-        );
+        if (succeededList.length > 0) {
+          toast.success(
+            `${succeededList.length} finding${succeededList.length === 1 ? "" : "s"} ${verbMap[action]}.`
+          );
+        }
+        // performBulkOperation() already toasts the failed-item detail (paths
+        // + reasons) — no duplicate toast here for the failed remainder.
       }
     },
     // performBulkOperation is recreated each render but closes over stable
@@ -3231,83 +3116,6 @@ const SecurityHub: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
-
-  const handleBulkIgnoreSafe = async () => {
-    const safeFiles = bulkAnalysisResults
-      .filter((r) => r.verdict && r.verdict.toLowerCase().includes("safe"))
-      .map((r) => r.file);
-
-    if (safeFiles.length === 0) {
-      toast.error("No files marked as 'Safe' found.");
-      return;
-    }
-
-    if (await performBulkOperation("ignore", safeFiles)) {
-      // Close modal if all selected items were safe and processed
-      if (safeFiles.length === selectedThreats.length) {
-        setShowBulkAnalysisModal(false);
-      } else {
-        // Otherwise just update the modal state to reflect they are handled?
-        // Actually performBulkOperation removes them from results list, so they are "gone".
-        // We should probably close the modal or refresh it.
-        // Let's just remove them from the results view
-        setBulkAnalysisResults((prev) =>
-          prev.filter((r) => !safeFiles.includes(r.file))
-        );
-        toast.success(`Moved ${safeFiles.length} safe files to Ignored list.`);
-      }
-    }
-  };
-
-  const handleBulkQuarantineSuspicious = () => {
-    const suspiciousFiles = bulkAnalysisResults
-      .filter((r) => !r.verdict?.toLowerCase().includes("safe") && !r.error)
-      .map((r) => r.file);
-
-    if (suspiciousFiles.length === 0) return;
-
-    showConfirm(
-      `Move ${suspiciousFiles.length} suspicious file(s) to quarantine? They will be isolated but can be restored at any time.`,
-      async () => {
-        if (await performBulkOperation("quarantine", suspiciousFiles)) {
-          setBulkAnalysisResults((prev) =>
-            prev.filter((r) => !suspiciousFiles.includes(r.file))
-          );
-          toast.success(`Quarantined ${suspiciousFiles.length} file(s).`);
-          setShowBulkAnalysisModal(false);
-        }
-      }
-    );
-  };
-
-  const handleBulkIgnoreAll = async () => {
-    const allFiles = bulkAnalysisResults
-      .filter((r) => !r.error)
-      .map((r) => r.file);
-    if (allFiles.length === 0) return;
-    if (await performBulkOperation("ignore", allFiles)) {
-      setBulkAnalysisResults([]);
-      setShowBulkAnalysisModal(false);
-      toast.success(`Marked ${allFiles.length} file(s) as ignored.`);
-    }
-  };
-
-  const toggleThreatSelection = (file: string) => {
-    if (selectedThreats.includes(file)) {
-      setSelectedThreats((prev) => prev.filter((f) => f !== file));
-    } else {
-      setSelectedThreats((prev) => [...prev, file]);
-    }
-  };
-
-  const toggleSelectAllThreats = () => {
-    if (!deepScanStatus?.results) return;
-    if (selectedThreats.length === deepScanStatus.results.length) {
-      setSelectedThreats([]);
-    } else {
-      setSelectedThreats(deepScanStatus.results.map((r) => r.file));
-    }
-  };
 
   const handleAiAnalyze = async (
     filepath: string,
@@ -3901,104 +3709,6 @@ const SecurityHub: React.FC = () => {
 
       {activeTab === "dashboard" && (
         <>
-          {/* SQUAD DIAGNOSTIC CENTER — hidden: backend endpoint returns 404 on some hosts (TD-XX) */}
-          {false && (
-            <div className="glass-panel relative mb-12 overflow-hidden rounded-3xl p-8">
-              <div className="bg-brand-accent/5 absolute top-0 right-0 -mt-32 -mr-32 h-64 w-64 rounded-full blur-3xl" />
-              <div className="border-border/60 relative z-10 mb-8 flex flex-col items-start justify-between gap-8 border-b pb-6 md:flex-row md:items-center">
-                <div>
-                  <h3 className="text-swiss-navy flex items-center gap-3 text-xl font-bold">
-                    <div className="glass-panel rounded-xl bg-indigo-50 p-2">
-                      <Activity className="text-indigo-600" size={20} />
-                    </div>
-                    Squad Diagnostic Center
-                  </h3>
-                  <p className="mt-1 text-sm font-medium tracking-wider text-neutral-700 uppercase">
-                    Autonomous health probes & deep-trace validation
-                  </p>
-                </div>
-                <Button
-                  onClick={handleSquadScan}
-                  loading={squadLoading}
-                  variant="primary"
-                  className="rounded-xl bg-indigo-600 px-6 hover:bg-indigo-700"
-                  icon={Scan}
-                >
-                  {squadLoading ? "Probing..." : "Swiss Precision Scan"}
-                </Button>
-              </div>
-
-              <div className="relative z-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-                {(
-                  [
-                    "sentinel",
-                    "architect",
-                    "linux_engineer",
-                    "compatibility",
-                  ] as const
-                ).map((member) => {
-                  const data = squadResults?.squad?.[member];
-                  const status = data?.status || "idle";
-
-                  return (
-                    <div
-                      key={member}
-                      className="glass-panel premium-card p-6 transition-all duration-300 hover:translate-y-[-4px]"
-                    >
-                      <div className="mb-4 flex items-center justify-between">
-                        <span className="text-sm font-black tracking-widest text-neutral-700 uppercase">
-                          {SQUAD_LABELS[member]}
-                        </span>
-                        <div
-                          className={`h-2.5 w-2.5 rounded-full shadow-sm ring-4 ring-white ${SQUAD_STATUS_COLORS[status] ?? "bg-slate-200"}`}
-                        />
-                      </div>
-                      <h4 className="text-swiss-navy mb-2 text-sm font-bold">
-                        {data?.name || "Monitoring..."}
-                      </h4>
-                      <div className="bg-secondary/50 h-1.5 w-full overflow-hidden rounded-full">
-                        <div
-                          className={`h-full transition-all duration-1000 ${SQUAD_STATUS_COLORS[status] ?? "bg-slate-200"}`}
-                          style={{
-                            width:
-                              status === "healthy"
-                                ? "100%"
-                                : status === "idle"
-                                  ? "0%"
-                                  : "60%",
-                          }}
-                        />
-                      </div>
-                      {data?.issues?.length > 0 && (
-                        <div className="mt-4 rounded-xl border border-rose-100 bg-rose-50/50 p-3 text-sm leading-relaxed font-medium text-rose-600 backdrop-blur-sm">
-                          {data.issues[0]}
-                          {data.issues.length > 1 && (
-                            <span className="mt-1 block text-xs text-rose-400">
-                              +{data.issues.length - 1} more — check plugin log
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {member === "compatibility" && data?.details && (
-                        <div className="mt-3 space-y-0.5 text-xs font-medium text-neutral-500">
-                          <div>
-                            {data.details.active_plugin_count} plugins active
-                          </div>
-                          {data.details.conflicts_found > 0 && (
-                            <div className="font-black text-amber-600">
-                              {data.details.conflicts_found} conflict(s)
-                              detected
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Firewall Advisor modal moved to global scope — see end of component */}
 
           {/* Bulk Analysis Modal moved to global scope — see end of component */}
@@ -4008,7 +3718,7 @@ const SecurityHub: React.FC = () => {
           {/* Deep Scan Modal moved to global scope — see below */}
 
           {/* Update Guard Card (Sprint 2 — Phase 1 Observe) */}
-          {isProEditionBuild ? (
+          {isProEditionBuild && (
             <UpdateGuardCard
               status={updateGuardStatus}
               snapshots={updateGuardSnapshots}
@@ -4017,19 +3727,12 @@ const SecurityHub: React.FC = () => {
               hasSentinelPro={hasSecurity}
               onSettingsChange={fetchUpdateGuard}
             />
-          ) : (
-            <ProUpsellPlaceholder
-              feature="Update Guard"
-              variant="compact"
-              description="Virtual patching for WordPress auto-updates — snapshots every update, scans staged packages before they apply, and can auto-rollback if something looks wrong."
-              bullets={[
-                "Pre-update snapshot + staged-package scan",
-                "Review queue or automatic block-on-match",
-                "One-click atomic rollback if an update misbehaves",
-              ]}
-              editionMismatch={hasEditionMismatch()}
-            />
           )}
+          {/* Upsell redesign (2026-08-04, design point 1/2): Update Guard's
+              compact ProUpsellPlaceholder is removed — its absence, plus
+              Geo-Blocking's and the 2FA link's below, is covered by this
+              single page-level pointer rather than one CTA per card. */}
+          {!isProEditionBuild && <FeaturePointer variant="edition" />}
 
           {/* Dashboard Grid - Swiss Precision Style */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -4038,41 +3741,39 @@ const SecurityHub: React.FC = () => {
               <div className="bg-swiss-navy absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full" />
               <div className="relative z-10 mb-6 flex items-start justify-between">
                 <div
-                  className={`rounded-2xl p-3 ${firewallEnabled || !hasSecurity ? "bg-swiss-navy shadow-swiss-navy/20 text-white shadow-lg" : "bg-secondary text-neutral-700"}`}
+                  className={`rounded-2xl p-3 ${firewallEnabled ? "bg-swiss-navy shadow-swiss-navy/20 text-white shadow-lg" : "bg-secondary text-neutral-700"}`}
                 >
                   <Shield size={24} />
                 </div>
-                {hasSecurity ? (
+                {/* Basic WAF on/off is free in both editions (Freemium Dual-Build
+                     Option A, see the hasSecurity comment above) — this switch must
+                     render unconditionally, matching the Detection Only Mode
+                     checkbox below. It was previously gated on hasSecurity (the
+                     paid 'waf' capability), which hid it entirely for Free/non-
+                     Security-plan users behind a read-only label — live-QA-found
+                     and fixed 2026-08-02. */}
+                <div
+                  role="switch"
+                  aria-checked={firewallEnabled}
+                  aria-label="Toggle Smart Firewall"
+                  tabIndex={0}
+                  className={`h-6 w-12 cursor-pointer rounded-full p-1 ring-1 transition-all duration-300 ring-inset ${firewallEnabled ? "bg-green-500 ring-green-600" : "bg-red-500 ring-red-600"}`}
+                  onClick={() => handleToggle("firewall", !firewallEnabled)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" || e.key === " "
+                      ? handleToggle("firewall", !firewallEnabled)
+                      : undefined
+                  }
+                >
                   <div
-                    role="switch"
-                    aria-checked={firewallEnabled}
-                    aria-label="Toggle Smart Firewall"
-                    tabIndex={0}
-                    className={`h-6 w-12 cursor-pointer rounded-full p-1 ring-1 transition-all duration-300 ring-inset ${firewallEnabled ? "bg-green-500 ring-green-600" : "bg-red-500 ring-red-600"}`}
-                    onClick={() => handleToggle("firewall", !firewallEnabled)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" || e.key === " "
-                        ? handleToggle("firewall", !firewallEnabled)
-                        : undefined
-                    }
-                  >
-                    <div
-                      className="h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300"
-                      style={{
-                        transform: firewallEnabled
-                          ? "translateX(1.5rem)"
-                          : "translateX(0)",
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <span
-                    aria-live="polite"
-                    className={`text-xs font-black tracking-widest uppercase ${simulationMode ? "text-amber-600" : "text-green-600"}`}
-                  >
-                    {simulationMode ? "Detection Only" : "Basic Active"}
-                  </span>
-                )}
+                    className="h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300"
+                    style={{
+                      transform: firewallEnabled
+                        ? "translateX(1.5rem)"
+                        : "translateX(0)",
+                    }}
+                  />
+                </div>
               </div>
               <h3 className="text-swiss-navy relative z-10 mb-2 text-xs font-black tracking-widest uppercase">
                 Smart Firewall
@@ -4163,37 +3864,49 @@ const SecurityHub: React.FC = () => {
                       </li>
                     ))}
                   </ul>
-                  <div className="bg-swiss-navy/5 border-swiss-navy/10 rounded-xl border p-3">
-                    <p className="text-swiss-navy mb-1 text-xs font-black tracking-widest uppercase">
-                      Upgrade for Full Protection
-                    </p>
-                    <ul className="mb-2 space-y-0.5">
-                      {[
-                        "28+ SQLi + comment injection bypass",
-                        "40+ XSS + all event handler attacks",
-                        "Multi-layer encoding bypass detection",
-                      ].map((f) => (
-                        <li
-                          key={f}
-                          className="flex items-start gap-1.5 text-xs text-neutral-500"
-                        >
-                          <Lock
-                            size={9}
-                            className="text-swiss-navy/40 mt-0.5 shrink-0"
-                          />{" "}
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    <a
-                      href="https://swisswpsecure.com/#pricing"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-swiss-navy inline-flex items-center gap-1 text-xs font-black tracking-widest uppercase hover:underline"
-                    >
-                      Upgrade to Security Plan →
-                    </a>
-                  </div>
+                  {/* Upsell redesign (2026-08-04, T1): this box is a
+                      plan-upsell to an EXISTING customer (Pro build, WAF
+                      capability not on their tier) — permitted per the
+                      design doc since WP.org never reviews the Pro build.
+                      Gated on isProEditionBuild (not just hasAdvancedWaf)
+                      so it structurally cannot render in the Free build even
+                      under a stale/corrupted capability cache. The page
+                      already carries one neutral FeaturePointer (above, near
+                      Update Guard) for the Free case — no second pointer
+                      added here per the "one pointer per view" rule. */}
+                  {isProEditionBuild && (
+                    <div className="bg-swiss-navy/5 border-swiss-navy/10 rounded-xl border p-3">
+                      <p className="text-swiss-navy mb-1 text-xs font-black tracking-widest uppercase">
+                        Upgrade for Full Protection
+                      </p>
+                      <ul className="mb-2 space-y-0.5">
+                        {[
+                          "28+ SQLi + comment injection bypass",
+                          "40+ XSS + all event handler attacks",
+                          "Multi-layer encoding bypass detection",
+                        ].map((f) => (
+                          <li
+                            key={f}
+                            className="flex items-start gap-1.5 text-xs text-neutral-500"
+                          >
+                            <Lock
+                              size={9}
+                              className="text-swiss-navy/40 mt-0.5 shrink-0"
+                            />{" "}
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <a
+                        href="https://swisswpsecure.com/#pricing"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-swiss-navy inline-flex items-center gap-1 text-xs font-black tracking-widest uppercase hover:underline"
+                      >
+                        Upgrade to Security Plan →
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -4379,57 +4092,51 @@ const SecurityHub: React.FC = () => {
                   </div>
                 )}
               </div>
-            ) : (
-              <ProUpsellPlaceholder
-                feature="Geo-Blocking"
-                variant="compact"
-                icon={Globe}
-                description="Restrict site access based on visitor location — block traffic from high-risk regions, or allow only specific countries."
-                bullets={[
-                  "Block-list or allow-list by country",
-                  "Automatically blocks common attack-source regions",
-                ]}
-                editionMismatch={hasEditionMismatch()}
-              />
-            )}
+            ) : null}
+            {/* Upsell redesign (2026-08-04, design point 1/2): Geo-Blocking's
+                compact ProUpsellPlaceholder is removed — see the single
+                page-level FeaturePointer rendered further down this
+                sub-tab (near Login Safeguard) for the neutral pointer that
+                covers both this card and Update Guard above. */}
 
             {/* Login Security Card */}
             <div className="glass-panel premium-card relative overflow-hidden p-6 transition-all">
               <div className="bg-card/5 absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full" />
               <div className="relative z-10 mb-6 flex items-start justify-between">
                 <div
-                  className={`rounded-2xl p-3 ${loginEnabled || !hasSecurity ? "bg-slate-800 text-white shadow-lg shadow-slate-900/20" : "bg-secondary text-neutral-700"}`}
+                  className={`rounded-2xl p-3 ${loginEnabled ? "bg-slate-800 text-white shadow-lg shadow-slate-900/20" : "bg-secondary text-neutral-700"}`}
                 >
                   <KeyRound size={24} />
                 </div>
-                {hasSecurity ? (
+                {/* Basic login-lockout protection is free in both editions
+                     (same Freemium Dual-Build Option A as the WAF card above) —
+                     this switch must render unconditionally. It was previously
+                     gated on hasSecurity, which left Free/non-Security-plan
+                     users with NO interactive control at all (only a read-only
+                     "ACTIVE — N ATTEMPTS" label) — live-QA-found and fixed
+                     2026-08-02. */}
+                <div
+                  role="switch"
+                  aria-checked={loginEnabled}
+                  aria-label="Toggle Login Safeguard"
+                  tabIndex={0}
+                  className={`h-6 w-12 cursor-pointer rounded-full p-1 ring-1 transition-all duration-300 ring-inset ${loginEnabled ? "bg-green-500 ring-green-600" : "bg-red-500 ring-red-600"}`}
+                  onClick={() => handleToggle("login", !loginEnabled)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" || e.key === " "
+                      ? handleToggle("login", !loginEnabled)
+                      : undefined
+                  }
+                >
                   <div
-                    role="switch"
-                    aria-checked={loginEnabled}
-                    aria-label="Toggle Login Safeguard"
-                    tabIndex={0}
-                    className={`h-6 w-12 cursor-pointer rounded-full p-1 ring-1 transition-all duration-300 ring-inset ${loginEnabled ? "bg-green-500 ring-green-600" : "bg-red-500 ring-red-600"}`}
-                    onClick={() => handleToggle("login", !loginEnabled)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" || e.key === " "
-                        ? handleToggle("login", !loginEnabled)
-                        : undefined
-                    }
-                  >
-                    <div
-                      className="h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300"
-                      style={{
-                        transform: loginEnabled
-                          ? "translateX(1.5rem)"
-                          : "translateX(0)",
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <span className="text-xs font-black tracking-widest text-green-600 uppercase">
-                    ACTIVE — {loginMaxRetries} ATTEMPTS
-                  </span>
-                )}
+                    className="h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300"
+                    style={{
+                      transform: loginEnabled
+                        ? "translateX(1.5rem)"
+                        : "translateX(0)",
+                    }}
+                  />
+                </div>
               </div>
               <h3 className="text-swiss-navy relative z-10 mb-2 text-xs font-black tracking-widest uppercase">
                 Login Safeguard
@@ -4438,13 +4145,7 @@ const SecurityHub: React.FC = () => {
                 Protect your admin area from brute-force login attempts with
                 automated locking.
               </p>
-              {/* Free-branch <a> below: text-indigo-600!/hover:text-indigo-800!/
-                  dark:text-indigo-400!/dark:hover:text-indigo-300! hardened
-                  against wp-admin's unlayered <a> color rule beating
-                  Tailwind's layered utility (Cascade Layers spec) — same bug
-                  already fixed in ProUpsellPlaceholder.tsx (see that file for
-                  the full explanation + computed contrast ratios). */}
-              {isProEditionBuild ? (
+              {isProEditionBuild && (
                 <Link
                   to="/settings?tab=security"
                   className="relative z-10 mb-4 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 transition-colors hover:text-blue-800"
@@ -4452,48 +4153,45 @@ const SecurityHub: React.FC = () => {
                   <ShieldCheck size={14} />
                   Set up Two-Factor Authentication (2FA)
                 </Link>
-              ) : (
-                <a
-                  href={PRO_UPGRADE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="relative z-10 mb-4 inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600! transition-colors hover:text-indigo-800! dark:text-indigo-400! dark:hover:text-indigo-300!"
-                >
-                  <ShieldCheck size={14} aria-hidden="true" />
-                  Two-Factor Authentication (2FA) — Pro Feature
-                </a>
               )}
+              {/* Upsell redesign (2026-08-04, design point 1/2): the Free
+                  branch's "Two-Factor Authentication (2FA) — Pro Feature"
+                  link is removed — covered by the page-level FeaturePointer
+                  below, not a second per-card CTA. */}
 
-              {hasSecurity && (
-                <div className="border-border relative z-10 border-t pt-4">
-                  <div className="mb-1 flex items-center justify-between">
-                    <label
-                      htmlFor="loginRetries"
-                      className="text-sm font-black tracking-widest text-slate-600 uppercase"
-                    >
-                      Max Login Attempts
-                    </label>
-                    <select
-                      id="loginRetries"
-                      value={loginMaxRetries}
-                      onChange={(e) =>
-                        saveLoginSettings(parseInt(e.target.value))
-                      }
-                      className="bg-background border-border focus:ring-swiss-navy rounded-lg px-3 py-1 text-sm font-black"
-                    >
-                      {[1, 3, 5, 10].map((n) => (
-                        <option key={n} value={n}>
-                          {n} attempts
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <p className="text-xs leading-relaxed font-medium text-neutral-500">
-                    After this many failed logins, the IP is temporarily locked
-                    out for 30 minutes.
-                  </p>
+              {/* Max-login-attempts is part of the same free basic
+                   login-lockout protection as the switch above — must render
+                   unconditionally for the same reason. Previously gated on
+                   hasSecurity, hiding this control entirely for Free/non-
+                   Security-plan users — live-QA-found and fixed 2026-08-02. */}
+              <div className="border-border relative z-10 border-t pt-4">
+                <div className="mb-1 flex items-center justify-between">
+                  <label
+                    htmlFor="loginRetries"
+                    className="text-sm font-black tracking-widest text-slate-600 uppercase"
+                  >
+                    Max Login Attempts
+                  </label>
+                  <select
+                    id="loginRetries"
+                    value={loginMaxRetries}
+                    onChange={(e) =>
+                      saveLoginSettings(parseInt(e.target.value))
+                    }
+                    className="bg-background border-border focus:ring-swiss-navy rounded-lg px-3 py-1 text-sm font-black"
+                  >
+                    {[1, 3, 5, 10].map((n) => (
+                      <option key={n} value={n}>
+                        {n} attempts
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              )}
+                <p className="text-xs leading-relaxed font-medium text-neutral-500">
+                  After this many failed logins, the IP is temporarily locked
+                  out for 30 minutes.
+                </p>
+              </div>
             </div>
 
             {/* Integrity Card */}
@@ -4669,8 +4367,24 @@ const SecurityHub: React.FC = () => {
             </div>
           )}
 
-          {/* AI Log Advisors — moved here from Logs tab (H-7) */}
-          {hasSecurity && (
+          {/* AI Log Advisors — moved here from Logs tab (H-7).
+              Upsell redesign (2026-08-04, T2): both branches below are now
+              gated on isProEditionBuild, not just hasSecurity. Their buttons
+              call /security/analyze-firewall and /security/analyze-logs,
+              which are registered ONLY when SWISSWPSUITE_EDITION === 'pro'
+              (class-swisswpsuite-api-security.php ~:251-290, F2) — physically
+              absent in the Free build. hasSecurity alone (a license
+              capability) is not a safe gate here: per lib/edition.ts's own
+              documented fail-safe contract, a stale/cached capability must
+              never be trusted over which code is actually present, or a
+              Free session with a corrupted capability cache could render
+              live buttons that hit a dead route. The former Free-reachable
+              "PRO" card ("Upgrade to Pro to unlock") is removed outright,
+              not replaced with a second pointer — the page already carries
+              one FeaturePointer (near Update Guard, above) covering this
+              view, and design's "sparingly"/one-pointer-per-view rule
+              favors not duplicating it here. */}
+          {isProEditionBuild && hasSecurity && (
             <div className="glass-panel premium-card mt-4 p-6 transition-all">
               <div className="mb-4">
                 <h3 className="text-swiss-navy mb-1 text-xs font-black tracking-widest uppercase">
@@ -4700,7 +4414,7 @@ const SecurityHub: React.FC = () => {
               </div>
             </div>
           )}
-          {!hasSecurity && (
+          {isProEditionBuild && !hasSecurity && (
             <div className="glass-panel premium-card mt-4 p-6 opacity-60 transition-all">
               <div className="mb-4">
                 <h3 className="text-swiss-navy mb-1 flex items-center gap-2 text-xs font-black tracking-widest uppercase">
@@ -4710,8 +4424,8 @@ const SecurityHub: React.FC = () => {
                   </Badge>
                 </h3>
                 <p className="text-sm font-medium text-neutral-500">
-                  Analyzes your existing log data with AI — no new scan. Upgrade
-                  to Pro to unlock.
+                  Analyzes your existing log data with AI — no new scan.
+                  Requires a plan that includes Security.
                 </p>
               </div>
             </div>
@@ -4791,6 +4505,24 @@ const SecurityHub: React.FC = () => {
             result={aiAuditResult}
             config={scanReportConfig}
           />
+          {/* Upsell redesign (2026-08-04, T2/T5) — applies to all 3
+              ScanResultPanel instances below (ai-audit/malware/deep-malware):
+              hasSentinelPro gates the "Check with AI" / Analyze action, which
+              calls /security/analyze-file — registered ONLY in the Pro build
+              (F2, api-security.php ~:251-263). Combined with isProEditionBuild
+              so a stale/cached Free-session capability can never enable a
+              control whose backing route is physically absent, matching the
+              same fail-safe contract lib/edition.ts documents for every other
+              paid-capability gate in this file. canRemediate is now
+              unconditionally true: quarantine/delete are a FREE-tier
+              capability (class-swisswpsuite-api-security.php:1814-1817,
+              class-swisswpsuite-security-quarantine.php:48-58) — the backend
+              already accepts these calls on Free. Previously this passed the
+              *paid-plan* `hasSentinelPro` local (sentinelCredits.is_pro /
+              sentinelIsPro), which wrongly locked a free capability behind a
+              paid-plan flag (L1 register §2.1). Distinct from the
+              hasSentinelPro PROP, which correctly keeps gating the separate
+              AI action. */}
           <ScanResultPanel
             scanType="ai-audit"
             result={aiAuditResult}
@@ -4805,8 +4537,8 @@ const SecurityHub: React.FC = () => {
             onQuarantine={handleQuarantine}
             onBulkAction={handleScanPanelBulkAction}
             onAnalyze={handleAiAnalyze}
-            hasSentinelPro={hasSecurity}
-            canRemediate={hasSentinelPro}
+            hasSentinelPro={isProEditionBuild && hasSecurity}
+            canRemediate={true}
           />
           {safelistSheetOpen && (
             <SentinelSafelistSheet
@@ -4833,8 +4565,8 @@ const SecurityHub: React.FC = () => {
             onBulkAction={handleScanPanelBulkAction}
             onAnalyze={handleAiAnalyze}
             analyzingFile={analyzingFile}
-            hasSentinelPro={hasSecurity}
-            canRemediate={hasSentinelPro}
+            hasSentinelPro={isProEditionBuild && hasSecurity}
+            canRemediate={true}
           />
 
           {/* v2.9.29.0 — Deep Malware Scan replaces the Full AI Scan card.
@@ -4842,39 +4574,61 @@ const SecurityHub: React.FC = () => {
               of VPS hash, WPScan, and Patchstack phases.
               WP.org round-3 (Sprint W2/T7, 2026-07-26): the `locked`
               override (previously `!hasSecurity`) and its "Requires
-              Security Plan" copy are REMOVED — Sprint W1 de-gated
+              Security Plan" copy were REMOVED — Sprint W1 de-gated
               deep-malware's local phases (enumerate, hash, local scan) in
-              the PHP, so they now run free in every edition; only the
-              service phases (vps_lookup/wpscan/patchstack/ai_analysis)
-              need Pro, and those self-skip server-side when their classes
-              are absent. ScanCard.tsx's own tier-based auto-lock for
-              "deep-malware" was updated to match (see its isProLocked
-              comment) — this card is no longer locked by tier at all. */}
-          <ScanCard
-            scanType="deep-malware"
-            tier={currentTier}
-            onTrigger={() => handleTriggerScan("deep-malware")}
-            isLoading={deepMalwareStatus === "running"}
-            result={deepMalwareResult}
-            loadingMessage={
-              deepMalwarePhase
-                ? (DEEP_MALWARE_PHASE_LABELS[deepMalwarePhase] ?? undefined)
-                : undefined
-            }
-          />
-          <ScanResultPanel
-            scanType="deep-malware"
-            result={deepMalwareResult}
-            isLoading={deepMalwareStatus === "running"}
-            onViewHistory={handleViewScanInHistory}
-            onMarkSafe={handleMarkMalwareSafe}
-            onQuarantine={handleQuarantine}
-            onBulkAction={handleScanPanelBulkAction}
-            onAnalyze={handleAiAnalyze}
-            analyzingFile={analyzingFile}
-            hasSentinelPro={hasSecurity}
-            canRemediate={hasSentinelPro}
-          />
+              the PHP, so at the time they ran free in every edition.
+              SUPERSEDED (LiveQA Fix Sprint, 2026-08-04, owner scan-edition
+              ruling): the owner has since drawn the Free/Pro line at the
+              whole-scan level, not the phase level — "Deep scan" (this
+              pipeline) is Pro-only in full, alongside the AI-diagnostic
+              surfaces. `/security/scan/malware/start` + `/status` are now
+              registered ONLY when SWISSWPSUITE_EDITION === 'pro'
+              (api-security.php ~:641), so a Free build calling either route
+              gets nothing — the route is physically absent. Per WP.org
+              Guideline 5, a Free-absent feature must not render as a
+              clickable-but-broken OR locked-teaser card (ScanCard.tsx's own
+              dimmed-overlay/Lock-icon/CTA branch is exactly the kind of
+              per-feature upsell the 2026-08-03 redesign ruling forbids), so
+              this card + its result panel are gated at this call site on
+              isProEditionBuild instead of passed a `locked` prop — see
+              ScanCard.tsx's isProLocked comment for why deep-malware stays
+              OUT of that clause even though it is Pro-only again. The
+              "scan" sub-tab had no FeaturePointer of its own before this —
+              added below for the Free case; variant="ai" because this
+              pipeline is genuinely AI-backed (its final phase is
+              ai_analysis and SCAN_DESCRIPTIONS already says "consumes AI
+              tokens"), unlike the "edition" pointer used elsewhere on the
+              dashboard sub-tab for non-AI Pro features. */}
+          {isProEditionBuild && (
+            <>
+              <ScanCard
+                scanType="deep-malware"
+                tier={currentTier}
+                onTrigger={() => handleTriggerScan("deep-malware")}
+                isLoading={deepMalwareStatus === "running"}
+                result={deepMalwareResult}
+                loadingMessage={
+                  deepMalwarePhase
+                    ? (DEEP_MALWARE_PHASE_LABELS[deepMalwarePhase] ?? undefined)
+                    : undefined
+                }
+              />
+              <ScanResultPanel
+                scanType="deep-malware"
+                result={deepMalwareResult}
+                isLoading={deepMalwareStatus === "running"}
+                onViewHistory={handleViewScanInHistory}
+                onMarkSafe={handleMarkMalwareSafe}
+                onQuarantine={handleQuarantine}
+                onBulkAction={handleScanPanelBulkAction}
+                onAnalyze={handleAiAnalyze}
+                analyzingFile={analyzingFile}
+                hasSentinelPro={isProEditionBuild && hasSecurity}
+                canRemediate={true}
+              />
+            </>
+          )}
+          {!isProEditionBuild && <FeaturePointer variant="ai" />}
 
           <ScanReportSettingsPanel
             config={scanReportConfig}
@@ -4938,7 +4692,6 @@ const SecurityHub: React.FC = () => {
           manualAllowedIp={manualAllowedIp}
           quarantinedFiles={quarantinedFiles}
           ignoredPaths={ignoredPaths}
-          hasSentinelPro={hasSentinelPro}
           onChangeManualIp={setManualIp}
           onChangeManualAllowedIp={setManualAllowedIp}
           onBanIp={handleBanIp}
@@ -5491,166 +5244,6 @@ const SecurityHub: React.FC = () => {
         onClose={() => setPreviewModalOpen(false)}
         previewHtml={previewHtml}
       />
-
-      {/*
-        @deprecated v2.9.28.11 — Bulk AI Analysis Modal.
-        The only caller was handleBulkAction('analyze') inside the old Deep Scan UI
-        which was removed in v2.9.28.0. showBulkAnalysisModal is never set to true
-        from the new ScanResultPanel selection UI, so this block is currently dead.
-        Left in place to avoid a large risky deletion in the same sprint as the
-        selection-state restoration. Remove in v2.9.30 along with:
-          - handleBulkAction (line ~2170)
-          - performBulkOperation (line ~2258)  ← still used by handleScanPanelBulkAction, keep
-          - toggleThreatSelection / toggleSelectAllThreats (lines ~2356, 2364)
-          - selectedThreats state (line ~704)
-          - showBulkAnalysisModal / bulkAnalysisResults / isBulkAnalyzing state
-        Reference to selectedThreats.length below is harmless — modal is never shown.
-      */}
-      {/* Bulk AI Analysis Modal — global scope so it renders regardless of active tab */}
-      {showBulkAnalysisModal && (
-        <div className="bg-background/80 animate-in fade-in fixed inset-0 z-[99999] flex items-center justify-center p-4">
-          <div className="bg-card flex max-h-[90vh] w-full max-w-4xl flex-col border-2 border-black">
-            <div className="bg-card flex shrink-0 items-center justify-between border-b-2 border-black p-6">
-              <h3 className="dark:text-foreground flex items-center gap-2 text-xl font-bold text-gray-900">
-                <Sparkles className="text-black" /> Bulk AI Analysis Report
-              </h3>
-              <button
-                onClick={() => setShowBulkAnalysisModal(false)}
-                aria-label="Close bulk analysis report"
-                className="border border-transparent p-2 text-black transition-colors hover:border-black hover:bg-red-600 hover:text-white"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6">
-              {isBulkAnalyzing && (
-                <div className="bg-background text-foreground dark:text-foreground mb-6 flex items-center gap-4 border border-black p-4">
-                  <Loader
-                    className="text-foreground dark:text-foreground animate-spin"
-                    size={24}
-                  />
-                  <div>
-                    <p className="text-foreground dark:text-foreground font-black tracking-widest uppercase">
-                      Analyzing files...
-                    </p>
-                    <p className="text-foreground text-xs tracking-wide uppercase">
-                      Processed {bulkAnalysisResults.length} /{" "}
-                      {selectedThreats.length}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                {bulkAnalysisResults.map((res, idx) => {
-                  const isSafe = res.verdict?.toLowerCase().includes("safe");
-                  const isSuspicious = res.verdict
-                    ?.toLowerCase()
-                    .includes("suspicious");
-                  const isError = !!res.error;
-                  const threatLabel = isSafe
-                    ? "SAFE"
-                    : isSuspicious
-                      ? "SUSPICIOUS"
-                      : "DANGER";
-                  const threatBadgeClass = isSafe
-                    ? "border-emerald-600 text-emerald-700 bg-emerald-50"
-                    : isSuspicious
-                      ? "border-amber-600 text-amber-700 bg-amber-50"
-                      : "border-red-400 text-white bg-red-700";
-                  return (
-                    <div
-                      key={idx}
-                      className={`border border-black p-4 ${isError ? "bg-secondary" : isSafe ? "bg-card" : "bg-red-700"}`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className={`mb-1 font-mono text-xs break-all ${isSafe ? "text-neutral-700" : "text-red-100"}`}
-                          >
-                            {res.file}
-                          </p>
-                          {isError ? (
-                            <span className="font-bold text-red-600 uppercase">
-                              Analysis Failed: {res.error}
-                            </span>
-                          ) : (
-                            <p
-                              className={`mt-1 text-sm font-medium ${isSafe ? "text-slate-600" : "text-red-100"}`}
-                            >
-                              {res.explanation}
-                            </p>
-                          )}
-                        </div>
-                        {!isError && (
-                          <span
-                            className={`shrink-0 border px-2 py-1 text-sm font-black tracking-widest uppercase ${threatBadgeClass}`}
-                          >
-                            {threatLabel}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="bg-background flex flex-wrap items-center justify-between gap-2 border-t-2 border-black p-4">
-              <div className="text-sm font-bold tracking-wide text-neutral-700 uppercase">
-                {bulkAnalysisResults.length} file
-                {bulkAnalysisResults.length !== 1 ? "s" : ""} analyzed
-              </div>
-              <div className="flex flex-wrap justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  className="hover:bg-background hover:text-foreground dark:hover:text-foreground rounded-none text-xs font-black uppercase"
-                  onClick={() => setShowBulkAnalysisModal(false)}
-                >
-                  Close
-                </Button>
-
-                {/* Ignore safe files — only when safe results still present */}
-                {!isBulkAnalyzing &&
-                  bulkAnalysisResults.some((r) =>
-                    r.verdict?.toLowerCase().includes("safe")
-                  ) && (
-                    <Button
-                      className="bg-background text-foreground dark:text-foreground rounded-none border border-black text-xs font-black uppercase hover:bg-emerald-600"
-                      onClick={handleBulkIgnoreSafe}
-                    >
-                      Ignore Safe Files
-                    </Button>
-                  )}
-
-                {/* Actions for remaining suspicious/malicious files */}
-                {!isBulkAnalyzing &&
-                  bulkAnalysisResults.some(
-                    (r) =>
-                      !r.verdict?.toLowerCase().includes("safe") && !r.error
-                  ) && (
-                    <>
-                      <Button
-                        className="bg-background text-foreground dark:text-foreground rounded-none border border-black text-xs font-black uppercase hover:bg-amber-500"
-                        onClick={handleBulkIgnoreAll}
-                      >
-                        Ignore All (False Positives)
-                      </Button>
-                      <Button
-                        className="rounded-none bg-red-700 text-xs font-black text-white uppercase hover:bg-red-800"
-                        onClick={handleBulkQuarantineSuspicious}
-                        icon={Archive}
-                      >
-                        Quarantine All
-                      </Button>
-                    </>
-                  )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Module 5 Consent Modal — shown before Full Sentinel Scan (active probes) */}
       <SentinelM5ConsentModal

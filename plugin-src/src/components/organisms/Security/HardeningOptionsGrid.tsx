@@ -34,10 +34,8 @@ import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { HardeningOption, PreToggleCheckResult } from "../../../types";
-import { toast } from "sonner";
 import { HardeningConfirmDialog } from "./HardeningConfirmDialog";
 import { FREE_HARDENING_KEYS } from "../../../constants/hardening";
-import { PRO_UPGRADE_URL } from "../../../lib/edition";
 
 // ---------------------------------------------------------------------------
 // Risk helpers
@@ -87,19 +85,17 @@ const HardeningOptionCard: React.FC<HardeningOptionCardProps> = ({
 
   const handleToggle = () => {
     if (isLoading) return;
-    if (!canInteract) {
-      // Tier 3 fix: the URL used to be plain text inside the toast (not
-      // clickable). Sonner's `action` button is the established pattern in
-      // this codebase for a real clickable CTA inside a toast (see
-      // BackupList.tsx / LicenseManager.tsx).
-      toast.error("This option requires SwissSuite AI Pro.", {
-        action: {
-          label: "Upgrade to Pro",
-          onClick: () => window.open(PRO_UPGRADE_URL, "_blank"),
-        },
-      });
-      return;
-    }
+    // Upsell redesign (2026-08-04, T4): the `!canInteract` defensive
+    // toast.error("...requires SwissSuite AI Pro.", {action: "Upgrade to
+    // Pro"}) fallback that used to live here is REMOVED — provably dead in
+    // both editions. The backend (class-swisswpsuite-hardening.php) no
+    // longer has a PRO_ONLY_OPTIONS concept; every option reports
+    // `pro: false` uniformly (see the Sprint W2/T7 note in this file's
+    // header comment), so `isEssential` (and therefore `canInteract`) is
+    // always true and this branch never executed. `canInteract` itself is
+    // kept (styling/rendering below still reference it as a defensive
+    // fallback for a malformed `opt.pro`), only the marketing-copy toast
+    // branch is removed.
     const nextValue = !opt.enabled;
     // Only intercept ENABLING a requires_confirmation option.
     // Disabling is always safe — no confirmation needed.
@@ -211,7 +207,7 @@ export const HardeningOptionsGrid: React.FC<HardeningOptionsGridProps> = ({
   // -------------------------------------------------------------------------
   // Advanced section collapse state — collapsed by default per spec (5a)
   // -------------------------------------------------------------------------
-  const [showAdvanced, setShowAdvanced] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // -------------------------------------------------------------------------
   // Pending toggle state — holds the option + pre-check result that needs

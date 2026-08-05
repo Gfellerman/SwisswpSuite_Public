@@ -1,7 +1,7 @@
 /**
  * Authored by: Frontend Specialist
  * Skills: react-patterns, typescript-expert
- * Date: 2026-07-26
+ * Date: 2026-07-26 (upsell redesign 2026-08-04)
  *
  * Freemium Dual-Build — FREE-EDITION-ONLY BUILD-TIME REPLACEMENT for
  * organisms/Settings/LicenseManager.tsx.
@@ -26,17 +26,19 @@
  * build the real file, and everything it transitively imports, never
  * enters the module graph at all. Pro builds never add the alias.
  *
+ * Upsell redesign (2026-08-04, design point 1): the old ProUpsellPlaceholder
+ * (bullets + "Upgrade to Pro"/"Download Pro" CTA pair) is replaced with a
+ * plain, non-styled-as-a-panel statement — the full per-module edition
+ * breakdown now lives once in the "Editions & AI" Settings section
+ * (`EditionsAiInfo.tsx`, reached via the "api" tab), not duplicated here.
+ *
  * Prop signature deliberately mirrors the real component's
  * (license/tokens/onActivate/isActivating) so SettingsPage.tsx needs no
- * change for either edition. Every prop is accepted; only `license` is
- * read, and only for hasEditionMismatch() below — everything else is
- * intentionally ignored, since there is nothing here to activate, refresh,
- * or cancel.
+ * change for either edition. Every prop is accepted; none are read — there
+ * is nothing here to activate, refresh, or cancel.
  */
 import React from "react";
-import { KeyRound } from "lucide-react";
-import { ProUpsellPlaceholder } from "../Upsell/ProUpsellPlaceholder";
-import { hasEditionMismatch } from "../../../lib/edition";
+import { Link } from "react-router-dom";
 
 interface LicenseManagerProps {
   license?: any;
@@ -45,24 +47,23 @@ interface LicenseManagerProps {
   isActivating: boolean;
 }
 
-export function LicenseManager({ license }: LicenseManagerProps) {
+export function LicenseManager(_props: LicenseManagerProps) {
   return (
-    <ProUpsellPlaceholder
-      feature="Pro Licensing"
-      icon={KeyRound}
-      // WCAG 1.3.1: default "h3" — this tab sits under SettingsPage's own
-      // <h1>Settings</h1> with no intervening <h2>, same structural depth
-      // as the "api" tab's ApiConfig/ProUpsellPlaceholder pair (see
-      // SettingsPage.tsx's own comment on that call site), not the "h2"
-      // used by routed pages (SyncPage/AIContentPage) that sit directly
-      // under DashboardLayout's page heading.
-      description="This Free edition works fully with no license key, no account, and no calls to our servers. Pro — AI content tools, cloud backup, site sync, two-factor auth, and advanced WAF — is a separate licensed download from swisswpsecure.com."
-      bullets={[
-        "Nothing in this Free edition requires a license or account",
-        "Pro adds AI content, cloud backup, sync, 2FA & advanced WAF",
-        "Pro is licensed and downloaded separately, not unlocked here",
-      ]}
-      editionMismatch={hasEditionMismatch(license)}
-    />
+    <div className="max-w-3xl space-y-2 text-sm text-neutral-700 dark:text-neutral-300">
+      <p>
+        This Free edition works fully with no license key, no account, and
+        no calls to our servers — there is nothing to activate here.
+      </p>
+      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+        See{" "}
+        <Link
+          to="/settings?tab=api"
+          className="underline decoration-dotted hover:text-neutral-700 dark:hover:text-neutral-300"
+        >
+          Editions &amp; AI
+        </Link>{" "}
+        for what the Pro edition adds.
+      </p>
+    </div>
   );
 }

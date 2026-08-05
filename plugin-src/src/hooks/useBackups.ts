@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { wpApi } from "../services/api";
@@ -40,9 +41,27 @@ interface RestoreBackupVariables {
   filename: string;
 }
 
+/**
+ * W6-A: the backend now always returns HTTP 200 on a successful restore, even
+ * when the archive's database dump was NOT imported (restore is files-only in
+ * this version). `db_restored` distinguishes a genuine DB import from a
+ * files-only outcome; `db_notice` carries the honest, non-error explanation
+ * to show the user for the files-only case ('' when there is nothing to say).
+ * Only real failures (missing/unreadable/corrupt archive) still return an
+ * HTTP error, handled by onError below — this shape is success-only.
+ */
 interface RestoreBackupResponse {
   success: boolean;
   message: string;
+  db_restored: boolean;
+  db_notice: string;
+  /**
+   * LIVEQA run-book §3.4 (2026-08-04): non-empty when post_import_recovery()
+   * pruned active_plugins entries whose plugin files are missing from this
+   * site/backup ('' when nothing was pruned). Same "honest notice must reach
+   * the frontend" treatment as db_notice above.
+   */
+  plugins_notice: string;
 }
 
 interface DeleteBackupVariables {
@@ -51,6 +70,11 @@ interface DeleteBackupVariables {
 
 export function useBackups() {
   const queryClient = useQueryClient();
+  // W6-A: persistent, dismissible notice shown when a restore succeeded but
+  // left the database untouched (files-only restore). Deliberately NOT a
+  // toast — a toast would be destroyed by the reload this replaces, and the
+  // whole point is that the user must be able to actually read it.
+  const [restoreNotice, setRestoreNotice] = useState<string | null>(null);
 
   // 1. Fetch Backups
   const {
@@ -104,8 +128,32 @@ export function useBackups() {
         body: JSON.stringify(variables),
       });
     },
-    onSuccess: () => {
-      // Force reload to reset DB connection and session
+    onSuccess: (data) => {
+      if (data.db_restored) {
+        // Genuine DB import happened — force reload to reset DB connection
+        // and session. Unchanged from the pre-W6-A behaviour.
+        window.location.reload();
+        return;
+      }
+      // LIVEQA run-book §3.4 (2026-08-04): plugins_notice joins db_notice under
+      // the same "must not reload immediately" rule — either one means there is
+      // something honest to show the user before the list quietly moves on.
+      if (data.db_notice || data.plugins_notice) {
+        // Files were restored; the database was deliberately NOT touched
+        // (restore is files-only in this version). The stated reason for
+        // the reload above — resetting the DB connection/session — does not
+        // apply here, and reloading now would destroy this notice before
+        // the user can read it. Refresh the list in place instead and let
+        // the user reload manually if/when they choose to.
+        queryClient.invalidateQueries({ queryKey: ["backups"] });
+        setRestoreNotice(
+          [data.db_notice, data.plugins_notice].filter(Boolean).join(" "),
+        );
+        return;
+      }
+      // Intentional files-only restore of an archive that never contained a
+      // database dump — nothing new to tell the user. Preserve prior
+      // behaviour.
       window.location.reload();
     },
     // BKP-RST-5: Surface restore failures to the user — previously the spinner
@@ -154,6 +202,8 @@ export function useBackups() {
     },
   });
 
+  const clearRestoreNotice = () => setRestoreNotice(null);
+
   return {
     backups,
     isLoading: isLoadingBackups,
@@ -170,6 +220,9 @@ export function useBackups() {
       ? (restoreBackupMutation.variables?.filename ?? null)
       : null,
     restoreError: restoreBackupMutation.error,
+    // W6-A: persistent files-only-restore notice — see setRestoreNotice above.
+    restoreNotice,
+    clearRestoreNotice,
     deleteBackup: deleteBackupMutation.mutate,
     isDeleting: deleteBackupMutation.isPending,
     deleteError: deleteBackupMutation.error,
@@ -227,6 +280,12 @@ export function useCleanupOrphans() {
  */
 export function useBackupSets() {
   const queryClient = useQueryClient();
+  // W6-A: same files-only-restore notice pattern as useBackups() above, kept
+  // as separate state since set-restore and single-file-restore are
+  // independent mutations that can each be mid-flight/notice-holding.
+  const [restoreSetNotice, setRestoreSetNotice] = useState<string | null>(
+    null,
+  );
 
   // Read sets from the already-cached list response (zero extra requests).
   const { data: backupsResponse, isLoading } = useQuery({
@@ -245,12 +304,30 @@ export function useBackupSets() {
   // Restore all files in a set (DB first — backend enforces ordering).
   const restoreSetMutation = useMutation({
     mutationFn: (setId: string) =>
-      wpApi<{ success: boolean; message: string }>(
-        `/backup/sets/${setId}/restore`,
-        { method: "POST" },
-      ),
-    onSuccess: () => {
-      // Hard reload after restore — same pattern as single-file restore.
+      wpApi<{
+        success: boolean;
+        message: string;
+        db_restored: boolean;
+        db_notice: string;
+        /** LIVEQA run-book §3.4 (2026-08-04) — see RestoreBackupResponse above. */
+        plugins_notice: string;
+      }>(`/backup/sets/${setId}/restore`, { method: "POST" }),
+    onSuccess: (data) => {
+      if (data.db_restored) {
+        // Hard reload after a genuine DB import — same pattern as
+        // single-file restore. Unchanged from pre-W6-A behaviour.
+        window.location.reload();
+        return;
+      }
+      if (data.db_notice || data.plugins_notice) {
+        // Files-only outcome — see the matching comment in useBackups()
+        // above for why this must not reload immediately.
+        queryClient.invalidateQueries({ queryKey: ["backups"] });
+        setRestoreSetNotice(
+          [data.db_notice, data.plugins_notice].filter(Boolean).join(" "),
+        );
+        return;
+      }
       window.location.reload();
     },
     onError: (error: Error) => {
@@ -273,6 +350,8 @@ export function useBackupSets() {
     },
   });
 
+  const clearRestoreSetNotice = () => setRestoreSetNotice(null);
+
   return {
     sets,
     isLoading,
@@ -281,6 +360,9 @@ export function useBackupSets() {
     restoringSetId: restoreSetMutation.isPending
       ? (restoreSetMutation.variables ?? null)
       : null,
+    // W6-A: persistent files-only-restore notice for set-level restore.
+    restoreSetNotice,
+    clearRestoreSetNotice,
     deleteSet: deleteSetMutation.mutate,
     isDeletingSet: deleteSetMutation.isPending,
     deletingSetId: deleteSetMutation.isPending

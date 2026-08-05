@@ -285,7 +285,7 @@ export function DashboardLayout() {
             </button>
 
             <div className="flex items-center gap-4">
-              <div className="bg-swiss-red hidden h-8 w-1.5 rounded-full md:block" />
+              <div className="bg-swiss-red hidden h-8 w-1.5 rounded-full md:block!" />
               <h1 className="dark:text-foreground text-xl font-bold tracking-tight text-neutral-900 uppercase lg:text-2xl">
                 {navItems.find((item) => item.path === location.pathname)
                   ?.label || "SwissSuite"}
@@ -298,13 +298,13 @@ export function DashboardLayout() {
             <ThemeToggle />
 
             {/* Core Integrity Indicator (Desktop) */}
-            <div className="bg-card dark:bg-secondary border-border dark:border-border/10 hidden items-center gap-3 rounded-xl border px-4 py-2 lg:flex">
+            <div className="bg-card dark:bg-secondary border-border dark:border-border/10 hidden items-center gap-3 rounded-xl border px-4 py-2 lg:flex!">
               <div className="relative flex h-3 w-3 items-center justify-center">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
               </div>
               <div className="flex flex-col">
-                <span className="text-neutral-700foreground text-xs leading-none font-bold tracking-wider uppercase">
+                <span className="dark:text-foreground text-xs leading-none font-bold tracking-wider text-neutral-700 uppercase">
                   System Active
                 </span>
               </div>
@@ -312,14 +312,14 @@ export function DashboardLayout() {
 
             {/* Trial Badge */}
             {isTrial && (
-              <div className="bg-swiss-red/10 text-swiss-red border-swiss-red/20 hidden rounded-lg border px-3 py-1 text-xs font-black tracking-wide uppercase sm:flex">
+              <div className="bg-swiss-red/10 text-swiss-red border-swiss-red/20 hidden rounded-lg border px-3 py-1 text-xs font-black tracking-wide uppercase sm:flex!">
                 Trial
               </div>
             )}
 
             {/* User Profile */}
             <div className="border-border dark:border-border/10 flex items-center gap-4 border-l pl-4">
-              <div className="hidden flex-col items-end lg:flex">
+              <div className="hidden flex-col items-end lg:flex!">
                 <span className="text-xs font-bold tracking-wider text-neutral-700 uppercase">
                   License Tier
                 </span>

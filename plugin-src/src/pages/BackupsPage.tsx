@@ -15,8 +15,8 @@ import { CloudStoragePanel } from "../components/organisms/Backups/CloudStorageP
 import MigrationStation from "../components/Migration/MigrationStation";
 import { useBackups } from "../hooks/useBackups";
 import { useSettings } from "../hooks/useSettings";
-import { ProUpsellPlaceholder } from "../components/organisms/Upsell/ProUpsellPlaceholder";
-import { isProEdition, hasEditionMismatch } from "../lib/edition";
+import { FeaturePointer } from "../components/organisms/Upsell/FeaturePointer";
+import { isProEdition } from "../lib/edition";
 import {
   HardDrive,
   GitMerge,
@@ -24,7 +24,6 @@ import {
   ShieldAlert,
   FlaskConical,
   Settings as SettingsIcon,
-  Cloud,
   Lock,
 } from "lucide-react";
 
@@ -66,14 +65,17 @@ const BackupsPage: React.FC = () => {
 
   // Freemium Dual-Build: in the Free edition, Migration/Sync are Pro-local
   // (physically absent), so the nav shows a "Pro" badge — never "Beta" — to
-  // stay coherent with the ProUpsellPlaceholder shown in the panel body.
+  // stay coherent with the neutral FeaturePointer shown in the panel body
+  // (upsell redesign, 2026-08-04).
+  // Upsell redesign (2026-08-04, extra find beyond the named T3 files):
+  // neutral copy — no "Pro" word, matching the rest of this sprint's rule.
   const ProBadge: React.FC<{ className?: string }> = ({ className = "" }) => (
     <span
       className={`inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-indigo-800 uppercase dark:border-indigo-800/50 dark:bg-indigo-900/30 dark:text-indigo-300 ${className}`}
-      aria-label="Pro feature"
+      aria-label="Not included in this edition"
     >
       <Lock className="h-2.5 w-2.5" aria-hidden="true" />
-      Pro
+      Locked
     </span>
   );
 
@@ -224,18 +226,11 @@ const BackupsPage: React.FC = () => {
           {isProEditionBuild ? (
             <CloudStoragePanel />
           ) : (
-            <ProUpsellPlaceholder
-              feature="Cloud Backup"
-              variant="compact"
-              icon={Cloud}
-              description="Upload backups automatically to your own Google Drive, Dropbox, S3, Backblaze B2, or FTP/SFTP storage — off-site, so a server issue can't take your backups with it."
-              bullets={[
-                "Google Drive, S3, Backblaze B2, Dropbox & FTP/SFTP",
-                "Automatic upload after every scheduled backup",
-                "Your own storage account — nothing passes through our servers",
-              ]}
-              editionMismatch={hasEditionMismatch(settings?.license)}
-            />
+            // Upsell redesign (2026-08-04, design point 1/2): the compact
+            // "Cloud Backup" ProUpsellPlaceholder (bullets + CTA pair) is
+            // removed — cloud destinations are a local, non-AI Pro feature,
+            // so this section carries one neutral "edition" FeaturePointer.
+            <FeaturePointer variant="edition" />
           )}
         </div>
       )}
@@ -244,17 +239,11 @@ const BackupsPage: React.FC = () => {
       {activeSection === "migration" && (
         <div className="animate-in fade-in space-y-4 duration-300">
           {!isProEditionBuild ? (
-            <ProUpsellPlaceholder
-              feature="Site Migration"
-              icon={GitMerge}
-              description="Move your whole site — files, database, media, themes and plugins — to a new host or domain in a guided, chunked transfer built for shared hosting."
-              bullets={[
-                "Guided host-to-host or domain-to-domain transfer",
-                "Chunked upload — safe on shared-hosting request limits",
-                "Post-migration health check confirms the new site works",
-              ]}
-              editionMismatch={hasEditionMismatch(settings?.license)}
-            />
+            // Upsell redesign (2026-08-04, design point 1/2): the full
+            // "Site Migration" ProUpsellPlaceholder is removed — Migration
+            // is a local, non-AI Pro feature, so this sub-tab carries one
+            // neutral "edition" FeaturePointer.
+            <FeaturePointer variant="edition" />
           ) : isBetaLocked("migration") ? (
             <BetaGate feature="Site Migration" />
           ) : (
@@ -270,17 +259,11 @@ const BackupsPage: React.FC = () => {
       {activeSection === "sync" && (
         <div className="animate-in fade-in space-y-4 duration-300">
           {!isProEditionBuild ? (
-            <ProUpsellPlaceholder
-              feature="Site Synchronisation"
-              icon={RefreshCw}
-              description="Keep a staging site and your live site in sync — push content changes both ways with a diff view before anything is applied."
-              bullets={[
-                "Two-way content sync between staging and live",
-                "Diff-based push — review changes before they apply",
-                "Scheduled sync + full connection/activity logs",
-              ]}
-              editionMismatch={hasEditionMismatch(settings?.license)}
-            />
+            // Upsell redesign (2026-08-04, design point 1/2): the full
+            // "Site Synchronisation" ProUpsellPlaceholder is removed — Sync
+            // is a local, non-AI Pro feature, so this sub-tab carries one
+            // neutral "edition" FeaturePointer.
+            <FeaturePointer variant="edition" />
           ) : isBetaLocked("sync") ? (
             <BetaGate feature="Site Synchronisation" />
           ) : (

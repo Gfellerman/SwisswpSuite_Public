@@ -721,7 +721,7 @@ const AuditResultView: React.FC<AuditResultViewProps> = ({
                     type="button"
                     onClick={() => {
                       if (!canRemediate) {
-                        toast.error("Upgrade to a paid plan for this feature — swisswpsecure.com/products");
+                        toast.error("This action isn't available on this plan.");
                         return;
                       }
                       const list = [...selected];
@@ -741,7 +741,7 @@ const AuditResultView: React.FC<AuditResultViewProps> = ({
                     type="button"
                     onClick={() => {
                       if (!canRemediate) {
-                        toast.error("Upgrade to a paid plan for this feature — swisswpsecure.com/products");
+                        toast.error("This action isn't available on this plan.");
                         return;
                       }
                       const list = [...selected];
@@ -1042,7 +1042,7 @@ const AuditResultView: React.FC<AuditResultViewProps> = ({
                             {isPending ? "Marking…" : "Mark Safe"}
                           </button>
                         )}
-                        {onQuarantine && (
+                        {hasEvidence && onQuarantine && (
                           <button
                             type="button"
                             onClick={() =>
@@ -1470,7 +1470,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                     type="button"
                     onClick={() => {
                       if (!canRemediate) {
-                        toast.error("Upgrade to a paid plan for this feature — swisswpsecure.com/products");
+                        toast.error("This action isn't available on this plan.");
                         return;
                       }
                       const list = [...selected];
@@ -1490,7 +1490,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                     type="button"
                     onClick={() => {
                       if (!canRemediate) {
-                        toast.error("Upgrade to a paid plan for this feature — swisswpsecure.com/products");
+                        toast.error("This action isn't available on this plan.");
                         return;
                       }
                       const list = [...selected];
@@ -1589,6 +1589,16 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                       {threat.type}
                       {threat.severity ? ` — ${threat.severity}` : ""}
                     </p>
+                    {/* LiveQA Fix Sprint 2026-08-04 (§1.4 root cause 4): every
+                        raw/free finding now carries a plain-English "why this
+                        matched, and whether that alone means danger"
+                        explanation — shown here unconditionally, not gated
+                        behind the paid "Analyze with AI" action. */}
+                    {threat.explanation && (
+                      <p className="mt-1 text-[11px] leading-snug font-medium text-red-500">
+                        {threat.explanation}
+                      </p>
+                    )}
                   </div>
                   {/*
                     v2.9.28.04 (Issue 4): Mark-as-Safe control.
@@ -1803,7 +1813,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                           type="button"
                           onClick={() => {
                             if (!canRemediate) {
-                              toast.error("Upgrade to a paid plan for this feature — swisswpsecure.com/products");
+                              toast.error("This action isn't available on this plan.");
                               return;
                             }
                             const list = [...selectedLow];
@@ -1823,7 +1833,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                           type="button"
                           onClick={() => {
                             if (!canRemediate) {
-                              toast.error("Upgrade to a paid plan for this feature — swisswpsecure.com/products");
+                              toast.error("This action isn't available on this plan.");
                               return;
                             }
                             const list = [...selectedLow];

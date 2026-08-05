@@ -4,7 +4,7 @@
  * Date: 2026-02-17
  */
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "../components/templates/DashboardLayout";
 import { SettingsLayout } from "../components/organisms/Settings/SettingsLayout";
@@ -20,10 +20,10 @@ import { PatchstackApiKeyField } from "../components/organisms/Settings/Patchsta
 import { EncryptionSettings } from "../components/organisms/Settings/EncryptionSettings";
 import { useSettings, SwissSettings } from "../hooks/useSettings";
 import { Card } from "../components/ui/Card";
-import { Loader2, ShieldCheck, RefreshCw, KeyRound, Zap } from "lucide-react";
+import { Loader2, ShieldCheck, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { ProUpsellPlaceholder } from "../components/organisms/Upsell/ProUpsellPlaceholder";
-import { isProEdition, hasEditionMismatch } from "../lib/edition";
+import { EditionsAiInfo } from "../components/organisms/Settings/EditionsAiInfo";
+import { isProEdition } from "../lib/edition";
 
 // ── Security Scan Toggles ────────────────────────────────────────────────────
 
@@ -40,17 +40,31 @@ type ToggleRowProps = {
 };
 
 function ToggleRow({ label, desc, checked, onChange }: ToggleRowProps) {
+  // WCAG 4.1.2: role="switch" is a plain div, not a native "labelable"
+  // element — wrapping it in a <label> (or leaving it as a sibling of the
+  // visible text, as before) does NOT give it a programmatic name. Wire the
+  // existing visible label/description via aria-labelledby/aria-describedby
+  // instead of duplicating the string into aria-label (APG switch pattern).
+  const labelId = useId();
+  const descId = useId();
   return (
     <div className="border-border flex items-center justify-between border-b py-3 last:border-0">
       <div>
-        <p className="dark:text-foreground text-sm font-medium text-neutral-900">
+        <p
+          id={labelId}
+          className="dark:text-foreground text-sm font-medium text-neutral-900"
+        >
           {label}
         </p>
-        <p className="mt-0.5 text-xs text-neutral-700">{desc}</p>
+        <p id={descId} className="mt-0.5 text-xs text-neutral-700">
+          {desc}
+        </p>
       </div>
       <div
         role="switch"
         aria-checked={checked}
+        aria-labelledby={labelId}
+        aria-describedby={descId}
         tabIndex={0}
         className={`ml-4 h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-300 ${checked ? "bg-green-500" : "bg-red-500"}`}
         onClick={() => onChange(!checked)}
@@ -174,49 +188,19 @@ export default function SettingsPage() {
                 isSaving={isUpdating}
               />
             ) : (
-              // Freemium Dual-Build: AI serviceware (Groq) is Pro-only and
-              // physically absent from the Free zip — "Test AI Connection"
-              // would call a dead /settings/test-connection route. Unlike
-              // TwoFactorSettings (compact — sits among sibling cards in the
-              // "security" tab), this placeholder is the ONLY content of the
-              // "api" tab, so it uses the default "page" variant — same
-              // shape as BackupsPage.tsx's nested (non-routed) Sync/Migration
-              // full-section swaps, not TwoFactorSettings' card-in-a-mix
-              // pattern. headingLevel stays default "h3": this tab sits
-              // under SettingsPage's own <h1>Settings</h1> with no
-              // intervening <h2>, same structural depth as every other
-              // Settings-tab card (ApiConfig's own real heading is <h3>).
-              <ProUpsellPlaceholder
-                feature="AI Configuration"
-                icon={Zap}
-                description="AI-powered content rewriting, bulk SEO meta generation, and deep malware-scan analysis — routed securely through the SwissSuite AI service and authenticated by your License Key, no separate API key needed."
-                bullets={[
-                  "AI content rewriting & bulk SEO meta generation",
-                  "AI-assisted deep-scan malware analysis",
-                  "Authenticated automatically via your License Key",
-                ]}
-                editionMismatch={hasEditionMismatch(settings?.license)}
-              />
+              // Upsell redesign (2026-08-04, design point 3): the old
+              // per-tab ProUpsellPlaceholder (Upgrade/Download CTA pair) is
+              // replaced by the one sanctioned informational section — see
+              // EditionsAiInfo.tsx's own docblock. This is now also where
+              // the removed License-tab and 2FA-card placeholders' "what's
+              // included" information lives, consolidated into one place.
+              <EditionsAiInfo />
             )}
           </>
         )}
         {activeTab === "security" && (
           <div className="space-y-6">
-            {isProEdition() ? (
-              <TwoFactorSettings />
-            ) : (
-              <ProUpsellPlaceholder
-                feature="Two-Factor Authentication"
-                variant="compact"
-                icon={KeyRound}
-                description="Require a time-based one-time code (TOTP) at login, in addition to your password — with backup codes for account recovery."
-                bullets={[
-                  "Authenticator-app TOTP (Google Authenticator, Authy, etc.)",
-                  "QR-code setup with backup recovery codes",
-                ]}
-                editionMismatch={hasEditionMismatch(settings?.license)}
-              />
-            )}
+            {isProEdition() && <TwoFactorSettings />}
             <EncryptionSettings settings={settings!} onSave={updateSettings} />
             <WpscanApiKeyField
               settings={settings!}

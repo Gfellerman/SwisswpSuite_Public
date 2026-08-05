@@ -1,5 +1,5 @@
 // frontend-specialist fix: atoms/ → ui/ to eliminate cva TDZ in shared chunk
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card } from "../../ui/Card";
 import { Badge } from "../../ui/Badge";
 import {
@@ -21,6 +21,8 @@ import {
   ChevronRight,
   Clock,
   Layers,
+  Info,
+  X,
 } from "lucide-react";
 import { BackupArchive, BackupSet } from "../../../types";
 import { toast } from "sonner";
@@ -112,6 +114,8 @@ export const BackupList: React.FC = () => {
     downloadBackup,
     isDownloading,
     downloadingFilename,
+    restoreNotice,
+    clearRestoreNotice,
   } = useBackups();
   const {
     sets,
@@ -121,7 +125,33 @@ export const BackupList: React.FC = () => {
     deleteSet,
     isDeletingSet,
     deletingSetId,
+    restoreSetNotice,
+    clearRestoreSetNotice,
   } = useBackupSets();
+
+  // W6-A: a files-only restore surfaces its honest "database was not
+  // modified" notice here instead of the hard page reload that used to fire
+  // unconditionally. Single-file and set-level restores hold independent
+  // notice state in their respective hooks; at most one is realistically
+  // active at a time, but both are rendered defensively.
+  const activeRestoreNotice = restoreNotice ?? restoreSetNotice;
+  const dismissActiveRestoreNotice = restoreNotice
+    ? clearRestoreNotice
+    : clearRestoreSetNotice;
+
+  // a11y-engineer review (W6-A): the visible banner below is NOT the live
+  // region. It mounts and is populated in the same render, which NVDA/JAWS
+  // can miss (the "two-step" pattern already established in
+  // UpdateGuardCard.tsx for the same reason). This always-mounted sr-only
+  // span is the actual announcement target — cleared then re-populated one
+  // tick later so assistive tech observes a real mutation.
+  const [restoreAnnouncement, setRestoreAnnouncement] = useState("");
+  useEffect(() => {
+    if (!activeRestoreNotice) return;
+    setRestoreAnnouncement("");
+    const t = setTimeout(() => setRestoreAnnouncement(activeRestoreNotice), 0);
+    return () => clearTimeout(t);
+  }, [activeRestoreNotice]);
   const { data: orphanData } = useOrphanBackups();
   const cleanupMutation = useCleanupOrphans();
 
@@ -150,7 +180,7 @@ export const BackupList: React.FC = () => {
 
   const handleRestore = (backup: BackupArchive) => {
     toast.warning(
-      `This will replace your current site with the backup from ${formatDate(backup.timestamp)}. Your existing posts, settings, and files will be overwritten. This cannot be undone.`,
+      `This will replace your current files with the backup from ${formatDate(backup.timestamp)}. Your existing files will be overwritten — this version's restore does not modify your database. This cannot be undone.`,
       {
         action: {
           label: "Yes, restore from this backup",
@@ -183,7 +213,7 @@ export const BackupList: React.FC = () => {
       return;
     }
     toast.warning(
-      `Restore your site from the backup created ${formatDate(set.created_at)}? All ${set.file_count} file${set.file_count !== 1 ? "s" : ""} will be restored. This cannot be undone.`,
+      `Restore your files from the backup created ${formatDate(set.created_at)}? All ${set.file_count} file${set.file_count !== 1 ? "s" : ""} will be restored to disk. This version's restore does not modify your database. This cannot be undone.`,
       {
         action: {
           label: "Yes, restore this backup",
@@ -263,6 +293,41 @@ export const BackupList: React.FC = () => {
           Your Saved Backups
         </h2>
       </div>
+
+      {/* ── W6-A: files-only restore notice ──────────────────────────────
+          Persistent (not a toast) and dismissible — a toast would be
+          destroyed by the reload this replaces. Informational, not an
+          error: the restore succeeded, the database was simply not part of
+          it in this version. The sr-only span above is the real live
+          region (always mounted, two-step text population); this div is
+          purely visual and intentionally carries no role/aria-live of its
+          own to avoid a double announcement. */}
+      <span role="status" className="sr-only">
+        {restoreAnnouncement}
+      </span>
+      {activeRestoreNotice && (
+        <div className="flex items-start justify-between gap-3 p-4 mx-6 mt-4 mb-0 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
+          <div className="flex items-start gap-2 text-sm text-blue-800 dark:text-blue-200">
+            <Info className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+            <span>{activeRestoreNotice}</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            >
+              Reload Page
+            </button>
+            <button
+              onClick={dismissActiveRestoreNotice}
+              aria-label="Dismiss notice"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100"
+            >
+              <X className="w-4 h-4" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Orphan cleanup banner ──────────────────────────────────────── */}
       {orphanData && orphanData.total_count > 0 && (
@@ -448,7 +513,7 @@ export const BackupList: React.FC = () => {
                                 className={`w-3.5 h-3.5 ${isRestoringThis ? "animate-spin" : ""}`}
                                 aria-hidden="true"
                               />
-                              <span className="hidden sm:inline">Restore</span>
+                              <span className="hidden sm:inline!">Restore</span>
                             </button>
                             <button
                               onClick={() => handleDeleteSet(set)}
@@ -461,7 +526,7 @@ export const BackupList: React.FC = () => {
                                 className="w-3.5 h-3.5"
                                 aria-hidden="true"
                               />
-                              <span className="hidden sm:inline">Delete</span>
+                              <span className="hidden sm:inline!">Delete</span>
                             </button>
                           </div>
                         </td>
@@ -517,7 +582,7 @@ export const BackupList: React.FC = () => {
                                     className={`w-3 h-3 ${isDownloading && downloadingFilename === file.filename ? "animate-pulse" : ""}`}
                                     aria-hidden="true"
                                   />
-                                  <span className="hidden sm:inline">
+                                  <span className="hidden sm:inline!">
                                     Download
                                   </span>
                                 </button>
@@ -588,7 +653,7 @@ export const BackupList: React.FC = () => {
                               className={`w-3.5 h-3.5 ${isDownloading && downloadingFilename === backup.name ? "animate-pulse" : ""}`}
                               aria-hidden="true"
                             />
-                            <span className="hidden sm:inline">Download</span>
+                            <span className="hidden sm:inline!">Download</span>
                           </button>
                           <button
                             onClick={() => handleRestore(backup)}
@@ -605,7 +670,7 @@ export const BackupList: React.FC = () => {
                               className={`w-3.5 h-3.5 ${isRestoring && restoringFilename === backup.name ? "animate-spin" : ""}`}
                               aria-hidden="true"
                             />
-                            <span className="hidden sm:inline">Restore</span>
+                            <span className="hidden sm:inline!">Restore</span>
                           </button>
                           <button
                             onClick={() => handleDelete(backup)}
@@ -617,7 +682,7 @@ export const BackupList: React.FC = () => {
                               className="w-3.5 h-3.5"
                               aria-hidden="true"
                             />
-                            <span className="hidden sm:inline">Delete</span>
+                            <span className="hidden sm:inline!">Delete</span>
                           </button>
                         </div>
                       </td>

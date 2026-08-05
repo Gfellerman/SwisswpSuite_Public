@@ -4,13 +4,114 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.7] - 2026-08-05
+
+### Fixed
+- **P0**: multi-part backup encryption encrypted only the first part — the size-rollover parts were never registered for encryption and shipped as plaintext ZIPs, while the log reported success. Every part is now encrypted (per-part resume, fail-closed: success is impossible with any plaintext part), artifacts genuinely persist as `.zip.enc` end-to-end (engine, list, download), and encrypted-restore attempts get a specific honest error instead of a generic zip failure
+- Scanner false CRITICAL on the sibling edition: with Free active and Pro on disk (every upgrade's normal state), the scanners flagged the sibling's signature literals as webshells; self-exclusion now covers both first-party edition directories with strict realpath boundaries (a `-evil`-suffixed lookalike stays scannable)
+- WooCommerce Shop page: stored AI meta was never rendered (shop archive bypasses `is_singular`); title filter, document title, and meta output now resolve the shop page's stored meta
+- SEO description padding: vertical-specific filler CTAs removed, sentence-boundary joins enforced; titles truncate at word boundaries with dangling-connector stripping; near-empty (shortcode-only) pages get grounded prompts forbidding invented offers/prices
+- SEO list preview line no longer contradicts the "SEO Ready" badge on zero-content pages (falls back to the generated meta description)
+- Dev tooling: Plugin Check runner repaired (string-literal awareness for scanner explanation texts; post-rename zip glob) — first true C6 run: 0 errors
+
+## [2.9.33.6] - 2026-08-04
+
+### Changed
+- Third and final marketing-string fix from the built-zip proof sweep (uncapped pass): the L1 scan `$ai_analysis['summary']` in `class-swisswpsuite-sentinel.php` no longer sells Pro — now "Review each finding below for details and remediation." One sanctioned residual documented in SECURITY_CAPABILITIES_REFERENCE.md (the Pro-render-only WAF plan-upsell box whose string ships in the shared chunk).
+
+## [2.9.33.5] - 2026-08-04
+
+### Changed
+- Final two marketing strings neutralized per the upsell-redesign plan-gate convention: the L1-scan fallback recommendation (`class-swisswpsuite-sentinel.php`) is now factual remediation guidance, and the AI Log Analysis placeholder (`SecurityHub.tsx`, a plan gate on Pro installs) now says "Requires a plan that includes Security" instead of the factually-wrong "Upgrade to Pro". Copy-only; found by the v2.9.33.4 built-zip grep proofs.
+
+## [2.9.33.4] - 2026-08-04
+
+### Fixed
+- Malware/audit scanners no longer self-match their own signature definitions (tokenizer-based comment/string stripping, word-boundary anchors, self-exclusion scoped by realpath); every finding now includes a plain-English explanation
+- Backup encryption on hosts with partial libsodium support: functions AND constants are now both checked, with graceful OpenSSL fallback; retry failures surface in System Logs
+- Free→Pro activation while Free is active no longer risks a fatal: bootstrap functions relocated behind the mutual-exclusion guard (PHP early-binding fix), takeover verified in both directions
+- Restore now prunes only genuinely-missing plugins from active_plugins and reports exactly which ones, in the UI and in both restore paths
+- Bulk content apply and bulk mark-safe account for every item (succeeded / failed / skipped) instead of failing silently
+- License consolidation on the licensing server requires proof of same ownership before merging billing history (closes a cross-account merge path)
+- Stacked purchase of all 4 à-la-carte modules now grants the full-suite capability set on both server and plugin (display and enforcement paths reconciled)
+- Scan-report email links (stale admin slug + hash-router anchors), SEO meta generation for block-theme/short-content pages, post-deactivation AI token panel, WAF feature-checklist false positive, SEO full-scan gate now capability-based, single-active-dialog for SEO modals, accessible names on settings switches, header license/status text visibility (CSS cascade-layer fix), alert-email validation with real error surfacing, JS-error forwarder now ignores other plugins' errors (fail-closed source filtering)
+
+### Changed
+- AI content rewriting preserves technical specifications, part/fitment numbers, and embedded images/tables; output length scales with input (input-corruption root cause fixed: tag-boundary word gluing eliminated)
+- Edition boundaries clarified: Deep Scan and AI diagnostics are Pro; Security Audit and Quick Scan remain fully functional in Free; features absent from an edition no longer render as blocked buttons
+- Filesystem operations converted to WP_Filesystem where behavior-preserving (28-site audit); dead code removed (~1,800 lines including two unused components)
+
+### Security
+- Plugin-update-checker vendor files tracked for reproducible Pro builds; DB-query Plugin Check warnings audited (33/33 verified safe, annotations scoped)
+
+## [2.9.33.3] - 2026-08-03
+
+### Changed
+- No functional changes. Version bump only, published to the VPS Pro-updater endpoint to
+  validate the in-plugin auto-update flow end-to-end (live-QA infrastructure test).
+
+## [2.9.33.2] - 2026-08-02
+
+### Fixed
+- **The Smart Firewall and Login Safeguard on/off switches were invisible in some license tiers.** Both rendered as a read-only status label instead of a working control whenever the account lacked the paid Security-plan capability — even though basic WAF and basic login-lockout protection are meant to be free/functional everywhere. Login Safeguard's max-attempts setting had the same problem. Found and fixed during a live QA pass.
+
+## [2.9.33.1] - 2026-08-02
+
+### Fixed
+- **The Security Hub's Quarantine tab could enter an infinite refresh loop.** Opening the tab continuously re-requested the quarantine, safelist, and banned-IP lists in the background with no natural stopping point. This wasted server resources and could trigger a host's own bot-protection to block the site owner's own access. Found and fixed during a live QA pass.
+
+## [2.9.33.0] - 2026-08-02
+
+### Changed
+- **The free edition no longer contains features it cannot run.** Previously, several paid tools were present in the free plugin but refused to work, returning an "upgrade required" message when used. Those tools are now simply absent from the free build instead. This affects AI connection testing, geo-blocking, cloud backup destinations, AI file/log/firewall analysis, and AI SEO generation. Nothing changes for Pro.
+- **Several local SEO tools are now free.** llms.txt generation and the stop, reset, status and cancel controls for SEO batch jobs run entirely on your own server and no longer require a paid plan.
+
+### Fixed
+- **SEO scores were under-reported.** The "acceptable" quality tier for meta descriptions could never be reached: its lower and upper bounds were set to the same value, so the test was always false. Pages that should have earned partial credit for a description earned none. Affects both editions.
+
+### Removed
+- **The bring-your-own AI endpoint panel is gone from the free edition.** It exposed a setting for pointing the plugin at your own AI service, but the free build has no AI features to use it, so it did nothing.
+- **A deprecated, unreferenced internal class was dropped from the package.**
+
+## [2.9.32.3] - 2026-07-31
+
+### Changed
+- **The malware scanner is now completely unlimited on the free version.** Previously the free scanner allowed one scan per day and showed an upgrade prompt afterwards. That limit is gone — the scan runs entirely on your own server at no cost, so there was no good reason to cap it. Paid plans are for AI-powered analysis, cloud backup destinations and automation, not for lifting a limit on a free feature.
+
+### Fixed
+- **Restoring a backup could delete your own SQL files.** If you kept a file such as `database-20260731.sql` in your site's root folder, a restore could silently delete it — the plugin recognised the name pattern as one of its own database exports without checking the contents. Restore now verifies that a file is genuinely a SwissSuite export before removing it, so your own files are left alone.
+- **Scheduled tasks could stop running after an update.** Sites that had previously enabled the old "Disable Visitor-Triggered Scheduling" option kept a leftover rule in their `.htaccess` file that blocked `wp-cron.php`. Because WordPress skips a plugin's deactivation step during an update, nothing ever removed it, and every scheduled task — including this plugin's own backups and scans — silently stopped. Updating now clears that leftover rule automatically.
+- **Disabling debug mode now asks for confirmation.** Applying the "disable WP_DEBUG" fix from the scan results rewrites your `wp-config.php` file, but did so without asking first. It now shows the same confirmation prompt the equivalent action elsewhere in the plugin already used.
+
+### Security
+- **Fixed a flaw that let visitors disguise their IP address.** On sites behind a trusted proxy or CDN, a crafted request header could make the plugin record and act on an attacker-chosen IP address instead of the real one. This could be used to evade IP bans, brute-force protection and country blocking. The plugin now reads only the genuine client address supplied by the proxy.
+
+## [2.9.32.2] - 2026-07-30
+
+### Changed
+- **Restore is files-only in this version.** Restoring a local backup replaces your site's files; it does not import or modify your database, even though a full backup archive includes a database export. This documentation and messaging update corrects earlier wording that implied a restore also replaces your database with automatic URL/domain rewriting — it does not, in this version. Creating a backup is unaffected: a full backup still includes both your files and a complete database export.
+
+## [2.9.32.1] - 2026-07-23
+
+### Added
+- **Self-service refund requests.** A new "Request a refund" control on the License screen lets Pro customers request a refund from within the plugin. The request is double-opt-in: you receive a confirmation email with a secure, single-use link, and nothing is charged or revoked until you confirm. Refunds remain a one-time goodwill gesture issued at our discretion under the Terms of Service; statutory rights are unaffected. (Refund requests do not store your IP address or browser user-agent.)
+
+### Fixed
+- **Pro auto-updates now work.** The Plugin Update Checker library was missing from earlier Pro builds, so Pro installs never received new versions. It is now bundled in the Pro edition and checks swisswpsecure.com for updates. (The Free edition continues to update through WordPress.org.)
+- **Cancel auto-renewal on the all-in-one Suite plan.** Cancelling renewal on a full-suite license previously failed with "no active subscription was found"; suite licenses now cancel correctly against the license-level subscription.
+- **Refunds now end the subscription.** When a charge is refunded, the underlying subscription is cancelled automatically so a refunded customer is never re-charged at the next renewal.
+- **Subscription-deletion no longer affects unrelated licenses.** A subscription-deletion event that matches no license now alerts the owner and changes nothing, instead of cancelling the account's other active licenses.
+- **AI image SEO on staging/firewalled sites.** Image alt-text/title generation now reads the image from the local filesystem (as base64) instead of relying on a publicly fetchable URL, so it works on staging, firewalled, and login-walled sites.
+- **Fewer timeouts on large-site security audits.** The deep-audit gateway timeout was raised as a quick mitigation (a fully asynchronous flow is planned).
+- **One-time-refund safeguard integrity.** Fixed an internal card-fingerprint lookup so the one-time-refund safeguard evaluates correctly. (Backend; no user action needed.)
+
 ## [2.9.31.8] - 2026-07-22
 
 ### Added
 - **Purchased token packs are now visible on the License screen.** When you own a token pack, the License page shows "Monthly: X · Purchased: Y" so your monthly allowance and your purchased pack tokens are distinguishable at a glance. The "Purchased" line appears only when a pack is present.
 
 ### Fixed
-- **Token-pack integrity (backend / Pro).** Reworked how the $9.99 10M token pack is stored and spent end-to-end so purchased tokens can no longer be wiped by a monthly reset or by the routine per-feature balance recalculation. Purchased packs now live in a dedicated, reset-proof pool; the monthly allowance is always spent FIRST and pack tokens are drawn only once it is exhausted (allowance-first); pack tokens never expire. A pack purchase can no longer create a self-refilling junk license, a pack refund now claws back only the pack (never the customer's subscription), admin top-ups credit the pack pool, and a duplicate purchase webhook can no longer double-credit. No plugin reconfiguration is needed.
+- **Token-pack integrity (backend / Pro).** Reworked how the 10M token pack is stored and spent end-to-end so purchased tokens can no longer be wiped by a monthly reset or by the routine per-feature balance recalculation. Purchased packs now live in a dedicated, reset-proof pool; the monthly allowance is always spent FIRST and pack tokens are drawn only once it is exhausted (allowance-first); pack tokens never expire. A pack purchase can no longer create a self-refilling junk license, a pack refund now claws back only the pack (never the customer's subscription), admin top-ups credit the pack pool, and a duplicate purchase webhook can no longer double-credit. No plugin reconfiguration is needed.
 
 ## [2.9.31.7] - 2026-07-22
 
@@ -300,7 +401,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **Update Guard / login-protection / IP management / geo / AI-log endpoints** now require the `waf` capability (Security/Suite), aligning the backend gates with the frontend tab gating.
 
 ### Fixed
-- **Stripe plan resolution:** checkout now resolves the purchased plan durably from the Stripe price ID (`PRICE_ID_TO_PLAN` map → `planForPriceId()`) instead of defaulting every payment to `PAID_YEARLY` when `plan_type` metadata is absent. Confirmed live where a $4.99 SEO purchase had activated the yearly plan.
+- **Stripe plan resolution:** checkout now resolves the purchased plan durably from the Stripe price ID (`PRICE_ID_TO_PLAN` map → `planForPriceId()`) instead of defaulting every payment to `PAID_YEARLY` when `plan_type` metadata is absent. Confirmed live where an SEO-plan purchase had activated the yearly plan.
 - **VPS paid-tier check:** `scan_batch.js` and `api_new.js` now use `PlanService.isPaidTier()` instead of the brittle `tier !== "pro"` string comparison.
 
 ## [2.9.30.120] - 2026-06-18

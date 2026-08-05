@@ -20,10 +20,19 @@
  * icon, and a "Requires Pro" tooltip — trialware, since Sprint W1 already
  * de-gated these PHP endpoints (pure local wp_options writes, free for
  * everyone). That gating is REMOVED below; `hasSecurity` is gone from this
- * file entirely as a result. The Quarantined Files restore/delete
- * sub-component is UNTOUCHED — it gates on `hasSentinelPro` (any paid
- * plan), not `hasSecurity`, and remains correctly Pro (that capability is
- * not de-gated by W1).
+ * file entirely as a result.
+ *
+ * WP.org round-3 remediation (follow-up, 2026-07-27): the Quarantined Files
+ * restore/delete sub-component had the SAME trialware bug — gated on
+ * `hasSentinelPro` (any paid plan) with a disabled button, an
+ * upgrade-prompt onClick swap, and a "Requires Pro" tooltip. This was based
+ * on a mistaken assumption that quarantine restore/delete was Pro-only; in
+ * fact `SwissWPSuite_License::get_free_capabilities()` has always listed
+ * `quarantine` (move/restore/delete) as a FREE tier capability, and both
+ * REST routes (`/security/quarantine/restore`, `/security/quarantine/delete`)
+ * register with the general `check_permission` callback, never a Pro-gated
+ * one. That false lock is REMOVED below too; `hasSentinelPro` and
+ * `onUpgradePrompt` are gone from this file entirely as a result.
  */
 import React, { useEffect } from "react";
 import { ExternalLink, EyeOff } from "lucide-react";
@@ -50,9 +59,11 @@ export interface QuarantineTabProps {
   // ── Capability flags ─────────────────────────────────────────────────────
   // hasSecurity (Security-plan capability) was removed here — Sprint W2/T7,
   // 2026-07-26 — since IP allowlist/ban/unban are free/functional in every
-  // edition now. hasSentinelPro (any paid plan) is still real: it gates the
-  // Quarantined Files restore/delete sub-component below.
-  hasSentinelPro: boolean;
+  // edition now. hasSentinelPro (any paid plan) was removed here too —
+  // follow-up, 2026-07-27 — quarantine restore/delete is also a free
+  // capability (`SwissWPSuite_License::get_free_capabilities()`); the
+  // Quarantined Files restore/delete sub-component below is unconditionally
+  // enabled now.
 
   // ── Setters (form input round-trip) ──────────────────────────────────────
   onChangeManualIp: (s: string) => void;
@@ -70,10 +81,6 @@ export interface QuarantineTabProps {
   // ── Lifecycle (optional) ─────────────────────────────────────────────────
   /** Called once when the tab mounts. Used to refresh stale data. */
   onMount?: () => void;
-
-  // ── UX (optional) ────────────────────────────────────────────────────────
-  /** Called when the user clicks a Pro-only button without the entitlement. */
-  onUpgradePrompt?: () => void;
 }
 
 export const QuarantineTab: React.FC<QuarantineTabProps> = ({
@@ -85,7 +92,6 @@ export const QuarantineTab: React.FC<QuarantineTabProps> = ({
   manualAllowedIp,
   quarantinedFiles,
   ignoredPaths,
-  hasSentinelPro,
   onChangeManualIp,
   onChangeManualAllowedIp,
   onBanIp,
@@ -96,11 +102,15 @@ export const QuarantineTab: React.FC<QuarantineTabProps> = ({
   onDeleteQuarantine,
   onUnIgnore,
   onMount,
-  onUpgradePrompt = () => {},
 }) => {
   useEffect(() => {
     onMount?.();
-  }, [onMount]);
+    // Intentionally run once on mount only. `onMount` is a fresh inline closure
+    // on every SecurityHub render — depending on it here caused an infinite
+    // fetch loop (mount -> onMount() -> setState -> re-render -> new onMount
+    // reference -> effect re-fires -> repeat), live-QA-confirmed 2026-08-02.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="animate-in fade-in slide-in-from-right-4 space-y-12 pb-20">
@@ -126,8 +136,6 @@ export const QuarantineTab: React.FC<QuarantineTabProps> = ({
         files={quarantinedFiles}
         onRestore={onRestoreQuarantine}
         onDelete={onDeleteQuarantine}
-        hasSentinelPro={hasSentinelPro}
-        onUpgradePrompt={onUpgradePrompt}
       />
 
       <IgnoredPathsTable paths={ignoredPaths} onUnIgnore={onUnIgnore} />
@@ -365,16 +373,12 @@ interface QuarantinedFilesTableProps {
   files: QuarantineFile[];
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
-  hasSentinelPro: boolean;
-  onUpgradePrompt: () => void;
 }
 
 const QuarantinedFilesTable: React.FC<QuarantinedFilesTableProps> = ({
   files,
   onRestore,
   onDelete,
-  hasSentinelPro,
-  onUpgradePrompt,
 }) => (
   <div className="glass-panel rounded-3xl p-8">
     <h3 className="text-swiss-navy mb-2 text-xl font-black tracking-tight uppercase">
@@ -430,24 +434,16 @@ const QuarantinedFilesTable: React.FC<QuarantinedFilesTableProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`rounded-lg text-xs font-black tracking-widest uppercase ${hasSentinelPro ? "text-emerald-600 hover:bg-emerald-50" : "cursor-not-allowed text-neutral-400 opacity-50"}`}
-                    onClick={
-                      hasSentinelPro
-                        ? () => onRestore(file.id)
-                        : onUpgradePrompt
-                    }
-                    title={!hasSentinelPro ? "Requires Pro" : undefined}
+                    className="rounded-lg text-xs font-black tracking-widest text-emerald-600 uppercase hover:bg-emerald-50"
+                    onClick={() => onRestore(file.id)}
                   >
                     Restore
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`rounded-lg text-xs font-black tracking-widest uppercase ${hasSentinelPro ? "text-brand-accent hover:bg-red-50" : "cursor-not-allowed text-neutral-400 opacity-50"}`}
-                    onClick={
-                      hasSentinelPro ? () => onDelete(file.id) : onUpgradePrompt
-                    }
-                    title={!hasSentinelPro ? "Requires Pro" : undefined}
+                    className="text-brand-accent rounded-lg text-xs font-black tracking-widest uppercase hover:bg-red-50"
+                    onClick={() => onDelete(file.id)}
                   >
                     Purge
                   </Button>

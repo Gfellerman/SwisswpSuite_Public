@@ -477,7 +477,7 @@ export const BackupControl: React.FC = () => {
       label: "Everything",
       badge: "Recommended",
       description:
-        "The complete copy of your site — posts, images, plugins, themes, and all settings. If your site broke tomorrow, you could restore it completely from this backup.",
+        "The complete copy of your site — posts, images, plugins, themes, and all settings. Database restore is not available in this version; restoring a backup brings back your files only, and never modifies your database.",
       icon: HardDrive,
       activeColor: "emerald",
       activeBg: "bg-emerald-50/10",

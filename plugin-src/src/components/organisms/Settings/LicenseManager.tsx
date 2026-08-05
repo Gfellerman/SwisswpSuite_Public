@@ -1550,12 +1550,49 @@ export function LicenseManager({
           </div>
         </Card>
 
-        {/* AI Token Balance Card — Pro-only. AI/serviceware (the Groq calls
-            that spend tokens) is physically absent from the Free edition,
-            so a balance/"Depleted" display is never applicable there — Free
-            is 0 tokens by design, not a used-up allowance, and showing this
-            read as a false "your balance ran out" scare. */}
-        {!isFreeEdition() && (
+        {/* AI Token Balance Card — Pro-edition-build only. AI/serviceware
+            (the Groq calls that spend tokens) is physically absent from the
+            Free edition, so a balance/"Depleted" display is never
+            applicable there — Free is 0 tokens by design, not a used-up
+            allowance, and showing this read as a false "your balance ran
+            out" scare.
+            LiveQA §3.7 fix (2026-08-04): `!isFreeEdition()` only gates on
+            the BUILD edition (Free wp.org vs Pro download) — it says
+            nothing about whether THIS site's license is currently active.
+            A Pro-edition install with a deactivated/lapsed license (or one
+            that never activated a key) still passed that check, so the
+            card kept rendering the last cached `tokenStatus.balance` /
+            plan totals and could read "Depleted" — stale paid-plan data
+            mislabeled as an exhausted allowance on what is now structurally
+            a Free-tier site (no active AI license). Added `isActive` (same
+            derivation already used for the License card's Active/Inactive
+            badge above) so a lapsed/never-activated Pro install gets the
+            neutral fallback instead. */}
+        {!isFreeEdition() && !isActive && (
+          <Card noPadding className="overflow-hidden">
+            <div className="bg-muted text-foreground border-border flex items-center justify-between border-b p-6">
+              <div className="flex items-center gap-4">
+                <div className="border-border bg-muted rounded-xl border p-3 shadow-sm">
+                  <Coins className="text-muted-foreground h-5 w-5" />
+                </div>
+                <h3 className="text-foreground text-sm font-black tracking-[0.2em] uppercase">
+                  AI Token Balance
+                </h3>
+              </div>
+            </div>
+            <div className="space-y-4 p-8">
+              <p className="text-muted-foreground flex items-start gap-2 text-sm">
+                <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>
+                  No active AI license on this site. Activate a license above to
+                  start using AI-powered scans, SEO, and content tools — your
+                  token balance will appear here once it&apos;s active.
+                </span>
+              </p>
+            </div>
+          </Card>
+        )}
+        {!isFreeEdition() && isActive && (
           <Card noPadding className="group relative overflow-hidden">
             <div className="bg-muted text-foreground border-border flex items-center justify-between border-b p-6">
               <div className="flex items-center gap-4">
@@ -1785,18 +1822,28 @@ export function LicenseManager({
         </div>
         <div className="divide-border grid grid-cols-1 divide-y md:grid-cols-2 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
           <FeatureItem title="Daily Malware Scan" active={true} />
+          {/* LiveQA §3.5 fix (2026-08-04): the prior single "Smart WAF
+              Firewall" row OR'd "waf" with "firewall_basic" — since
+              firewall_basic ships on EVERY tier including Free (see
+              SwissWPSuite_License::get_free_capabilities()), that OR always
+              evaluated true, so ANY license (even one with zero WAF/security
+              capability, e.g. an SEO-only à-la-carte key) showed a
+              false-positive green check on a row explicitly labeled "Smart".
+              Split into two truthful rows: Basic Firewall is unconditionally
+              active (it genuinely always is), and Smart/Advanced WAF is
+              gated strictly on the paid capability strings — see
+              class-swisswpsuite-license.php:64-66,226 for
+              waf/smart_waf/waf_pro, and :372-373/431-432/489-490 for
+              advanced_waf. */}
+          <FeatureItem title="Basic Firewall" active={true} />
           <FeatureItem
-            title="Smart WAF Firewall"
-            // Factual fix: basic WAF (firewall_basic — 5 SQLi + 4 XSS + path
-            // traversal rules) ships in every edition, including Free — see
-            // SwissWPSuite_License::get_free_capabilities() in
-            // class-swisswpsuite-license.php. Checking only "waf" (the
-            // advanced/AI-tier capability) showed this row locked for every
-            // Free-edition user even though basic WAF is genuinely active.
+            title="Smart WAF (Advanced)"
             active={
               Array.isArray(capabilities) &&
               (capabilities.includes("waf") ||
-                capabilities.includes("firewall_basic"))
+                capabilities.includes("smart_waf") ||
+                capabilities.includes("waf_pro") ||
+                capabilities.includes("advanced_waf"))
             }
           />
           <FeatureItem

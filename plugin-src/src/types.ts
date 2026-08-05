@@ -56,6 +56,29 @@ export interface ContentItem {
 // Alias for backward compatibility
 export type Product = ContentItem;
 
+/**
+ * Response from POST /content/bulk-apply (bulk_apply_content_rewrite()).
+ * CE-CAT5-002/CE-CAT13-003 FIX (LiveQA L2, 2026-08-04): ids that have no persisted
+ * AI proposal at apply-time (or fail id validation) used to vanish from the response
+ * entirely — counted in neither `applied` nor `failed` — which let the frontend
+ * report "Applied N items successfully" while silently dropping up to ~50% of a
+ * batch. `skipped_no_proposal` accounts for those ids explicitly.
+ * Invariant: applied + failed.length + skipped_no_proposal.length ===
+ * Math.min(total_received, 100) (the PHP-side 100-item cap truncates before the
+ * per-id loop runs, so anything beyond the cap is never represented in any bucket —
+ * that is the pre-existing, unrelated `bulkTruncated` case).
+ */
+export interface ContentBulkApplyResponse {
+  success: boolean;
+  applied: number;
+  failed: number[];
+  skipped_no_proposal: Array<{
+    id: number;
+    reason: "no_proposal" | "invalid_id";
+  }>;
+  total_received: number;
+}
+
 /** Individual non-compliant SEO item returned by /seo/scan */
 export interface SeoNonCompliantItem {
   id: number;
@@ -700,12 +723,22 @@ export interface SentinelAuditResult {
   timestamp: number;
 }
 
-/** Credit/quota info for the Sentinel audit feature. */
+/**
+ * Scan-status info for the Sentinel audit feature.
+ *
+ * NOTE (2026-07-31, WP.org Guideline 5 remediation): the scanner has no
+ * scan-count limit for any tier — `limit`/`remaining`/`limit_type`/
+ * `reset_info` are reported as unlimited across the board. `"unlimited"`
+ * was added to `limit_type` for this; `"daily" | "monthly" | "lifetime"`
+ * are kept only because no consumer switches on this value (verified: only
+ * `is_pro` and `used` are read, in useLicenseStore.ts / SecurityHub.tsx) —
+ * removing them is not required.
+ */
 export interface SentinelCredits {
   is_pro: boolean;
   remaining: number;
   limit: number;
-  limit_type: "daily" | "monthly" | "lifetime";
+  limit_type: "daily" | "monthly" | "lifetime" | "unlimited";
 }
 
 /** Per-member result inside the squad diagnostic response. */
@@ -1680,6 +1713,14 @@ export interface MalwareScanResult {
      * Multiple sources may flag the same file (e.g. local + ai).
      */
     sources?: string[];
+    /**
+     * LiveQA Fix Sprint 2026-08-04 (§1.4 root cause 4) — plain-English "why
+     * this matched, and whether that alone means danger" explanation, present
+     * on every quick-mode (Free tier) local-pattern finding. Not gated behind
+     * the paid "Analyze with AI" action. Optional for backward compat with
+     * any cached/older response shape that predates this field.
+     */
+    explanation?: string;
   }>;
   mode: "quick" | "deep";
   /** ISO 8601 timestamp of when the scan ran. */

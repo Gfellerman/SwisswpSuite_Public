@@ -18,14 +18,10 @@ import {
   Activity,
   Zap,
   Globe,
-  RefreshCw,
-  Check,
   Terminal,
 } from "lucide-react";
 import { ViewState } from "../types";
 import OnPageDiagnostics from "./organisms/Seo/OnPageDiagnostics";
-import { ProUpsellPlaceholder } from "./organisms/Upsell/ProUpsellPlaceholder";
-import { isFreeEdition, hasEditionMismatch } from "../lib/edition";
 
 interface DashboardProps {
   onNavigate: (view: ViewState) => void;
@@ -143,30 +139,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   });
   const [loading, setLoading] = useState(true);
   const [hasData, setHasData] = useState(false);
-  const [refreshingCache, setRefreshingCache] = useState(false);
-  const [cacheCleared, setCacheCleared] = useState(false);
-
-  // ... (Data fetching logic identical to before)
-  const handleRefreshCache = async () => {
-    if (!window.swisswpsuiteData?.apiUrl) return;
-    setRefreshingCache(true);
-    try {
-      await fetch(`${window.swisswpsuiteData.apiUrl}/maintenance`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-WP-Nonce": window.swisswpsuiteData.nonce,
-        },
-        body: JSON.stringify({ action: "clear_transients" }),
-      });
-      setCacheCleared(true);
-      setTimeout(() => setCacheCleared(false), 3000);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setRefreshingCache(false);
-    }
-  };
 
   const animatedThreats = useAnimatedCounter(stats.threats_blocked, 1000);
   const animatedSeo = useAnimatedCounter(stats.seo_score, 1000);
@@ -271,17 +243,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* Freemium Dual-Build (Phase 3, 2026-07-17): contextual upgrade card —
-          Guideline 11 compliant (lives inside our own dashboard page, not a
-          site-wide notice or interrupt). Free edition only. */}
-      {isFreeEdition() && (
-        <ProUpsellPlaceholder
-          feature="SwissSuite AI Pro"
-          variant="compact"
-          description="Unlock cloud backup, 2FA, hardening, geo-blocking, AI security scans, AI SEO, and AI content — all in one upgrade."
-          editionMismatch={hasEditionMismatch()}
-        />
-      )}
+      {/* Upsell redesign (2026-08-04, design point 1): the dashboard-wide
+          "SwissSuite AI Pro" ProUpsellPlaceholder card is removed — the
+          dashboard is a mixed page with no single gated surface to point
+          at, and the reviewers' checklist confines selling to the Settings
+          screen. Full edition/module detail lives in Settings > Editions &
+          AI (EditionsAiInfo.tsx), reachable from the sidebar at any time. */}
 
       {/* Action Grid */}
       <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
@@ -465,9 +432,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
 
         {/* SEO Breakdown — On-Page Diagnostic */}
+        {/* LiveQA §3.9 fix (DSH-07, 2026-08-04): was `tier !== "free"`, a
+            case-sensitive compare against the live tier string "Free"
+            (capital F) — always true, so the lock never rendered for
+            anyone, Free included. This wasn't just a casing bug: the
+            backend's actual gate for /seo/onpage-audit is the `seo_audit`
+            capability, which is unconditionally granted to Free too (see
+            SwissWPSuite_License::get_free_capabilities() and
+            FREEMIUM_DUAL_BUILD_ARCHITECTURE.md §2) — a case-correct
+            `tier.toLowerCase() !== "free"` would have wrongly RE-LOCKED a
+            control the backend already permits for Free. Deriving from the
+            capabilities array instead keeps this control's visible lock
+            state permanently in sync with whatever the backend actually
+            grants, free or paid. `?? true` preserves the prior fallback
+            (unlocked) for the pre-bootstrap render when license data isn't
+            loaded yet. */}
         <OnPageDiagnostics
           seoBreakdown={stats.seo_breakdown}
-          isPro={window.swisswpsuiteData?.license?.tier !== "free"}
+          isPro={
+            window.swisswpsuiteData?.license?.capabilities?.includes(
+              "seo_audit"
+            ) ?? true
+          }
         />
       </div>
     </div>

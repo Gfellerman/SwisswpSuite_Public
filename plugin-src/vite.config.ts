@@ -104,6 +104,20 @@ export default defineConfig(({ mode }) => {
         // ProUpsellPlaceholder rather than null, per this codebase's
         // established graceful-degradation convention, even though none of
         // the four are actually reachable at runtime in Free today.
+        //
+        // WP.org compliance sprint F3 (register row #23, owner decision
+        // (b), 2026-08-01): one more entry, same mechanism.
+        // '../components/organisms/Settings/ApiConfig' is imported once, in
+        // src/pages/SettingsPage.tsx. Its RENDER is already gated by
+        // `isProEdition()` at that call site, but `SettingsPage.tsx` reaches
+        // it via a plain static import (not React.lazy), so Rollup still
+        // compiled the real ApiConfig.tsx — and the literal
+        // "/settings/test-connection" string it POSTs to — into the shipped
+        // Free SettingsPage chunk. `public/readme.txt` states the Free
+        // plugin "does no AI processing, and makes no AI calls"; the Free
+        // zip must contain no code that can POST to a BYO AI endpoint, so
+        // the real BYO-AI panel is removed from the Free build graph
+        // entirely rather than merely left unreachable at runtime.
         ...(EDITION === "free"
           ? {
               "../pages/AIContentPage": path.resolve(
@@ -142,6 +156,10 @@ export default defineConfig(({ mode }) => {
               "./organisms/UpdateGuard/UpdateGuardCard": path.resolve(
                 __dirname,
                 "src/components/organisms/UpdateGuard/UpdateGuardCard.freeStub.tsx"
+              ),
+              "../components/organisms/Settings/ApiConfig": path.resolve(
+                __dirname,
+                "src/components/organisms/Settings/ApiConfig.freeStub.tsx"
               ),
             }
           : {}),

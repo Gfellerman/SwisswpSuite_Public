@@ -1,51 +1,27 @@
 /**
  * Authored by: Frontend Specialist
  * Skills: react-patterns, typescript-expert
- * Date: 2026-07-18
+ * Date: 2026-07-18 (upsell redesign 2026-08-04)
  *
  * Freemium Dual-Build (Phase 4, A4 fix) — FREE-EDITION-ONLY BUILD-TIME
  * REPLACEMENT for components/Sync/SyncManager.tsx (the ~42KB, 2100+ line
  * live Sync UI).
  *
- * `BackupsPage.tsx` (which DOES ship in Free — Local Backup lives there)
- * lazy-loads SyncManager via `React.lazy(() => import("../components/Sync/
- * SyncManager"))`, and only ever renders it behind an `isProEditionBuild`
- * check that is always false in Free — but per the same Rollup static-
- * analysis reasoning documented in AIContentPage.freeStub.tsx, that runtime
- * gate does not stop Rollup from still emitting the SyncManager chunk. This
- * component is also imported a second way, statically, by SyncPage.tsx —
- * but SyncPage.tsx itself is aliased away in Free (see
- * SyncPage.freeStub.tsx), so this alias only needs to intercept
- * BackupsPage.tsx's direct dynamic import in practice. Both call sites use
- * the identical relative specifier `"../components/Sync/SyncManager"`
- * (both importing files live in the same `src/pages/` directory), so one
- * alias entry in `plugin/vite.config.ts` covers both.
+ * `plugin/vite.config.ts` aliases the specifier `"../components/Sync/
+ * SyncManager"` (used by both BackupsPage.tsx's lazy import and
+ * SyncPage.tsx's static import) to THIS file only when built with
+ * EDITION=free. See AIContentPage.freeStub.tsx for the full Rollup
+ * static-import-elision writeup (identical mechanism).
  *
- * This component is never actually mounted at runtime in Free (the
- * `isProEditionBuild` ternary in BackupsPage.tsx never reaches the branch
- * that renders it), so its content is inert — but it renders a real
- * (compact) upsell rather than `null`, matching this codebase's
- * "graceful degradation" convention (see
- * docs/architecture/FREEMIUM_DUAL_BUILD_ARCHITECTURE.md §3) in case a
- * future refactor of BackupsPage.tsx ever reaches this branch directly.
+ * Upsell redesign (2026-08-04, design point 1): both BackupsPage.tsx's Sync
+ * sub-tab and SyncPage.freeStub.tsx now render one page-level
+ * `FeaturePointer` directly instead of swapping this component for a
+ * per-section ProUpsellPlaceholder. This stub is not reached by any call
+ * site in Free any more; kept only as defensive parity for the
+ * vite.config.ts alias entry.
  */
 import React from "react";
-import { ProUpsellPlaceholder } from "../organisms/Upsell/ProUpsellPlaceholder";
-import { hasEditionMismatch } from "../../lib/edition";
-import { RefreshCw } from "lucide-react";
 
-const SyncManager: React.FC = () => (
-  <ProUpsellPlaceholder
-    feature="Site Synchronisation"
-    variant="compact"
-    icon={RefreshCw}
-    description="Keep a staging site and your live site in sync — push content changes both ways with a diff view before anything is applied."
-    bullets={[
-      "Two-way content sync between staging and live",
-      "Diff-based push — review changes before they apply",
-    ]}
-    editionMismatch={hasEditionMismatch()}
-  />
-);
+const SyncManager: React.FC = () => null;
 
 export default SyncManager;

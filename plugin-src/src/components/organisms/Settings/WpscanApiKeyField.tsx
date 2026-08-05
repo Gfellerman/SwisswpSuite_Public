@@ -52,7 +52,7 @@ export function WpscanApiKeyField({
 
   const hasKey = settings?.hasWpscanApiKey ?? false;
   const placeholder = !isProUser
-    ? "Available on Pro plan"
+    ? "Not available on this plan"
     : hasKey
       ? "Enter new key to replace existing"
       : "Not configured";
@@ -99,7 +99,7 @@ export function WpscanApiKeyField({
         ) : (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-[0.1em] border text-yellow-800 bg-yellow-50 border-yellow-200">
             <Lock size={11} aria-hidden="true" />
-            Pro
+            Locked
           </span>
         )}
       </div>
@@ -143,12 +143,14 @@ export function WpscanApiKeyField({
         </ul>
       </div>
 
-      {/* Pro-required notice — shown when user is not on Pro plan */}
+      {/* Upsell redesign (2026-08-04, T3): neutral-copy notice — no "Pro"/
+          "Upgrade"/pricing words. Control stays disabled with a neutral
+          explanation rather than rendering marketing copy in its place. */}
       {!isProUser && (
         <div
           className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-yellow-50 border border-yellow-200"
           role="note"
-          aria-label="WPScan API key requires a Pro plan"
+          aria-label="WPScan API key is not available on this plan"
         >
           <Lock
             size={15}
@@ -156,15 +158,14 @@ export function WpscanApiKeyField({
             aria-hidden="true"
           />
           <span className="text-sm text-yellow-800">
-            Available on Pro plan — upgrade to enable WPScan vulnerability
-            lookups.{" "}
+            Not available on this plan.{" "}
             <a
               href="https://www.swisswpsecure.com/pricing"
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold underline hover:text-yellow-900 transition-colors"
             >
-              Upgrade
+              Learn more
             </a>
           </span>
         </div>
@@ -255,7 +256,7 @@ export function WpscanApiKeyField({
         </div>
         <p id="wpscan-key-hint" className="text-xs text-neutral-500">
           {!isProUser
-            ? "Upgrade to Pro to configure WPScan vulnerability lookups."
+            ? "Not available on this plan — see Settings for plan details."
             : hasKey
               ? "Leave blank to keep your existing key. A new key is saved automatically when you leave this field."
               : "The key is saved automatically when you leave this field."}

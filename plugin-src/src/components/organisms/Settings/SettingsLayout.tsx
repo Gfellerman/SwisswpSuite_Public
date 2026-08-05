@@ -6,6 +6,7 @@
 
 import { ReactNode } from "react";
 import { Card } from "../../ui/Card";
+import { isProEdition } from "../../../lib/edition";
 
 interface SettingsLayoutProps {
   children: ReactNode;
@@ -18,9 +19,13 @@ export function SettingsLayout({
   activeTab,
   onTabChange,
 }: SettingsLayoutProps) {
+  // Upsell redesign (2026-08-04): the "api" tab is Pro's real AI-connection
+  // panel (ApiConfig.tsx) but, in Free, is now the consolidated "Editions &
+  // AI" informational section (EditionsAiInfo.tsx) — label reflects which
+  // one actually renders. See SettingsPage.tsx's "api" tab branch.
   const tabs = [
     { id: "general", label: "General" },
-    { id: "api", label: "AI Configuration" },
+    { id: "api", label: isProEdition() ? "AI Configuration" : "Editions & AI" },
     { id: "security", label: "Security" },
     { id: "seo", label: "SEO" },
     { id: "license", label: "License" },

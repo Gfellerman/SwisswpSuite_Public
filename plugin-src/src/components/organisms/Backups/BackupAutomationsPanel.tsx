@@ -1858,7 +1858,7 @@ export const BackupAutomationsPanel: React.FC = () => {
                 Backup Automations
               </h3>
               <Badge variant="neutral" className="mt-0.5">
-                Pro Feature
+                Not Included
               </Badge>
             </div>
             <Lock
@@ -1868,8 +1868,7 @@ export const BackupAutomationsPanel: React.FC = () => {
           </div>
           <p className="text-sm text-muted-foreground">
             Automatically back up your site on a schedule — daily, weekly, or
-            hourly. Never forget a backup again. Upgrade to Pro to unlock
-            automations.
+            hourly. Not included on this plan — see Settings for details.
           </p>
         </div>
       </Card>

@@ -195,10 +195,12 @@ export const SentinelAttackChains: React.FC<SentinelAttackChainsProps> = ({
                 )}
                 {isProRequired && !isBlocked && (
                   <Badge variant="warning">
-                    {/* WCAG 4.1.2: Lock is decorative — "Pro Required" text conveys the meaning.
-                        Without aria-hidden NVDA announces "lock image Pro Required". */}
+                    {/* Upsell redesign (2026-08-04, T3): neutral copy — no
+                        "Pro" word. WCAG 4.1.2: Lock is decorative — the
+                        badge text conveys the meaning. Without aria-hidden
+                        NVDA announces "lock image Not Included". */}
                     <Lock size={10} className="mr-1" aria-hidden="true" />
-                    Pro Required
+                    Not Included
                   </Badge>
                 )}
                 {isExpanded ? (
@@ -288,7 +290,8 @@ export const SentinelAttackChains: React.FC<SentinelAttackChainsProps> = ({
                   </div>
                 )}
 
-                {/* Upgrade callout — Pro Required */}
+                {/* Upsell redesign (2026-08-04, T3): neutral-copy callout —
+                    no "Pro"/"Upgrade" words. */}
                 {isProRequired && (
                   <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
                     <Lock
@@ -298,14 +301,21 @@ export const SentinelAttackChains: React.FC<SentinelAttackChainsProps> = ({
                     />
                     <div>
                       <p className="mb-1 text-xs font-black tracking-widest text-amber-700 uppercase">
-                        Pro Feature Required
+                        Not Included On This Plan
                       </p>
                       <p className="mb-2 text-sm font-medium text-amber-800">
-                        Blocking <strong>{chain.name}</strong> requires the{" "}
-                        <strong>
-                          {chain.swisswpsuite_break_point || "Pro"}
-                        </strong>{" "}
-                        feature.
+                        {chain.swisswpsuite_break_point ? (
+                          <>
+                            Blocking <strong>{chain.name}</strong> requires
+                            the <strong>{chain.swisswpsuite_break_point}</strong>{" "}
+                            feature.
+                          </>
+                        ) : (
+                          <>
+                            Blocking <strong>{chain.name}</strong> requires a
+                            feature not included on this plan.
+                          </>
+                        )}
                       </p>
                       <a
                         href="https://swisswpsecure.com/products"
@@ -313,7 +323,7 @@ export const SentinelAttackChains: React.FC<SentinelAttackChainsProps> = ({
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs font-black tracking-widest text-amber-700 uppercase underline underline-offset-2 hover:text-amber-900"
                       >
-                        Upgrade to Pro{" "}
+                        Learn more{" "}
                         <ExternalLink size={10} aria-hidden="true" />
                       </a>
                     </div>

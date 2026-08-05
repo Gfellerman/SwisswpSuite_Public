@@ -2986,7 +2986,7 @@ export const MigrationStation: React.FC<MigrationStationProps> = ({
                     >
                       {i + 1}
                     </div>
-                    <span className="hidden font-medium sm:inline">{s}</span>
+                    <span className="hidden font-medium sm:inline!">{s}</span>
                   </div>
                 );
               }

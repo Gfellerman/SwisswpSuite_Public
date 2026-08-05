@@ -54,18 +54,18 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
             />
             <div>
               <p className="text-xs font-black uppercase tracking-widest text-amber-700 mb-1">
-                Pro Feature
+                Additional Plan Required
               </p>
               <p className="text-xs font-medium text-amber-700">
-                Pro users can view their full scan history and re-inspect
-                previous reports.{" "}
+                Viewing your full scan history and re-inspecting previous
+                reports requires an active plan.{" "}
                 <a
                   href="https://swisswpsecure.com/products"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline underline-offset-2 font-black"
                 >
-                  Upgrade to Pro
+                  Learn more
                 </a>
               </p>
             </div>
@@ -198,7 +198,11 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
           </table>
         </div>
 
-        {/* Upgrade CTA for free users with more than 1 scan */}
+        {/* Upsell redesign (2026-08-04, T3): neutral copy — no "Pro"/
+            "Upgrade"/pricing words. Not an edition gate (hasSentinelPro is a
+            paid-plan capability reachable in either edition), so the canned
+            FeaturePointer "edition" copy isn't accurate here; custom neutral
+            text instead. */}
         {!hasSentinelPro && hiddenCount > 0 && (
           <div className="mt-4 p-4 bg-background border border-border rounded-xl text-center">
             <p className="text-xs font-black uppercase tracking-widest text-neutral-500">
@@ -209,7 +213,7 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
                 rel="noopener noreferrer"
                 className="text-brand-accent underline underline-offset-2 hover:text-swiss-navy"
               >
-                Upgrade to Pro
+                Learn more
               </a>{" "}
               to view full history.
             </p>
