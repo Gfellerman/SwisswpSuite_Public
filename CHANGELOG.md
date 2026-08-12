@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.14] - 2026-08-12
+
+### Security
+- `security/analyze-file` (Pro AI file analysis) could read and transmit the raw content of any file inside the WordPress root, including `wp-config.php`, to the AI analysis service with no redaction — a live install's `AUTH_KEY`/`AUTH_SALT`/`SECURE_AUTH_KEY`/database credentials could have been exposed off-site. Fixed with a filename denylist, a content-pattern denylist, and unconditional line-level redaction of any secret-shaped `define()` before content is ever sent, applied in all three call layers.
+- Second, independent instance of the malware-scanner self-exclusion bug from 2.9.33.7 found in the deep-scan code path (`class-swisswpsuite-sentinel-security.php`): self-exclusion was hardcoded to the Free edition's folder name, so a Pro install could flag its own plugin files as a threat. Fixed to derive the path edition-agnostically, matching the fix already shipped for Quick Scan.
+
+### Changed
+- **WordPress.org compliance remediation (3rd review).** Several AI-serviceware code paths (log analysis, background SEO generation, migration-readiness analysis, custom API connection testing) were present — though not reachable — inside otherwise free-shipping files. Extracted into dedicated, edition-excluded modules so the Free package now contains zero AI-calling code of any kind, matching the existing standard already applied to the core AI proxy.
+- Same physical-exclusion fix applied on the frontend: the 2FA setup flow, geo-blocking controls, and AI SEO bulk-generation UI were gated only by a runtime check, so their full code and on-screen copy still shipped inside the Free edition's JavaScript even though never displayed. Now excluded from the Free build at compile time.
+- The plugin no longer bundles its own copy of React. It now uses WordPress core's own React instance (WordPress.org Guideline 13) — audited for compatibility first, verified working against WordPress's actual React build. Reduces the admin bundle size by roughly 150KB.
+- Free/Pro mutual-exclusion handling no longer deactivates the sibling edition automatically; each edition now only ever deactivates itself and shows a notice asking the user to choose, per WordPress.org's plugin-activation guideline.
+- readme.txt's External Services section expanded to fully document the SwissWPSecure licensing/billing API's endpoints, purpose, and data handling, even though none of them are reachable from this free edition.
+- Plugin slug corrected to match the one actually assigned by WordPress.org at initial submission.
+
 ## [2.9.33.9] - 2026-08-05
 
 ### Security

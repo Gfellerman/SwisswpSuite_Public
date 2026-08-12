@@ -4,7 +4,7 @@ Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.33.9
+Stable tag: 2.9.33.14
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -118,9 +118,9 @@ No. Every feature in this free plugin works immediately with no account and no l
 
 == External Services ==
 
-This plugin connects to only the external service listed below, and only for the purposes described. The free plugin has no license or account system of any kind, does no AI processing, and makes no AI calls — its local features (malware scan, backup, restore, quarantine, on-page SEO audit, sitemap) run entirely on your own server.
+This plugin's code can connect to the external services listed below. The free edition's local features (malware scan, backup, restore, quarantine, on-page SEO audit, sitemap) run entirely on your own server and use none of them.
 
-The free plugin sends no data to SwissWPSecure servers. No account, no license key, no phoning home.
+Under normal operation, this free edition makes zero calls to SwissWPSecure servers: every code path in this package that could reach api.swisswpsecure.com checks the plugin edition first and returns before any network request is made. Those code paths exist because SwissSuite AI (free) and SwissSuite AI Pro are built from one shared source tree; they activate only in the separately downloaded, licensed Pro edition. They are documented in full below for transparency, even though none of them run in this free edition.
 
 = WordPress.org APIs =
 Host: api.wordpress.org
@@ -128,6 +128,14 @@ Used for: (1) WordPress core file checksum verification, to detect modified or i
 Data sent: Your WordPress version and site locale (for checksum requests), and your installed plugin slugs (for the update checks and the abandoned-plugin check). No personal data, file contents, or site content is sent.
 When contacted: (1) runs during any security scan that includes core-file integrity checking, and automatically once per day via a background check. (2) runs whenever WordPress checks for plugin updates — standard WordPress behavior, not specific to this plugin. (3) runs automatically once per day, and immediately if you click "Refresh" on the Abandoned Plugins panel; can be turned off at Settings -> Scan Capabilities -> "Abandoned Plugin Detection".
 Privacy Policy: https://wordpress.org/about/privacy/
+
+= SwissWPSecure Licensing & Billing API =
+Host: api.swisswpsecure.com
+Used for: License activation and deactivation, subscription and billing management (opening the Stripe billing portal, cancelling or resuming auto-renewal, plan upgrades, refund requests), the periodic license-validity check, transferring a license's domain lock during a site migration, and, where an administrator has actively used an AI feature on a paid plan, sending the corresponding content for AI processing. All of this belongs to SwissSuite AI Pro, the separate paid edition — none of it is available in, or reachable from, this free edition. Every call site checks that the Pro edition is running before contacting this host; in this free edition that check always fails first, so the request is never sent, no license or account ever exists, and nothing is transmitted.
+Data sent (Pro edition only — never sent by this free edition): license key and site domain, for activation, deactivation, the billing/subscription actions above, the periodic validity check, and migration domain transfer; an admin-chosen return URL, for the billing portal; and, only for AI features an administrator explicitly runs, the specific content submitted for processing (for example page titles and descriptions, post text, or a security-log summary that can include visitor IP addresses and attempted usernames).
+When contacted: Only in SwissSuite AI Pro. Either when an administrator takes the corresponding action (activating or deactivating a license, opening billing management, requesting a refund, running an AI feature) or automatically via the periodic Pro license-validity check. Never contacted by this free edition under any circumstance.
+Terms of Service: https://swisswpsecure.com/terms
+Privacy Policy: https://swisswpsecure.com/privacy
 
 For full details on what data is transmitted and your rights, see our Privacy Policy linked above.
 
@@ -148,6 +156,14 @@ Critical fix: archive scan was restarting from scratch on every recovery tick in
 Critical fix: backup was re-archiving its own previous backup zips on every run, causing exponential size growth. Mandatory update for all users.
 
 == Changelog ==
+
+= 2.9.33.14 =
+* Security: fixed AI file analysis (Pro) being able to read and transmit unredacted wp-config.php content, including WordPress's own authentication keys/salts.
+* Security: fixed a second instance of the malware scanner flagging the plugin's own files as a threat on a Pro install.
+* Fixed: several AI-only code paths were present (but unreachable) inside otherwise free-shipping backend files and frontend bundles; all AI-related code is now physically excluded from this free edition, matching WordPress.org's plugin directory guidelines.
+* Changed: this plugin now uses WordPress's own bundled React instead of shipping its own copy, per WordPress.org guidelines.
+* Fixed: Free/Pro edition-conflict handling now only ever deactivates itself, never the other installed edition.
+* Changed: External Services documentation expanded for full transparency.
 
 = 2.9.33.9 =
 * Hardening: added direct-file-access protection to every remaining plugin PHP file (defence in depth).

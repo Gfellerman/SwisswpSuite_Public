@@ -1,6 +1,6 @@
 # SwissSuite AI - WordPress Security & Backup Plugin
 
-**Version:** 2.9.33.9
+**Version:** 2.9.33.14
 **Requires WordPress:** 6.2+
 **Tested up to:** 7.0
 **Requires PHP:** 7.4+
