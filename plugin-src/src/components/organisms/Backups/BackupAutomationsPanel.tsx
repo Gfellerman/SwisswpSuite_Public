@@ -482,6 +482,50 @@ const DEFAULT_FORM: AutomationFormData = {
   retention: 7,
 };
 
+/**
+ * Pure decision logic extracted from the AutomationModal mount-effect so it
+ * is unit-testable without rendering the component (BUG A FIX, 2026-08-05).
+ * Builds the list of destinations currently usable, given which providers
+ * are connected.
+ */
+export function computeAvailableDestinations(connectedProviders: {
+  gdrive: boolean;
+  dropbox: boolean;
+  s3: boolean;
+  ftp: boolean;
+  b2: boolean;
+}): BackupAutomation["destination"][] {
+  return [
+    "local",
+    ...(connectedProviders.gdrive ? (["gdrive"] as const) : []),
+    ...(connectedProviders.dropbox ? (["dropbox"] as const) : []),
+    ...(connectedProviders.s3 ? (["s3"] as const) : []),
+    ...(connectedProviders.ftp ? (["ftp"] as const) : []),
+    ...(connectedProviders.b2 ? (["b2"] as const) : []),
+  ];
+}
+
+/**
+ * Decides whether the modal should silently-in-memory reset the selected
+ * destination back to "local", given the CURRENT provider-status loading
+ * state. THE P0 ASSERTION: this must return `shouldReset: false` while
+ * `isLoading` is true, no matter what `availableDestinations` looks like —
+ * pre-fix, the reset effect judged availability using the loading-default
+ * ("all providers false") state because it never waited for isLoading to
+ * clear, silently downgrading any cloud automation opened before its
+ * connected-providers queries resolved.
+ */
+export function evaluateDestinationReset(
+  currentDestination: BackupAutomation["destination"],
+  availableDestinations: BackupAutomation["destination"][],
+  isLoading: boolean,
+): { shouldReset: boolean } {
+  if (isLoading) {
+    return { shouldReset: false };
+  }
+  return { shouldReset: !availableDestinations.includes(currentDestination) };
+}
+
 // ---------------------------------------------------------------------------
 // AutomationModal — create / edit
 // ---------------------------------------------------------------------------
@@ -504,6 +548,7 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
   isSaving,
 }) => {
   const titleId = useId();
+  const saveBlockedReasonId = useId();
   const modalRef = useRef<HTMLDivElement>(null);
   const firstFocusRef = useRef<HTMLInputElement>(null);
 
@@ -552,21 +597,78 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  const availableDestinations: BackupAutomation["destination"][] = [
-    "local",
-    ...(connectedProviders.gdrive ? (["gdrive"] as const) : []),
-    ...(connectedProviders.dropbox ? (["dropbox"] as const) : []),
-    ...(connectedProviders.s3 ? (["s3"] as const) : []),
-    ...(connectedProviders.ftp ? (["ftp"] as const) : []),
-    ...(connectedProviders.b2 ? (["b2"] as const) : []),
-  ];
+  const availableDestinations: BackupAutomation["destination"][] =
+    computeAvailableDestinations(connectedProviders);
 
-  // Reset destination if it's no longer available
+  // BUG A FIX (2026-08-05): the original effect ran once on mount with an
+  // empty dependency array — BEFORE the gdrive/dropbox/s3/ftp/b2 "connected"
+  // queries had resolved. Every hook defaults its "connected" flag to
+  // `false` while its query is loading (`data?.connected ?? false`), so on
+  // mount `availableDestinations` was ALWAYS just `["local"]`, and any
+  // automation whose real destination was a cloud provider had its
+  // in-memory form.destination silently overwritten to "local" before the
+  // user ever saw the modal. If they then hit Save (e.g. only to rename the
+  // automation or change retention), that silent overwrite was persisted by
+  // the PATCH — permanently downgrading a cloud automation to local with no
+  // warning. This is the confirmed mechanism behind live evidence: an
+  // automation named "...on Google Drive" whose stored `destination` was
+  // "local".
+  //
+  // Fix: (1) wait for connectedProviders.isLoading to clear before judging
+  // availability, so a fast click into Edit right after page load can no
+  // longer race the status queries; (2) never silently discard — surface a
+  // visible, persistent warning in the modal AND a toast, and only reset
+  // the in-memory field, never assume the user still wants to save. A
+  // provider that is genuinely disconnected (expired token, revoked access)
+  // still can't be selected, but the user is now told why, instead of the
+  // automation silently downgrading in the background.
+  const [destinationUnavailableWarning, setDestinationUnavailableWarning] =
+    useState<string | null>(null);
+  const warnedRef = useRef(false);
   useEffect(() => {
-    if (!availableDestinations.includes(form.destination)) {
+    if (warnedRef.current) return; // only ever downgrade once per modal session
+    const { shouldReset } = evaluateDestinationReset(
+      form.destination,
+      availableDestinations,
+      connectedProviders.isLoading,
+    );
+    if (shouldReset) {
+      warnedRef.current = true;
+      const label = DESTINATION_LABELS[form.destination];
+      setDestinationUnavailableWarning(
+        `${label} is not connected anymore, so this automation has been switched to Local storage. Reconnect ${label} in Cloud Storage settings and re-select it below if you want offsite backups to resume, before saving.`,
+      );
+      toast.warning(
+        `${label} is disconnected — this automation was reset to Local storage. Review before saving.`,
+      );
       setForm((f) => ({ ...f, destination: "local" }));
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    connectedProviders.isLoading,
+    connectedProviders.gdrive,
+    connectedProviders.dropbox,
+    connectedProviders.s3,
+    connectedProviders.ftp,
+    connectedProviders.b2,
+  ]);
+
+  // SAVE-WHILE-LOADING GUARD (2026-08-08, §3.4 third bullet): while
+  // connectedProviders.isLoading is true, the reset-effect above
+  // intentionally does NOT judge availability yet (that is the Bug A fix
+  // above) — but that means there is a window, right after opening Edit on
+  // an existing cloud automation, where form.destination still holds the
+  // automation's real stored cloud value and we genuinely do not yet know
+  // whether that provider is still connected. The backend's
+  // validate_fields() only checks that the destination is one of the known
+  // ALLOWED_DESTINATIONS enum values — it has no connectivity check (see
+  // plugin/includes/class-swisswpsuite-backup-automations.php:683-699) — so
+  // nothing stops a Save fired in that window from persisting a cloud
+  // destination for a since-disconnected provider. Local has no
+  // connectivity concern, so it is exempt. Backend-side connectivity
+  // validation is a separate, out-of-scope follow-up (residual).
+  const isSaveBlockedByProviderLoad =
+    connectedProviders.isLoading && form.destination !== "local";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -576,6 +678,12 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
     }
     if (form.retention < 1 || form.retention > 30) {
       toast.error("Keep between 1 and 30 copies.");
+      return;
+    }
+    if (isSaveBlockedByProviderLoad) {
+      toast.error(
+        "Still confirming cloud connection status — please wait a moment before saving.",
+      );
       return;
     }
     onSave(form);
@@ -725,6 +833,19 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
           {/* Destination — where to send it */}
           <fieldset>
             <legend className={labelClass}>Where to send it</legend>
+            {destinationUnavailableWarning && (
+              <p
+                role="alert"
+                className="mb-2 flex items-start gap-1.5 rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+              >
+                <AlertTriangle
+                  size={14}
+                  className="flex-shrink-0 mt-0.5"
+                  aria-hidden="true"
+                />
+                {destinationUnavailableWarning}
+              </p>
+            )}
             {connectedProviders.isLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground p-3">
                 <Loader2
@@ -823,32 +944,57 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
                   className="flex-shrink-0 mt-0.5"
                   aria-hidden="true"
                 />
-                Note: Automatic pruning applies to Local storage only. Cloud
-                providers keep all copies — manage old files from your cloud
-                provider's interface.
+                This limit also applies to your cloud storage — older
+                backups are deleted from your cloud provider automatically,
+                the same as Local. If a specific file ever can't be removed
+                automatically (e.g. it predates this version), it will be
+                flagged for you above the backup list instead of being kept
+                silently.
               </p>
             )}
           </div>
 
           {/* Form actions */}
-          <div className="flex gap-3 pt-2 border-t border-border">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={isSaving}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              loading={isSaving}
-              className="flex-1"
-            >
-              {mode === "create" ? "Create Automation" : "Save Changes"}
-            </Button>
+          <div className="pt-2 border-t border-border">
+            {isSaveBlockedByProviderLoad && (
+              <p
+                id={saveBlockedReasonId}
+                className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground"
+                aria-live="polite"
+              >
+                <Loader2
+                  size={12}
+                  className="animate-spin flex-shrink-0"
+                  aria-hidden="true"
+                />
+                Confirming cloud connection status — Save is disabled until
+                this finishes, so a disconnected provider can&rsquo;t be
+                saved by mistake.
+              </p>
+            )}
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onClose}
+                disabled={isSaving}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={isSaving}
+                disabled={isSaveBlockedByProviderLoad}
+                aria-describedby={
+                  isSaveBlockedByProviderLoad ? saveBlockedReasonId : undefined
+                }
+                className="flex-1"
+              >
+                {mode === "create" ? "Create Automation" : "Save Changes"}
+              </Button>
+            </div>
           </div>
         </form>
       </div>
@@ -1297,7 +1443,8 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
                 className="text-amber-500"
                 aria-hidden="true"
               />
-              Are you sure? This will stop the automation permanently.
+              Are you sure? Your automation will stop. The files saved until
+              now stay on your target drive — delete them manually if needed.
             </span>
             <button
               onClick={onDeleteConfirmClose}

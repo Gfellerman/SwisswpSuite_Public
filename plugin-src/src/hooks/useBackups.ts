@@ -246,6 +246,17 @@ export function useOrphanBackups() {
         }>;
         total_size: string;
         total_count: number;
+        // BUG-B FIX (2026-08-05): cloud objects a prune/automation-delete pass
+        // could not remove remotely (missing cloud_id or a provider failure).
+        // Additive fields — see SwissWPSuite_Backup_Sets::record_cloud_orphan().
+        cloud_orphans?: Array<{
+          index: number;
+          provider: string;
+          filename: string;
+          reason: string;
+          detected_at: string;
+        }>;
+        cloud_orphan_count?: number;
       }>("/backup/local/orphans"),
     staleTime: 120_000,
     retry: 1,
@@ -269,6 +280,41 @@ export function useCleanupOrphans() {
     },
     onError: () => {
       toast.error("Failed to clean up orphaned files.");
+    },
+  });
+}
+
+/**
+ * P4 (2026-08-08 socratic re-audit repair plan): dismiss a single recorded
+ * cloud-orphan entry (backend: SwissWPSuite_Backup_Sets::clear_cloud_orphan(),
+ * wired up via POST /backup/local/orphans/cloud/dismiss). This does NOT touch
+ * anything on the cloud provider itself -- it only clears the local
+ * diagnostic record so the banner in BackupList.tsx stops listing it, for use
+ * after the admin has manually removed the object from their cloud
+ * dashboard. `index` is a zero-based position into the `cloud_orphans[]`
+ * array returned by useOrphanBackups() -- the backend matches by index
+ * position at read time, so this hook always invalidates ["backup-orphans"]
+ * on success to force a re-fetch before any further dismiss (indices shift
+ * after every clear).
+ */
+export function useDismissCloudOrphan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (index: number) =>
+      wpApi<{
+        success: boolean;
+        message: string;
+        cleared?: { provider: string; filename: string };
+      }>("/backup/local/orphans/cloud/dismiss", {
+        method: "POST",
+        body: JSON.stringify({ index }),
+      }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["backup-orphans"] });
+      toast.success(data.message || "Cloud-orphan record cleared.");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to dismiss cloud-orphan record: ${error.message}`);
     },
   });
 }

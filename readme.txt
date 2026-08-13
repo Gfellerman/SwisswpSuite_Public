@@ -4,7 +4,7 @@ Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.33.14
+Stable tag: 2.9.33.15
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -137,6 +137,13 @@ When contacted: Only in SwissSuite AI Pro. Either when an administrator takes th
 Terms of Service: https://swisswpsecure.com/terms
 Privacy Policy: https://swisswpsecure.com/privacy
 
+= ipwho.is (IP geolocation) =
+Host: ipwho.is
+Used for: Determining a visitor's country for Geo-Lockdown, a SwissSuite AI Pro-only feature (country-level allow/deny rules). Not available in, or reachable from, this free edition — the geo-blocking code that makes this call is physically absent from the free package; this free edition's own privacy-policy generator describes the call for transparency (matching what the Pro edition does when the feature is enabled), but never makes it.
+Data sent (Pro edition only, and only when Geo-Lockdown is enabled — never sent by this free edition): the visiting IP address, for the country lookup only.
+When contacted: Only in SwissSuite AI Pro, only when Geo-Lockdown is enabled, and only for a visitor's IP address not already resolved by a Cloudflare header (if present). Never contacted by this free edition under any circumstance.
+Privacy Policy: https://ipwho.is/
+
 For full details on what data is transmitted and your rights, see our Privacy Policy linked above.
 
 == Source Code ==
@@ -156,6 +163,11 @@ Critical fix: archive scan was restarting from scratch on every recovery tick in
 Critical fix: backup was re-archiving its own previous backup zips on every run, causing exponential size growth. Mandatory update for all users.
 
 == Changelog ==
+
+= 2.9.33.15 =
+* Security: fixed a regression from 2.9.33.14's frontend physical-exclusion sweep — the Geo-Lockdown card's fetch/save logic (and the literal "Geo-Lockdown countries saved." string) were still compiled into this free edition's JS bundle even though nothing in the free UI could reach them; moved into the same build-time-excluded component boundary as its UI.
+* Security: fixed a second instance of the same pattern — the "Set up Two-Factor Authentication (2FA)" nudge link was gated at runtime only, so its text still shipped in this free edition's JS bundle; now physically excluded.
+* Changed: External Services documentation now discloses ipwho.is (the Pro-only Geo-Lockdown country lookup), for the same transparency reason the SwissWPSecure API is already documented.
 
 = 2.9.33.14 =
 * Security: fixed AI file analysis (Pro) being able to read and transmit unredacted wp-config.php content, including WordPress's own authentication keys/salts.

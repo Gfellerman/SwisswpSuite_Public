@@ -201,7 +201,15 @@ export default function SettingsPage() {
         {activeTab === "security" && (
           <div className="space-y-6">
             {isProEdition() && <TwoFactorSettings />}
-            <EncryptionSettings settings={settings!} onSave={updateSettings} />
+            {/* TD-60 FIX (2026-08-09): backup encryption is Pro-only — the Free
+                restorer (class-swisswpsuite-restorer.php) hard-rejects any
+                .zip.enc file with encrypted_backup_not_supported, so a Free
+                user allowed to SET a password here would create backups they
+                can never restore in-product. Same idiom as the TwoFactorSettings
+                gate above. See docs/TECHNICAL_DEBT.md TD-60. */}
+            {isProEdition() && (
+              <EncryptionSettings settings={settings!} onSave={updateSettings} />
+            )}
             <WpscanApiKeyField
               settings={settings!}
               onSave={updateSettings}

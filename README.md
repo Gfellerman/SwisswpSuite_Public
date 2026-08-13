@@ -1,6 +1,6 @@
 # SwissSuite AI - WordPress Security & Backup Plugin
 
-**Version:** 2.9.33.14
+**Version:** 2.9.33.15
 **Requires WordPress:** 6.2+
 **Tested up to:** 7.0
 **Requires PHP:** 7.4+
@@ -68,6 +68,7 @@ This plugin connects to the following external services when specific features a
 | WordPress.org | Free & Pro | Plugin update checks, core-file checksum verification during a scan, daily check for closed/abandoned plugins | Site URL, plugin/theme list |
 | SwissWPSecure API (`swisswpsecure.com`) | Pro only | License validation, AI features, Sentinel L2 scanning | License key, site URL, scan data (for AI analysis) |
 | Groq AI (via SwissWPSecure proxy) | Pro only | AI content generation, malware analysis | Content snippets, file hashes |
+| ipwho.is | Pro only | Geo-Lockdown country lookup, when enabled | Visitor IP address |
 
 No data is sent without user-initiated action. The Free edition makes none of the Pro-only calls above — see [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for full details.
 

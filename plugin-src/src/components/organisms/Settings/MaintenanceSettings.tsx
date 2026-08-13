@@ -103,6 +103,32 @@ const SEVERITY_STYLES: Record<
   },
 };
 
+/**
+ * N3 fix (Free Audit #1 / Package C, 2026-08-12): System Logs previously
+ * rendered every line — INFO, WARNING, ERROR — with identical styling
+ * (text-emerald-400/80), so a failed daily scan-report email (see F6) was
+ * invisible unless an admin manually read every line. Log lines are raw
+ * strings in the fixed "[TIMESTAMP] [LEVEL] [MODULE] Message" format (see
+ * SwissWPSuite_Diagnostics::log() docblock in class-swisswpsuite-core.php),
+ * so the level is parsed directly out of the text rather than requiring a
+ * backend contract change. Colors follow the AA-safe light/dark pairing
+ * already used by SEVERITY_STYLES above (red-700/amber-800 in light mode —
+ * the default red-500/amber-500 fail WCAG AA against this panel's light
+ * `bg-card`; red-400/amber-400 in dark mode). This is a visual enhancement
+ * layered on top of the existing `[ERROR]`/`[WARNING]` text tag already in
+ * every line, not the sole indicator (WCAG 1.4.1 — color is never the only
+ * cue), so no new aria-* attributes are needed.
+ */
+function getLogLineClass(log: string): string {
+  if (/\[ERROR\]/.test(log)) {
+    return "text-red-700 dark:text-red-400 font-semibold";
+  }
+  if (/\[WARNING\]/.test(log)) {
+    return "text-amber-800 dark:text-amber-400 font-semibold";
+  }
+  return "text-emerald-400/80 hover:text-emerald-300";
+}
+
 interface MaintenanceSettingsProps {
   settings?: SwissSettings;
   onSave?: (settings: Partial<SwissSettings>) => Promise<any>;
@@ -402,7 +428,7 @@ export function MaintenanceSettings({
               {logs.map((log, i) => (
                 <div
                   key={i}
-                  className="flex gap-3 text-emerald-400/80 hover:text-emerald-300 transition-colors"
+                  className={`flex gap-3 transition-colors ${getLogLineClass(log)}`}
                 >
                   <span className="text-neutral-600 shrink-0">[{i + 1}]</span>
                   <span>{log}</span>

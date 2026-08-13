@@ -7,6 +7,7 @@ import {
   useBackupSets,
   useOrphanBackups,
   useCleanupOrphans,
+  useDismissCloudOrphan,
 } from "../../../hooks/useBackups";
 import {
   Download,
@@ -154,6 +155,10 @@ export const BackupList: React.FC = () => {
   }, [activeRestoreNotice]);
   const { data: orphanData } = useOrphanBackups();
   const cleanupMutation = useCleanupOrphans();
+  // P4 (2026-08-08 socratic re-audit repair plan): dismiss a single cloud-orphan
+  // record once the admin has manually confirmed/removed it on their cloud
+  // provider's dashboard.
+  const dismissCloudOrphanMutation = useDismissCloudOrphan();
 
   // Expand/collapse state for set rows — keyed by set ID.
   const [expandedSets, setExpandedSets] = useState<Set<string>>(new Set());
@@ -173,6 +178,22 @@ export const BackupList: React.FC = () => {
   // Helper to format nice dates
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  };
+
+  // cloud_orphans[].detected_at is a `gmdate('Y-m-d H:i:s', ...)` string (UTC,
+  // no offset marker) from list_orphan_backups() — appending " UTC" before
+  // parsing is required or the browser reads it as local time and skews by
+  // the server's UTC offset (see backup-orchestrator MEMORY.md "durable
+  // facts"). Falls back to the raw string if parsing ever fails.
+  const formatOrphanDate = (detectedAt: string) => {
+    const parsed = new Date(`${detectedAt} UTC`);
+    if (Number.isNaN(parsed.getTime())) {
+      return detectedAt;
+    }
+    return parsed.toLocaleString(undefined, {
       dateStyle: "medium",
       timeStyle: "short",
     });
@@ -351,6 +372,79 @@ export const BackupList: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* BUG-B FIX (2026-08-05) / P4 (2026-08-08): cloud objects a prune/automation-
+          delete pass could not remove remotely — see
+          SwissWPSuite_Backup_Sets::record_cloud_orphan(). No local file exists for
+          these, so the "Clean Up" action above (which unlinks local paths) does not
+          apply — the provider's own dashboard is still where the object itself must
+          be removed. This now lists each entry (was count-only) and lets the admin
+          dismiss the diagnostic record here once they've confirmed/removed it there
+          — wired to POST /backup/local/orphans/cloud/dismiss via
+          SwissWPSuite_Backup_Sets::clear_cloud_orphan(). */}
+      {orphanData &&
+        !!orphanData.cloud_orphans &&
+        orphanData.cloud_orphans.length > 0 && (
+          <div className="mx-6 mt-4 mb-0 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800">
+            <div className="flex items-start gap-2 p-3 text-sm text-amber-800 dark:text-amber-200">
+              <AlertTriangle
+                className="w-4 h-4 shrink-0 mt-0.5"
+                aria-hidden="true"
+              />
+              <span>
+                {orphanData.cloud_orphan_count} cloud file
+                {orphanData.cloud_orphan_count !== 1 ? "s" : ""} could not be
+                automatically removed from your cloud provider during cleanup
+                (e.g. an older backup that predates this version). They may
+                still exist in your cloud storage and count toward your
+                provider's quota — check your cloud provider's dashboard,
+                then dismiss the entries below once you've confirmed they're
+                gone.
+              </span>
+            </div>
+            <ul
+              role="list"
+              className="border-t border-amber-200 dark:border-amber-800 divide-y divide-amber-200 dark:divide-amber-800"
+            >
+              {orphanData.cloud_orphans.map((orphan) => {
+                const isDismissingThis =
+                  dismissCloudOrphanMutation.isPending &&
+                  dismissCloudOrphanMutation.variables === orphan.index;
+                return (
+                  <li
+                    key={orphan.index}
+                    className="flex items-center justify-between gap-3 px-3 py-2 text-sm text-amber-900 dark:text-amber-100"
+                  >
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                      {destinationBadge(orphan.provider)}
+                      <span
+                        className="truncate max-w-[220px] font-mono text-xs"
+                        title={orphan.filename}
+                      >
+                        {orphan.filename}
+                      </span>
+                      <span className="text-xs text-amber-700 dark:text-amber-300 shrink-0">
+                        Detected {formatOrphanDate(orphan.detected_at)}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() =>
+                        dismissCloudOrphanMutation.mutate(orphan.index)
+                      }
+                      disabled={isDismissingThis}
+                      aria-label={`Dismiss cloud-orphan record for ${orphan.filename}`}
+                      aria-busy={isDismissingThis}
+                      title={orphan.reason}
+                      className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-amber-800 transition-colors hover:text-amber-950 disabled:opacity-50 dark:text-amber-200 dark:hover:text-amber-50"
+                    >
+                      <X className="w-4 h-4" aria-hidden="true" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">

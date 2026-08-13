@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   SecurityLog,
@@ -34,7 +33,6 @@ import {
   ShieldAlert,
   Globe,
   Lock,
-  ShieldCheck,
   EyeOff,
   FileSearch,
   ScanSearch,
@@ -63,6 +61,8 @@ import { HardeningOptionsGrid } from "./organisms/Security/HardeningOptionsGrid"
 import { CloudShieldPanel } from "./organisms/Security/CloudShieldPanel";
 import { SecurityLogsPanel } from "./organisms/Security/SecurityLogsPanel";
 import { QuarantineTab } from "./organisms/Security/QuarantineTab";
+import { GeoLockdownCard } from "./organisms/Security/GeoLockdownCard";
+import { TwoFactorNudgeLink } from "./organisms/Security/TwoFactorNudgeLink";
 import { FREE_HARDENING_KEYS } from "../constants/hardening";
 import ScanCronStatusBanner from "./organisms/Scan/ScanCronStatusBanner";
 import ScanCard from "./organisms/Scan/ScanCard";
@@ -73,6 +73,10 @@ import { ScanHistoricalRecord } from "./organisms/Scan/ScanHistoricalRecord";
 import UpdateGuardCard from "./organisms/UpdateGuard/UpdateGuardCard";
 import { FeaturePointer } from "./organisms/Upsell/FeaturePointer";
 import { isProEdition } from "../lib/edition";
+import {
+  TWO_FACTOR_GUIDE_CONTENT,
+  GEO_LOCK_ACTION_LABEL,
+} from "../lib/logAdvisorGuideContent";
 import type {
   AiAuditResult,
   MalwareScanResult,
@@ -712,17 +716,13 @@ const SecurityHub: React.FC = () => {
   const [cloudflareConnectingIp, setCloudflareConnectingIp] = useState(false);
   const [cloudflareCountryHeader, setCloudflareCountryHeader] = useState(false);
 
-  // Geo Country Picker State
-  const [geoSettings, setGeoSettings] = useState<{
-    list_mode: "blacklist" | "whitelist";
-    countries: string[];
-  }>({ list_mode: "blacklist", countries: [] });
-  const [allCountries, setAllCountries] = useState<
-    { code: string; name: string; flag: string }[]
-  >([]);
-  const [geoSearch, setGeoSearch] = useState("");
-  const [showGeoPicker, setShowGeoPicker] = useState(false);
-  const [savingGeo, setSavingGeo] = useState(false);
+  // Geo Country Picker State — MOVED to GeoLockdownCard.tsx (2026-08-13,
+  // WP.org B12a regression fix). This was geo-blocking-specific state that
+  // had no reason to live in the shared SecurityHub.tsx monolith once the
+  // JSX itself was already extracted; leaving it here meant its fetch/save
+  // functions (and their compiled strings, e.g. "Geo-Lockdown countries
+  // saved.") still shipped inside the Free edition's JS bundle even though
+  // nothing in Free's render tree could reach them. See GeoLockdownCard.tsx.
 
   // Confirm Dialog State
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -731,17 +731,6 @@ const SecurityHub: React.FC = () => {
   } | null>(null);
   const showConfirm = (message: string, onConfirm: () => void) =>
     setConfirmDialog({ message, onConfirm });
-
-  // Memoised country filter — avoids re-filtering on every render unrelated to geo search
-  const filteredCountries = useMemo(
-    () =>
-      allCountries.filter(
-        (c) =>
-          c.name.toLowerCase().includes(geoSearch.toLowerCase()) ||
-          c.code.toLowerCase().includes(geoSearch.toLowerCase())
-      ),
-    [allCountries, geoSearch]
-  );
 
   // Log Action Guide State — shows manual fix guide for non-auto-fixable advisor actions
   const [logActionGuide, setLogActionGuide] = useState<{
@@ -1077,12 +1066,11 @@ const SecurityHub: React.FC = () => {
     // Deferred non-critical fetches — fire after the initial paint completes.
     const deferredId = setTimeout(() => {
       void fetchDeepScanStatus();
-      // Freemium Dual-Build: Geo-Blocking is Pro-local — physically absent
-      // from the Free zip, so /geo/settings + /geo/countries must never
-      // fire there (the routes don't exist).
-      if (isProEditionBuild) {
-        void fetchGeoSettings();
-      }
+      // Geo-Blocking settings fetch MOVED to GeoLockdownCard.tsx's own
+      // mount effect (2026-08-13, WP.org B12a regression fix) — it now
+      // owns its geo state entirely, so it fetches on its own mount
+      // rather than the parent driving it (the parent only ever mounts
+      // that card when isProEditionBuild is already true).
       // Abandoned plugin detection — non-critical, silent fail
       wpApi<AbandonedPluginsStatus>("/security/abandoned-plugins")
         .then((data) => setAbandonedPlugins(data))
@@ -2056,54 +2044,8 @@ const SecurityHub: React.FC = () => {
     }
   };
 
-  const fetchGeoSettings = async () => {
-    try {
-      const [settingsData, countriesData] = await Promise.all([
-        wpApi<{
-          settings: {
-            list_mode: "blacklist" | "whitelist";
-            countries: string[];
-          };
-        }>("/geo/settings"),
-        wpApi<{ countries: { code: string; name: string; flag: string }[] }>(
-          "/geo/countries"
-        ),
-      ]);
-      setGeoSettings({
-        list_mode: settingsData.settings?.list_mode || "blacklist",
-        countries: settingsData.settings?.countries || [],
-      });
-      setAllCountries(countriesData.countries || []);
-    } catch (e) {
-      console.error("Failed to fetch geo settings", e);
-    }
-  };
-
-  const saveGeoCountries = async (
-    countries: string[],
-    list_mode: "blacklist" | "whitelist"
-  ) => {
-    setSavingGeo(true);
-    try {
-      const data = await wpApi<{ success: boolean; message?: string }>(
-        "/geo/settings",
-        {
-          method: "POST",
-          body: JSON.stringify({ countries, list_mode }),
-        }
-      );
-      if (data.success) {
-        setGeoSettings({ list_mode, countries });
-        toast.success("Geo-Lockdown countries saved.");
-      } else {
-        toast.error("Failed to save: " + (data.message || "Unknown error"));
-      }
-    } catch (e) {
-      toast.error("Network error saving geo settings.");
-    } finally {
-      setSavingGeo(false);
-    }
-  };
+  // fetchGeoSettings/saveGeoCountries MOVED to GeoLockdownCard.tsx
+  // (2026-08-13, WP.org B12a regression fix — see that file's docblock).
 
   // @deprecated v2.9.30.117 — replaced by useQuery(["hardening-status"]) above.
   const fetchHardeningStatus = async () => {
@@ -3310,20 +3252,18 @@ const SecurityHub: React.FC = () => {
     }
   };
 
-  // Show a manual 2FA setup guide (hardcoded — matches what the API returns for two_factor_authentication)
+  // Show a manual 2FA setup guide (hardcoded — matches what the API returns
+  // for two_factor_authentication). Content lives in lib/logAdvisorGuideContent.ts
+  // (extracted 2026-08-12, WP.org frontend physical-exclusion sweep) so the
+  // real "Scan the QR code"/"backup recovery codes" strings have a file
+  // boundary that vite.config.ts can alias away in the Free build — see
+  // that file's docblock for why (this button is already unreachable in
+  // Free at runtime via the isProEditionBuild && hasSecurity gate on its
+  // "Analyze Logs with AI" entry point, but the strings were still being
+  // compiled into the Free bundle as inline object literals before this).
   const handleLogAction2FA = () => {
     setShowLogAdvisor(false);
-    setLogActionGuide({
-      what: "One or more administrator accounts do not have Two-Factor Authentication enabled. A stolen password alone is sufficient to compromise your site.",
-      why: "2FA must be set up individually by each user — it cannot be enabled automatically on their behalf.",
-      how: [
-        'Go to System Config → Security tab → click "Enable 2FA"',
-        "Scan the QR code with Google Authenticator, Authy, or any TOTP app",
-        "Enter the 6-digit code to verify setup",
-        "Save the backup recovery codes in a secure location",
-        "Once enrolled, 2FA will be required on every login",
-      ],
-    });
+    setLogActionGuide(TWO_FACTOR_GUIDE_CONTENT);
   };
 
   // Call the sentinel remediate endpoint for a known issue_id.
@@ -3442,7 +3382,7 @@ const SecurityHub: React.FC = () => {
             handleToggle("geo", true);
           }}
         >
-          Enable Geo-Lock
+          {GEO_LOCK_ACTION_LABEL}
         </Button>
       );
     }
@@ -3911,188 +3851,25 @@ const SecurityHub: React.FC = () => {
               )}
             </div>
 
-            {/* Geo-Blocking Card */}
-            {isProEditionBuild ? (
-              <div className="glass-panel premium-card relative overflow-hidden p-6 transition-all">
-                <div className="bg-brand-accent/5 absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full" />
-                <div className="relative z-10 mb-6 flex items-start justify-between">
-                  <div
-                    className={`rounded-2xl p-3 ${geoEnabled && hasSecurity ? "bg-swiss-red shadow-brand-accent/20 text-white shadow-lg" : "bg-secondary text-neutral-700"}`}
-                  >
-                    <Globe size={24} />
-                  </div>
-                  {hasSecurity && (
-                    <div
-                      role="switch"
-                      aria-checked={geoEnabled}
-                      aria-label="Toggle Geo-Lockdown"
-                      tabIndex={0}
-                      className={`h-6 w-12 cursor-pointer rounded-full p-1 ring-1 transition-all duration-300 ring-inset ${geoEnabled ? "bg-green-500 ring-green-600" : "bg-red-500 ring-red-600"}`}
-                      onClick={() => handleToggle("geo", !geoEnabled)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" || e.key === " "
-                          ? handleToggle("geo", !geoEnabled)
-                          : undefined
-                      }
-                    >
-                      <div
-                        className="h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300"
-                        style={{
-                          transform: geoEnabled
-                            ? "translateX(1.5rem)"
-                            : "translateX(0)",
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-                <h3 className="text-swiss-navy relative z-10 mb-2 text-xs font-black tracking-widest uppercase">
-                  Geo-Lockdown
-                </h3>
-                <p className="relative z-10 mb-4 text-sm leading-relaxed font-medium text-neutral-700">
-                  Restrict site access based on visitor location. Prevent
-                  traffic from high-risk regions.
-                </p>
-
-                {!hasSecurity ? (
-                  <div className="border-border relative z-10 flex flex-col items-center justify-center border-t py-6 pt-4 opacity-60">
-                    <Lock size={24} className="mb-2 text-neutral-500" />
-                    <span className="text-xs font-black tracking-widest text-neutral-500 uppercase">
-                      PRO FEATURE
-                    </span>
-                    <p className="mt-1 text-center text-xs text-neutral-500">
-                      Upgrade to unlock Geo-Lockdown
-                    </p>
-                    <a
-                      href="https://swisswpsecure.com/products"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-brand-accent mt-2 inline-block text-xs font-bold hover:underline"
-                    >
-                      swisswpsecure.com/products
-                    </a>
-                  </div>
-                ) : (
-                  <div className="border-border relative z-10 space-y-3 border-t pt-4">
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="checkbox"
-                        id="globalGeo"
-                        checked={globalGeoBlock}
-                        onChange={(e) =>
-                          handleToggle("global_geo_block", e.target.checked)
-                        }
-                        className="border-border text-brand-accent focus:ring-brand-accent mt-0.5 h-4 w-4 shrink-0 rounded-md transition-all"
-                      />
-                      <div>
-                        <label
-                          htmlFor="globalGeo"
-                          className="hover:text-brand-accent mb-0.5 block cursor-pointer text-sm font-black tracking-widest text-slate-600 uppercase transition-colors"
-                        >
-                          Block High-Risk Zones
-                        </label>
-                        <p className="text-xs leading-relaxed font-medium text-neutral-500">
-                          Automatically blocks countries that are the most
-                          common sources of WordPress attacks. Uses the country
-                          list below.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Mode selector */}
-                    <div className="flex gap-2">
-                      {(["blacklist", "whitelist"] as const).map((mode) => (
-                        <button
-                          key={mode}
-                          onClick={() =>
-                            setGeoSettings((prev) => ({
-                              ...prev,
-                              list_mode: mode,
-                            }))
-                          }
-                          className={`flex-1 rounded-lg border py-1.5 text-xs font-black tracking-widest uppercase transition-all ${geoSettings.list_mode === mode ? "bg-swiss-navy border-swiss-navy text-white" : "bg-secondary border-border hover:border-swiss-navy text-neutral-700"}`}
-                        >
-                          {mode === "blacklist" ? "Block List" : "Allow List"}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Country picker toggle */}
-                    <button
-                      onClick={() => {
-                        setShowGeoPicker(!showGeoPicker);
-                        if (!showGeoPicker && allCountries.length === 0)
-                          fetchGeoSettings();
-                      }}
-                      className="text-swiss-navy hover:text-brand-accent flex w-full items-center justify-between py-1 text-xs font-black tracking-widest uppercase transition-colors"
-                    >
-                      <span>
-                        {geoSettings.countries.length > 0
-                          ? `${geoSettings.countries.length} ${geoSettings.list_mode === "blacklist" ? "Blocked" : "Allowed"}`
-                          : "Select Countries"}
-                      </span>
-                      <span>{showGeoPicker ? "▲" : "▼"}</span>
-                    </button>
-
-                    {showGeoPicker && (
-                      <div className="border-border overflow-hidden rounded-xl border">
-                        <input
-                          type="text"
-                          placeholder="Search countries..."
-                          value={geoSearch}
-                          onChange={(e) => setGeoSearch(e.target.value)}
-                          className="bg-background border-border focus:ring-swiss-navy w-full border-b px-3 py-2 text-xs font-bold focus:ring-1 focus:outline-none"
-                        />
-                        <div className="max-h-40 overflow-y-auto">
-                          {filteredCountries.map((country) => (
-                            <label
-                              key={country.code}
-                              className="hover:bg-secondary flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-bold"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={geoSettings.countries.includes(
-                                  country.code
-                                )}
-                                onChange={(e) => {
-                                  const next = e.target.checked
-                                    ? [...geoSettings.countries, country.code]
-                                    : geoSettings.countries.filter(
-                                        (c) => c !== country.code
-                                      );
-                                  setGeoSettings((prev) => ({
-                                    ...prev,
-                                    countries: next,
-                                  }));
-                                }}
-                                className="h-3 w-3 rounded"
-                              />
-                              <span>{country.flag}</span>
-                              <span>{country.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                        <div className="border-border border-t p-2">
-                          <Button
-                            variant="primary"
-                            onClick={() =>
-                              saveGeoCountries(
-                                geoSettings.countries,
-                                geoSettings.list_mode
-                              )
-                            }
-                            loading={savingGeo}
-                            disabled={savingGeo}
-                          >
-                            Save Countries
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : null}
+            {/* Geo-Blocking Card — extracted to GeoLockdownCard.tsx
+                (2026-08-12, WP.org frontend physical-exclusion sweep) so it
+                has a real file boundary to alias away in the Free build.
+                REVISED 2026-08-13 (B12a regression fix): the card now owns
+                its geo-settings state/effects/API-calls internally — only
+                geoEnabled/hasSecurity/globalGeoBlock (shared with the rest
+                of SecurityHub.tsx via handleToggle) are still passed down.
+                See GeoLockdownCard.tsx's own docblock for the full story. */}
+            {isProEditionBuild && (
+              <GeoLockdownCard
+                geoEnabled={geoEnabled}
+                hasSecurity={hasSecurity}
+                globalGeoBlock={globalGeoBlock}
+                onToggleGeo={() => handleToggle("geo", !geoEnabled)}
+                onToggleGlobalBlock={(checked) =>
+                  handleToggle("global_geo_block", checked)
+                }
+              />
+            )}
             {/* Upsell redesign (2026-08-04, design point 1/2): Geo-Blocking's
                 compact ProUpsellPlaceholder is removed — see the single
                 page-level FeaturePointer rendered further down this
@@ -4145,15 +3922,7 @@ const SecurityHub: React.FC = () => {
                 Protect your admin area from brute-force login attempts with
                 automated locking.
               </p>
-              {isProEditionBuild && (
-                <Link
-                  to="/settings?tab=security"
-                  className="relative z-10 mb-4 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 transition-colors hover:text-blue-800"
-                >
-                  <ShieldCheck size={14} />
-                  Set up Two-Factor Authentication (2FA)
-                </Link>
-              )}
+              {isProEditionBuild && <TwoFactorNudgeLink />}
               {/* Upsell redesign (2026-08-04, design point 1/2): the Free
                   branch's "Two-Factor Authentication (2FA) — Pro Feature"
                   link is removed — covered by the page-level FeaturePointer

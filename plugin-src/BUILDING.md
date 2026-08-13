@@ -76,10 +76,13 @@ EDITION=pro npm run build    # Pro edition (same as unset)
 ```
 
 When `EDITION=free`, `vite.config.ts`'s `resolve.alias` block redirects a
-short, explicit list of Pro-only module import specifiers (AI Content page,
-Sync page/manager, the License Manager organism, the token-balance hook,
-Migration Station, Cloud Storage panel, Two-Factor settings, and the
-Update Guard card) to their `*.freeStub.tsx`/`*.freeStub.ts` counterparts
+short, explicit list of Pro-only module import specifiers — the AI Content
+page, Sync page/manager, the License Manager organism, the token-balance
+hook, Migration Station, Cloud Storage panel, the Update Guard card,
+Two-Factor Settings and its own small nudge-link sibling, Encryption
+Settings, the Geo-Lockdown card, the AI SEO bulk-generation workbench and
+its per-category quick-fix button, and the AI Log Advisor's guide-content
+data module — to their `*.freeStub.tsx`/`*.freeStub.ts` counterparts
 already present in `src/`. This is a Vite-level, module-resolution-time
 substitution — the real Pro implementations, and everything they
 transitively import, never enter the Free build's module graph, so they
@@ -87,6 +90,16 @@ cannot end up in the compiled Free bundle. This is why the Free edition's
 zip does not contain the Pro/AI code even though both editions build from
 the same `src/` tree. Both `EDITION=free` and the default (Pro) build were
 verified to complete successfully as part of preparing this publication.
+
+Separately, and unconditionally in **both** editions, `vite.config.ts`
+also aliases `react`/`react-dom`/`react-dom/client`/`react/jsx-runtime`/
+`react/jsx-dev-runtime` to small proxy modules in `src/vendor-shims/` that
+re-export WordPress core's own already-loaded `window.React`/
+`window.ReactDOM` globals at runtime, instead of bundling this project's
+own copy of React (WordPress.org Guideline 13 — a plugin must not bundle
+a library WordPress core already ships). This is not an edition-gated
+substitution; it applies to the shared source tree the same way for
+Free and Pro alike.
 
 The actual release zips are produced by the monorepo's
 `build_plugin.sh --edition free|pro` wrapper, which runs this same

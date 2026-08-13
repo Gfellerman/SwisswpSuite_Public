@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.15] - 2026-08-13
+
+### Security
+- Regression from 2.9.33.14's frontend physical-exclusion sweep, found by an independent post-release re-audit: the Geo-Lockdown card's extraction had moved its JSX behind a build-time-excluded component boundary but left its data-fetching/saving functions (and the literal "Geo-Lockdown countries saved." toast string) behind in the shared `SecurityHub.tsx`, which ships in both editions — so that code and copy still compiled into the Free edition's JS bundle even though nothing in the Free render tree could ever reach it. Moved into the same component boundary as its UI; re-verified absent from a fresh Free build via a compiled-JS fingerprint scan.
+- Same pattern, second instance: the "Set up Two-Factor Authentication (2FA)" nudge link (a separate call site from the already-excluded `TwoFactorSettings` component) was gated only by a runtime check, so its text still shipped in the Free bundle. Extracted into its own build-time-excluded component.
+
+### Changed
+- readme.txt's/README.md's External Services documentation now discloses `ipwho.is` (the Pro-only Geo-Lockdown country IP lookup) — it was already disclosed in PRIVACY_POLICY.md but missing from the plugin-header-level External Services sections.
+
 ## [2.9.33.14] - 2026-08-12
 
 ### Security
