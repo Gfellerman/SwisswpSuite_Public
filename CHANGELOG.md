@@ -4,6 +4,47 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.21] - 2026-08-16
+
+### Fixed
+- A comment-placement mistake introduced by the .20 polish pass itself: fixing one Plugin Check warning on a multi-line SQL statement accidentally un-suppressed a different warning on the same statement (each needs its own line-anchored annotation, not one shared comment before the block). Caught by the owner's own re-run of the real Plugin Check tool against .20 — corrected with two precise, separately-anchored annotations.
+- 26 additional false-positive "variable not prefixed" warnings in `uninstall.php`, same root cause as the `.20` fix in the email-report template (a file only ever loaded from inside a WordPress core function, so PHPCS can't see that its variables are locally scoped) — missed in `.20` because that investigation sampled the warning list instead of checking every file.
+
+## [2.9.33.20] - 2026-08-16
+
+### Changed
+- Ran the real WordPress.org Plugin Check tool against the plugin for the first time since the last rejected build (prior checks since then had relied on a static proxy that had already been proven to under-report once). Result: 0 errors, 368 informational warnings, none of them a plausible cause for rejection.
+- Polished 20 of those 368 warnings purely for report cleanliness (no behavior change): fixed 6 misplaced/incomplete `phpcs:ignore` comments on already-safely-guarded SQL statements in the backup/restore engine; added ignore annotations to 11 lines that integrate with third-party cache plugins (LiteSpeed, WP Hummingbird) and a WordPress core filter, which a naming-convention check can't distinguish from custom hooks; renamed 3 internal bootstrap functions so the plugin's naming prefix is a genuine prefix rather than a suffix.
+
+## [2.9.33.19] - 2026-08-16
+
+### Fixed
+- Backup: a spurious `error`-level log entry no longer fires on every Backup tab load when a Pro-only automations module is legitimately absent from the free edition.
+- Security: the abandoned/closed-plugin health check no longer flags the plugin's own installation (or a non-installed sibling edition) as untrustworthy — it now excludes its own family of slugs dynamically, so it can't go stale after a future slug change.
+- Security: completed free-edition security scans now correctly persist to and appear in Scan History (the history table was previously created only on Pro installs, and the free scan path never wrote to it).
+- Settings: the Maintenance > System Logs viewer no longer surfaces internal development/project notes to end users; only user-relevant diagnostic messages are shown, and legacy log entries are filtered at display time.
+
+## [2.9.33.18] - 2026-08-13
+
+### Security
+- Free edition: removed the remaining Pro-referencing interface text found outside the Settings "Editions & AI" comparison panel by a full-population AST string census of the compiled Free JS bundle (`docs/audit/FREE_BUNDLE_STRING_CENSUS_2026-08-13.md`) — 18 out-of-zone Pro-descriptive strings and 6 ambiguous strings across `SecurityHub.tsx`, `ScanResultPanel.tsx`, `HardeningOptionsGrid.tsx`, `ScanHistoryTable.tsx`, `OnPageDiagnostics.tsx`, `SettingsLayout.tsx`, `scanConstants.ts`, and 3 shared 402-token-exhausted error handlers. Every locked-action UI element genuinely reachable in Free (license-capability-gated buttons, banners, and notices) keeps rendering unchanged with neutral wording instead of vanishing; only strings whose element never renders in a genuine Free install at all (edition-gated upsell CTAs/panels, e.g. `isProEditionBuild`-only cards) were physically excluded from the Free build, via the same `vite.config.ts` alias + `.freeStub` mechanism already used for 2FA/geo-blocking/encryption.
+- Also includes the plugin-side fix already committed separately in this queue: an incorrect trial notice was removed.
+
+## [2.9.33.17] - 2026-08-13
+
+### Security
+- Closed the last 2 OPEN entries in the internal WP.org B12a compiled-JS fingerprint register: the "Layer 2 Scan" (deep-malware) and "Full AI Scan" (full-ai) scan-card labels/descriptions were object-literal values inside `scanConstants.ts`, a module imported unconditionally by the shared `ScanCard`/`ScanResultPanel` components (which also render the genuinely-free "Layer 1"/"Malware Scan" cards) — so those Pro-only strings compiled into the Free edition's JS bundle regardless of the runtime edition check at their call sites. Extracted the Pro-only label/description values into a sibling module that is physically excluded from the Free build (same build-time alias mechanism already used for 2FA, geo-blocking, and backup encryption in earlier releases). No functional or copy change to the Pro edition.
+
+## [2.9.33.16] - 2026-08-13
+
+### Changed
+- Scan UI consolidation (Package E / G2): the "Security Audit" and "Malware Scan" cards are merged into one Layer 1 card — both the bounded signature scan and the security-posture check are kept, on both editions. On Pro, the merged card still auto-runs the richer Sentinel scan. The Deep Malware Scan (Pro-only) is re-presented as "a deep scan with automatic AI verification of results," describing its existing AI-analysis phase more clearly — no functional change.
+- SEO score unification (G1): the Dashboard's "Overall SEO Score" tile and the SEO tab's Health Audit modal now show the same number for the same site state — both are computed by one shared formula (`SwissWPSuite_Seo_Score_Calculator`) instead of two independently-drifted ones. The specialized on-page/technical/content measures remain visible as labeled sub-scores.
+- Softened `readme.txt`'s backup-restore wording so it no longer promises restoring an encrypted backup from the Free edition, which cannot decrypt it (backup-archive encryption is a Pro feature; the Free restorer has always rejected `.zip.enc` files).
+
+### Removed
+- Two unreachable frontend code paths: the standalone "Full AI Scan" card dispatch (never wired to any button) and the Sentinel Module 5 consent modal (never openable — its trigger had zero call sites). Backend routes for both are unchanged.
+
 ## [2.9.33.15] - 2026-08-13
 
 ### Security

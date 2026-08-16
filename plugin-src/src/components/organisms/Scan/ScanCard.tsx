@@ -2,7 +2,6 @@
  * ScanCard — Unified trigger card for all scan types (v2.9.28.0)
  *
  * Handles:
- *  - Tier-based access gating (Pro-lock overlay for full-ai / deep-malware on free/none)
  *  - Free-tier quota display for ai-audit (quota remaining from ScanReportConfig)
  *  - Loading spinner on trigger button
  *  - WCAG AA: aria-busy, aria-disabled, aria-label on all interactive elements
@@ -12,19 +11,29 @@
  * mode now lives on its own dedicated `deep-malware` card with the async
  * pipeline. The legacy toggle was a no-op (parent coerced mode→quick) and
  * misled users into thinking they had triggered a Deep scan when they had not.
+ *
+ * v2.9.33.16 (Package E / T9 self-audit, 2026-08-13): the tier-based
+ * "Pro-lock overlay" (dimmed content + Lock icon + "4 Pro-exclusive phases"
+ * bullet list + upgrade CTA) was DELETED. Two-proof verified 100% dead: (1)
+ * no caller anywhere in the tree ever passes `locked=true` (tree-wide grep,
+ * zero hits), and (2) `scanType === "full-ai"` — the overlay's other trigger
+ * condition — is never rendered by any ScanCard call site either (T4's
+ * full-ai deletion). Both halves of `isProLocked`'s `||` were therefore
+ * unconditionally false. This was a REAL WP.org compliance finding, not just
+ * a cleanup: because `ScanCard.tsx` is a SHARED, non-aliased component (it
+ * renders the legitimately-free "ai-audit"/"malware" cards too), this dead
+ * branch's third-party-service-naming strings ("VPS Hash Database
+ * (MalwareBazaar + URLhaus)", "WPScan Live CVE Lookup", "Patchstack Live CVE
+ * Lookup") were compiling into the Free edition's JS bundle regardless of
+ * `isProEditionBuild` — the exact violation class documented in
+ * docs/architecture/FREEMIUM_DUAL_BUILD_ARCHITECTURE.md's 2026-08-12
+ * frontend physical-exclusion amendment, found here via this session's own
+ * B12a compiled-JS fingerprint scan (T8.7) against a freshly built Free zip.
+ * Deleting genuinely-dead code closes it at the source — no alias needed.
  */
 
 import React from "react";
-import {
-  ShieldCheck,
-  Bug,
-  Sparkles,
-  Lock,
-  ExternalLink,
-  Database,
-  Cpu,
-  Search,
-} from "lucide-react";
+import { ShieldCheck, Bug, Sparkles } from "lucide-react";
 import type {
   AiAuditResult,
   MalwareScanResult,
@@ -97,98 +106,25 @@ interface ScanCardProps {
    * "Sending to AI for analysis…".
    */
   loadingMessage?: string;
-  /**
-   * v2.9.30.x — Explicit capability lock that overrides tier-based gating.
-   * When true, the card renders the locked overlay regardless of `tier`.
-   * WP.org round-3 (2026-07-26): no longer used for deep-malware (its local
-   * phases are free/functional in every edition — see isProLocked below);
-   * kept generic for any future capability-based lock a caller may need.
-   */
-  locked?: boolean;
-  /**
-   * Custom heading shown in the lock overlay when `locked=true`.
-   * Defaults to "Not Available" (neutral copy — no "Pro"/"Upgrade" words).
-   */
-  lockLabel?: string;
-  /**
-   * Custom body text shown in the lock overlay when `locked=true`.
-   * Defaults to "{scanLabel} is not included on this plan."
-   */
-  lockDescription?: string;
-  /**
-   * Custom CTA link text shown in the lock overlay when `locked=true`.
-   * Defaults to "Learn more".
-   */
-  lockCtaText?: string;
-  /**
-   * Custom CTA href shown in the lock overlay when `locked=true`.
-   * Defaults to "https://www.swisswpsecure.com/pricing".
-   */
-  lockCtaHref?: string;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const ScanCard: React.FC<ScanCardProps> = ({
   scanType,
-  tier,
+  tier: _tier,
   onTrigger,
   isLoading,
   result,
   config: _config,
   loadingMessage,
-  locked = false,
-  lockLabel,
-  lockDescription,
-  lockCtaText,
-  lockCtaHref,
 }) => {
   const Icon = SCAN_ICONS[scanType];
   const label = SCAN_LABELS[scanType];
   const description = SCAN_DESCRIPTIONS[scanType];
 
-  // Pro-lock: full-ai requires Pro; gate on free/none tier.
-  // `locked` prop overrides this — used when capability check (not tier) is the gate.
-  //
-  // WP.org round-3 (Sprint W2/T7, 2026-07-26): "deep-malware" was REMOVED
-  // from this tier-based auto-lock when Sprint W1 briefly de-gated its
-  // local phases (enumerate, hash, local scan) so they ran free for every
-  // tier.
-  // SUPERSEDED (LiveQA Fix Sprint, 2026-08-04, owner scan-edition ruling):
-  // the owner has since drawn the Free/Pro line at the whole-scan level —
-  // "Deep scan" is Pro-only again, and its backing routes
-  // (/security/scan/malware/start + /status) are registered ONLY on
-  // SWISSWPSUITE_EDITION === 'pro' (api-security.php ~:641). deep-malware
-  // is DELIBERATELY still absent from this clause, though: the
-  // upsell-redesign ruling forbids rendering a locked-teaser card (the
-  // dimmed-content + Lock icon + CTA overlay a few lines below) for a
-  // per-feature Pro gate, so on Free the card must not mount at all rather
-  // than mount locked. That gate now lives one layer up, at the
-  // SecurityHub.tsx call site (`isProEditionBuild &&` around the whole
-  // <ScanCard scanType="deep-malware" .../>), not here — `locked` for this
-  // scanType is always the caller's default (`false`) in practice, because
-  // the only caller only ever mounts this card in Pro. full-ai keeps the
-  // original tier-based behavior unchanged (it is currently unreachable —
-  // no ScanCard call site renders scanType="full-ai" — so this is a no-op
-  // in practice, kept for safety).
-  const isProLocked = locked || (scanType === "full-ai" && tier !== "pro");
-
-  // Resolve lock overlay copy — custom values take priority over defaults.
-  // Upsell redesign (2026-08-04, T3): neutral defaults — no "Pro"/"Upgrade"
-  // words. This component has no edition awareness of its own (no caller
-  // currently passes `locked`, so this overlay is dead in practice today —
-  // see the isProLocked comment above), but its defaults are what a future
-  // caller gets for free, so they must be neutral-by-default rather than
-  // marketing-by-default.
-  const resolvedLockLabel = lockLabel ?? "Not Available";
-  const resolvedLockDescription =
-    lockDescription ?? `${label} is not included on this plan.`;
-  const resolvedLockCtaText = lockCtaText ?? "Learn more";
-  const resolvedLockCtaHref =
-    lockCtaHref ?? "https://www.swisswpsecure.com/pricing";
-
   const handleTrigger = () => {
-    if (isProLocked || isLoading) return;
+    if (isLoading) return;
     onTrigger();
   };
 
@@ -242,113 +178,10 @@ export const ScanCard: React.FC<ScanCardProps> = ({
     }
   }
 
-  // ── Pro-lock overlay ────────────────────────────────────────────────────────
-
-  if (isProLocked) {
-    return (
-      <div className="bg-card border-border relative flex flex-col gap-4 overflow-hidden rounded-2xl border p-6">
-        {/* Dimmed content underneath */}
-        <div
-          className="pointer-events-none opacity-30 select-none"
-          aria-hidden="true"
-        >
-          <div className="mb-3 flex items-center gap-3">
-            <div className="bg-secondary rounded-xl p-2.5">
-              <Icon size={20} className="text-neutral-400" />
-            </div>
-            <div>
-              <h3 className="text-sm font-black tracking-tight text-neutral-800 uppercase">
-                {label}
-              </h3>
-              <TierBadge tier="pro" />
-            </div>
-          </div>
-          <p className="text-xs leading-relaxed text-neutral-500">
-            {description}
-          </p>
-        </div>
-
-        {/*
-          WCAG 4.1.2: role="note" added so aria-label has a valid host element.
-          A plain <div> with no role is not a labelable landmark — aria-label is
-          silently ignored by AT on roleless divs. role="note" is the correct semantic
-          role for supplementary/informational content (maps to <aside> semantics).
-          This ensures AT users hear the lock label when they enter this
-          region. The neutral "Learn more" link inside provides the CTA.
-        */}
-        <div
-          role="note"
-          className="bg-card/80 absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl p-6 backdrop-blur-sm"
-          aria-label={`${label} — ${resolvedLockLabel}`}
-        >
-          <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-3">
-            <Lock size={22} className="text-yellow-600" aria-hidden="true" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-black tracking-tight text-neutral-800 uppercase">
-              {resolvedLockLabel}
-            </p>
-            <p className="mt-1 max-w-[240px] text-xs leading-relaxed text-neutral-600">
-              {resolvedLockDescription}
-            </p>
-          </div>
-
-          {/* 4 Pro-exclusive phases — shown for full-ai and deep-malware cards */}
-          {(scanType === "full-ai" || scanType === "deep-malware") && (
-            <ul
-              className="w-full max-w-[260px] space-y-1.5"
-              aria-label="Included with this plan"
-            >
-              <li className="flex items-center gap-2 text-xs font-medium text-neutral-700">
-                <Database
-                  size={12}
-                  className="shrink-0 text-yellow-600"
-                  aria-hidden="true"
-                />
-                VPS Hash Database (MalwareBazaar + URLhaus)
-              </li>
-              <li className="flex items-center gap-2 text-xs font-medium text-neutral-700">
-                <Search
-                  size={12}
-                  className="shrink-0 text-yellow-600"
-                  aria-hidden="true"
-                />
-                WPScan Live CVE Lookup
-              </li>
-              <li className="flex items-center gap-2 text-xs font-medium text-neutral-700">
-                <Search
-                  size={12}
-                  className="shrink-0 text-yellow-600"
-                  aria-hidden="true"
-                />
-                Patchstack Live CVE Lookup
-              </li>
-              <li className="flex items-center gap-2 text-xs font-medium text-neutral-700">
-                <Cpu
-                  size={12}
-                  className="shrink-0 text-yellow-600"
-                  aria-hidden="true"
-                />
-                AI Analysis — graded report A–F
-              </li>
-            </ul>
-          )}
-
-          <a
-            href={resolvedLockCtaHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full border border-yellow-200 bg-yellow-50 px-4 py-2 text-xs font-black tracking-[0.1em] text-yellow-700 uppercase transition-colors hover:bg-yellow-100 focus-visible:ring-2 focus-visible:ring-yellow-400 focus-visible:outline-none"
-          >
-            {resolvedLockCtaText}
-            <ExternalLink size={12} aria-hidden="true" />
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   // ── Normal card ─────────────────────────────────────────────────────────────
+  // (The "Pro-lock overlay" branch that used to sit here was DELETED —
+  // v2.9.33.16, see the file's own docblock for the two-proof verification
+  // and the WP.org compliance finding its deletion closes.)
 
   return (
     <div className="bg-card border-border flex flex-col gap-4 rounded-2xl border p-6">

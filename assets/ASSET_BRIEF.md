@@ -1,6 +1,22 @@
 # SwissSuite AI — WP.org Asset Production Brief
 
-This brief contains every spec a designer (freelancer, in-house, or Canva user) needs to produce all WP.org directory assets without follow-up questions. Hand this file off as-is.
+This brief contains every spec a designer (freelancer, in-house, or Canva user) needs to produce all WP.org directory assets without follow-up questions.
+
+> ⚠️ **Screenshot section is out of date — do NOT hand off as-is (flagged 2026-08-16).** The
+> screenshot spec below asks for **10** screenshots, written before the 2026-07-16 dual-build
+> split. `readme.txt`'s `== Screenshots ==` — the authoritative list, because WP.org pairs
+> `screenshot-N.png` to entry N in that section — declares only **5**, all free-edition:
+> 1 Security dashboard · 2 Malware scan results · 3 Backup + one-click file restore ·
+> 4 On-page SEO audit · 5 Threat log.
+> Screenshots 5–10 below (2FA/TOTP setup, Google Drive cloud backup, "Sync Teleport",
+> "Migration Station", AI SEO bulk table) show **Pro-only features that are physically absent
+> from the free package** — a designer following those steps on a genuine free install will not
+> find those screens at all, and shipping them to the WP.org listing would misrepresent the free
+> plugin. The names "Sync Teleport" and "Migration Station" are also retired; current copy says
+> "site sync" and "site migration".
+> **Use only specs 1–4 plus the threat log, matched to `readme.txt`'s 5 entries.** Pro marketing
+> screenshots belong in a separate Pro asset brief. Everything above this notice (brand system,
+> palette, banner/icon specs) is still current.
 
 ---
 
@@ -119,7 +135,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 - **Browser window width during capture:** 1440 px
 - **Browser chrome:** crop OUT the URL bar, tabs, and OS chrome — the screenshot should show only the plugin UI inside the WordPress admin frame (left sidebar + plugin content area)
 - **Theme:** WordPress default admin theme (do not use a custom admin theme)
-- **WordPress version:** 6.7 (matches "Tested up to")
+- **WordPress version:** 7.0 (matches "Tested up to" in `readme.txt`)
 - **Admin user:** "admin" (do not show real client emails or usernames)
 
 ### Filenames (mandatory — WP.org parses these)

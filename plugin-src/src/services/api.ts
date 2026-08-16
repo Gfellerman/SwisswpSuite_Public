@@ -131,8 +131,13 @@ export async function wpApi<T>(endpoint: string, options: RequestInit = {}): Pro
             }
 
             if (response.status === 402) {
+                // WP.org string census closure (2026-08-13, v2.9.33.18, R2b):
+                // neutral fallback — no "Pro"/"upgrade"/"plan"/"purchase"
+                // wording. This client-side default is only used when the
+                // backend's own error body carries no message; shared code
+                // path, reachable in both editions.
                 throw new ApiError(
-                    (errorData as any)?.message || 'Insufficient tokens. Please upgrade your plan or purchase more tokens.',
+                    (errorData as any)?.message || 'Not enough AI tokens for this action.',
                     402,
                     errorData
                 );

@@ -73,7 +73,10 @@ export function DashboardLayout() {
   const rawCaps = license?.capabilities;
   const caps: string[] = Array.isArray(rawCaps) ? rawCaps : [];
   const tierName = license?.tier_name || "FREE EDITION";
-  const isTrial = window.swisswpsuiteData?.trial?.active;
+  // E3 (2026-08-13): `isTrial` (window.swisswpsuiteData.trial.active) and its header badge
+  // were REMOVED as part of the trial-tier decommission — the field was provably dead (the
+  // VPS never sent `trial_active`, PHP injector removed to match). See
+  // .claude/audit-reports/H1_DEAD_CODE_AUDIT_2026-08-11.md §G.10.
   const isStandalone = !!window.swisswpsuiteData?.isStandalone;
   // Freemium Dual-Build (Phase 3): SEO and AI Content are MIXED/premium tabs
   // respectively. In the Free edition they must be reachable (never a
@@ -309,13 +312,6 @@ export function DashboardLayout() {
                 </span>
               </div>
             </div>
-
-            {/* Trial Badge */}
-            {isTrial && (
-              <div className="bg-swiss-red/10 text-swiss-red border-swiss-red/20 hidden rounded-lg border px-3 py-1 text-xs font-black tracking-wide uppercase sm:flex!">
-                Trial
-              </div>
-            )}
 
             {/* User Profile */}
             <div className="border-border dark:border-border/10 flex items-center gap-4 border-l pl-4">

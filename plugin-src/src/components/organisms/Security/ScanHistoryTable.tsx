@@ -3,11 +3,16 @@
  * Renders the History tab: scan records table with Pro gating.
  */
 import React from "react";
-import { History, Lock, Loader } from "lucide-react";
+import { History, Loader } from "lucide-react";
 import { Badge } from "../../ui/Badge";
 import { Button } from "../../ui/Button";
 import { SentinelGradeBadge } from "../Sentinel/SentinelGradeBadge";
 import { ScanHistoryRecord } from "../../../types";
+import { AdditionalPlanRequiredNotice } from "./AdditionalPlanRequiredNotice";
+import {
+  HISTORY_LABEL_DEEP_MALWARE,
+  HISTORY_LABEL_FULL_AI,
+} from "../Scan/scanConstants.pro";
 
 interface ScanHistoryTableProps {
   scanHistory: ScanHistoryRecord[];
@@ -45,32 +50,7 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
           </Button>
         </div>
 
-        {!hasSentinelPro && (
-          <div className="mb-6 flex items-start gap-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-            <Lock
-              size={16}
-              className="text-amber-600 shrink-0 mt-0.5"
-              aria-hidden="true"
-            />
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest text-amber-700 mb-1">
-                Additional Plan Required
-              </p>
-              <p className="text-xs font-medium text-amber-700">
-                Viewing your full scan history and re-inspecting previous
-                reports requires an active plan.{" "}
-                <a
-                  href="https://swisswpsecure.com/products"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-2 font-black"
-                >
-                  Learn more
-                </a>
-              </p>
-            </div>
-          </div>
-        )}
+        {!hasSentinelPro && <AdditionalPlanRequiredNotice />}
 
         <div className="border border-black overflow-hidden">
           <table
@@ -141,10 +121,10 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
                         {record.scan_type === "ai_audit"
                           ? "Security Audit"
                           : record.scan_type === "malware_deep"
-                            ? "Deep Malware"
+                            ? HISTORY_LABEL_DEEP_MALWARE
                             : record.scan_type === "full" ||
                                 record.scan_type === "full_ai"
-                              ? "Full + AI"
+                              ? HISTORY_LABEL_FULL_AI
                               : "Quick Scan"}
                       </Badge>
                     </td>

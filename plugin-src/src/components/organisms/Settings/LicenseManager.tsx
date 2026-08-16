@@ -11,7 +11,6 @@ import { Badge } from "../../ui/Badge";
 import {
   Shield,
   CheckCircle,
-  AlertTriangle,
   Lock,
   LogOut,
   Coins,
@@ -235,11 +234,11 @@ export function LicenseManager({
         })
       : "plan expiry";
 
-  // Access trial status from global window object
-  const trialStatus = window.swisswpsuiteData?.trial || {
-    active: false,
-    ends_at: null,
-  };
+  // E3 (2026-08-13): `trialStatus` (window.swisswpsuiteData.trial) and the "Trial Ends"
+  // banner it fed were REMOVED as part of the trial-tier decommission — the field was
+  // provably dead (trialStatus.active could never be true; the VPS never sent
+  // `trial_active`, and the PHP injector was removed to match). See
+  // .claude/audit-reports/H1_DEAD_CODE_AUDIT_2026-08-11.md §G.10.
 
   // Prefer the freshly-refreshed tokens (Item 2a), then the dynamic tokens prop,
   // then fall back to global if missing. Ensure numeric defaults to prevent crash (M2 fix).
@@ -968,15 +967,6 @@ export function LicenseManager({
               <h3 className="text-foreground text-3xl leading-tight font-black tracking-tight">
                 {tier}
               </h3>
-              {trialStatus.active && trialStatus.ends_at && (
-                <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-yellow-500/20 bg-yellow-500/10 px-3 py-1.5">
-                  <AlertTriangle size={14} className="text-yellow-600" />
-                  <span className="text-xs leading-none font-black tracking-widest text-yellow-600 uppercase">
-                    Trial Ends:{" "}
-                    {new Date(trialStatus.ends_at).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* License cache hint — always visible */}

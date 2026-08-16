@@ -33,16 +33,24 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { isFreeEdition } from "../../../lib/edition";
+import { EditionMismatchDownloadCta } from "./EditionMismatchDownloadCta";
 import {
-  isFreeEdition,
-  hasEditionMismatch,
-  PRO_DOWNLOAD_URL,
-} from "../../../lib/edition";
+  REMEDIATION_LOCKED_TOOLTIP,
+  REMEDIATION_LOCKED_TOAST,
+  AI_ANALYSIS_LOCKED_LABEL,
+} from "./scanResultProCopy";
 import type {
   AiAuditResult,
   MalwareScanResult,
   FullAiScanResult,
 } from "../../../types";
+// WP.org B12a residual closure (2026-08-13, v2.9.33.17) — the "WPScan"/
+// "Patchstack" bare status-pill labels below were inline literals; see
+// scanConstants.pro.ts's docblock. Same "./scanConstants.pro" specifier
+// scanConstants.ts itself uses (this file lives in the same directory), so
+// it reuses that existing vite.config.ts alias entry — no new one needed.
+import { DEEP_SCAN_SOURCE_LABELS } from "./scanConstants.pro";
 import type { ScanTypeValue } from "./scanConstants";
 
 // ── v2.9.28.22 — Filter non-analyzable findings from bulk "Check with AI" ─
@@ -298,24 +306,10 @@ const BulkAiConfirmModal: React.FC<BulkAiConfirmModalProps> = ({
         <p id="bulk-ai-confirm-body" className="mb-4 text-sm text-neutral-700">
           {isFreeEdition() ? (
             <>
-              You selected <strong>{totalSelected}</strong> files.
-              AI-powered analysis isn&rsquo;t included in the free plugin —
-              it fires zero AI tokens in this build.
-              {hasEditionMismatch() && (
-                <>
-                  {" "}
-                  You already own SwissSuite AI Pro —{" "}
-                  <a
-                    href={PRO_DOWNLOAD_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-bold underline"
-                  >
-                    download &amp; install Pro
-                  </a>{" "}
-                  to use it.
-                </>
-              )}
+              You selected <strong>{totalSelected}</strong> files. AI-powered
+              analysis isn&rsquo;t included in the free plugin — it fires zero
+              AI tokens in this build.
+              <EditionMismatchDownloadCta />
             </>
           ) : (
             <>
@@ -629,7 +623,16 @@ const AuditResultView: React.FC<AuditResultViewProps> = ({
   return (
     <div
       role="region"
-      aria-label={isFullAi ? "Full AI scan result" : "Security audit result"}
+      // WP.org B12a residual closure (2026-08-13, v2.9.33.17): was
+      // `isFullAi ? "Full AI scan result" : "Security audit result"`.
+      // `isFullAi` is `scanType === "full-ai"` at this component's one
+      // caller (SecurityHub.tsx) — "full-ai" has zero UI callers anywhere
+      // in the tree (T4 dead-path removal, tree-wide grep with a positive
+      // control against "ai-audit", which returns real hits), so this
+      // branch was unreachable dead code in BOTH editions, not a Free-vs-
+      // Pro difference. Simplified to the one value that was ever actually
+      // rendered — behavior-neutral in Pro too, so no alias needed.
+      aria-label="Security audit result"
       className="bg-card border-border flex flex-col gap-5 rounded-2xl border p-6"
     >
       {/* Grade + summary */}
@@ -721,7 +724,7 @@ const AuditResultView: React.FC<AuditResultViewProps> = ({
                     type="button"
                     onClick={() => {
                       if (!canRemediate) {
-                        toast.error("This action isn't available on this plan.");
+                        toast.error(REMEDIATION_LOCKED_TOAST);
                         return;
                       }
                       const list = [...selected];
@@ -731,17 +734,21 @@ const AuditResultView: React.FC<AuditResultViewProps> = ({
                     }}
                     disabled={!canRemediate}
                     aria-disabled={!canRemediate ? true : undefined}
-                    className={`focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-amber-700 focus-visible:ring-2 focus-visible:outline-none${!canRemediate ? " cursor-not-allowed opacity-50" : ""}`}
-                    title={!canRemediate ? "Requires a paid plan" : undefined}
+                    className={`focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-amber-700 focus-visible:ring-2 focus-visible:outline-none${!canRemediate ? "cursor-not-allowed opacity-50" : ""}`}
+                    title={
+                      !canRemediate ? REMEDIATION_LOCKED_TOOLTIP : undefined
+                    }
                   >
-                    {!canRemediate && <Lock size={10} aria-hidden="true" className="mr-0.5" />}
+                    {!canRemediate && (
+                      <Lock size={10} aria-hidden="true" className="mr-0.5" />
+                    )}
                     Quarantine {selected.size}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       if (!canRemediate) {
-                        toast.error("This action isn't available on this plan.");
+                        toast.error(REMEDIATION_LOCKED_TOAST);
                         return;
                       }
                       const list = [...selected];
@@ -751,10 +758,14 @@ const AuditResultView: React.FC<AuditResultViewProps> = ({
                     }}
                     disabled={!canRemediate}
                     aria-disabled={!canRemediate ? true : undefined}
-                    className={`focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-red-700 focus-visible:ring-2 focus-visible:outline-none${!canRemediate ? " cursor-not-allowed opacity-50" : ""}`}
-                    title={!canRemediate ? "Requires a paid plan" : undefined}
+                    className={`focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-red-700 focus-visible:ring-2 focus-visible:outline-none${!canRemediate ? "cursor-not-allowed opacity-50" : ""}`}
+                    title={
+                      !canRemediate ? REMEDIATION_LOCKED_TOOLTIP : undefined
+                    }
                   >
-                    {!canRemediate && <Lock size={10} aria-hidden="true" className="mr-0.5" />}
+                    {!canRemediate && (
+                      <Lock size={10} aria-hidden="true" className="mr-0.5" />
+                    )}
                     Delete {selected.size}
                   </button>
                   {onAnalyze && (
@@ -1360,8 +1371,14 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
         >
           {[
             { label: "VPS hash", value: result.vps_lookup_status },
-            { label: "WPScan", value: result.wpscan_status },
-            { label: "Patchstack", value: result.patchstack_status },
+            {
+              label: DEEP_SCAN_SOURCE_LABELS.wpscan,
+              value: result.wpscan_status,
+            },
+            {
+              label: DEEP_SCAN_SOURCE_LABELS.patchstack,
+              value: result.patchstack_status,
+            },
             { label: "AI", value: result.ai_status },
           ]
             .filter((p) => !!p.value)
@@ -1470,7 +1487,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                     type="button"
                     onClick={() => {
                       if (!canRemediate) {
-                        toast.error("This action isn't available on this plan.");
+                        toast.error(REMEDIATION_LOCKED_TOAST);
                         return;
                       }
                       const list = [...selected];
@@ -1480,17 +1497,21 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                     }}
                     disabled={!canRemediate}
                     aria-disabled={!canRemediate ? true : undefined}
-                    className={`focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-amber-700 focus-visible:ring-2 focus-visible:outline-none${!canRemediate ? " cursor-not-allowed opacity-50" : ""}`}
-                    title={!canRemediate ? "Requires a paid plan" : undefined}
+                    className={`focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-amber-700 focus-visible:ring-2 focus-visible:outline-none${!canRemediate ? "cursor-not-allowed opacity-50" : ""}`}
+                    title={
+                      !canRemediate ? REMEDIATION_LOCKED_TOOLTIP : undefined
+                    }
                   >
-                    {!canRemediate && <Lock size={10} aria-hidden="true" className="mr-0.5" />}
+                    {!canRemediate && (
+                      <Lock size={10} aria-hidden="true" className="mr-0.5" />
+                    )}
                     Quarantine {selected.size}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       if (!canRemediate) {
-                        toast.error("This action isn't available on this plan.");
+                        toast.error(REMEDIATION_LOCKED_TOAST);
                         return;
                       }
                       const list = [...selected];
@@ -1500,10 +1521,14 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                     }}
                     disabled={!canRemediate}
                     aria-disabled={!canRemediate ? true : undefined}
-                    className={`focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-red-700 focus-visible:ring-2 focus-visible:outline-none${!canRemediate ? " cursor-not-allowed opacity-50" : ""}`}
-                    title={!canRemediate ? "Requires a paid plan" : undefined}
+                    className={`focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-red-700 focus-visible:ring-2 focus-visible:outline-none${!canRemediate ? "cursor-not-allowed opacity-50" : ""}`}
+                    title={
+                      !canRemediate ? REMEDIATION_LOCKED_TOOLTIP : undefined
+                    }
                   >
-                    {!canRemediate && <Lock size={10} aria-hidden="true" className="mr-0.5" />}
+                    {!canRemediate && (
+                      <Lock size={10} aria-hidden="true" className="mr-0.5" />
+                    )}
                     Delete {selected.size}
                   </button>
                   {onAnalyze && (
@@ -1650,12 +1675,12 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                       aria-label={
                         hasSentinelPro
                           ? `Analyze ${threat.file} with AI`
-                          : "AI Analysis requires Pro license"
+                          : AI_ANALYSIS_LOCKED_LABEL
                       }
                       title={
                         hasSentinelPro
                           ? "Analyze with AI"
-                          : "AI Analysis requires Pro license"
+                          : AI_ANALYSIS_LOCKED_LABEL
                       }
                       className="bg-swiss-navy focus-visible:ring-swiss-navy inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -1813,7 +1838,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                           type="button"
                           onClick={() => {
                             if (!canRemediate) {
-                              toast.error("This action isn't available on this plan.");
+                              toast.error(REMEDIATION_LOCKED_TOAST);
                               return;
                             }
                             const list = [...selectedLow];
@@ -1823,17 +1848,27 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                           }}
                           disabled={!canRemediate}
                           aria-disabled={!canRemediate ? true : undefined}
-                          className={`focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-amber-700 focus-visible:ring-2 focus-visible:outline-none${!canRemediate ? " cursor-not-allowed opacity-50" : ""}`}
-                          title={!canRemediate ? "Requires a paid plan" : undefined}
+                          className={`focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-amber-700 focus-visible:ring-2 focus-visible:outline-none${!canRemediate ? "cursor-not-allowed opacity-50" : ""}`}
+                          title={
+                            !canRemediate
+                              ? REMEDIATION_LOCKED_TOOLTIP
+                              : undefined
+                          }
                         >
-                          {!canRemediate && <Lock size={10} aria-hidden="true" className="mr-0.5" />}
+                          {!canRemediate && (
+                            <Lock
+                              size={10}
+                              aria-hidden="true"
+                              className="mr-0.5"
+                            />
+                          )}
                           Quarantine {selectedLow.size}
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             if (!canRemediate) {
-                              toast.error("This action isn't available on this plan.");
+                              toast.error(REMEDIATION_LOCKED_TOAST);
                               return;
                             }
                             const list = [...selectedLow];
@@ -1843,10 +1878,20 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                           }}
                           disabled={!canRemediate}
                           aria-disabled={!canRemediate ? true : undefined}
-                          className={`focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-red-700 focus-visible:ring-2 focus-visible:outline-none${!canRemediate ? " cursor-not-allowed opacity-50" : ""}`}
-                          title={!canRemediate ? "Requires a paid plan" : undefined}
+                          className={`focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-red-700 focus-visible:ring-2 focus-visible:outline-none${!canRemediate ? "cursor-not-allowed opacity-50" : ""}`}
+                          title={
+                            !canRemediate
+                              ? REMEDIATION_LOCKED_TOOLTIP
+                              : undefined
+                          }
                         >
-                          {!canRemediate && <Lock size={10} aria-hidden="true" className="mr-0.5" />}
+                          {!canRemediate && (
+                            <Lock
+                              size={10}
+                              aria-hidden="true"
+                              className="mr-0.5"
+                            />
+                          )}
                           Delete {selectedLow.size}
                         </button>
                         {onAnalyze && (
@@ -1982,11 +2027,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
 interface ScanResultPanelProps {
   scanType: ScanTypeValue;
   result:
-    | AiAuditResult
-    | MalwareScanResult
-    | FullAiScanResult
-    | null
-    | undefined;
+    AiAuditResult | MalwareScanResult | FullAiScanResult | null | undefined;
   isLoading: boolean;
   onViewHistory?: () => void;
   /** Called when the user clicks "Mark Safe" on a finding. Receives the file path. */

@@ -196,8 +196,10 @@ const ContentEnhancer: React.FC = () => {
         }
       } else {
         // W3 — 402 token exhausted
+        // WP.org string census closure (2026-08-13, v2.9.33.18, R2b): neutral
+        // wording — no "Pro"/"upgrade"/"plan"/"purchase".
         if (res.status === 402) {
-          toast.error('Token balance exhausted. Purchase more tokens or upgrade your plan.');
+          toast.error('Not enough AI tokens for this action.');
           return;
         }
         const errData = await res.json().catch(() => ({}));

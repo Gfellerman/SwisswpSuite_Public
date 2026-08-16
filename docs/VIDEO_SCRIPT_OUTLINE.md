@@ -5,6 +5,15 @@
 **Audience:** WordPress site owners who are not developers  
 **Goal:** Install SwissSuite AI from the WordPress.org directory
 
+> ⚠️ **DO NOT PRODUCE AS WRITTEN — needs a rewrite pass (flagged 2026-08-16).** This outline
+> predates the 2026-07-16 dual-build split. Several segments demo features that are **not in the
+> free download at all** (2FA, site migration, site sync, AI SEO bulk optimisation, cloud backup),
+> and Segment 5 previously claimed the free tier includes 2FA — corrected below, but the
+> surrounding screen directions still walk through a "License & Tokens" tab and a "Get Free
+> License" button that **the free edition no longer has** (it has no license field, no account,
+> and no sign-up). Publishing this as-is would be a false public claim about what is free.
+> Rewrite against `readme.txt`'s current free-feature list before recording.
+
 ---
 
 ## Segment 1 — Hook (0:00–0:20)
@@ -119,7 +128,7 @@
 ## Segment 5 — Social Proof + Call to Action (3:15–3:45, 30 seconds)
 
 ### Voiceover
-"SwissSuite AI is free to get started — the free tier includes the malware scanner, the firewall, 2FA, and the SEO audit with no time limit and no credit card. Premium plans unlock cloud backup, site migration, AI content rewriting, and the deep AI security audit."
+"SwissSuite AI is free to get started — the free plugin includes the malware scanner, the firewall, local backup and one-click restore, login protection, and the on-page SEO audit, with no time limit, no account, and no credit card. SwissSuite AI Pro is a separate download that adds two-factor authentication, cloud backup, site migration, AI content rewriting, and the deep AI security audit."
 
 ### Screen
 - Navigate to: **SwissSuite → License & Tokens tab**
@@ -139,7 +148,7 @@
 - **SwissSuite AI** wordmark centred, white, large
 - Tagline below: "Security. Backup. Migration. AI SEO. One Plugin."
 - Two text lines:
-  - `wordpress.org/plugins/swisssuite-ai`
+  - `wordpress.org/plugins/nicolaiapp-security-backup-seo-suite`
   - `swisswpsecure.com`
 - Swiss cross + shield icon, bottom-right corner
 

@@ -4,7 +4,7 @@ Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.9.33.15
+Stable tag: 2.9.33.21
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,7 +27,7 @@ Everything in the free plugin runs locally. It does not phone home on install, i
 
 = Backup & restore (free) =
 * Full WordPress backup — files plus database — with a pure-PHP zip engine (no shell exec required)
-* One-click restore of your site files from any local backup
+* One-click restore of your site files from any unencrypted local backup (backup-archive encryption is a Pro feature — see the FAQ)
 * Adaptive backup engine that adjusts to slow shared hosting instead of failing mid-job
 
 = SEO (free) =
@@ -94,7 +94,7 @@ Open SwissSuite → Security → Scan. The free malware scan checks your files a
 
 = How do I back up my WordPress site? =
 
-Open SwissSuite → Backup and click Back Up Now to create a full backup of your files and database. Restore the files from any backup with one click. Database restore is not available in this version; a restore never modifies your database. If a restored backup includes a plugin whose files no longer exist on this site, SwissSuite removes only that specific plugin from your active-plugins list — so the site does not crash on its next page load — and tells you exactly which plugin(s) it was, in plain English, right after the restore completes. Scheduled automated backups and cloud destinations (Google Drive, Amazon S3, Backblaze B2, Dropbox, FTP/SFTP) are part of SwissSuite AI Pro.
+Open SwissSuite → Backup and click Back Up Now to create a full backup of your files and database. Restore the files from any unencrypted backup with one click — backup-archive encryption is a Pro feature, and an encrypted (.zip.enc) backup cannot currently be restored through this UI; decrypt it first, or restore from an unencrypted backup. Database restore is not available in this version; a restore never modifies your database. If a restored backup includes a plugin whose files no longer exist on this site, SwissSuite removes only that specific plugin from your active-plugins list — so the site does not crash on its next page load — and tells you exactly which plugin(s) it was, in plain English, right after the restore completes. Scheduled automated backups, backup-archive encryption, and cloud destinations (Google Drive, Amazon S3, Backblaze B2, Dropbox, FTP/SFTP) are part of SwissSuite AI Pro.
 
 = Can I use SwissSuite alongside a dedicated security plugin like Wordfence? =
 
@@ -156,13 +156,34 @@ Build instructions for regenerating the compiled assets from source are in that 
 
 == Upgrade Notice ==
 
-= 2.9.30.93 =
-Critical fix: archive scan was restarting from scratch on every recovery tick instead of resuming from where it stopped. Sites with 50K+ files on overloaded shared hosting would burn all 5 scan attempts and circuit-break. Mandatory update for users experiencing repeated scan failures on large sites.
-
-= 2.9.30.92 =
-Critical fix: backup was re-archiving its own previous backup zips on every run, causing exponential size growth. Mandatory update for all users.
+= 2.9.33.21 =
+Recommended for all users. Fixes a free-edition bug where completed security scans never appeared in Scan History, stops an internal diagnostic message from being shown in the System Logs viewer, and prevents the abandoned-plugin check from flagging this plugin's own installation.
 
 == Changelog ==
+
+= 2.9.33.21 =
+* Fixed 2 items the owner's own re-run of the real Plugin Check caught that the previous polish pass missed: a self-inflicted line-placement error in a SQL-comment fix, and 26 additional false-positive naming warnings in uninstall.php (same root cause as the .20 fix, different file).
+
+= 2.9.33.20 =
+* Ran the real WordPress.org Plugin Check tool for the first time since the last rejected build: 0 errors, 368 informational warnings, none blocking. Polished 20 of those warnings for a cleaner report (SQL-escaping comment hygiene, third-party cache-plugin hook integration, and a plugin-prefix naming cleanup) — no behavior change.
+
+= 2.9.33.19 =
+* Fixed: a spurious error was being logged every time the Backup tab loaded; it no longer is.
+* Fixed: the plugin's own plugin-health check could incorrectly flag the plugin's own installation as untrustworthy; it no longer checks itself.
+* Fixed: security scan results now correctly appear in Scan History for the free edition.
+* Fixed: the System Logs viewer under Settings > Maintenance no longer shows internal development notes; only user-relevant diagnostic messages are shown.
+
+= 2.9.33.18 =
+* Security: Free edition — removed remaining Pro-referencing interface text outside the Settings comparison panel. A full-population string census of the compiled free edition's JS bundle (every string literal, not a keyword search) found 18 out-of-zone Pro-descriptive strings and 6 ambiguous ones still compiled in — locked-action tooltips, AI-analysis error messages, a scan-description tail describing the Pro-only deep scan's capabilities, and historical scan-type labels. Every locked-action element a genuine free-edition user actually sees keeps rendering with neutral wording (e.g. "Not available in this edition") — nothing that was visible before has disappeared; only the Pro-branded text was replaced or, where the element itself never renders in this edition at all (upgrade CTAs, Pro-only panels), physically excluded from the build the same way 2FA/geo-blocking/encryption already are.
+* This build also includes the plugin-side fix already committed separately: an incorrect trial notice was removed.
+
+= 2.9.33.17 =
+* Security: closed the last 2 known instances of the "compiled into the free edition's JS bundle despite a runtime-only gate" pattern — the Pro-only "Layer 2 Scan" and "Full AI Scan" scan-card labels/descriptions were shared object-literal values in a module also used by this edition's free scan cards; the Pro-only copy is now in a separate module that is physically excluded from this edition's build, same mechanism already used for 2FA/geo-blocking/encryption in earlier releases.
+
+= 2.9.33.16 =
+* Changed: Scan UI consolidation — the "Security Audit" and "Malware Scan" cards are now one merged scan card (both the signature scan and the security-posture check are kept). The Deep Malware Scan (Pro) is re-presented as a deep scan with automatic AI verification of results. Two unreachable UI code paths were removed.
+* Fixed: the Dashboard's SEO score tile and the SEO tab's Health Audit now show the same "SEO score" number for the same site state — both are computed by one shared formula instead of two different ones.
+* Changed: softened the backup-restore readme wording so it no longer promises restoring an encrypted backup this edition cannot decrypt (backup-archive encryption is a Pro feature).
 
 = 2.9.33.15 =
 * Security: fixed a regression from 2.9.33.14's frontend physical-exclusion sweep — the Geo-Lockdown card's fetch/save logic (and the literal "Geo-Lockdown countries saved." string) were still compiled into this free edition's JS bundle even though nothing in the free UI could reach them; moved into the same build-time-excluded component boundary as its UI.

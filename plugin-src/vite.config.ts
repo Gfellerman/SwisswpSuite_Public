@@ -12,6 +12,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { configDefaults } from "vitest/config";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -250,6 +251,21 @@ export default defineConfig(({ mode }) => {
         // component rather than sharing SeoAiWorkbench's internal state,
         // specifically so SeoManager.tsx never needs to import anything
         // from the (Free-excluded) workbench module.
+        //
+        // WP.org B12a residual closure (2026-08-13, v2.9.33.17, owner
+        // follow-up after Package E): the last 2 OPEN B12a fingerprints —
+        // "Layer 2 Scan"/"Full AI Scan" labels+descriptions — lived as
+        // inline object-literal VALUES in scanConstants.ts, a module
+        // imported unconditionally by ScanCard.tsx (which also renders the
+        // legitimately-free "ai-audit"/"malware" cards), so the runtime
+        // isProEditionBuild gate at the deep-malware/full-ai call sites in
+        // SecurityHub.tsx never stopped the strings from compiling into the
+        // Free bundle. './scanConstants.pro' is the exact specifier written
+        // at its one importer, scanConstants.ts (same directory). The
+        // shared "ai-audit"/"malware" copy and the SCAN_TYPES/SCAN_TIER
+        // dispatch data stay in scanConstants.ts itself (unaliased, ships
+        // in both editions) — only the Pro-only label/description VALUES
+        // were extracted into this sibling module.
         ...(EDITION === "free"
           ? {
               "../pages/AIContentPage": path.resolve(
@@ -318,9 +334,142 @@ export default defineConfig(({ mode }) => {
                 __dirname,
                 "src/components/organisms/Seo/SeoCategoryQuickFixButton.freeStub.tsx"
               ),
+              "./scanConstants.pro": path.resolve(
+                __dirname,
+                "src/components/organisms/Scan/scanConstants.pro.freeStub.ts"
+              ),
+              // Same target file, DIFFERENT literal specifier (hazard #1):
+              // SecurityHub.tsx imports DEEP_MALWARE_START_FAILURE_MESSAGE
+              // via "./organisms/Scan/scanConstants.pro" (its own relative
+              // path from plugin/src/components/), not the
+              // "./scanConstants.pro" specifier scanConstants.ts itself
+              // uses from one directory deeper — both need their own entry.
+              "./organisms/Scan/scanConstants.pro": path.resolve(
+                __dirname,
+                "src/components/organisms/Scan/scanConstants.pro.freeStub.ts"
+              ),
+              // WP.org B12a residual closure (2026-08-13, v2.9.33.17,
+              // controller-directed expansion): WpscanApiKeyField.tsx /
+              // PatchstackApiKeyField.tsx are rendered UNCONDITIONALLY at
+              // their one call site (SettingsPage.tsx) — gated only by an
+              // internal isProUser PROP (a Pro-tier capability check, not
+              // an edition check), so every Free install always rendered
+              // the real component's full descriptive copy, outbound
+              // links, and "Not available on this plan" notice. See each
+              // .freeStub.tsx's own docblock for the full writeup.
+              "../components/organisms/Settings/WpscanApiKeyField":
+                path.resolve(
+                  __dirname,
+                  "src/components/organisms/Settings/WpscanApiKeyField.freeStub.tsx"
+                ),
+              "../components/organisms/Settings/PatchstackApiKeyField":
+                path.resolve(
+                  __dirname,
+                  "src/components/organisms/Settings/PatchstackApiKeyField.freeStub.tsx"
+                ),
+              // Same sweep, same shape: BackupAutomationsPanel.tsx is
+              // rendered unconditionally (no isProEdition() gate) at its
+              // one call site (BackupsPage.tsx), internally gated only by
+              // a hasCloudFeature license-capability check that is always
+              // false in Free — see the freeStub's own docblock.
+              "../components/organisms/Backups/BackupAutomationsPanel":
+                path.resolve(
+                  __dirname,
+                  "src/components/organisms/Backups/BackupAutomationsPanel.freeStub.tsx"
+                ),
+              // WP.org string census closure (2026-08-13, v2.9.33.18):
+              // FREE_BUNDLE_STRING_CENSUS_2026-08-13.md found 18 out-of-zone
+              // Pro-descriptive strings still compiled into the Free bundle
+              // (SecurityHub.tsx, ScanResultPanel.tsx, HardeningOptionsGrid.tsx,
+              // ScanHistoryTable.tsx, OnPageDiagnostics.tsx, SettingsLayout.tsx)
+              // — same violation class as every entry above (shared files,
+              // runtime-only isProEdition()/isProEditionBuild/capability
+              // gates, no build-time branch elimination). Each entry below is
+              // the exact specifier written at its one importer; see each
+              // real/.freeStub module pair's own docblock for the specific
+              // strings and rationale.
+              "../lib/securityHubAiProCopy": path.resolve(
+                __dirname,
+                "src/lib/securityHubAiProCopy.freeStub.ts"
+              ),
+              "./organisms/Security/WafUpsellCard": path.resolve(
+                __dirname,
+                "src/components/organisms/Security/WafUpsellCard.freeStub.tsx"
+              ),
+              "./organisms/Security/AiLogAnalysisLockedCard": path.resolve(
+                __dirname,
+                "src/components/organisms/Security/AiLogAnalysisLockedCard.freeStub.tsx"
+              ),
+              "./scanResultProCopy": path.resolve(
+                __dirname,
+                "src/components/organisms/Scan/scanResultProCopy.freeStub.ts"
+              ),
+              "./EditionMismatchDownloadCta": path.resolve(
+                __dirname,
+                "src/components/organisms/Scan/EditionMismatchDownloadCta.freeStub.tsx"
+              ),
+              "./hardeningProCopy": path.resolve(
+                __dirname,
+                "src/components/organisms/Security/hardeningProCopy.freeStub.ts"
+              ),
+              "./AdditionalPlanRequiredNotice": path.resolve(
+                __dirname,
+                "src/components/organisms/Security/AdditionalPlanRequiredNotice.freeStub.tsx"
+              ),
+              // Hazard #1 (same target file, DIFFERENT literal specifier):
+              // ScanHistoryTable.tsx (in components/organisms/Security/)
+              // imports the Scan-directory scanConstants.pro module via
+              // "../Scan/scanConstants.pro" — a third distinct specifier for
+              // the same physical file already covered by two other entries
+              // above ("./scanConstants.pro" and
+              // "./organisms/Scan/scanConstants.pro").
+              "../Scan/scanConstants.pro": path.resolve(
+                __dirname,
+                "src/components/organisms/Scan/scanConstants.pro.freeStub.ts"
+              ),
+              "./onPageProCopy": path.resolve(
+                __dirname,
+                "src/components/organisms/Seo/onPageProCopy.freeStub.ts"
+              ),
+              "./settingsApiTabLabel": path.resolve(
+                __dirname,
+                "src/components/organisms/Settings/settingsApiTabLabel.freeStub.ts"
+              ),
             }
           : {}),
       },
+    },
+    // Vitest config (2026-08-15 fix). Previously there was no `test` block at
+    // all, so a plain `npx vitest run` used vitest's own default environment
+    // ('node') — 6 Vitest suites that touch `window` (jsdom-only DOM APIs, or
+    // the React vendor-shim's `window.React` lookup) failed under that
+    // default and only passed when a dev remembered to pass
+    // `--environment jsdom` by hand. Setting it here makes `jsdom` the
+    // default for every invocation (`npm test`, `npx vitest`, CI), matching
+    // what the test files actually need — same fix shape as the React
+    // vendor-shim aliases above (WordPress's admin runtime IS a browser DOM,
+    // so jsdom is the correct default for this plugin's test surface, not an
+    // arbitrary choice).
+    //
+    // `exclude` additionally excludes tests/e2e/** (Playwright specs) from
+    // Vitest's own collection. `tests/e2e/plugin-activation.spec.ts` and
+    // `tests/e2e/plugin.spec.ts` both import `test`/`expect` from
+    // `@playwright/test`, which is a DIFFERENT test-runner API and throws at
+    // collection time when the Playwright global test registry is touched
+    // outside `playwright test` (see playwright.config.ts, which is the
+    // correct/only runner for that directory: `testDir: './tests/e2e'`).
+    // Vitest's default `include` glob (`**/*.{test,spec}.?(c|m)[jt]s?(x)`)
+    // has no directory-based distinction between a Playwright `.spec.ts` and
+    // a Vitest one, so without this exclude both frameworks try to collect
+    // the same files. Spread `configDefaults.exclude` first (not a literal
+    // override) so this doesn't silently drop vitest's own default excludes
+    // (node_modules/, .git/) — verified via `node -e
+    // "require('vitest/config').configDefaults.exclude"` before writing this
+    // (vitest 4.1.10, this workstation): `["**/node_modules/**",
+    // "**/.git/**"]`.
+    test: {
+      environment: "jsdom",
+      exclude: [...configDefaults.exclude, "tests/e2e/**"],
     },
     build: {
       manifest: true, // Generate manifest.json for PHP to read

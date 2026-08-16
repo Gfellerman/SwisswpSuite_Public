@@ -2,9 +2,18 @@
 
 > Architecture: dual-build freemium — see docs/architecture/FREEMIUM_DUAL_BUILD_ARCHITECTURE.md
 
-**Version:** 2.9.30.89
-**Last Updated:** 2026-05-26
+**Manual revision:** 2.9.30.89 · **Last fully reviewed:** 2026-05-26
+**Applies to plugin version:** 2.9.33.21
 **Audience:** WordPress site owners. No coding required.
+
+> ⚠️ **Partial-revision notice (2026-08-16).** This manual was last given a full editorial pass on
+> 2026-05-26, before several releases. The edition model, installation steps, and system
+> requirements below are current. Some later sections still describe an older *per-capability*
+> licensing model ("if your plan includes the 2fa capability", capability codes, per-plan token
+> allowances). That model no longer applies: the split is now a plain **Free / Pro** one, and the
+> Pro features are *physically absent* from the free package rather than locked behind capability
+> flags. Where a section contradicts this notice or `readme.txt`, this notice and `readme.txt` win.
+> A full rewrite is scheduled; until then, treat capability-flag wording as historical.
 
 > **Two editions.** SwissSuite AI ships as two products built from one codebase: **SwissSuite AI** (free, installed from the WordPress.org directory) and **SwissSuite AI Pro** (downloaded from swisswpsecure.com after purchase). The free edition contains only the free local features; the paid features described in this manual as "Pro" — 2FA, geo-blocking, advanced WAF, cloud backup, scheduled backups, sync, migration, Update Guard, and all AI features (deep AI scan, AI SEO meta, AI content) — live exclusively in the Pro edition, which you download and install separately. The free edition has **no license key field, no account, and no sign-up**, and it makes no calls to SwissWPSecure servers: the Pro features are simply not present in it, so there is nothing a key could unlock. To get Pro, purchase at https://swisswpsecure.com/products/ and install the separate Pro plugin.
 
@@ -79,9 +88,9 @@ After activation, a new menu item called **SwissSuite** appears in your WordPres
 
 **System requirements:**
 
-- WordPress 5.6 or newer
+- WordPress 6.2 or newer
 - PHP 7.4 or newer
-- **WordPress 7.0 compatible.** The plugin header lists a conservative "Tested up to" value of 6.7, but the codebase has been adapted for WordPress 7.0: it ships a `SWISSWP_WP7` feature flag that activates 7.0-specific behavior (notably, coexistence with WP 7.0's Real-Time Collaboration sessions and the WP Abilities API for bring-your-own LLM). It runs unchanged on WordPress 6.x.
+- **WordPress 7.0 compatible.** The plugin header declares "Tested up to" 7.0, and the codebase has been adapted for WordPress 7.0: it ships a `SWISSWP_WP7` feature flag that activates 7.0-specific behavior (notably, coexistence with WP 7.0's Real-Time Collaboration sessions and the WP Abilities API for bring-your-own LLM). It runs unchanged on WordPress 6.x.
 
 ### 1.3 First-Time Setup
 

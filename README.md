@@ -1,6 +1,6 @@
 # SwissSuite AI - WordPress Security & Backup Plugin
 
-**Version:** 2.9.33.15
+**Version:** 2.9.33.21
 **Requires WordPress:** 6.2+
 **Tested up to:** 7.0
 **Requires PHP:** 7.4+
@@ -11,7 +11,7 @@ SwissSuite AI ships as two separate, independently distributed plugins built fro
 
 | Edition | Slug | Where to get it | What it is |
 | :--- | :--- | :--- | :--- |
-| **SwissSuite AI** (Free) | `swisssuite-ai` | WordPress.org | The security & backup core, standalone and fully functional on its own |
+| **SwissSuite AI** (Free) | `nicolaiapp-security-backup-seo-suite` | WordPress.org | The security & backup core, standalone and fully functional on its own |
 | **SwissSuite AI Pro** | `swisssuite-ai-pro` | https://www.swisswpsecure.com/products/ (download-only) | A standalone superset — cloud backup, AI, sync, migration, and more |
 
 Pro is **not an add-on or unlock** for the Free plugin — it is installed in place of it. The premium and AI code is physically absent from the Free package; there is nothing in Free to "unlock" with a key, and Free has no license field at all.

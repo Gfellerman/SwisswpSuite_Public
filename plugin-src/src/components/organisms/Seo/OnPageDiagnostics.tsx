@@ -16,6 +16,7 @@ import type {
   OnPageFactor,
   OnPageIssue,
 } from "../../../types";
+import { FULL_SCAN_LOCKED_LABEL } from "./onPageProCopy";
 
 interface OnPageDiagnosticsProps {
   seoBreakdown: {
@@ -232,7 +233,7 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
         <div className="flex items-center justify-center gap-2 p-4 bg-neutral-50 rounded-2xl border border-neutral-200">
           <Lock size={14} className="text-neutral-400" />
           <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest">
-            Full scan requires Pro
+            {FULL_SCAN_LOCKED_LABEL}
           </span>
         </div>
       ) : (

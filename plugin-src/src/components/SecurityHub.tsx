@@ -55,7 +55,9 @@ import { Badge } from "./ui/Badge";
 import { SectionHeader } from "./ui/SectionHeader";
 import { SentinelGradeBadge } from "./organisms/Sentinel/SentinelGradeBadge";
 import { SentinelAttackChains } from "./organisms/Sentinel/SentinelAttackChains";
-import { SentinelM5ConsentModal } from "./organisms/Sentinel/SentinelM5ConsentModal";
+// T4 (Package E / G2 dead-path removal, 2026-08-13): SentinelM5ConsentModal
+// import DELETED — its only render site and the state that opened it are
+// both deleted (see the deletion comments further down this file).
 import { ScanHistoryTable } from "./organisms/Security/ScanHistoryTable";
 import { HardeningOptionsGrid } from "./organisms/Security/HardeningOptionsGrid";
 import { CloudShieldPanel } from "./organisms/Security/CloudShieldPanel";
@@ -70,6 +72,14 @@ import ScanResultPanel from "./organisms/Scan/ScanResultPanel";
 import ScanReportPreviewModal from "./organisms/Scan/ScanReportPreviewModal";
 import ScanReportSettingsPanel from "./organisms/Scan/ScanReportSettingsPanel";
 import { ScanHistoricalRecord } from "./organisms/Scan/ScanHistoricalRecord";
+// WP.org B12a residual closure (2026-08-13, v2.9.33.17) — see
+// scanConstants.pro.ts's docblock. Aliased away in the Free build (a
+// SEPARATE vite.config.ts entry from the one used inside scanConstants.ts
+// itself — different literal specifier, same target file).
+import {
+  DEEP_MALWARE_START_FAILURE_MESSAGE,
+  DEEP_MALWARE_PHASE_LABELS,
+} from "./organisms/Scan/scanConstants.pro";
 import UpdateGuardCard from "./organisms/UpdateGuard/UpdateGuardCard";
 import { FeaturePointer } from "./organisms/Upsell/FeaturePointer";
 import { isProEdition } from "../lib/edition";
@@ -77,11 +87,19 @@ import {
   TWO_FACTOR_GUIDE_CONTENT,
   GEO_LOCK_ACTION_LABEL,
 } from "../lib/logAdvisorGuideContent";
+// WP.org string census closure (2026-08-13, v2.9.33.18, R2a) — aliased away
+// in the Free build. See each module's own docblock for the mechanism.
+import { WafUpsellCard } from "./organisms/Security/WafUpsellCard";
+import { AiLogAnalysisLockedCard } from "./organisms/Security/AiLogAnalysisLockedCard";
+import {
+  tokenNeededMessage,
+  TOKEN_EXHAUSTED_MESSAGE,
+  LOG_ANALYSIS_FAILED_MESSAGE,
+  FIREWALL_ANALYSIS_FAILED_MESSAGE,
+} from "../lib/securityHubAiProCopy";
 import type {
   AiAuditResult,
   MalwareScanResult,
-  FullAiScanResult,
-  FullAiScanJob,
   DeepMalwareScanJob,
   ScanReportConfig,
   UpdateGuardStatus,
@@ -549,20 +567,22 @@ const SecurityHub: React.FC = () => {
   const malwareResult = useScanStore((s) => s.malwareResult);
   const setMalwareResult = useScanStore((s) => s.setMalwareResult);
   const updateMalwareResult = useScanStore((s) => s.updateMalwareResult);
-  const fullAiResult = useScanStore((s) => s.fullAiResult);
-  const setFullAiResult = useScanStore((s) => s.setFullAiResult);
+  // T4 (Package E / G2 dead-path removal, 2026-08-13): fullAiResult/
+  // setFullAiResult/fullAiLoading/setFullAiLoading/fullAiPhaseMessage/
+  // setFullAiPhaseMessage selectors REMOVED — the only writers were the
+  // now-deleted handleTriggerScan "full-ai" branch, pollFullAiJobToCompletion,
+  // and handleFullAiMarkSafe (all deleted below, zero UI callers, verified
+  // via tree-wide grep with a positive control). `updateFullAiResult` is
+  // KEPT: it is still called (as a defensive no-op — fullAiResult can now
+  // never be non-null) inside the shared handleScanPanelBulkAction handler,
+  // which also mutates aiAuditResult/malwareResult for the SAME selection —
+  // splitting it out was judged out of this session's narrowly-scoped T4
+  // deletion targets; flagged in the session report as a residual.
   const updateFullAiResult = useScanStore((s) => s.updateFullAiResult);
   const aiAuditLoading = useScanStore((s) => s.aiAuditLoading);
   const setAiAuditLoading = useScanStore((s) => s.setAiAuditLoading);
   const malwareLoading = useScanStore((s) => s.malwareLoading);
   const setMalwareLoading = useScanStore((s) => s.setMalwareLoading);
-  const fullAiLoading = useScanStore((s) => s.fullAiLoading);
-  const setFullAiLoading = useScanStore((s) => s.setFullAiLoading);
-  // v2.9.28.25: Phase-aware progress message surfaced on the Full AI ScanCard
-  // during the two-phase state-machine flow. Empty string means "no message"
-  // (falls back to the ScanCard's default "Scanning…" label).
-  const fullAiPhaseMessage = useScanStore((s) => s.fullAiPhaseMessage);
-  const setFullAiPhaseMessage = useScanStore((s) => s.setFullAiPhaseMessage);
   // v2.9.29.0 — Deep Malware Scan async pipeline state.
   const deepMalwareJobId = useScanStore((s) => s.deepMalwareJobId);
   const setDeepMalwareJobId = useScanStore((s) => s.setDeepMalwareJobId);
@@ -679,7 +699,10 @@ const SecurityHub: React.FC = () => {
   const [sentinelReport, setSentinelReport] = useState<SentinelReport | null>(
     null
   );
-  const [sentinelScanning, setSentinelScanning] = useState(false);
+  // T4 (Package E, 2026-08-13): `sentinelScanning` state DELETED — it was
+  // write-only (set true/false only inside the now-deleted
+  // runSentinelFullScan(), never read by any render/conditional in this
+  // file — confirmed by tree-wide grep before this edit).
   // Manual fix guide state for L1 findings (chmod failures on Hostinger)
   const [l1ManualFix, setL1ManualFix] = useState<{
     what: string;
@@ -695,7 +718,10 @@ const SecurityHub: React.FC = () => {
   const [loadingHistoricalScanId, setLoadingHistoricalScanId] = useState<
     number | null
   >(null);
-  const [showM5Consent, setShowM5Consent] = useState(false);
+  // T4 (Package E, 2026-08-13): `showM5Consent` state DELETED —
+  // setShowM5Consent(true) had zero call sites anywhere in the tree (only
+  // `setShowM5Consent(false)` calls remained, from the modal's own
+  // onConsent/onCancel handlers, both deleted alongside the modal below).
   const [expandedSentinelView, setExpandedSentinelView] = useState<
     "layer2" | "layer1" | null
   >(null);
@@ -1181,7 +1207,7 @@ const SecurityHub: React.FC = () => {
   // ── Scan Consolidation: trigger handlers ─────────────────────────────────
 
   const handleTriggerScan = async (
-    scanType: "ai-audit" | "malware" | "full-ai" | "deep-malware"
+    scanType: "ai-audit" | "malware" | "deep-malware"
   ) => {
     // v2.9.30.x — Mode arg removed. The malware card no longer offers a
     // Quick/Deep toggle (that moved to the dedicated deep-malware card in
@@ -1215,7 +1241,10 @@ const SecurityHub: React.FC = () => {
     // that MUST run while unlicensed with a 0 token balance. Including ai-audit here
     // made the button silently no-op in the Free/no-license state (canAfford returned
     // false at balance 0, so we returned before firing the request) — a bug, not a
-    // gate. Only genuinely AI/token-consuming scans belong here: full-ai, deep-malware.
+    // gate. Only genuinely AI/token-consuming scans belong here: deep-malware
+    // (full-ai's branch was DELETED here — T4, Package E, 2026-08-13: zero UI
+    // callers, see the "malware" card-removal comment in the scan-tab render
+    // region for the two-proof verification).
     // deep-malware deliberately STAYS in this list (Sprint W2/T7, 2026-07-26):
     // in Pro, its ai_analysis phase is real Groq spend and this remains the
     // correct pre-flight gate. In Free, useTokenBalance() is aliased to a stub
@@ -1223,17 +1252,20 @@ const SecurityHub: React.FC = () => {
     // a permanent no-op there and never blocks the free local phases; the real
     // edition-based unlock lives in the removed guard above and the ScanCard's
     // locked prop, not here.
-    const isTokenGated = scanType === "full-ai" || scanType === "deep-malware";
+    const isTokenGated = scanType === "deep-malware";
     if (isTokenGated && !canAfford("sentinel_security")) {
       toast.error(
-        `Need ~${tokensNeeded("sentinel_security").toLocaleString()} tokens to run this scan (balance: ${tokenSpendable.toLocaleString()}). Purchase more tokens or upgrade your plan.`
+        tokenNeededMessage(
+          tokensNeeded("sentinel_security").toLocaleString(),
+          tokenSpendable.toLocaleString(),
+          "to run this scan"
+        )
       );
       return;
     }
 
     if (scanType === "ai-audit") setAiAuditLoading(true);
     if (scanType === "malware") setMalwareLoading(true);
-    if (scanType === "full-ai") setFullAiLoading(true);
     if (scanType === "deep-malware") {
       // Reset prior result + advance to running. The poller below clears
       // these on completion. Setting jobId after the start call lets the
@@ -1257,7 +1289,7 @@ const SecurityHub: React.FC = () => {
         }>("/security/scan/malware/start", { method: "POST" });
         if (!startEnvelope.success || !startEnvelope.job_id) {
           throw new Error(
-            startEnvelope.message ?? "Could not start Deep Malware Scan."
+            startEnvelope.message ?? DEEP_MALWARE_START_FAILURE_MESSAGE
           );
         }
         // Hand the job_id to the poller useEffect below — the polling loop
@@ -1266,38 +1298,20 @@ const SecurityHub: React.FC = () => {
         return;
       }
 
-      // ── v2.9.28.21 Async Full AI Scan (start + poll) ────────────────────
-      // The synchronous /security/scan/full-ai route times out at Hostinger's
-      // ~60s edge under load and returns a 504 that hides the scan result.
-      // We now POST /start to kick off a WP-Cron job, then poll /status every
-      // 3s until the backend reports 'complete' or 'failed'. 5-minute cap.
-      if (scanType === "full-ai") {
-        const startEnvelope = await wpApi<{
-          success: boolean;
-          job_id?: string;
-          status?: string;
-          message?: string;
-        }>("/security/scan/full-ai/start", { method: "POST" });
-        if (!startEnvelope.success || !startEnvelope.job_id) {
-          throw new Error(
-            startEnvelope.message ?? "Could not start Full AI scan."
-          );
-        }
-        const finalResult = await pollFullAiJobToCompletion(
-          startEnvelope.job_id
-        );
-        setFullAiResult(finalResult);
-        // v2.9.30.117: scan complete → invalidate so next tab visit shows fresh data
-        queryClient.invalidateQueries({ queryKey: ["sentinel-latest-scan"] });
-        queryClient.invalidateQueries({ queryKey: ["security-status"] });
-        return;
-      }
+      // T4 (Package E, 2026-08-13): the async Full AI Scan (start + poll)
+      // branch that used to sit here was DELETED — zero UI callers (no
+      // ScanCard ever rendered scanType="full-ai", confirmed by tree-wide
+      // grep with a positive control). pollFullAiJobToCompletion() (its
+      // only caller) was deleted alongside it. Backend routes
+      // (/security/scan/full-ai/start + /status) stay registered per rule
+      // 0.4 — flagged as dead-route candidates in this session's report,
+      // not deleted.
 
       const body =
         scanType === "malware" ? JSON.stringify({ mode: "quick" }) : undefined;
       const envelope = await wpApi<{
         success: boolean;
-        result: AiAuditResult | MalwareScanResult | FullAiScanResult;
+        result: AiAuditResult | MalwareScanResult;
         message?: string;
         balance_remaining?: number;
       }>(`/security/scan/${scanType}`, { method: "POST", body });
@@ -1344,125 +1358,30 @@ const SecurityHub: React.FC = () => {
     } finally {
       if (scanType === "ai-audit") setAiAuditLoading(false);
       if (scanType === "malware") setMalwareLoading(false);
-      if (scanType === "full-ai") {
-        setFullAiLoading(false);
-        // v2.9.28.25: Reset phase-aware progress text so the next run starts clean.
-        setFullAiPhaseMessage("");
-      }
       // deep-malware: don't clear loading here — the poller useEffect owns
       // the lifecycle and clears state on terminal phase.
     }
   };
 
-  /**
-   * v2.9.28.21 — Poll /security/scan/full-ai/status every 3s until the backend
-   * reports a terminal state ('complete' | 'failed'). Returns the final
-   * FullAiScanResult on success.
-   *
-   * Safety cap: 100 polls × 3s = 5 minutes max wait. Real scans on typical
-   * Hostinger shared hosts complete in under 90s; the cap only matters when
-   * the VPS is very slow or the site's WP-Cron is genuinely broken.
-   *
-   * Throws Error on timeout / failed status / 'not_found'. The caller's catch
-   * block surfaces the error message via toast.
-   */
-  const pollFullAiJobToCompletion = async (
-    jobId: string
-  ): Promise<FullAiScanResult> => {
-    const MAX_POLLS = 100;
-    const POLL_INTERVAL_MS = 3000;
+  // T4 (Package E / G2 dead-path removal, 2026-08-13): pollFullAiJobToCompletion()
+  // DELETED — its only caller (the full-ai branch of handleTriggerScan above)
+  // was deleted in the same change. Proof: (1) tree-wide grep for
+  // `pollFullAiJobToCompletion(` after this deletion returns exactly one hit
+  // (its own removed declaration, gone) with a positive-control grep for a
+  // known-live function proving the search methodology works; (2) no
+  // template-literal/computed-key dispatch exists anywhere in this file that
+  // could reach it dynamically (handleTriggerScan's scanType union is a
+  // plain string literal type, not user input). Backend routes
+  // (/security/scan/full-ai/start + /status) stay registered per rule 0.4.
 
-    for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
-      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-
-      let envelope: FullAiScanJob;
-      try {
-        envelope = await wpApi<FullAiScanJob>(
-          `/security/scan/full-ai/status?job_id=${encodeURIComponent(jobId)}`,
-          { method: "GET" }
-        );
-      } catch (e) {
-        // Network hiccup — don't give up yet. Let the next poll cycle retry.
-        // If the transient expired (404) the ApiError's status is 404 and the
-        // wpApi wrapper raises an Error — we propagate via a re-throw on the
-        // final attempt but keep retrying until then.
-        if (e instanceof ApiError && e.status === 404) {
-          throw new Error("Scan job expired. Please start a new scan.");
-        }
-        if (attempt === MAX_POLLS - 1) {
-          throw e;
-        }
-        continue;
-      }
-
-      if (envelope.status === "complete" && envelope.result) {
-        // v2.9.28.32 (F-296): Clear the phase hint before returning so the
-        // ScanCard doesn't briefly show "Sending to AI for analysis…" while
-        // the success toast renders.
-        setFullAiPhaseMessage("");
-        // v2.9.28.38 — Banner auto-refresh. The server stamps
-        // swisswpsuite_last_scan_report on complete (api.php v2.9.28.37 Bug 3),
-        // so /security/scan/report-config now returns the fresh grade. Re-fetch
-        // it here so <ScanCronStatusBanner> reflects the just-completed scan
-        // without requiring a tab-switch or page reload. Silent on failure —
-        // the banner degrades gracefully to stale data, same as the mount-time
-        // fetch at useEffect([]) above.
-        try {
-          const refreshed = await wpApi<ScanReportConfig>(
-            "/security/scan/report-config"
-          );
-          setScanReportConfig(refreshed);
-        } catch {
-          // Non-critical — banner keeps previous state.
-        }
-        return envelope.result;
-      }
-      if (envelope.status === "failed") {
-        throw new Error(envelope.message ?? "Scan failed. Please try again.");
-      }
-      if (envelope.status === "not_found") {
-        throw new Error("Scan job expired. Please start a new scan.");
-      }
-
-      // v2.9.28.25: Surface phase-aware progress text to the Full AI ScanCard.
-      // Phase 1 (l1_running) = local filesystem/config audit, ~30-45 s.
-      // Phase 2 (l2_running) = VPS AI analysis, ~15 s.
-      // l2_pending = brief transient state between phases — treat as Phase 1 tail.
-      if (envelope.status === "l1_running" || envelope.status === "pending") {
-        setFullAiPhaseMessage("Running security audit…");
-      } else if (
-        envelope.status === "l2_pending" ||
-        envelope.status === "l2_running"
-      ) {
-        setFullAiPhaseMessage("Sending to AI for analysis…");
-      }
-      // Continue polling.
-    }
-
-    throw new Error(
-      "Scan is taking longer than expected. Check back in a few minutes."
-    );
-  };
-
-  /**
-   * v2.9.29.0 — Deep Malware Scan phase-label dictionary.
-   *
-   * Each pipeline phase maps to a user-facing message shown on the ScanCard's
-   * loading button. Keep these short — they replace the default "Scanning…"
-   * label and appear on a 280-px-wide button. Order here matches the
-   * pipeline state machine in scan-orchestrator.php::run_deep_malware_scan().
-   */
-  const DEEP_MALWARE_PHASE_LABELS: Record<string, string> = {
-    pending: "Preparing scan…",
-    enumerate: "Discovering files…",
-    hashing: "Computing file fingerprints…",
-    vps_lookup: "Checking threat database…",
-    local_scan: "Scanning file contents…",
-    wpscan: "Looking up plugin vulnerabilities (WPScan)…",
-    patchstack: "Verifying security patches (Patchstack)…",
-    ai_analysis: "Running AI security analysis…",
-    complete: "Scan complete",
-  };
+  // v2.9.29.0 — Deep Malware Scan phase-label dictionary. Each pipeline
+  // phase maps to a user-facing message shown on the ScanCard's loading
+  // button. WP.org B12a residual closure (2026-08-13, v2.9.33.17): moved
+  // to scanConstants.pro.ts (imported above as
+  // DEEP_MALWARE_PHASE_LABELS) — two entries named bare third-party
+  // service names ("WPScan"/"Patchstack"), which compiled into the Free
+  // bundle regardless of the isProEditionBuild gate on the card that
+  // consumes it (this component function itself is not gated).
 
   /**
    * v2.9.29.0 — Deep Malware Scan poller.
@@ -1669,31 +1588,10 @@ const SecurityHub: React.FC = () => {
     }
   };
 
-  const handleFullAiMarkSafe = async (evidence: string) => {
-    if (!evidence) return;
-    try {
-      const res = await wpApi<{ success: boolean; message?: string }>(
-        "/security/ignore",
-        { method: "POST", body: JSON.stringify({ path: evidence }) }
-      );
-      if (!res.success) {
-        toast.error(res.message || "Failed to mark file as safe.");
-        return;
-      }
-      updateFullAiResult((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          findings: prev.findings.filter((f) => f.evidence !== evidence),
-        };
-      });
-      fetchIgnored();
-      toast.success("Marked as safe. Future scans will skip this file.");
-    } catch (e) {
-      console.error("Failed to mark full AI audit finding as safe", e);
-      toast.error("Network error marking file as safe.");
-    }
-  };
+  // T4 (Package E / G2 dead-path removal, 2026-08-13): handleFullAiMarkSafe()
+  // DELETED — zero call sites anywhere in this file (confirmed by tree-wide
+  // grep before this edit; it was only ever wired to the never-rendered
+  // full-ai ScanResultPanel's onMarkSafe prop, which no longer exists).
 
   const handleMarkMalwareSafe = async (relativePath: string) => {
     if (!relativePath) return;
@@ -2181,82 +2079,23 @@ const SecurityHub: React.FC = () => {
     }
   };
 
-  const runSentinelFullScan = async (includeLayer2 = false) => {
-    // Guard: prevent duplicate scans within the same page session (e.g. from
-    // stale service workers, browser extensions, or other external triggers).
-    const SCAN_LOCK_KEY = "swisswp_sentinel_scan_in_progress";
-    if (sessionStorage.getItem(SCAN_LOCK_KEY)) {
-      toast.error(
-        "A scan is already in progress. Please wait for it to complete."
-      );
-      return;
-    }
-    sessionStorage.setItem(SCAN_LOCK_KEY, "1");
-    setSentinelScanning(true);
-    try {
-      const data = await wpApi<{
-        result?: { layer2?: Record<string, unknown>; layer1?: unknown[] };
-        message?: string;
-      }>("/security/sentinel/full-scan", {
-        method: "POST",
-        body: JSON.stringify({ include_layer2: includeLayer2 }),
-      });
-      if (data.result) {
-        const r = data.result;
-        if (r.layer2) {
-          // MEDIUM defensive fallback: PHP may return `grade` instead of `security_grade`
-          const layer2 = r.layer2 as Record<string, unknown>;
-          const findings = (r.layer1 ||
-            layer2.individual_findings ||
-            []) as SentinelLayer1Finding[];
-          setSentinelReport({
-            ...layer2,
-            layer: 2,
-            security_grade: (layer2.security_grade ??
-              layer2.grade) as SentinelLayer2Report["security_grade"],
-            individual_findings: findings,
-            // Defensive defaults: AI may omit these top-level fields
-            attack_chains: (layer2.attack_chains ??
-              []) as SentinelLayer2Report["attack_chains"],
-            remediation_plan: (layer2.remediation_plan ??
-              []) as SentinelLayer2Report["remediation_plan"],
-            positive_findings: (layer2.positive_findings ??
-              []) as SentinelLayer2Report["positive_findings"],
-            scan_metadata:
-              (layer2.scan_metadata as SentinelLayer2Report["scan_metadata"]) ?? {
-                sentinel_version: "2.1",
-                analysis_date: new Date().toISOString(),
-                model_used: "unknown",
-                findings_count: findings.length,
-                critical_count: findings.filter(
-                  (f) => f.severity === "critical"
-                ).length,
-                chains_count: ((layer2.attack_chains ?? []) as unknown[])
-                  .length,
-              },
-          } as SentinelLayer2Report);
-        } else if (r.layer1) {
-          setSentinelReport({
-            layer: 1,
-            findings: r.layer1 as SentinelLayer1Finding[],
-          });
-        }
-        toast.success("Security scan complete.");
-      } else {
-        toast.error(data.message || "Scan returned no report data.");
-      }
-    } catch (e) {
-      console.error("[SwissWP] runSentinelFullScan failed:", e);
-      toast.error(
-        e instanceof ApiError
-          ? e.message
-          : "Scan request failed — check your connection."
-      );
-    } finally {
-      sessionStorage.removeItem(SCAN_LOCK_KEY);
-      setSentinelScanning(false);
-    }
-  };
+  // T4 (Package E / G2 dead-path removal, 2026-08-13): runSentinelFullScan()
+  // DELETED. Two-proof verification per the owner's dead-code deletion rule:
+  //   Proof 1 (tree-wide grep, before this edit, with a positive control
+  //     proving the search methodology finds live code): `runSentinelFullScan(`
+  //     had exactly ONE call site — SentinelM5ConsentModal's onConsent
+  //     callback (deleted in the same change, below). No other file imports
+  //     or calls it.
+  //   Proof 2 (dynamic-dispatch ruled out): no template-literal/computed-key
+  //     call, no useUiStore selector, and no test file invokes it. The ONLY
+  //     opener of the modal that called it, `setShowM5Consent(true)`, had
+  //     ZERO call sites anywhere in the tree (checked both this file's local
+  //     useState AND the separate useUiStore Zustand copy of the same flag —
+  //     both dead; useUiStore's copy is orphaned independently of this
+  //     deletion, see its own field removal below).
+  // Backend route (/security/sentinel/full-scan, the deprecated Sentinel L2
+  // alias) stays registered per rule 0.4 — flagged as a dead-route candidate
+  // in this session's report, not deleted.
 
   /**
    * SEC-3 FIX: Load the most recent scan from storage on mount so results
@@ -3070,19 +2909,25 @@ const SecurityHub: React.FC = () => {
     // runAiAnalyzeChain — every call path is wired to an explicit onClick. The
     // most plausible remaining cause is a stale effect / re-entrancy race during
     // an active scan poll. This guard blocks any analyze-file request while a
-    // scan that owns file findings is still in-flight (aiAudit / fullAi / malware
+    // scan that owns file findings is still in-flight (aiAudit / malware
     // loading or deep-scan polling). AI analysis is always USER-INITIATED — it is
     // safe to short-circuit here because every legitimate path is a direct click.
+    // T4 (Package E, 2026-08-13): `fullAiLoading` removed from this guard —
+    // its state was deleted alongside the dead full-ai dispatch branch (see
+    // handleTriggerScan above); it could never be true again.
     // W3 — Token balance gate: block the call early if insufficient tokens
     if (!canAfford("sentinel_security")) {
       toast.error(
-        `Need ~${tokensNeeded("sentinel_security").toLocaleString()} tokens to analyze a file (balance: ${tokenSpendable.toLocaleString()}). Purchase more tokens or upgrade your plan.`
+        tokenNeededMessage(
+          tokensNeeded("sentinel_security").toLocaleString(),
+          tokenSpendable.toLocaleString(),
+          "to analyze a file"
+        )
       );
       return;
     }
     if (
       aiAuditLoading ||
-      fullAiLoading ||
       malwareLoading ||
       deepScanStatus?.status === "running"
     ) {
@@ -3136,9 +2981,7 @@ const SecurityHub: React.FC = () => {
       console.error(e);
       // W3 — 402 token exhausted
       if (e instanceof ApiError && e.status === 402) {
-        toast.error(
-          "Token balance exhausted. Purchase more tokens or upgrade your plan."
-        );
+        toast.error(TOKEN_EXHAUSTED_MESSAGE);
         throw e; // still let the chain count this as a failure
       }
       if (!options?.bulk) {
@@ -3156,7 +2999,10 @@ const SecurityHub: React.FC = () => {
     // N-4: Token balance gate — block early if insufficient tokens.
     if (!canAfford("sentinel_security")) {
       toast.error(
-        `Need ~${tokensNeeded("sentinel_security").toLocaleString()} tokens (balance: ${tokenSpendable.toLocaleString()}). Purchase more tokens or upgrade your plan.`
+        tokenNeededMessage(
+          tokensNeeded("sentinel_security").toLocaleString(),
+          tokenSpendable.toLocaleString()
+        )
       );
       return;
     }
@@ -3179,18 +3025,13 @@ const SecurityHub: React.FC = () => {
       if (data.success && data.analysis) {
         setLogAnalysis(data.analysis);
       } else {
-        toast.error(
-          data.message ||
-            "Log analysis failed — ensure you have security logs and a Pro license."
-        );
+        toast.error(data.message || LOG_ANALYSIS_FAILED_MESSAGE);
       }
     } catch (e: any) {
       console.error(e);
       // W3 — 402 token exhausted
       if (e instanceof ApiError && e.status === 402) {
-        toast.error(
-          "Token balance exhausted. Purchase more tokens or upgrade your plan."
-        );
+        toast.error(TOKEN_EXHAUSTED_MESSAGE);
         return;
       }
       toast.error(
@@ -3207,7 +3048,10 @@ const SecurityHub: React.FC = () => {
     // N-4: Token balance gate — block early if insufficient tokens.
     if (!canAfford("sentinel_security")) {
       toast.error(
-        `Need ~${tokensNeeded("sentinel_security").toLocaleString()} tokens (balance: ${tokenSpendable.toLocaleString()}). Purchase more tokens or upgrade your plan.`
+        tokenNeededMessage(
+          tokensNeeded("sentinel_security").toLocaleString(),
+          tokenSpendable.toLocaleString()
+        )
       );
       return;
     }
@@ -3230,18 +3074,13 @@ const SecurityHub: React.FC = () => {
       if (data.success && data.analysis) {
         setFirewallAnalysis(data.analysis);
       } else {
-        toast.error(
-          data.message ||
-            "Firewall analysis failed — ensure you have blocked requests and a Pro license."
-        );
+        toast.error(data.message || FIREWALL_ANALYSIS_FAILED_MESSAGE);
       }
     } catch (e: any) {
       console.error(e);
       // W3 — 402 token exhausted
       if (e instanceof ApiError && e.status === 402) {
-        toast.error(
-          "Token balance exhausted. Purchase more tokens or upgrade your plan."
-        );
+        toast.error(TOKEN_EXHAUSTED_MESSAGE);
         return;
       }
       toast.error("Analysis request failed — check your connection.");
@@ -3814,39 +3653,7 @@ const SecurityHub: React.FC = () => {
                       already carries one neutral FeaturePointer (above, near
                       Update Guard) for the Free case — no second pointer
                       added here per the "one pointer per view" rule. */}
-                  {isProEditionBuild && (
-                    <div className="bg-swiss-navy/5 border-swiss-navy/10 rounded-xl border p-3">
-                      <p className="text-swiss-navy mb-1 text-xs font-black tracking-widest uppercase">
-                        Upgrade for Full Protection
-                      </p>
-                      <ul className="mb-2 space-y-0.5">
-                        {[
-                          "28+ SQLi + comment injection bypass",
-                          "40+ XSS + all event handler attacks",
-                          "Multi-layer encoding bypass detection",
-                        ].map((f) => (
-                          <li
-                            key={f}
-                            className="flex items-start gap-1.5 text-xs text-neutral-500"
-                          >
-                            <Lock
-                              size={9}
-                              className="text-swiss-navy/40 mt-0.5 shrink-0"
-                            />{" "}
-                            {f}
-                          </li>
-                        ))}
-                      </ul>
-                      <a
-                        href="https://swisswpsecure.com/#pricing"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-swiss-navy inline-flex items-center gap-1 text-xs font-black tracking-widest uppercase hover:underline"
-                      >
-                        Upgrade to Security Plan →
-                      </a>
-                    </div>
-                  )}
+                  {isProEditionBuild && <WafUpsellCard />}
                 </div>
               )}
             </div>
@@ -4183,22 +3990,7 @@ const SecurityHub: React.FC = () => {
               </div>
             </div>
           )}
-          {isProEditionBuild && !hasSecurity && (
-            <div className="glass-panel premium-card mt-4 p-6 opacity-60 transition-all">
-              <div className="mb-4">
-                <h3 className="text-swiss-navy mb-1 flex items-center gap-2 text-xs font-black tracking-widest uppercase">
-                  AI Log Analysis
-                  <Badge className="bg-muted text-muted-foreground border-border text-xs font-black tracking-widest uppercase">
-                    PRO
-                  </Badge>
-                </h3>
-                <p className="text-sm font-medium text-neutral-500">
-                  Analyzes your existing log data with AI — no new scan.
-                  Requires a plan that includes Security.
-                </p>
-              </div>
-            </div>
-          )}
+          {isProEditionBuild && !hasSecurity && <AiLogAnalysisLockedCard />}
 
           {/* Scan summary card — shown after any scan completes, on Dashboard tab */}
           {sentinelReport && (
@@ -4266,6 +4058,23 @@ const SecurityHub: React.FC = () => {
             onPreviewEmail={handleOpenPreview}
           />
 
+          {/* ── Package E / G2 Scan UI Consolidation (2026-08-13) ──────────
+              Layer 1 — merged card. D1 (owner-locked design,
+              OWNER_BACKLOG_2026-08-09_SOCRATIC_QUEUE.md §G): the former
+              separate "Security Audit" and "Malware Scan" cards are merged
+              into this ONE card. On Free, both old cards called the
+              LITERAL SAME subroutine (quick_signature_scan(100)) — the
+              merge is a UI consolidation of a pre-existing backend overlap,
+              not a behavior change. ai-audit's Free path already ALSO runs
+              the posture check (calculate_compatibility()) that the old
+              standalone Malware Scan card never did — so nothing is lost by
+              dropping that separate card. On Pro this card auto-runs the
+              richer Sentinel L1-L4 path it already used (unchanged).
+              scanType stays "ai-audit" — same route
+              (POST /security/scan/ai-audit), same result shape, same
+              history/consumer wiring (ScanHistoryTable, safelist sheet,
+              quarantine) as before the merge; only the label/copy and the
+              disappearance of the separate malware card changed. */}
           <ScanCard
             scanType="ai-audit"
             tier={currentTier}
@@ -4274,24 +4083,29 @@ const SecurityHub: React.FC = () => {
             result={aiAuditResult}
             config={scanReportConfig}
           />
-          {/* Upsell redesign (2026-08-04, T2/T5) — applies to all 3
-              ScanResultPanel instances below (ai-audit/malware/deep-malware):
-              hasSentinelPro gates the "Check with AI" / Analyze action, which
-              calls /security/analyze-file — registered ONLY in the Pro build
-              (F2, api-security.php ~:251-263). Combined with isProEditionBuild
-              so a stale/cached Free-session capability can never enable a
-              control whose backing route is physically absent, matching the
-              same fail-safe contract lib/edition.ts documents for every other
-              paid-capability gate in this file. canRemediate is now
+          {/* Upsell redesign (2026-08-04, T2/T5), re-verified unchanged by
+              Package E / T2 (2026-08-13): hasSentinelPro gates the
+              "Check with AI" / Analyze action, which calls
+              /security/analyze-file — registered ONLY in the Pro build
+              (F2, api-security.php ~:251-263) on the 'waf' capability
+              (Security plan + Full Suite only — D2). Combined with
+              isProEditionBuild so a stale/cached Free-session capability can
+              never enable a control whose backing route is physically
+              absent. On Free, isProEditionBuild is always false by
+              construction (the Free zip has no Pro code), so this renders a
+              plain disabled Lock-icon button with NO Pro-only copy — no
+              inline `isProEditionBuild && (<Pro copy>)` JSX shape exists
+              here (the exact regression class B12b checks for), and the
+              actual "some options require AI" explanation lives on the
+              neutral FeaturePointer below (settings-screen upsell surface,
+              2026-08-03 ruling compliant) — not scattered inline. Verified
+              end-to-end against the backend: /security/analyze-file's own
+              permission callback checks `check_capability('waf')` in
+              api-security.php (unchanged by this session). canRemediate is
               unconditionally true: quarantine/delete are a FREE-tier
               capability (class-swisswpsuite-api-security.php:1814-1817,
               class-swisswpsuite-security-quarantine.php:48-58) — the backend
-              already accepts these calls on Free. Previously this passed the
-              *paid-plan* `hasSentinelPro` local (sentinelCredits.is_pro /
-              sentinelIsPro), which wrongly locked a free capability behind a
-              paid-plan flag (L1 register §2.1). Distinct from the
-              hasSentinelPro PROP, which correctly keeps gating the separate
-              AI action. */}
+              already accepts these calls on Free. */}
           <ScanResultPanel
             scanType="ai-audit"
             result={aiAuditResult}
@@ -4318,29 +4132,27 @@ const SecurityHub: React.FC = () => {
             />
           )}
 
-          <ScanCard
-            scanType="malware"
-            tier={currentTier}
-            onTrigger={() => handleTriggerScan("malware")}
-            isLoading={malwareLoading}
-            result={malwareResult}
-          />
-          <ScanResultPanel
-            scanType="malware"
-            result={malwareResult}
-            isLoading={malwareLoading}
-            onViewHistory={handleViewScanInHistory}
-            onMarkSafe={handleMarkMalwareSafe}
-            onBulkAction={handleScanPanelBulkAction}
-            onAnalyze={handleAiAnalyze}
-            analyzingFile={analyzingFile}
-            hasSentinelPro={isProEditionBuild && hasSecurity}
-            canRemediate={true}
-          />
+          {/* The standalone "Malware Scan" ScanCard + ScanResultPanel
+              (scanType="malware") were REMOVED here by the Layer 1 merge
+              above (D1). The `/security/scan/malware` route stays
+              registered per rule 0.4 (no backend route removal) —
+              `handleTriggerScan`'s "malware" branch, `malwareResult`,
+              `malwareLoading`, and `handleMarkMalwareSafe` are all left
+              in place because `handleMarkMalwareSafe` and `malwareResult`
+              are still consumed by the Layer 2 (deep-malware) ScanResultPanel
+              below, which returns the same MalwareScanResult shape. The
+              "malware" scanType dispatch branch itself has no remaining UI
+              caller after this merge — flagged in this session's FLAGS
+              section as a new dead-code candidate for a future owner-signed
+              cleanup pass (not deleted here — CLAUDE.md's two-proof dead-
+              code rule applies to REMOVALS, and this session already
+              removed the only reachable trigger deliberately as part of
+              the owner-locked D1 merge, which is a different action than
+              declaring pre-existing code dead). */}
 
-          {/* v2.9.29.0 — Deep Malware Scan replaces the Full AI Scan card.
-              The async pipeline subsumes Full AI's L1+L2 with the addition
-              of VPS hash, WPScan, and Patchstack phases.
+          {/* v2.9.29.0 — Deep Malware Scan (Layer 2) replaces the Full AI
+              Scan card. The async pipeline subsumes Full AI's L1+L2 with
+              the addition of VPS hash, WPScan, and Patchstack phases.
               WP.org round-3 (Sprint W2/T7, 2026-07-26): the `locked`
               override (previously `!hasSecurity`) and its "Requires
               Security Plan" copy were REMOVED — Sprint W1 de-gated
@@ -4367,7 +4179,11 @@ const SecurityHub: React.FC = () => {
               pipeline is genuinely AI-backed (its final phase is
               ai_analysis and SCAN_DESCRIPTIONS already says "consumes AI
               tokens"), unlike the "edition" pointer used elsewhere on the
-              dashboard sub-tab for non-AI Pro features. */}
+              dashboard sub-tab for non-AI Pro features.
+              Package E / D3 (2026-08-13): re-presented as "Layer 2" — copy/
+              naming only (scanConstants.ts), gating below is BYTE-
+              EQUIVALENT to before this session (isProEditionBuild condition
+              unchanged, route registration untouched). */}
           {isProEditionBuild && (
             <>
               <ScanCard
@@ -5014,16 +4830,12 @@ const SecurityHub: React.FC = () => {
         previewHtml={previewHtml}
       />
 
-      {/* Module 5 Consent Modal — shown before Full Sentinel Scan (active probes) */}
-      <SentinelM5ConsentModal
-        isOpen={showM5Consent}
-        siteUrl={homeUrl || window.location.origin}
-        onConsent={() => {
-          setShowM5Consent(false);
-          runSentinelFullScan(true);
-        }}
-        onCancel={() => setShowM5Consent(false)}
-      />
+      {/* T4 (Package E / G2 dead-path removal, 2026-08-13): the Module 5
+          Consent Modal render (<SentinelM5ConsentModal>) that used to sit
+          here was DELETED — `setShowM5Consent(true)` had zero call sites
+          anywhere in the tree, so this modal could never open. See the
+          two-proof verification comment above runSentinelFullScan's
+          deletion site. */}
 
       {/* Confirm Dialog */}
       {confirmDialog && (

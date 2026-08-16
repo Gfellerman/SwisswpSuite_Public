@@ -19,12 +19,7 @@ export type ViewState =
   | "license";
 
 export type ContentType =
-  | "product"
-  | "post"
-  | "page"
-  | "image"
-  | "template"
-  | "all";
+  "product" | "post" | "page" | "image" | "template" | "all";
 
 export interface ContentItem {
   id: number;
@@ -110,8 +105,35 @@ export interface SeoScanDetailEntry {
   excluded_thin_content?: number;
 }
 
+/**
+ * G1 (2026-08-11, owner Option A — one canonical SEO score): the three
+ * labeled sub-scores of the shared formula (PHP:
+ * class-swisswpsuite-seo-score-calculator.php). Identical shape returned by
+ * both /stats (Dashboard tile) and /seo/scan (SEO tab Health Audit).
+ */
+export interface SeoBreakdown {
+  on_page: number;
+  technical: number;
+  content: number;
+}
+
 /** Response from /seo/scan endpoint */
 export interface SeoScanResult {
+  /**
+   * G1 — THE canonical SEO score (2026-08-11). Identical value to /stats's
+   * seo_score for the same site state — this is the number the Health Audit
+   * modal's headline must display, not `score` below.
+   */
+  seo_score: number;
+  /** Labeled sub-scores of `seo_score` — render as sub-scores, never as a competing headline. */
+  seo_breakdown: SeoBreakdown;
+  /** Ceiling for `seo_score` if every fixable item were fixed. */
+  max_achievable_seo_score: number;
+  /**
+   * Legacy content+image "optimization completion" sub-metric — PRESERVED
+   * for `details`/ceiling-UI backward compatibility. No longer the page's
+   * headline number as of G1 (2026-08-11) — use `seo_score` for that.
+   */
   score: number;
   max_achievable_score: number;
   total_items: number;
@@ -353,10 +375,10 @@ export interface TokenPortfolio {
   licenses: PortfolioLicense[];
 }
 
-export interface TrialStatus {
-  active: boolean;
-  ends_at: string | null;
-}
+// E3 (2026-08-13): `TrialStatus` was REMOVED here — it was already a dead duplicate of
+// vite-env.d.ts's own (now also removed) `TrialStatus`, with zero importers anywhere in
+// plugin/src/ or plugin/tests/ even before the trial-tier decommission (H1_DEAD_CODE_AUDIT
+// _2026-08-11.md §G.10). Part of the same decommission — see that report §G for the map.
 
 // Global Window declaration removed to avoid conflict with vite-env.d.ts
 // Use src/vite-env.d.ts as the source of truth for Window augmentation.
@@ -367,18 +389,11 @@ export interface TrialStatus {
 
 export interface SentinelThreatModel {
   most_likely_attacker:
-    | "opportunistic_bot"
-    | "script_kiddie"
-    | "targeted_attacker"
-    | "apt";
+    "opportunistic_bot" | "script_kiddie" | "targeted_attacker" | "apt";
   primary_motivation: string;
   time_to_compromise_without_plugin: "hours" | "days" | "weeks" | "months";
   time_to_compromise_with_plugin:
-    | "hours"
-    | "days"
-    | "weeks"
-    | "months"
-    | "unlikely";
+    "hours" | "days" | "weeks" | "months" | "unlikely";
 }
 
 export interface SentinelAttackChain {
@@ -516,12 +531,7 @@ export type SentinelReport = SentinelLayer1Report | SentinelLayer2Report;
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type SentinelJobStatus =
-  | "pending"
-  | "running"
-  | "stalled"
-  | "abandoned"
-  | "error"
-  | "unknown";
+  "pending" | "running" | "stalled" | "abandoned" | "error" | "unknown";
 
 export type SyncItemType = "post" | "page" | "product" | "template";
 
@@ -595,12 +605,7 @@ export interface ScanHistoryRecord {
    * records continue to render correctly after the 3-Scan Redesign rollout.
    */
   scan_type:
-    | "layer1"
-    | "layer1_only"
-    | "full"
-    | "ai_audit"
-    | "full_ai"
-    | "malware_deep";
+    "layer1" | "layer1_only" | "full" | "ai_audit" | "full_ai" | "malware_deep";
   security_grade: "A" | "B" | "C" | "D" | "F" | null;
   findings_count: number;
   critical_count: number;
@@ -1018,12 +1023,7 @@ export interface ImportStatus {
   stall_count: number;
   /** Raw Sentinel job status string from receiver. */
   job_status:
-    | "pending"
-    | "running"
-    | "stalled"
-    | "abandoned"
-    | "error"
-    | "unknown";
+    "pending" | "running" | "stalled" | "abandoned" | "error" | "unknown";
   job_started_at: number;
   /** Seconds since last Sentinel heartbeat. -1 if no job found. */
   last_heartbeat_ago: number;

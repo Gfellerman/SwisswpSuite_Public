@@ -6,7 +6,7 @@
 
 import { ReactNode } from "react";
 import { Card } from "../../ui/Card";
-import { isProEdition } from "../../../lib/edition";
+import { SETTINGS_API_TAB_LABEL } from "./settingsApiTabLabel";
 
 interface SettingsLayoutProps {
   children: ReactNode;
@@ -23,9 +23,12 @@ export function SettingsLayout({
   // panel (ApiConfig.tsx) but, in Free, is now the consolidated "Editions &
   // AI" informational section (EditionsAiInfo.tsx) — label reflects which
   // one actually renders. See SettingsPage.tsx's "api" tab branch.
+  // v2.9.33.18 (WP.org string census closure, R5): label now comes from the
+  // build-time-aliased settingsApiTabLabel module instead of a runtime
+  // isProEdition() ternary — see that module's docblock for why.
   const tabs = [
     { id: "general", label: "General" },
-    { id: "api", label: isProEdition() ? "AI Configuration" : "Editions & AI" },
+    { id: "api", label: SETTINGS_API_TAB_LABEL },
     { id: "security", label: "Security" },
     { id: "seo", label: "SEO" },
     { id: "license", label: "License" },

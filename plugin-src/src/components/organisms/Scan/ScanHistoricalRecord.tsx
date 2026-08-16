@@ -2,6 +2,7 @@ import React from "react";
 import { History, X, CheckCircle2 } from "lucide-react";
 import { ScanHistoryDetail } from "../../../types";
 import { SentinelGradeBadge } from "../Sentinel/SentinelGradeBadge";
+import { HISTORY_LABEL_FULL_SCAN_AI } from "./scanConstants.pro";
 
 export interface ScanHistoricalRecordProps {
   historicalScanDetail: ScanHistoryDetail;
@@ -68,7 +69,7 @@ export function ScanHistoricalRecord({
                 ? "AI Audit"
                 : historicalScanDetail.record.scan_type === "full" ||
                     historicalScanDetail.record.scan_type === "full_ai"
-                  ? "Full Scan + AI"
+                  ? HISTORY_LABEL_FULL_SCAN_AI
                   : "Quick Scan"}{" "}
               · {historicalScanDetail.record.findings_count ?? 0} findings ·{" "}
               {historicalScanDetail.record.critical_count ?? 0} critical

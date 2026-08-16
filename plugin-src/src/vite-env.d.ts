@@ -31,10 +31,11 @@ interface TokenStatus {
   usage: number;
 }
 
-interface TrialStatus {
-  active: boolean;
-  ends_at: string | null;
-}
+// E3 (2026-08-13): `TrialStatus` and the `trial` field on `SwissWPSuiteData` below were
+// REMOVED as part of the trial-tier decommission — the PHP injector that populated
+// `window.swisswpsuiteData.trial` was removed (class-swisswpsuite-admin.php), so declaring
+// this field here would describe data that is never actually sent. See
+// .claude/audit-reports/H1_DEAD_CODE_AUDIT_2026-08-11.md §G.10.
 
 interface SwissWPSuiteData {
   root: string;
@@ -52,7 +53,6 @@ interface SwissWPSuiteData {
   version: string;
   isStandalone: boolean;
   license: LicenseStatus;
-  trial: TrialStatus;
   tokens: TokenStatus;
   hasAdvancedWaf: boolean;
   sentinelIsPro: boolean;

@@ -36,6 +36,7 @@ import { Button } from "../../ui/Button";
 import { HardeningOption, PreToggleCheckResult } from "../../../types";
 import { HardeningConfirmDialog } from "./HardeningConfirmDialog";
 import { FREE_HARDENING_KEYS } from "../../../constants/hardening";
+import { lockedToggleAriaLabel } from "./hardeningProCopy";
 
 // ---------------------------------------------------------------------------
 // Risk helpers
@@ -145,7 +146,7 @@ const HardeningOptionCard: React.FC<HardeningOptionCardProps> = ({
           <div
             role="switch"
             aria-checked={false}
-            aria-label={`${opt.label} — Pro required`}
+            aria-label={lockedToggleAriaLabel(opt.label)}
             aria-disabled="true"
             tabIndex={0}
             className="h-6 w-12 cursor-not-allowed rounded-full bg-neutral-300 p-1 ring-1 ring-neutral-400 transition-all duration-300 ring-inset"

@@ -4,7 +4,26 @@
  * Central source of truth for scan-type identifiers, labels, descriptions,
  * and tier requirements. Consumed by ScanCard, ScanResultPanel, and any
  * future scan-related UI that needs to reference these values.
+ *
+ * WP.org B12a residual closure (2026-08-13, v2.9.33.17): the "full-ai" and
+ * "deep-malware" entries of SCAN_LABELS/SCAN_DESCRIPTIONS below used to be
+ * inline literals here. Because this module is imported unconditionally by
+ * ScanCard.tsx (which also renders the legitimately-free "ai-audit"/
+ * "malware" cards), those Pro-descriptive strings compiled into the Free
+ * bundle regardless of the runtime isProEditionBuild gate at their
+ * SecurityHub.tsx call sites. Extracted into the sibling
+ * `scanConstants.pro.ts` module (aliased to `scanConstants.pro.freeStub.ts`
+ * in the Free build via vite.config.ts) — see that file's docblock for the
+ * full mechanism. "ai-audit"/"malware" copy stays here (genuinely free in
+ * both editions); SCAN_TYPES/SCAN_TIER stay here too (dispatch data, not
+ * descriptive copy).
  */
+import {
+  PRO_SCAN_LABELS,
+  PRO_SCAN_DESCRIPTIONS,
+  AI_AUDIT_DESCRIPTION,
+  MALWARE_DESCRIPTION,
+} from "./scanConstants.pro";
 
 // ── Scan type discriminant union ────────────────────────────────────────────
 
@@ -28,39 +47,55 @@ export type ScanTypeValue = (typeof SCAN_TYPES)[keyof typeof SCAN_TYPES];
 
 // ── Human-readable labels ────────────────────────────────────────────────────
 
+// Package E / G2 Scan UI Consolidation (2026-08-13, owner-locked design —
+// docs/reports/OWNER_BACKLOG_2026-08-09_SOCRATIC_QUEUE.md §G, D1/D3):
+//   - "ai-audit" is now the merged Layer 1 card. It already ran BOTH the
+//     signature scan AND the posture check on Free (that overlap is exactly
+//     why the old separate "Malware Scan" card was redundant — see D1's
+//     rationale and the removed ScanCard/ScanResultPanel render in
+//     SecurityHub.tsx). Relabeled from "Security Audit" to "Layer 1 Scan"
+//     — plain-English, no internal jargon, while keeping the owner's
+//     "Layer 1" framing visible. FINAL COPY FLAGGED FOR OWNER REVIEW.
+//   - "deep-malware" is re-presented per D3 as "Layer 2" — same Pro-only
+//     gating, same pipeline, copy-only change: its existing ai_analysis
+//     phase already is "automatic AI verification of results", which the
+//     new label/description now say explicitly instead of leaving it
+//     implicit. FINAL COPY FLAGGED FOR OWNER REVIEW.
+//   - "malware" and "full-ai" entries are PRESERVED in this map (their
+//     scanType strings are still structurally referenced — see
+//     ScanCard.tsx's shared "malware"|"deep-malware" result-shape branch —
+//     and full-ai's SCAN_TYPES.FULL_AI union member is deleted separately in
+//     the T4 dead-path removal, not here) but no ScanCard/ScanResultPanel
+//     instance renders "malware" as its own card anymore.
+//   - "full-ai"/"deep-malware" VALUES now come from the sibling
+//     scanConstants.pro.ts module (empty strings in the Free build via its
+//     .freeStub.ts alias) — see this file's top docblock, 2026-08-13.
 export const SCAN_LABELS: Record<ScanTypeValue, string> = {
-  "ai-audit": "Security Audit",
+  "ai-audit": "Layer 1 Scan",
   malware: "Malware Scan",
-  "full-ai": "Full AI Scan",
-  "deep-malware": "Deep Malware Scan",
+  ...PRO_SCAN_LABELS,
 };
 
 // ── Plain-English descriptions shown in the ScanCard ────────────────────────
 
 // v2.9.28.04 (Issue 3): descriptions were rewritten so users can tell at a glance
-// what each scan actually checks. The old wording overlapped — Security Audit said
-// "checks file integrity" and Malware Scan said "scans files for signatures", which
-// made users expect the same finding count from both. They check different things:
-//   - Security Audit  → POSTURE (config, headers, hardening, users, plugins/themes
-//                       metadata) PLUS basic file-signature checks on PHP files in
-//                       plugins, themes, and uploads using a curated signature list.
-//                       Catches known webshells and high-confidence obfuscation patterns.
-//   - Malware Scan    → FILES (signature scan of up to 100 PHP files — fast, bounded).
-//   - Deep Malware    → FILES (5,000+ files, VPS hash database, CVE lookups, AI analysis).
-// The Security Audit file-signature check is intentionally lightweight — it flags
-// obvious threats (eval+base64, webshell names, heavily obfuscated payloads). For
-// exhaustive file coverage use Deep Malware Scan.
-// It is normal for Security Audit to grade A while Malware Scan reports modified
-// core files — they audit different layers of the site.
+// what each scan actually checks.
+// v2.9.33.16 (Package E / G2, 2026-08-13): "ai-audit" description rewritten to
+// describe the MERGED Layer 1 card (signature scan + posture check, both
+// kept per D1) instead of posture-only. "deep-malware" description rewritten
+// to explicitly name the automatic AI verification step per D3's
+// re-presentation ("deep scan with automatic AI verification of results").
+// "full-ai"/"deep-malware" VALUES now come from the sibling
+// scanConstants.pro.ts module (empty strings in the Free build via its
+// .freeStub.ts alias) — see this file's top docblock, 2026-08-13.
+// v2.9.33.18 (WP.org string-census closure, R3): "ai-audit"/"malware" VALUES
+// now come from the sibling scanConstants.pro.ts module (truncated,
+// Layer-2-reference-free text in the Free build via its .freeStub.ts alias)
+// — see that file's docblock for the full mechanism.
 export const SCAN_DESCRIPTIONS: Record<ScanTypeValue, string> = {
-  "ai-audit":
-    "Audits your security POSTURE: configuration, headers, user accounts, hardening settings, plugin/theme metadata, and basic file-signature checks on PHP files in plugins, themes, and uploads. Grades how the site is set up. For a comprehensive deep malware scan (5,000+ files, VPS hash database), use the Deep Malware Scan. Runs entirely on your server — no AI, no tokens, no API key, and no license required. Runs automatically every 24 hours.",
-  malware:
-    "Bounded signature scan of up to 100 PHP files in plugins, themes, and uploads — under 30 seconds on most sites. Free tier. For a comprehensive deep scan with VPS hash database, CVE lookups, and AI analysis, use the Deep Malware Scan below.",
-  "full-ai":
-    "Security Audit plus an AI-powered deep pass: CVE database matching, attack-chain analysis, and cross-correlation across layers. Highest accuracy; consumes more AI tokens. Pro only.",
-  "deep-malware":
-    "Comprehensive malware scan: enumerates every PHP file in plugins, themes, and uploads, then runs them through the SwissSuite VPS hash database, local signature scan, WPScan and Patchstack CVE lookups, and final AI analysis with an A–F grade. Multi-minute scan; consumes AI tokens. Pro only.",
+  "ai-audit": AI_AUDIT_DESCRIPTION,
+  malware: MALWARE_DESCRIPTION,
+  ...PRO_SCAN_DESCRIPTIONS,
 };
 
 // ── Tier requirements ────────────────────────────────────────────────────────

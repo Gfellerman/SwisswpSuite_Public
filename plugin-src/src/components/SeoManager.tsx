@@ -244,32 +244,65 @@ const SeoManager: React.FC = () => {
                 </div>
               ) : scanResult ? (
                 <div className="space-y-8">
-                  {/* Score + Realistic Ceiling */}
+                  {/* Score + Realistic Ceiling — G1 (2026-08-11, owner Option A):
+                      `seo_score` is now THE canonical SEO score, identical to
+                      the Dashboard tile's number for the same site state.
+                      `score`/`max_achievable_score` (used before this fix)
+                      are preserved server-side as a distinct "content
+                      optimization completion" sub-metric — no longer shown
+                      as the headline, to avoid two competing numbers on
+                      this page. */}
                   <div className="glass-panel bg-background/50 flex items-center justify-between rounded-3xl p-6">
                     <div>
                       <div className="text-swiss-navy text-4xl font-black">
-                        {scanResult.score}
+                        {scanResult.seo_score}
                         <span className="text-foreground text-xl">/100</span>
                       </div>
                       <div className="mt-2 text-xs font-black tracking-widest text-neutral-700 uppercase">
                         Overall SEO Score
                       </div>
-                      {scanResult.score < 100 &&
-                        scanResult.max_achievable_score < 100 && (
+                      {scanResult.seo_score < 100 &&
+                        scanResult.max_achievable_seo_score < 100 && (
                           <div className="mt-1 text-[11px] font-medium text-neutral-500">
                             Realistic ceiling:{" "}
                             <span className="text-swiss-navy font-black">
-                              {scanResult.max_achievable_score}
+                              {scanResult.max_achievable_seo_score}
                             </span>
                             /100 given site content
                           </div>
                         )}
                     </div>
                     <div
-                      className={`flex h-16 w-16 items-center justify-center rounded-2xl ${scanResult.score >= 80 ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}
+                      className={`flex h-16 w-16 items-center justify-center rounded-2xl ${scanResult.seo_score >= 80 ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}
                     >
                       <PieChart size={32} />
                     </div>
+                  </div>
+
+                  {/* Sub-scores of the one canonical formula (G1) — clearly
+                      labeled, never presented as a second/competing "SEO
+                      score". Same three dimensions the Dashboard tile shows. */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {(
+                      [
+                        ["on_page", "On-Page"],
+                        ["technical", "Technical"],
+                        ["content", "Content"],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <div
+                        key={key}
+                        className="bg-secondary rounded-2xl p-4 text-center"
+                      >
+                        <div className="text-swiss-navy text-xl font-black">
+                          {scanResult.seo_breakdown[key]}
+                          <span className="text-foreground text-xs">%</span>
+                        </div>
+                        <div className="mt-1 text-[10px] font-black tracking-widest text-neutral-500 uppercase">
+                          {label}
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Category breakdown — RB-305: use `actionable` count when present, fall back to `missing` */}

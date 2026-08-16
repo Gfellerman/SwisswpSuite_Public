@@ -238,7 +238,9 @@ SwissWPSecure Sàrl
 Le Moulin 3, 1312 Éclépens, Switzerland
 Data Protection Contact: support@swisswpsecure.com
 
-**Current Sub-Processor list:** https://swisswpsecure.com/legal/sub-processors
+**Current Sub-Processor list:** see Section 3.4.2 of this document, which is the authoritative
+list. Changes are notified to the Controller by email at least 30 days in advance under
+Section 3.4.3.
 
 ---
 
