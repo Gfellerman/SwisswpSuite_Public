@@ -1681,7 +1681,7 @@ const SecurityHub: React.FC = () => {
       })
       .catch((e) => {
         console.error(
-          "[SwissWP] handleViewScanInHistory history fetch failed:",
+          "[SwissSuite] handleViewScanInHistory history fetch failed:",
           e
         );
       });
@@ -2149,7 +2149,7 @@ const SecurityHub: React.FC = () => {
         setIdentityValid(false);
       }
     } catch (e) {
-      console.error("[SwissWP] fetchSentinelStatus failed:", e);
+      console.error("[SwissSuite] fetchSentinelStatus failed:", e);
     }
   };
 
@@ -2232,7 +2232,7 @@ const SecurityHub: React.FC = () => {
       }
     } catch (e) {
       // Silently swallow — missing scan history is normal on first install.
-      console.error("[SwissWP] fetchLatestScanReport failed:", e);
+      console.error("[SwissSuite] fetchLatestScanReport failed:", e);
     }
   };
 
@@ -2245,7 +2245,7 @@ const SecurityHub: React.FC = () => {
         setScanHistory(data.history);
       }
     } catch (e) {
-      console.error("[SwissWP] fetchScanHistory failed:", e);
+      console.error("[SwissSuite] fetchScanHistory failed:", e);
     }
   };
 
@@ -2267,7 +2267,7 @@ const SecurityHub: React.FC = () => {
         toast.error("Failed to load scan record.");
       }
     } catch (e) {
-      console.error("[SwissWP] fetchScanRecord failed:", e);
+      console.error("[SwissSuite] fetchScanRecord failed:", e);
       toast.error("Failed to load scan record.");
     } finally {
       setLoadingHistoricalScanId(null);

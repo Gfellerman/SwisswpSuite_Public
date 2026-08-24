@@ -953,8 +953,8 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
             </div>
             <p className="text-muted-foreground mt-1 text-xs">
               {form.start_time
-                ? `First run at ${form.start_time} (your site's local time). Leave this blank to let SwissWPSuite pick a start time automatically.`
-                : "Leave blank to let SwissWPSuite pick a start time automatically, or set one so backups always begin around the same time of day."}
+                ? `First run at ${form.start_time} (your site's local time). Leave this blank to let SwissSuite AI pick a start time automatically.`
+                : "Leave blank to let SwissSuite AI pick a start time automatically, or set one so backups always begin around the same time of day."}
             </p>
           </div>
 

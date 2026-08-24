@@ -198,10 +198,10 @@ export function DashboardLayout() {
             {!isSidebarCollapsed && (
               <div className="flex flex-col">
                 <span className="dark:text-foreground text-lg leading-none font-extrabold tracking-tight text-neutral-900">
-                  SWISS<span className="text-swiss-red">WP</span>
+                  SWISS<span className="text-swiss-red">SUITE</span>
                 </span>
                 <span className="mt-1 items-center text-xs font-bold tracking-[0.2em] text-neutral-700 uppercase">
-                  SECURE SUITE
+                  AI SECURITY SUITE
                 </span>
               </div>
             )}

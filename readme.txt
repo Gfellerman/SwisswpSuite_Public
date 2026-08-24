@@ -4,7 +4,7 @@ Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.9.33.36
+Stable tag: 2.9.33.37
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -103,7 +103,7 @@ For full details on what data is transmitted and your rights, see our Privacy Po
 
 == Changelog ==
 
-= 2.9.33.36 =
-* WP.org review round: the license/billing/AI-token client is physically absent from the free package (no license key, account, or plan code ships); root .htaccess is never modified; sitemap and SEO meta/title output are opt-in; restores keep working with re-saved encryption passwords; phantom scheduled events removed; backup retention, the 100 MB per-file skip, scanner exclusions, and security-log retention are now disclosed and configurable.
+= 2.9.33.37 =
+* Live-QA fix round: sitemap/llms.txt toggles now purge the page cache so changes apply immediately; backup engine no longer loses progress under retry races; cancelling a backup can no longer affect the next one; backup downloads work reliably on object-cache hosts; product branding unified as SwissSuite AI.
 
 For the full version history, see CHANGELOG.md in the plugin folder or https://github.com/Gfellerman/SwisswpSuite_Public/blob/main/CHANGELOG.md

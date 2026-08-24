@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.37] - 2026-08-24
+
+### Fixed
+- Sitemap / llms.txt toggles: the page cache is now purged when the setting changes (and again after the deferred rewrite flush, bypassing the purge rate-limit for that one scheduled call) — toggling takes effect immediately instead of serving the stale cached response.
+- Backup engine: a retry race could overwrite live job progress with a stale snapshot; state writes now re-read and merge before persisting.
+- Backup cancel: a legacy cancel flag could leak into the next job, silently cancelling it at birth; cancellation is now anchored to the run that requested it.
+- Backup download: the one-time download token is stored durably (no longer lost to object-cache transient eviction) and is single-use with scheduled cleanup.
+
+### Changed
+- Branding unified as SwissSuite AI: the sidebar wordmark, admin page title, and remaining interface strings no longer show "SwissWP"-style names.
+
 ## [2.9.33.36] - 2026-08-24
 
 ### Changed

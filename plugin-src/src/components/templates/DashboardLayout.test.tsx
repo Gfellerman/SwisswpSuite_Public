@@ -118,3 +118,53 @@ describe("DashboardLayout — Free-edition License Tier badge removal (D-K-3)", 
     expect(screen.getByText("Sentinel Pro")).toBeInTheDocument();
   });
 });
+
+describe("DashboardLayout — sidebar wordmark rebrand (ARS Round D, D-K-8; owner ruling 2026-08-24: 'SwissWP…' rendering risks confusion with the swisswpsecure.com company trademark)", () => {
+  afterEach(() => {
+    cleanup();
+    delete (window as any).swisswpsuiteData;
+  });
+
+  it("renders the SwissSuite AI wordmark and no SwissWP token — Free edition", () => {
+    (window as any).swisswpsuiteData = {
+      edition: "free",
+      isStandalone: false,
+      license: {
+        tier: "free",
+        tier_name: "Free",
+        capabilities: [],
+      },
+    };
+
+    const { container } = renderLayout();
+
+    // Text is split across two adjacent DOM nodes (`SWISS` + a nested
+    // `<span>SUITE</span>`), so testing-library's default per-node text
+    // matcher (direct text-node children only) would see "SWISS" and
+    // "SUITE" as two separate node texts rather than one combined string —
+    // assert on the full recursive textContent instead of getByText.
+    expect(container.textContent).toContain("SWISSSUITE");
+    expect(container.textContent).toContain("AI SECURITY SUITE");
+    expect(container.textContent).not.toMatch(/SWISSWP/i);
+    expect(container.textContent).not.toMatch(/SECURE SUITE/i);
+  });
+
+  it("renders the SwissSuite AI wordmark and no SwissWP token — Pro edition", () => {
+    (window as any).swisswpsuiteData = {
+      edition: "pro",
+      isStandalone: false,
+      license: {
+        tier: "sentinel_pro",
+        tier_name: "Sentinel Pro",
+        capabilities: [],
+      },
+    };
+
+    const { container } = renderLayout();
+
+    expect(container.textContent).toContain("SWISSSUITE");
+    expect(container.textContent).toContain("AI SECURITY SUITE");
+    expect(container.textContent).not.toMatch(/SWISSWP/i);
+    expect(container.textContent).not.toMatch(/SECURE SUITE/i);
+  });
+});
