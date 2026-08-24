@@ -47,18 +47,18 @@ See [ASSET_BRIEF.md](ASSET_BRIEF.md) for the full production spec for each file.
 
 ```bash
 # Check out your plugin's SVN repository
-svn checkout https://plugins.svn.wordpress.org/nicolaiapp-security-backup-seo-suite/ ~/wpsvn/nicolaiapp-security-backup-seo-suite
-cd ~/wpsvn/nicolaiapp-security-backup-seo-suite
+svn checkout https://plugins.svn.wordpress.org/swisssuite-ai/ ~/wpsvn/swisssuite-ai
+cd ~/wpsvn/swisssuite-ai
 ```
 
 > **Slug note (2026-08-16):** the Free edition's WordPress.org slug is
-> `nicolaiapp-security-backup-seo-suite`, not `swisssuite-ai`. The SVN repository only
+> `swisssuite-ai` (reviewer-reassigned 2026-08-22). The SVN repository only
 > exists once the plugin has been approved — until then these commands will 404.
 
 ### Adding assets
 
 ```bash
-cd ~/wpsvn/nicolaiapp-security-backup-seo-suite/assets/
+cd ~/wpsvn/swisssuite-ai/assets/
 
 # Copy your finished files here
 cp /path/to/banner-772x250.png .
@@ -77,7 +77,7 @@ svn commit -m "Add directory assets: banner, icon, screenshots"
 ### Updating existing assets
 
 ```bash
-cd ~/wpsvn/nicolaiapp-security-backup-seo-suite/assets/
+cd ~/wpsvn/swisssuite-ai/assets/
 cp /path/to/updated-file.png .
 svn commit -m "Update screenshot-3: refreshed WAF log state"
 ```

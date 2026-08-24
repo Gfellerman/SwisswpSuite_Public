@@ -1,6 +1,6 @@
 # SwissSuite AI - WordPress Security & Backup Plugin
 
-**Version:** 2.9.33.21
+**Version:** 2.9.33.36
 **Requires WordPress:** 6.2+
 **Tested up to:** 7.0
 **Requires PHP:** 7.4+
@@ -11,7 +11,7 @@ SwissSuite AI ships as two separate, independently distributed plugins built fro
 
 | Edition | Slug | Where to get it | What it is |
 | :--- | :--- | :--- | :--- |
-| **SwissSuite AI** (Free) | `nicolaiapp-security-backup-seo-suite` | WordPress.org | The security & backup core, standalone and fully functional on its own |
+| **SwissSuite AI** (Free) | `swisssuite-ai` | WordPress.org | The security & backup core, standalone and fully functional on its own |
 | **SwissSuite AI Pro** | `swisssuite-ai-pro` | https://www.swisswpsecure.com/products/ (download-only) | A standalone superset — cloud backup, AI, sync, migration, and more |
 
 Pro is **not an add-on or unlock** for the Free plugin — it is installed in place of it. The premium and AI code is physically absent from the Free package; there is nothing in Free to "unlock" with a key, and Free has no license field at all.
@@ -22,10 +22,10 @@ Pro is **not an add-on or unlock** for the Free plugin — it is installed in pl
 
 - **Malware scanner** — local signature-based scanning, on-demand and daily, entirely on your own server; no file contents ever leave your site
 - **Malware quarantine** — isolate suspicious files locally before removing them
-- **Web Application Firewall** — blocks SQL injection, XSS, and path-traversal attempts, with IP ban/unban/allowlist and a threat log
+- **Web Application Firewall** — starts in observe (simulation) mode on install so it never blocks legitimate traffic by surprise; enable active blocking any time in Security > Firewall. Covers SQL injection, XSS, and path-traversal attempts, with IP ban/unban/allowlist and a threat log
 - **Hardening** — all one-click hardening toggles (XML-RPC, file editing, user enumeration, REST API restrictions, and more), plus Security Level presets
 - **Login protection** — brute-force lockout and honeypot spam blocking
-- **Backup & restore** — full site backup (files + database) and one-click restore of your site files, run on demand. This version's restore never modifies your database.
+- **Backup & restore** — full site backup (files + database) and one-click restore of your site files and database, run on demand. A safety copy of your current database is taken before the restore touches anything.
 - **SEO** — on-page audit and score, plus XML sitemap generation, all computed locally
 - **Dashboard** — security dashboard, threat log, and a daily email security report
 

@@ -611,19 +611,20 @@ After a destination is configured, it appears in the Destination dropdown on the
 #### 6.1.5 Restore a backup
 
 Click **Restore** on any row in the Backup List. A confirmation dialog appears that summarizes:
-- What will be restored: your site files.
+- What will be restored: your site files, and — when the backup archive contains exactly one database dump — your database.
 - Estimated time.
-- A red warning that this will overwrite your current site files.
+- A red warning that this will overwrite your current site files (and database, when a dump is restored).
 
-**This version restores files only.** Even though a full backup archive includes a database export, restoring it never imports that database and never modifies your site's database — only your files are replaced.
+**A full restore imports the archive's database** through the same chunked importer used by site migration. Before the first table is touched, the plugin writes a safety dump of your *current* database to a `pre-restore-safety/` folder inside your backup directory (the newest 3 dumps are kept). If that dump's table prefix does not match your site's own table prefix — for example, when restoring onto a reinstalled site with a freshly generated prefix — the restore stops immediately with a `table_prefix_mismatch` error and nothing is changed. If a backup archive contains more than one SQL dump file, the plugin has no safe way to choose between them: the database step is skipped with an on-screen notice, and only your files are restored.
 
 After you confirm, the plugin:
 1. Snapshots your current security settings (so they survive the restore).
 2. Downloads the backup (if it's in cloud storage).
 3. Restores files (extracts the ZIP over your site).
-4. Re-registers all cron jobs.
-5. Restores your security settings from the snapshot.
-6. Recomputes your site's identity hash so the license stays valid.
+4. Imports the database, when exactly one dump is found (see above) — your current database is safety-dumped first.
+5. Re-registers all cron jobs.
+6. Restores your security settings from the snapshot.
+7. Recomputes your site's identity hash so the license stays valid.
 
 The progress bar shows each step. If a step fails, the plugin logs the exact error and keeps the snapshot so nothing is lost.
 
@@ -673,6 +674,7 @@ The General tab has three cards:
 - **General Preferences**
   - **Automatic Updates** toggle — keep the plugin updated automatically.
   - **Beta Features** toggle — unlocks the **Move to New Host** (Migration) and **Sync Two Sites** sub-sections of the Backup page. Off by default.
+  - **Dashboard Traffic Counter** toggle — off by default. When on, counts pageviews per day and page type to power the Dashboard's traffic chart; runs entirely on your server and records no IP addresses, cookies, or other personal data.
 - **Server Profile** — three selectable cards: **Auto-Detect (Recommended)**, **Standard Hosting** (PHP chunking, tuned for shared hosts like Hostinger / Bluehost), or **VPS / Dedicated** (unlocks high-performance engines such as RSYNC and CLI when the server allows it). Affects chunk sizes and timing for backups and migrations.
 
 The General tab also contains the **Custom SMTP** card (for sending plugin emails through your own SMTP relay). The recipient address for the daily Scan Report is configured separately in Section 3.2.4.

@@ -66,7 +66,7 @@ The following data is processed by the Plugin on **your** WordPress server. We d
 |------|---------|---------------------------|
 | Visitor IP addresses | WAF, login protection, geo-blocking, IP banning | **No** (processed locally) |
 | Visitor country (from IP) | Geo-blocking | IP sent to ipwho.is for lookup (see Section 6) |
-| Security logs (IP, request URI, threat type) | Security logging | **No** (stored locally) |
+| Security logs (IP, request URI, threat type) | Security logging | **No** (stored locally, pruned automatically after 90 days by default — configurable in Security settings; a separate 15-minute lockout timer is unrelated to this log-row retention period) |
 | 2FA TOTP secrets | Two-factor authentication | **No** (encrypted, stored locally in user meta) |
 | Backup archives (database, themes, media) | Cloud backup upload | Sent to **your** cloud provider (Google Drive, Dropbox, S3, B2, or FTP server) |
 | Full database (migration/sync) | Site migration, staging sync | Sent directly to **your** destination site |
@@ -176,7 +176,7 @@ The Plugin uses localStorage and sessionStorage in the WordPress admin panel for
 
 ### No Tracking
 
-We do not use cookies, pixels, or any other technology to track visitors across sites. We do not use Google Analytics, Facebook Pixel, or any third-party analytics on your WordPress site.
+We do not use cookies, pixels, or any other technology to track visitors across sites. We do not use Google Analytics, Facebook Pixel, or any third-party analytics on your WordPress site. An optional local pageview counter (Settings -> Dashboard Traffic Counter) is off by default; when an administrator turns it on, it records only an aggregate date, page type, and count in your own site's database, with no IP address, cookie, or other visitor-identifying data captured, and this data is never transmitted anywhere.
 
 ## 10. Security Measures
 

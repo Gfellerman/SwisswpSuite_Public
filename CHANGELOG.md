@@ -4,6 +4,192 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.36] - 2026-08-24
+
+### Changed
+- Free edition: the license / billing / AI-token client is now physically excluded (files absent, routes unregistered) — the free plugin ships with no license key, account, or plan code, matching the readme. Pro modules load through a single bootstrap seam.
+- SEO meta/title injection and the XML sitemap rewrite rule are opt-in (new toggles, default off); third-party SEO-plugin override suppression now requires explicit opt-in and shows an admin notice.
+- OPcache is no longer reset on settings toggles (only on restore/rollback); "Clear Transients" is scoped to this plugin's own transients.
+- Abandoned-plugin refresh runs asynchronously (no long-blocking admin request); backup engine tick never runs in anonymous visitors' requests.
+
+### Fixed
+- Restore compatibility with encryption passwords saved in the new authenticated format (v2, random-IV + HMAC); legacy backups stay restorable.
+- Root .htaccess is never created or modified by the free plugin (upgrade-migration block removed; fresh installs seed the DB version).
+- Database dump/restore scope is strictly limited to this site's table prefix; multisite uninstall drops per-site tables.
+- Phantom scheduled events are no longer registered on activation; every scheduled hook has a live worker in its edition.
+- Activation failures now surface as an admin notice instead of being silently swallowed.
+
+### Security
+- At-rest secrets use authenticated encryption (Encrypt-then-MAC, random IV); the XOR fallback was removed (fail-closed without OpenSSL).
+- Visitor IP / failed-login records are pruned on a disclosed retention window; privacy-policy text corrected.
+- Pre-restore safety dumps and staged files use unguessable names in protected directories; sensitive filenames are no longer disclosed in metadata.
+
+## [2.9.33.35] - 2026-08-23
+
+### Fixed
+- Full-backup restore correctly detects when a single-strategy backup's zip actually contains the database dump, instead of misclassifying it as files-only from the category/filename alone — the common case (a single "all" backup under ~400MB) now imports its database dump on restore.
+- The XML sitemap now includes every public post type (including third-party ones such as WooCommerce products) instead of a hardcoded `post`/`page`/`product` list.
+- The sitemap on/off toggle (`swisswpsuite_sitemap_enabled`) is now wired to a real save path — previously there was no way to change it from the UI, so `/sitemap.xml` could never be turned on.
+
+### Changed
+- ARS Round C Phase 1 (post-.34 review) remediation across security, backup, core, cron, admin and build:
+- Rate limits and remediation guidance now apply uniformly regardless of edition or capability; several Free-reachable strings that referenced Pro-only mechanics (rate-limit exemptions, remediation buttons, docblocks, Abilities API categories) were reworded or removed.
+- The daily security report's footer, the 2FA remediation guidance, and the Abilities API's exposed categories are now edition-aware.
+- The `/llms.txt` endpoint is now opt-in (off by default, `swisswpsuite_llms_txt_enabled`), disclosed in readme.txt, and skips the front page when it is not published or is password-protected, and skips individual password-protected posts.
+- The plugin's zip package now ships a trimmed `CHANGELOG.md` (newest versions only, with a pointer to the full history on GitHub) instead of the full internal changelog, and the build script removes any directory left empty after the Free-edition premium-file exclusion.
+- Outbound e-mail alerts (`swisswpsuite_email_notifications`) default to off; the event-alert mailer no longer forges the site admin's address as its `From:` header, matching the scan-report mailer's existing fix.
+- The daily security report (`swisswpsuite_scan_report_enabled`) now also defaults to off for new installs — this key was previously never seeded, so its reader silently fell back to on. Toggle it from the Security Hub's Scan tab.
+- Disabling the built-in theme/plugin file editor on activation is now disclosed in readme.txt.
+- The hardening-conflict admin notice's inline styles were moved to enqueued CSS, and its strings are now translatable.
+- `LEGACY_CRON_HOOK_PREFIXES` no longer includes a third-party plugin's hook namespace; deactivation/uninstall only sweep this plugin's own cron hooks.
+- The WP-Cron loopback trigger now honours `DISABLE_WP_CRON` and defaults `sslverify` to true (filterable), instead of always disabling certificate verification.
+- Backup restore, delete, and download now validate the requested filename against an allow-list before touching the filesystem.
+- The backup archive scanner's quarantine-folder exclusion is derived from the real quarantine location (`wp_upload_dir()`), not a stale ABSPATH-based guess.
+- Single-file quarantine actions refuse `wp-config.php`, `.htaccess`, core files, and any plugin's own main file.
+- The security-settings restore path validates every value's type before writing it back from an uploaded snapshot; the identity-restore path is restricted to the exact keys the backup snapshot writer emits, with no `maybe_unserialize()` of file-sourced data.
+- Remaining raw `$_SERVER` reads across the security, hardening, and backup-engine modules are unslashed and sanitized.
+- A dead, uncalled legacy method was removed from the backup class; cloud-storage integrations now guard their instantiation with `class_exists()`, not just a `file_exists()` probe.
+- Two phantom cron jobs (scheduled with no registered callback in this edition) are no longer scheduled; an internal pending-setup option was renamed for clarity.
+- Deep-malware and full-AI scan lock options now use a WordPress.org-compliant `swisswpsuite_lock_*` prefix, and Deep Malware Scan job state is persisted durably instead of relying solely on a transient.
+- The free edition's Backups and Dashboard pages no longer show Pro-feature padlocks or an "Activate your license" prompt.
+- The free edition's Settings API no longer accepts or returns WPScan/Patchstack vulnerability-lookup API keys (their only consumer, Sentinel Security, is Pro-only), and the Abilities API's Migration/Sync/SEO categories now register only when their Pro-only backing class is present; readme.txt now discloses the optional SMTP relay (off until configured, password stored in the database) and that uninstalling the plugin from the Plugins screen removes its local backup archives along with its settings.
+
+## [2.9.33.34] - 2026-08-23
+
+### Changed
+- Two remaining non-prefixed globals renamed for WordPress.org Plugin Check `PrefixAllGlobals` compliance: class `SwissWP_Abilities` → `SwissWPSuite_Abilities`, constant `SWISSWP_WP7` → `SWISSWPSUITE_WP7`. No behaviour change. (v2.9.33.33 was an internal test build only.)
+
+## [2.9.33.33] - 2026-08-23
+
+### Added
+- Optional, off-by-default **Dashboard Traffic Counter** (Settings → General): powers the Dashboard traffic chart with per-day, per-page-type counts only — no IP addresses, cookies or personal data, nothing transmitted. Previously this counter ran unconditionally; it is now opt-in and disclosed in readme.txt and the privacy policy.
+
+### Changed
+- Plugin metadata: `Tested up to: 7.1`; contributors list corrected; readme.txt trimmed under the 10 KB guidance; CHANGELOG.md now ships inside the plugin folder; `composer.lock` no longer ships.
+- The custom cron interval is now prefixed (`swisswpsuite_every_minute`); existing scheduled events are migrated automatically on upgrade. Post-import recovery no longer re-schedules on-demand or callback-less cron hooks.
+- The hardening-conflict admin notice is dismissible (persisted per day); its script is enqueued, not inline.
+- Scan-report emails are sent from `noreply@<your site host>` instead of a fixed third-party address.
+- Diagnostics text names the geo-lookup service actually used (ipwho.is).
+- The plugin no longer prints a `<meta name="generator">` tag advertising its name and version.
+
+### Fixed
+- Several latent fatal errors: two wrong `require` paths, unguarded `get_plugins()` calls outside wp-admin, and an IPv4 CIDR mask above /32 causing an ArithmeticError.
+- Upload-directory paths are derived from `wp_upload_dir()` instead of the hardcoded `wp-content/uploads`.
+- Apache 2.4 `Require all denied` syntax added to every protective `.htaccess` the plugin writes (previously Apache 2.2 syntax only at five sites); the Sentinel memory directory now gets `index.php` + `.htaccess` protection.
+- Database table optimisation is restricted to this site's own tables.
+
+### Security
+- Restore safety snapshot: only `swisswpsuite_*` option keys may be written back from the uploads-stored snapshot (arbitrary option write closed).
+- Security-fix actions (delete / quarantine / chmod) are scoped to the site root, `wp-content` and uploads; `.htaccess` can no longer be removed by the sensitive-file cleanup.
+- Backup download filenames are sanitised before the `Content-Disposition` header; the backup engine tick endpoint performs no state writes before its shared-secret check.
+- Raw `$_SERVER` reads are unslashed and sanitised; PHPCS/Plugin Check annotations re-verified for truthfulness.
+
+## [2.9.33.32] - 2026-08-22
+
+### Changed
+- The migration transport engine (used for moving a site to a new host or domain) is now a Pro-only module, physically absent from the free package.
+- Firewall header scan (User-Agent / Referer pattern detection) is available in every edition.
+- The HTML backup report template is available in every edition.
+- Several local cloud-storage status endpoints are available in every edition.
+- The free edition's settings endpoint no longer silently accepts-and-drops Pro-only AI settings; those settings now live entirely in the Pro edition.
+
+### Fixed
+- **Database restore now actually imports the backup's database.** A full restore imports the archive's database through the same chunked importer used for site migration, instead of discarding it. Before anything is touched, the plugin takes a safety copy of your current database; if that copy's table prefix doesn't match your site's own prefix, the restore stops with a clear error and nothing is changed. If a backup archive contains more than one database dump, the plugin cannot safely choose between them, so it restores your files only and shows a plain notice explaining why.
+- The daily email report now works correctly in the free edition.
+- Scan history no longer truncates — all recorded scans are shown.
+
+## [2.9.33.31] - 2026-08-22
+
+### Changed
+- WordPress.org compliance release (review R4 remediation). The free package no longer contains any locked functionality: migration/import/receiver endpoints and handlers are physically absent from the free build (moved to a Pro-only module); backup encryption at rest is now available in the free edition; the multi-phase deep malware scan's local phases (enumeration, hashing, signature scan) are now available in the free edition, with AI result grading remaining a Pro service.
+- Free-edition WordPress.org slug and text domain updated to `swisssuite-ai` (reassigned by the WordPress.org review team during the R4 review).
+- readme.txt restructured: source-code location moved to the top, changelog history split out to this file, size brought under the WordPress.org 10KB guidance.
+
+### Fixed
+- Restoring an encrypted backup now works in both editions (previously rejected even on Pro): the restorer decrypts `.zip.enc` archives in place, with distinct, honest errors when no encryption password is configured (`encryption_password_missing`) or when the password is wrong/changed or the archive is corrupted (`encryption_password_mismatch`) — including on hosts without libsodium, via a post-decrypt archive-signature integrity check.
+- Removed two dead `require_once` calls of WordPress admin files whose functions were never used; added `wp_unslash()` to the firewall's raw input reads (without sanitization that would defeat attack-pattern detection); all `set_time_limit(0)` calls replaced with a bounded per-request value; scan reports no longer hardcode the Pro tier label on free installations.
+
+## [2.9.33.29] - 2026-08-20
+
+### Changed
+- Mutation-response truthfulness across the admin interface: the shared `wpApi()` layer now throws on any 2xx response whose body reports `success:false` (explicit opt-out only for intentional soft-failure endpoints: sentinel remediation, findings fix), so no action can display success the server did not confirm.
+- Update Guard: "Approve" now records the exact plugin slug, version and package fingerprint and genuinely allows that build through on the next update attempt; a different version or materially different package is still blocked; "Reject" also clears any prior approval. Review entries created before this release carry no fingerprint and fail safe (still blocked) until re-flagged.
+
+### Fixed
+- Quarantine delete verified the file is actually gone (`WP_Error` on failure) before reporting "permanently deleted".
+- Sentinel remediation: the Geo-Lockdown auto-fix now uses the real settings path with the mode/enabled pairing guard, declines honestly for plans without the firewall tier, and the endpoint's response no longer hardcodes success.
+- Two-factor authentication: enable/disable/backup-code actions report success only after reading back the persisted state; setup cannot enable enforcement unless both the secret and backup codes were saved (prevents a lockout); persistence failures return HTTP 500.
+- Security hardening: status now re-verifies all six `.htaccess`-backed options against the file (a stored ON with the rule absent shows OFF with a warning); bulk-apply and unified-level responses carry `warnings`; both toggle implementations render them.
+- Sync: saving a schedule returns proof the cron event is armed (post-write `wp_next_scheduled()`), cache-busts the cron option first, and failures are surfaced; deleting a schedule returns 404 on failure; the UI refetches instead of trusting its own echo and no longer removes rows on failed deletes.
+- Migration URL replace counts only confirmed database writes and surfaces failed rows.
+- Backup "Run Now" returns the real decline reason (license required 403, lock held 409, not found 404, disabled 400) instead of "started".
+- Restore: a full-backup restore now states clearly when the embedded database dump was held and not imported (previously an empty notice); post-restore recovery runs once per set restore instead of once per file.
+- Backup sets: catalog writes are serialized by a lock (closes a lost-update that could drop a set record while its files remained on disk); retention sorting has a stable secondary key so a same-second tie never prunes the newer set.
+- License activation: a valid Pro key on the Free edition returns HTTP 403 + `upgrade_required` and the UI shows an explainer instead of a false "Activated!" toast.
+
+## [2.9.33.28] - 2026-08-20
+
+### Added
+- Scheduled backups: start-time picker — choose the exact time of day a scheduled backup runs (site-local timezone; weekly schedules also gain a day-of-week choice). Absent a chosen start time, existing schedules keep their current timing unchanged.
+- Backup scheduling panel: a plain-language note explaining that WordPress scheduled tasks are triggered by site traffic, so start times can vary by a few minutes depending on the host.
+
+### Fixed
+- Backup scheduling: schedules now self-repair on every admin page load if the live WordPress cron entry's recurrence has drifted from the configured schedule (root cause of a production incident where a twice-daily schedule silently reverted to daily via an object-cache lost-update). Every schedule re-registration is now logged with old/new values and the requesting context.
+- Backup scheduling: editing only a schedule's start time (or weekly day) now correctly re-arms the cron event — previously the new value was saved and displayed but the live schedule never changed. Re-saving an unchanged schedule now also forces re-registration, making "just re-save it" a valid repair.
+- Backup retention: "keep only X" now keeps exactly X backup sets including the newest one (previously retention=1 permanently kept 2 full sets on disk), and pruning now runs after the new backup set is safely recorded — an old backup is never deleted before its replacement verifiably exists. Applies to local and cloud destinations.
+- Backup engine: completed jobs now persist a terminal phase (previously the last working phase leaked into the terminal record, causing confusing warnings); the manual-backup retention path now always logs its decision; an impossible-state detector warns (once per job) if an automation-triggered job ever loses its automation identity.
+- Backup automations: a stale "running" status left behind by a pre-update interruption is now reconciled automatically on plugin upgrade and after any site import/restore.
+- Hardening against object-cache staleness: the plugin now forces a fresh database read of the WordPress cron storage immediately before modifying its own backup schedules.
+
+## [2.9.33.27] - 2026-08-19
+
+### Fixed
+- Backup engine: fixed a race condition where a stale or overlapping backup-engine "tick" could overwrite a job's terminal state after it had already completed successfully, falsely marking a finished backup as failed. The terminal-state guard now protects every failure/cancel write path in the engine.
+- Backup engine: fixed scheduled backups being able to remain stuck showing "running" indefinitely after an automatic zombie-job cancellation. The automation status now stays in sync with the job's actual state and reports the real reason the job stopped, instead of leaving a stale "running" status behind.
+- Backup engine: fixed the backup archive's retry logic sometimes failing to rewind to the correct position in its manifest after a temporary archive-write error, which could leave the retry starting from the wrong point.
+
+## [2.9.33.26] - 2026-08-18
+
+### Added
+- Backup watchdog cutover mode (Pro): a per-site setting that hands stall and completion verdicts to the v2 supervision engine — the one that ran shadow-observation for a week and correctly disagreed with the old watchdog in every logged divergence (including 18 consecutive false "terminal" verdicts the old engine produced on a healthy run). The new engine understands cloud-upload progress, matches completion records to the correct run (fixing the stale-record class behind the August incident), and carries a 12-hour outer safety ceiling. Defaults to observer (no behavior change); every deferred decision is logged; disabling the setting or the kill switch instantly restores the previous behavior.
+
+## [2.9.33.25] - 2026-08-18
+
+### Fixed
+- License panel: the "Manage subscription" and "contact support" links pointed at pages that no longer exist (404); both now reach live destinations, and installs without a license get a visible "Get a License" link — previously there was no purchase path at all from that screen.
+- Security page: the WAF upsell card's link pointed at a non-existent page anchor; corrected.
+- Pro/VPS (from the 2026-08-18 real-payment test review): purchase records now store the buyer's email and name; every Stripe-driven token movement carries its Stripe reference (including refunds and the license-level provisioning mirror row); invoice-sync failures are dead-lettered instead of alert-only; customer renewal toggles are logged under an honest action name; admin tier changes on Stripe-managed licenses are blocked with guidance (the next webhook would silently revert them); refund-policy checks now also consider the site domain; and the checkout consent capture gained the Terms-of-Service/Privacy clickwrap fields (migration applied).
+
+## [2.9.33.24] - 2026-08-17
+
+### Fixed
+- Sync (Pro, beta): scheduled sync runs no longer push items classified as conflicts — the "user resolves via UI" rationale never applied to an unattended cron run. Conflicts are withheld, counted, and logged for manual resolution; manual sync behavior is unchanged.
+- Sync (Pro, beta): the sync REST API now enforces the beta-features gate server-side across all 21 routes (previously frontend-only), returning a clear 403 when the gate is off.
+- Sync (Pro, beta): regenerating the sync key over an existing key now requires explicit confirmation, because rotation disconnects the paired site until re-pairing; first-time key generation is unchanged.
+
+### Added
+- Sync (Pro, beta): the compare endpoint now reports its supported content types (posts, pages, products) and the interface displays that limitation honestly, sourced from the backend so the text cannot drift from the code.
+
+## [2.9.33.23] - 2026-08-17
+
+### Added
+- Log-write verification: entries written to the plugin's System Logs are now read back and, if the database write silently failed, mirrored to the server error log instead of vanishing — closing the "a captured error can still be lost" gap from the error-coverage audit.
+- Failed admin-dashboard API requests (the ones a screen might not surface) are now forwarded to System Logs with a per-page cap and de-duplication, so a silently failing endpoint leaves a trace. No request parameters are ever included.
+
+### Fixed
+- Admin panel (Pro/VPS side): mixed-case `/Admin/...` URLs from bot scanners no longer bypass the session layer — root cause fixed at the path-normalization level; the admin accounts page now separates deactivated admins into their own dimmed section and explains that deactivation (not deletion) is the supported removal, keeping the audit trail intact.
+- Documentation inventory generator no longer silently under-counts: deliberate exclusions are now declared and reconciled instead of hidden.
+
+## [2.9.33.22] - 2026-08-17
+
+### Added
+- PHP fatal-error capture: a best-effort shutdown handler now records fatal errors (out-of-memory, parse errors, type errors) originating in the plugin's own directory into the plugin's System Logs — previously these produced only a white screen and a server-log entry invisible to the plugin. Strictly scoped to this plugin's own files: fatals from WordPress core, other plugins, or themes are never claimed or logged.
+- Central REST exception guard: any uncaught exception in any of the plugin's REST endpoints is now converted into a clean JSON 500 response and logged (without request parameters), instead of crashing the request as a raw PHP fatal.
+- React error boundary around the admin dashboard: an interface rendering error now shows an accessible, recoverable "Something went wrong / Reload page" message (dark-mode aware, screen-reader announced, keyboard focused) and reports itself to the plugin's error log — previously the whole admin panel unmounted to a blank screen with no trace.
+
+### Fixed
+- All three daily maintenance cron closures now log their own failures instead of dying silently when an internal error occurs.
+
 ## [2.9.33.21] - 2026-08-16
 
 ### Fixed

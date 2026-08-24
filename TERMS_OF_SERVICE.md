@@ -26,7 +26,7 @@ The Plugin is developed and operated by **SwissWPSecure Sàrl**, a limited liabi
 
 The Plugin is distributed as **two editions built from a single source tree**:
 
-- **SwissSuite AI (Free edition)** — distributed through the WordPress.org plugin directory (slug `nicolaiapp-security-backup-seo-suite`). It contains only the free features described in Section 3.1 and does not require a license key, an account, or a connection to our Service. It is governed solely by the GPL-2.0+ license.
+- **SwissSuite AI (Free edition)** — distributed through the WordPress.org plugin directory (slug `swisssuite-ai`). It contains only the free features described in Section 3.1 and does not require a license key, an account, or a connection to our Service. It is governed solely by the GPL-2.0+ license.
 - **SwissSuite AI Pro (Paid edition)** — distributed **only** as a download from swisswpsecure.com to customers who have purchased a plan (slug `swisssuite-ai-pro`). It is a full superset that includes the free features plus the paid features described in Section 3.2. Pro receives updates directly from swisswpsecure.com (not WordPress.org). Access to Pro downloads, updates, and the Service requires a valid, active license key and acceptance of these Terms. The premium features are not present in the Free edition; they are delivered exclusively by installing the Pro edition.
 
 The Pro edition's source code remains available under the GPL-2.0+ license to licensed customers; the license key controls access to downloads, updates, and the Service, not your rights under the GPL to the code you have received.
