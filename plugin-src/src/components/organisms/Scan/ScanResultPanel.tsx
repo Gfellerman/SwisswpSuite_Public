@@ -28,17 +28,17 @@ import {
   ShieldOff,
   Archive,
   Wrench,
-  Sparkles,
   Lock,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { isFreeEdition } from "../../../lib/edition";
-import { EditionMismatchDownloadCta } from "./EditionMismatchDownloadCta";
 import {
   REMEDIATION_LOCKED_TOOLTIP,
   REMEDIATION_LOCKED_TOAST,
-  AI_ANALYSIS_LOCKED_LABEL,
+  buildAiBatchStartToast,
+  buildAiBatchFailureToast,
+  buildAiBatchPartialToast,
+  buildAiBatchCompleteToast,
+  buildAiBatchMixedSelectionToast,
 } from "./scanResultProCopy";
 import type {
   AiAuditResult,
@@ -51,7 +51,18 @@ import type {
 // scanConstants.ts itself uses (this file lives in the same directory), so
 // it reuses that existing vite.config.ts alias entry — no new one needed.
 import { DEEP_SCAN_SOURCE_LABELS } from "./scanConstants.pro";
+// WP.org R4 (owner ruling OD-3, 2026-08-22) — the deep-malware AI grade
+// badge + "AI: {status}" pill are extracted so they can be aliased away in
+// the Free build; see DeepScanAiResults.tsx's docblock.
+import { AiGradeBadge, buildAiStatusPill } from "./DeepScanAiResults";
 import type { ScanTypeValue } from "./scanConstants";
+// ARS Round D (D-K-1, WP.org R4 F-01, 2026-08-2x): the 4 AI bulk/per-file
+// "locked" controls (below, and the confirm modal they can open) are
+// extracted into their own modules so vite.config.ts can alias them away
+// entirely in the Free build — see each module's own docblock.
+import { AiAnalyzeFileButton } from "./AiAnalyzeFileButton";
+import { BulkAiAnalyzeButton } from "./BulkAiAnalyzeButton";
+import { BulkAiConfirmModal } from "./BulkAiConfirmModal";
 
 // ── v2.9.28.22 — Filter non-analyzable findings from bulk "Check with AI" ─
 //
@@ -239,107 +250,6 @@ async function runAiAnalyzeChain(
   }
   return { succeeded, failed };
 }
-
-/**
- * Minimal inline confirmation modal. Reuses the a11y pattern from
- * HardeningConfirmDialog (role=dialog, aria-modal, Escape-to-cancel) without
- * pulling in the heavier component that is coupled to the HardeningOption
- * shape. Rendered only when open=true so it has zero footprint otherwise.
- */
-interface BulkAiConfirmModalProps {
-  open: boolean;
-  totalSelected: number;
-  cap: number;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-const BulkAiConfirmModal: React.FC<BulkAiConfirmModalProps> = ({
-  open,
-  totalSelected,
-  cap,
-  onConfirm,
-  onCancel,
-}) => {
-  React.useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onCancel();
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onCancel]);
-
-  if (!open) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      onClick={onCancel}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="bulk-ai-confirm-title"
-        aria-describedby="bulk-ai-confirm-body"
-        className="border-border w-full max-w-md rounded-2xl border bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <h3
-            id="bulk-ai-confirm-title"
-            className="text-base font-black text-neutral-900"
-          >
-            Analyze {cap} files with AI?
-          </h3>
-          <button
-            type="button"
-            onClick={onCancel}
-            aria-label="Cancel"
-            className="hover:bg-secondary focus-visible:ring-swiss-navy shrink-0 rounded-full p-1 focus-visible:ring-2 focus-visible:outline-none"
-          >
-            <X size={16} aria-hidden="true" />
-          </button>
-        </div>
-        <p id="bulk-ai-confirm-body" className="mb-4 text-sm text-neutral-700">
-          {isFreeEdition() ? (
-            <>
-              You selected <strong>{totalSelected}</strong> files. AI-powered
-              analysis isn&rsquo;t included in the free plugin — it fires zero
-              AI tokens in this build.
-              <EditionMismatchDownloadCta />
-            </>
-          ) : (
-            <>
-              You selected <strong>{totalSelected}</strong> files. AI analysis
-              is slow and uses tokens — we&rsquo;ll run it on the first{" "}
-              <strong>{cap}</strong>. You can re-run on the rest afterwards.
-            </>
-          )}
-        </p>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="border-border hover:bg-secondary focus-visible:ring-swiss-navy rounded-xl border px-4 py-2 text-sm font-black text-neutral-700 focus-visible:ring-2 focus-visible:outline-none"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            autoFocus
-            className="bg-swiss-navy focus-visible:ring-swiss-navy rounded-xl px-4 py-2 text-sm font-black text-white hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
-          >
-            Analyze first {cap}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // ── Grade badge ───────────────────────────────────────────────────────────────
 
@@ -563,31 +473,17 @@ const AuditResultView: React.FC<AuditResultViewProps> = ({
     const list = files.slice(0, MAX_AI_BATCH);
     setSelected(new Set());
     setAiProgress({ current: 0, total: list.length });
-    toast.success(
-      list.length === 1
-        ? "Analyzing 1 file with AI…"
-        : `Analyzing ${list.length} files with AI…`
-    );
+    toast.success(buildAiBatchStartToast(list.length));
     void runAiAnalyzeChain(list, onAnalyze!, (index) =>
       setAiProgress({ current: index, total: list.length })
     ).then(({ succeeded, failed }) => {
       setAiProgress(null);
       if (succeeded === 0 && failed > 0) {
-        toast.error(
-          failed === 1
-            ? "AI analysis failed — file could not be analyzed."
-            : `AI analysis failed — none of the ${failed} files could be analyzed.`
-        );
+        toast.error(buildAiBatchFailureToast(failed));
       } else if (failed > 0) {
-        toast.success(
-          `AI analyzed ${succeeded} of ${list.length} files. ${failed} could not be analyzed.`
-        );
+        toast.success(buildAiBatchPartialToast(succeeded, list.length, failed));
       } else {
-        toast.success(
-          list.length === 1
-            ? "AI analysis complete."
-            : `AI analysis complete: ${list.length} files processed.`
-        );
+        toast.success(buildAiBatchCompleteToast(list.length));
       }
     });
   };
@@ -769,8 +665,10 @@ const AuditResultView: React.FC<AuditResultViewProps> = ({
                     Delete {selected.size}
                   </button>
                   {onAnalyze && (
-                    <button
-                      type="button"
+                    <BulkAiAnalyzeButton
+                      hasSentinelPro={hasSentinelPro}
+                      aiProgress={aiProgress}
+                      count={selected.size}
                       onClick={() => {
                         if (aiProgress) return; // already running; no double-fire
                         const allSelected = [...selected];
@@ -822,7 +720,10 @@ const AuditResultView: React.FC<AuditResultViewProps> = ({
                         // Mixed selection: run AI on file findings, note the skipped ones.
                         if (nonFileIds.length > 0) {
                           toast.info(
-                            `Analyzing ${analyzablePaths.length} file${analyzablePaths.length > 1 ? "s" : ""} with AI — ${nonFileIds.length} configuration finding${nonFileIds.length > 1 ? "s" : ""} skipped (see inline notes).`
+                            buildAiBatchMixedSelectionToast(
+                              analyzablePaths.length,
+                              nonFileIds.length
+                            )
                           );
                         }
 
@@ -832,26 +733,7 @@ const AuditResultView: React.FC<AuditResultViewProps> = ({
                         }
                         startAiBatch(analyzablePaths);
                       }}
-                      disabled={!hasSentinelPro || !!aiProgress}
-                      aria-disabled={!hasSentinelPro ? true : undefined}
-                      aria-label={`Analyze ${selected.size} selected files with AI`}
-                      className={`bg-swiss-navy focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none transition-colors${!hasSentinelPro || !!aiProgress ? "cursor-not-allowed opacity-50" : ""}`}
-                    >
-                      {!hasSentinelPro ? (
-                        <Lock size={10} aria-hidden="true" />
-                      ) : aiProgress ? (
-                        <Loader2
-                          size={10}
-                          className="animate-spin"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <Sparkles size={10} aria-hidden="true" />
-                      )}
-                      {aiProgress
-                        ? `Analyzing ${aiProgress.current} of ${aiProgress.total}…`
-                        : `Check ${selected.size} with AI`}
-                    </button>
+                    />
                   )}
                 </div>
               )}
@@ -1235,31 +1117,17 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
     setSelected(new Set());
     setSelectedLow(new Set());
     setAiProgress({ current: 0, total: list.length });
-    toast.success(
-      list.length === 1
-        ? "Analyzing 1 file with AI…"
-        : `Analyzing ${list.length} files with AI…`
-    );
+    toast.success(buildAiBatchStartToast(list.length));
     void runAiAnalyzeChain(list, onAnalyze!, (index) =>
       setAiProgress({ current: index, total: list.length })
     ).then(({ succeeded, failed }) => {
       setAiProgress(null);
       if (succeeded === 0 && failed > 0) {
-        toast.error(
-          failed === 1
-            ? "AI analysis failed — file could not be analyzed."
-            : `AI analysis failed — none of the ${failed} files could be analyzed.`
-        );
+        toast.error(buildAiBatchFailureToast(failed));
       } else if (failed > 0) {
-        toast.success(
-          `AI analyzed ${succeeded} of ${list.length} files. ${failed} could not be analyzed.`
-        );
+        toast.success(buildAiBatchPartialToast(succeeded, list.length, failed));
       } else {
-        toast.success(
-          list.length === 1
-            ? "AI analysis complete."
-            : `AI analysis complete: ${list.length} files processed.`
-        );
+        toast.success(buildAiBatchCompleteToast(list.length));
       }
     });
   };
@@ -1334,36 +1202,23 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
             </span>
           </span>
         </div>
-        {/* AI grade badge (deep mode only). Colors meet WCAG AA. */}
-        {result.ai_grade && (
-          <div
-            className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 ${
-              result.ai_grade === "A" || result.ai_grade === "B"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : result.ai_grade === "C"
-                  ? "border-amber-200 bg-amber-50 text-amber-800"
-                  : result.ai_grade === "?"
-                    ? "bg-secondary border-border text-neutral-700"
-                    : "border-red-200 bg-red-50 text-red-800"
-            }`}
-            aria-label={`AI grade ${result.ai_grade}`}
-          >
-            <Sparkles size={14} aria-hidden="true" />
-            <span className="text-xs font-black">
-              Grade{" "}
-              <span className="font-black uppercase">{result.ai_grade}</span>
-            </span>
-          </div>
-        )}
+        {/* AI grade badge (deep mode only). Extracted to DeepScanAiResults
+            so it can be aliased to a no-op in the Free build — see that
+            module's docblock (WP.org R4 / OD-3, 2026-08-22). */}
+        <AiGradeBadge grade={result.ai_grade} />
       </div>
 
       {/* Status pills (deep mode only). Each phase soft-degrades:
           ok = phase ran cleanly, unavailable = phase skipped (no key/quota),
-          degraded_* = phase ran but with reduced output (AI only). */}
+          degraded_* = phase ran but with reduced output (AI only).
+          The "AI" pill comes from buildAiStatusPill (DeepScanAiResults),
+          which is a no-op on the Free build — see that module's docblock
+          (WP.org R4 / OD-3, 2026-08-22). Everything else in this list is a
+          genuinely-free EXTERNAL-SERVICE phase and stays inline. */}
       {(result.vps_lookup_status ||
         result.wpscan_status ||
         result.patchstack_status ||
-        result.ai_status) && (
+        buildAiStatusPill(result.ai_status)) && (
         <div
           className="flex flex-wrap gap-2"
           role="list"
@@ -1379,9 +1234,9 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
               label: DEEP_SCAN_SOURCE_LABELS.patchstack,
               value: result.patchstack_status,
             },
-            { label: "AI", value: result.ai_status },
+            buildAiStatusPill(result.ai_status),
           ]
-            .filter((p) => !!p.value)
+            .filter((p): p is { label: string; value: string } => !!p?.value)
             .map((p) => {
               const isOk = p.value === "ok";
               const isDegraded =
@@ -1532,8 +1387,10 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                     Delete {selected.size}
                   </button>
                   {onAnalyze && (
-                    <button
-                      type="button"
+                    <BulkAiAnalyzeButton
+                      hasSentinelPro={hasSentinelPro}
+                      aiProgress={aiProgress}
+                      count={selected.size}
                       onClick={() => {
                         // v2.9.28.21 — cap + confirm flow (malware actionable list).
                         const list = [...selected];
@@ -1544,26 +1401,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                         }
                         startAiBatch(list);
                       }}
-                      disabled={!hasSentinelPro || !!aiProgress}
-                      aria-disabled={!hasSentinelPro ? true : undefined}
-                      aria-label={`Analyze ${selected.size} selected files with AI`}
-                      className={`bg-swiss-navy focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none transition-colors${!hasSentinelPro || !!aiProgress ? "cursor-not-allowed opacity-50" : ""}`}
-                    >
-                      {!hasSentinelPro ? (
-                        <Lock size={10} aria-hidden="true" />
-                      ) : aiProgress ? (
-                        <Loader2
-                          size={10}
-                          className="animate-spin"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <Sparkles size={10} aria-hidden="true" />
-                      )}
-                      {aiProgress
-                        ? `Analyzing ${aiProgress.current} of ${aiProgress.total}…`
-                        : `Check ${selected.size} with AI`}
-                    </button>
+                    />
                   )}
                 </div>
               )}
@@ -1665,38 +1503,12 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                     only while analyzing (not when Pro-gated — that is a permission state, not a busy one).
                   */}
                   {onAnalyze && (
-                    <button
-                      type="button"
-                      onClick={() => onAnalyze(threat.file)}
-                      disabled={
-                        !hasSentinelPro || analyzingFile === threat.file
-                      }
-                      aria-busy={analyzingFile === threat.file}
-                      aria-label={
-                        hasSentinelPro
-                          ? `Analyze ${threat.file} with AI`
-                          : AI_ANALYSIS_LOCKED_LABEL
-                      }
-                      title={
-                        hasSentinelPro
-                          ? "Analyze with AI"
-                          : AI_ANALYSIS_LOCKED_LABEL
-                      }
-                      className="bg-swiss-navy focus-visible:ring-swiss-navy inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {analyzingFile === threat.file ? (
-                        <Loader2
-                          size={10}
-                          className="animate-spin"
-                          aria-hidden="true"
-                        />
-                      ) : hasSentinelPro ? (
-                        <Sparkles size={10} aria-hidden="true" />
-                      ) : (
-                        <Lock size={10} aria-hidden="true" />
-                      )}
-                      {analyzingFile === threat.file ? "Analyzing…" : "Analyze"}
-                    </button>
+                    <AiAnalyzeFileButton
+                      file={threat.file}
+                      hasSentinelPro={hasSentinelPro}
+                      isAnalyzing={analyzingFile === threat.file}
+                      onAnalyze={onAnalyze}
+                    />
                   )}
                 </li>
               );
@@ -1895,8 +1707,10 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                           Delete {selectedLow.size}
                         </button>
                         {onAnalyze && (
-                          <button
-                            type="button"
+                          <BulkAiAnalyzeButton
+                            hasSentinelPro={hasSentinelPro}
+                            aiProgress={aiProgress}
+                            count={selectedLow.size}
                             onClick={() => {
                               // v2.9.28.21 — cap + confirm flow (malware low-risk list).
                               const list = [...selectedLow];
@@ -1907,26 +1721,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                               }
                               startAiBatch(list);
                             }}
-                            disabled={!hasSentinelPro || !!aiProgress}
-                            aria-disabled={!hasSentinelPro ? true : undefined}
-                            aria-label={`Analyze ${selectedLow.size} selected files with AI`}
-                            className={`bg-swiss-navy focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none transition-colors${!hasSentinelPro || !!aiProgress ? "cursor-not-allowed opacity-50" : ""}`}
-                          >
-                            {!hasSentinelPro ? (
-                              <Lock size={10} aria-hidden="true" />
-                            ) : aiProgress ? (
-                              <Loader2
-                                size={10}
-                                className="animate-spin"
-                                aria-hidden="true"
-                              />
-                            ) : (
-                              <Sparkles size={10} aria-hidden="true" />
-                            )}
-                            {aiProgress
-                              ? `Analyzing ${aiProgress.current} of ${aiProgress.total}…`
-                              : `Check ${selectedLow.size} with AI`}
-                          </button>
+                          />
                         )}
                       </div>
                     )}

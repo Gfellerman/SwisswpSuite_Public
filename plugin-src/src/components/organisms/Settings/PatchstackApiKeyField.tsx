@@ -17,6 +17,7 @@ import { Card } from "../../ui/Card";
 import { Badge } from "../../ui/Badge";
 import { toast } from "sonner";
 import { SwissSettings } from "../../../hooks/useSettings";
+import { PRO_UPGRADE_URL } from "../../../lib/edition";
 import {
   Shield,
   Eye,
@@ -163,7 +164,7 @@ export function PatchstackApiKeyField({
           <span className="text-sm text-yellow-800">
             Not available on this plan.{" "}
             <a
-              href="https://www.swisswpsecure.com/pricing"
+              href={PRO_UPGRADE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold underline hover:text-yellow-900 transition-colors"

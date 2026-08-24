@@ -2,7 +2,7 @@
  * Authored by: Backend Specialist
  * Skills: api-patterns, typescript-expert
  * Date: 2026-02-17
- * 
+ *
  * WordPress REST API Wrapper
  * Handles nonce injection, base URL resolution, and centralized error handling.
  */
@@ -15,15 +15,15 @@
  * Captures HTTP status and backend error messages
  */
 export class ApiError extends Error {
-    public status: number;
-    public data: any;
+  public status: number;
+  public data: any;
 
-    constructor(message: string, status: number, data?: any) {
-        super(message);
-        this.name = 'ApiError';
-        this.status = status;
-        this.data = data;
-    }
+  constructor(message: string, status: number, data?: any) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+  }
 }
 
 /**
@@ -31,165 +31,230 @@ export class ApiError extends Error {
  * @throws Error if nonce or API URL is missing
  */
 function getWpContext(): { nonce: string; baseUrl: string } {
-    const data = window.swisswpsuiteData;
+  const data = window.swisswpsuiteData;
 
-    if (!data) {
-        // Fallback for development/testing environments outside WP
-        // @ts-ignore - import.meta.env is provided by Vite but might need types
-        if (import.meta.env && import.meta.env.DEV) {
-            console.warn('WP Context missing, using mock data for dev');
-            return { nonce: 'mock-nonce', baseUrl: 'http://localhost/wp-json/swisswpsuite/v1' };
-        }
-        throw new Error('Critical: WordPress context (swisswpsuiteData) is missing.');
+  if (!data) {
+    // Fallback for development/testing environments outside WP
+    // @ts-ignore - import.meta.env is provided by Vite but might need types
+    if (import.meta.env && import.meta.env.DEV) {
+      console.warn("WP Context missing, using mock data for dev");
+      return {
+        nonce: "mock-nonce",
+        baseUrl: "http://localhost/wp-json/swisswpsuite/v1",
+      };
     }
+    throw new Error(
+      "Critical: WordPress context (swisswpsuiteData) is missing."
+    );
+  }
 
-    if (!data.nonce || !data.apiUrl) {
-        throw new Error('Critical: WordPress API configuration is incomplete.');
-    }
+  if (!data.nonce || !data.apiUrl) {
+    throw new Error("Critical: WordPress API configuration is incomplete.");
+  }
 
-    return { nonce: data.nonce, baseUrl: data.apiUrl };
+  return { nonce: data.nonce, baseUrl: data.apiUrl };
+}
+
+/**
+ * Options for wpApi(), extending standard fetch RequestInit.
+ */
+export interface WpApiOptions extends RequestInit {
+  /**
+   * U10 (UI-truth gate report, 2026-08-20): wpApi() throws an ApiError when
+   * a 2xx response body carries `success: false` (mirroring the non-2xx
+   * path it already has — see UI_TRUTH_AUDIT_2026-08-20.md finding R3 / the
+   * "35 of 75 mutation call sites never check .success" structural
+   * finding). This is correct for the vast majority of endpoints, where a
+   * 200+success:false body is an accidental discarded error.
+   *
+   * A small, explicitly enumerated set of endpoints intentionally ship
+   * `success:false` at HTTP 200 as a non-fatal "didn't auto-fix, here's why
+   * and how to do it manually" outcome (the `manual_fix` guide pattern —
+   * `fix_security_finding` and `run_sentinel_remediation`, confirmed by the
+   * gate report's FINAL R2 opt-out list). Callers of those specific
+   * endpoints must pass `allowSuccessFalse: true` to keep resolving instead
+   * of throwing — this is the typed discriminant R2 requires the caller
+   * "cannot destructure around": it must be passed explicitly per call,
+   * never defaulted to true.
+   */
+  allowSuccessFalse?: boolean;
 }
 
 /**
  * Generic API wrapper for WordPress REST endpoints
  * Automatically injects X-WP-Nonce header
- * 
+ *
  * @template T - The expected response type
  * @param endpoint - The API endpoint path (e.g., '/security/scan')
- * @param options - Standard fetch options
+ * @param options - Standard fetch options, plus wpApi()-specific options (see WpApiOptions)
  * @returns Promise resolving to the typed response data
  */
-export async function wpApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const { nonce, baseUrl } = getWpContext();
+export async function wpApi<T>(
+  endpoint: string,
+  options: WpApiOptions = {}
+): Promise<T> {
+  const { nonce, baseUrl } = getWpContext();
+  const { allowSuccessFalse, ...fetchOptions } = options;
 
-    // Ensure endpoint starts with / if not present (unless it's a full URL)
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const url = `${baseUrl}${cleanEndpoint}`;
+  // Ensure endpoint starts with / if not present (unless it's a full URL)
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const url = `${baseUrl}${cleanEndpoint}`;
 
-    const headers = {
-        'Content-Type': 'application/json',
-        'X-WP-Nonce': nonce,
-        ...options.headers,
-    };
+  const headers = {
+    "Content-Type": "application/json",
+    "X-WP-Nonce": nonce,
+    ...fetchOptions.headers,
+  };
 
-    try {
-        const response = await fetch(url, {
-            ...options,
-            headers,
-        });
+  try {
+    const response = await fetch(url, {
+      ...fetchOptions,
+      headers,
+    });
 
-        if (!response.ok) {
-            // Attempt to parse error detail from backend.
-            //
-            // WordPress REST endpoints normally return JSON. But if the server
-            // emits a PHP fatal before the callback runs, or returns a plain
-            // HTML error page (nginx 502, Cloudflare error, maintenance mode,
-            // mod_security block), response.json() throws and errorData stays
-            // undefined — which in the old code fell all the way through to
-            // "An unknown API error occurred". That left the user with zero
-            // signal about what actually failed.
-            //
-            // Fix: read the body as text once, attempt JSON.parse on it, and
-            // fall back to a status-aware message that includes a truncated
-            // body snippet when the response isn't JSON.
-            let errorData: any = {};
-            let rawBody = '';
-            try {
-                rawBody = await response.text();
-                if (rawBody) {
-                    try {
-                        errorData = JSON.parse(rawBody);
-                    } catch {
-                        // Non-JSON body — errorData stays {}, we use rawBody for the snippet below.
-                    }
-                }
-            } catch {
-                // Body couldn't even be read as text (network stream error).
-            }
-
-            // Handle specific status codes (api-patterns).
-            //
-            // v2.9.28.21 — 403 no longer unconditionally maps to "Authentication
-            // failed. Please refresh the page." That string is correct for a
-            // real nonce expiry but useless when the 403 carries a legitimate
-            // body like "AI analysis requires a Pro license." or "Pro licence
-            // required." — the user was left with no indication of why the
-            // action failed. We now prefer the backend's explicit message and
-            // only fall back to the generic auth string when the 403 body is
-            // empty (which is what a genuine nonce-rejected request looks like).
-            if (response.status === 401) {
-                throw new ApiError('Authentication failed. Please refresh the page.', response.status, errorData);
-            }
-
-            if (response.status === 403) {
-                const msg = errorData?.message || errorData?.data?.message;
-                throw new ApiError(
-                    msg || 'Authentication failed. Please refresh the page.',
-                    response.status,
-                    errorData
-                );
-            }
-
-            if (response.status === 402) {
-                // WP.org string census closure (2026-08-13, v2.9.33.18, R2b):
-                // neutral fallback — no "Pro"/"upgrade"/"plan"/"purchase"
-                // wording. This client-side default is only used when the
-                // backend's own error body carries no message; shared code
-                // path, reachable in both editions.
-                throw new ApiError(
-                    (errorData as any)?.message || 'Not enough AI tokens for this action.',
-                    402,
-                    errorData
-                );
-            }
-
-            if (response.status === 404) {
-                throw new ApiError('Resource not found.', response.status, errorData);
-            }
-
-            // Extract a human-readable message. Order of precedence:
-            //   1. errorData.message            — our endpoints' { success:false, message:"..." } shape
-            //   2. errorData.data?.message      — nested WP_Error shape (rare, belt & suspenders)
-            //   3. response.statusText          — empty on HTTP/2, but useful on HTTP/1.1
-            //   4. Status-aware fallback with optional body snippet so the user sees SOMETHING actionable
-            //      instead of the opaque "An unknown API error occurred" string.
-            let message: string = errorData?.message
-                || errorData?.data?.message
-                || response.statusText
-                || '';
-
-            if (!message) {
-                // Non-JSON response (or empty body) — synthesize a message that
-                // at minimum tells the user the HTTP status and includes up to
-                // 200 chars of the raw body so PHP fatals / HTML error pages
-                // aren't swallowed silently. This replaces the old opaque
-                // "An unknown API error occurred" fallback.
-                const snippet = rawBody
-                    ? ' — ' + rawBody.replace(/\s+/g, ' ').trim().slice(0, 200)
-                    : '';
-                message = `Server error (HTTP ${response.status})${snippet}`;
-            }
-
-            throw new ApiError(message, response.status, errorData);
+    if (!response.ok) {
+      // Attempt to parse error detail from backend.
+      //
+      // WordPress REST endpoints normally return JSON. But if the server
+      // emits a PHP fatal before the callback runs, or returns a plain
+      // HTML error page (nginx 502, Cloudflare error, maintenance mode,
+      // mod_security block), response.json() throws and errorData stays
+      // undefined — which in the old code fell all the way through to
+      // "An unknown API error occurred". That left the user with zero
+      // signal about what actually failed.
+      //
+      // Fix: read the body as text once, attempt JSON.parse on it, and
+      // fall back to a status-aware message that includes a truncated
+      // body snippet when the response isn't JSON.
+      let errorData: any = {};
+      let rawBody = "";
+      try {
+        rawBody = await response.text();
+        if (rawBody) {
+          try {
+            errorData = JSON.parse(rawBody);
+          } catch {
+            // Non-JSON body — errorData stays {}, we use rawBody for the snippet below.
+          }
         }
+      } catch {
+        // Body couldn't even be read as text (network stream error).
+      }
 
-        // Parse success response
-        // If status is 204 No Content, return null as T
-        if (response.status === 204) {
-            return null as unknown as T;
-        }
-
-        return await response.json();
-    } catch (error) {
-        // Re-throw ApiErrors, wrap others
-        if (error instanceof ApiError) {
-            throw error;
-        }
-
-        // Network errors or other fetch failures
+      // Handle specific status codes (api-patterns).
+      //
+      // v2.9.28.21 — 403 no longer unconditionally maps to "Authentication
+      // failed. Please refresh the page." That string is correct for a
+      // real nonce expiry but useless when the 403 carries a legitimate
+      // body like "AI analysis requires a Pro license." or "Pro licence
+      // required." — the user was left with no indication of why the
+      // action failed. We now prefer the backend's explicit message and
+      // only fall back to the generic auth string when the 403 body is
+      // empty (which is what a genuine nonce-rejected request looks like).
+      if (response.status === 401) {
         throw new ApiError(
-            error instanceof Error ? error.message : 'Network request failed',
-            0 // 0 indicates client-side/network error
+          "Authentication failed. Please refresh the page.",
+          response.status,
+          errorData
         );
+      }
+
+      if (response.status === 403) {
+        const msg = errorData?.message || errorData?.data?.message;
+        throw new ApiError(
+          msg || "Authentication failed. Please refresh the page.",
+          response.status,
+          errorData
+        );
+      }
+
+      if (response.status === 402) {
+        // WP.org string census closure (2026-08-13, v2.9.33.18, R2b):
+        // neutral fallback — no "Pro"/"upgrade"/"plan"/"purchase"
+        // wording. This client-side default is only used when the
+        // backend's own error body carries no message; shared code
+        // path, reachable in both editions.
+        throw new ApiError(
+          (errorData as any)?.message ||
+            "Not enough AI tokens for this action.",
+          402,
+          errorData
+        );
+      }
+
+      if (response.status === 404) {
+        throw new ApiError("Resource not found.", response.status, errorData);
+      }
+
+      // Extract a human-readable message. Order of precedence:
+      //   1. errorData.message            — our endpoints' { success:false, message:"..." } shape
+      //   2. errorData.data?.message      — nested WP_Error shape (rare, belt & suspenders)
+      //   3. response.statusText          — empty on HTTP/2, but useful on HTTP/1.1
+      //   4. Status-aware fallback with optional body snippet so the user sees SOMETHING actionable
+      //      instead of the opaque "An unknown API error occurred" string.
+      let message: string =
+        errorData?.message ||
+        errorData?.data?.message ||
+        response.statusText ||
+        "";
+
+      if (!message) {
+        // Non-JSON response (or empty body) — synthesize a message that
+        // at minimum tells the user the HTTP status and includes up to
+        // 200 chars of the raw body so PHP fatals / HTML error pages
+        // aren't swallowed silently. This replaces the old opaque
+        // "An unknown API error occurred" fallback.
+        const snippet = rawBody
+          ? " — " + rawBody.replace(/\s+/g, " ").trim().slice(0, 200)
+          : "";
+        message = `Server error (HTTP ${response.status})${snippet}`;
+      }
+
+      throw new ApiError(message, response.status, errorData);
     }
+
+    // Parse success response
+    // If status is 204 No Content, return null as T
+    if (response.status === 204) {
+      return null as unknown as T;
+    }
+
+    const body = await response.json();
+
+    // U10 (UI-truth gate report, 2026-08-20): a 2xx HTTP status only
+    // proves the request was accepted, not that the claimed effect
+    // actually happened — the exact defect class UI_TRUTH_AUDIT_2026-08-20.md
+    // documents across ~half the mutation call sites in this SPA (finding
+    // R3): `success: false` riding a 200 status resolved normally and was
+    // silently ignored by any caller that didn't happen to check
+    // `.success`. Mirror the non-2xx path above: throw an ApiError
+    // instead, UNLESS the caller explicitly opted this specific call out
+    // via `allowSuccessFalse` (see WpApiOptions) for one of the small,
+    // enumerated set of endpoints that intentionally ship this shape as a
+    // non-fatal "here's why, try this instead" outcome.
+    if (
+      !allowSuccessFalse &&
+      body &&
+      typeof body === "object" &&
+      (body as { success?: unknown }).success === false
+    ) {
+      const errBody = body as { message?: string; data?: { message?: string } };
+      const message =
+        errBody.message || errBody.data?.message || "Request failed.";
+      throw new ApiError(message, response.status, body);
+    }
+
+    return body;
+  } catch (error) {
+    // Re-throw ApiErrors, wrap others
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    // Network errors or other fetch failures
+    throw new ApiError(
+      error instanceof Error ? error.message : "Network request failed",
+      0 // 0 indicates client-side/network error
+    );
+  }
 }

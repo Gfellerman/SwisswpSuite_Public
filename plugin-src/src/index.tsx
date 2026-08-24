@@ -4,7 +4,33 @@ import { RouterProvider } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { router } from "./lib/router";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import type { ErrorBoundaryReportPayload } from "./components/ErrorBoundary";
+import { isOwnScript, sendError } from "./lib/errorReporting";
 import "./index.css";
+
+// ─── JS ERROR FORWARDING (module scope) ────────────────────────────────────
+// isOwnScript()/sendError() moved to ./lib/errorReporting.ts (2026-08-17,
+// TanStack-forwarding audit gap fix) — unchanged logic, imported from there
+// so plugin/src/lib/queryClient.ts can reuse the same fail-closed
+// attribution check and POST transport without a circular import
+// (queryClient.ts -> index.tsx -> queryClient.ts). The window.onerror /
+// unhandledrejection wiring below still lives here (DOM-global event
+// wiring, not a reusable transport) — see the DOUBLE-LOAD GUARD comment
+// further down for why it's registered only inside the guarded branch (it
+// must not be registered twice on a duplicate script load).
+
+// Reports a boundary-caught error using the same fail-closed attribution as
+// the window handlers below: only forward when the error's OWN stack
+// demonstrably references this plugin's asset URL (boundary-caught errors
+// originate in our bundle, so their stack should reference it — a
+// component-stack alone from an unrelated source is not sufficient
+// evidence). If it doesn't pass, show the fallback UI but skip reporting —
+// under-reporting beats mislabeling, this file's documented doctrine.
+function reportBoundaryError(payload: ErrorBoundaryReportPayload): void {
+  if (!isOwnScript(payload.stack)) return;
+  sendError(payload);
+}
 
 const rootElement = document.getElementById("swisswpsuite-app-root");
 if (!rootElement) {
@@ -45,35 +71,6 @@ if (!import.meta.hot && rootElement.hasAttribute("data-swisswpsuite-mounted")) {
   // do). log_js_error() (api-settings.php) re-validates the same on the server as a
   // defensive second layer, in case a stale cached bundle predates this filter.
   (function setupSwissErrorForwarder() {
-    const assetsBaseUrl = window.swisswpsuiteData?.assetsBaseUrl;
-
-    // Returns true only when the given source URL is demonstrably inside this
-    // plugin's own asset directory. A missing/empty assetsBaseUrl (e.g. a stale
-    // cached bundle running against an older localized-data object) or a
-    // missing source both fail closed — under-reporting is preferable to
-    // mislabeling another plugin's error as a SwissSuite issue.
-    const isOwnScript = (source: string): boolean => {
-      if (!assetsBaseUrl || !source) return false;
-      return source.includes(assetsBaseUrl);
-    };
-
-    const sendError = (payload: object) => {
-      const data = window.swisswpsuiteData;
-      if (!data?.apiUrl || !data?.nonce) return;
-      const url = data.apiUrl + "/debug/js-error";
-      fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-WP-Nonce": data.nonce,
-        },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      }).catch(() => {
-        /* never throw from the error reporter itself */
-      });
-    };
-
     window.onerror = (message, source, lineno, colno, error) => {
       const sourceStr = String(source || "");
       if (isOwnScript(sourceStr)) {
@@ -137,9 +134,11 @@ if (!import.meta.hot && rootElement.hasAttribute("data-swisswpsuite-mounted")) {
     // v2.9.30.117: removed production console.log (no-op in built bundle)
     root.render(
       <React.StrictMode>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
+        <ErrorBoundary onReport={reportBoundaryError}>
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+          </QueryClientProvider>
+        </ErrorBoundary>
       </React.StrictMode>
     );
   }

@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { ViewState } from "../types";
 import OnPageDiagnostics from "./organisms/Seo/OnPageDiagnostics";
+import { useSettings } from "../hooks/useSettings";
+import { DASHBOARD_EMPTY_STATE_DESCRIPTION } from "./dashboardProCopy";
 
 interface DashboardProps {
   onNavigate: (view: ViewState) => void;
@@ -139,6 +141,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   });
   const [loading, setLoading] = useState(true);
   const [hasData, setHasData] = useState(false);
+  // F-09 Option A (ARS Round B2, D4-2): distinguish "off by default" from
+  // "on but no data yet" in the empty state below.
+  const { settings } = useSettings();
 
   const animatedThreats = useAnimatedCounter(stats.threats_blocked, 1000);
   const animatedSeo = useAnimatedCounter(stats.seo_score, 1000);
@@ -170,8 +175,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div>
           <div className="mb-4 flex items-center gap-3">
             <div className="bg-swiss-red h-1 w-12 shadow-[0_0_20px_rgba(213,43,30,0.2)]"></div>
+            {/* ARS Round D (D-K-8, WP.org R4 N-05, 2026-08-2x): the "|| "
+                fallback below was 27 versions stale ("2.9.6.4"); the real
+                version always comes from window.swisswpsuiteData
+                (server-injected on every page load) — the fallback is
+                used only in the edge case where that global is missing or
+                malformed, and must be re-bumped on future releases same
+                as this fix bumped it now (a hardcoded fallback version
+                drifts by construction — there is no mechanism keeping it
+                in sync). */}
             <span className="text-swiss-red text-[12px] font-black tracking-[0.5em] uppercase">
-              SwissSuite v{window.swisswpsuiteData?.version || "2.9.6.4"}
+              SwissSuite v{window.swisswpsuiteData?.version || "2.9.33.36"}
             </span>
           </div>
           <h2 className="text-foreground dark:text-foreground mb-6 text-7xl leading-none font-black tracking-tighter">
@@ -237,8 +251,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             No data yet — run your first scan to see results here.
           </p>
           <p className="max-w-md text-center text-xs text-neutral-400">
-            Activate your license and run a security scan or SEO check to
-            populate your dashboard with real data from your site.
+            {DASHBOARD_EMPTY_STATE_DESCRIPTION}
           </p>
         </div>
       )}
@@ -262,7 +275,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           {
             id: "seo",
             label: "Improve SEO",
-            desc: "Generate titles, descriptions & alt text with AI",
+            // ARS Round D (D-K-2, WP.org R4 F-01/F-07, 2026-08-2x): this
+            // tile is unconditional (no edition gate) and used to say
+            // "...with AI" — a promise the SEO page's matching action
+            // cannot keep in Free (its AI-generation controls are Pro-only
+            // and now physically absent there, see D-K-7). Reworded to
+            // describe the genuinely-free SEO Health Check feature this
+            // tile actually links to, in both editions.
+            desc: "Check and improve titles, descriptions & alt text",
             icon: Globe,
           },
           {
@@ -328,8 +348,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   No traffic data yet
                 </p>
                 <p className="max-w-xs text-center text-xs text-neutral-300">
-                  Traffic data will appear here once the plugin has been
-                  monitoring your site for a few days.
+                  {settings?.pageviewTrackingEnabled === false
+                    ? "Turn on Dashboard Traffic Counter in Settings to start counting visits."
+                    : "Traffic data will appear here once the plugin has been monitoring your site for a few days."}
                 </p>
               </div>
             ) : (

@@ -476,8 +476,11 @@ export const BackupControl: React.FC = () => {
       id: "full",
       label: "Everything",
       badge: "Recommended",
+      // P1-01/R-01 fix (ARS Round C): database restore IS available for this
+      // backup type — restore_backup_set() imports the embedded dump when one
+      // is found, taking a safety copy of the current database first.
       description:
-        "The complete copy of your site — posts, images, plugins, themes, and all settings. Database restore is not available in this version; restoring a backup brings back your files only, and never modifies your database.",
+        "The complete copy of your site — posts, images, plugins, themes, and all settings. Restoring this backup restores your files and, when the archive includes a database dump, your database too — a safety copy of your current database is saved first.",
       icon: HardDrive,
       activeColor: "emerald",
       activeBg: "bg-emerald-50/10",

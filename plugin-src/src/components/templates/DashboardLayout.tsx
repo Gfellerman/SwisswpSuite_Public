@@ -13,6 +13,9 @@ import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { ThemeToggle } from "../ThemeToggle";
 import { isProEdition } from "../../lib/edition";
+// ARS Round D (D-K-3, WP.org R4 F-01/F-41, 2026-08-2x): see
+// LicenseTierBadge.tsx's own docblock.
+import { LicenseTierBadge } from "./LicenseTierBadge";
 import {
   LayoutDashboard,
   Shield,
@@ -112,12 +115,22 @@ export function DashboardLayout() {
     },
   ];
 
-  // When standalone mode is active, hide SEO and AI Content tabs (TD-4 fix)
-  const navItems = isStandalone
-    ? allNavItems.filter(
-        (item) => item.id !== "seo" && item.id !== "content-enhancer"
-      )
-    : allNavItems;
+  // When standalone mode is active, hide SEO and AI Content tabs (TD-4 fix).
+  // ARS Round D (D-K-2, WP.org R4 F-01, 2026-08-2x): AI Content is ALSO
+  // hidden in Free unconditionally — the nav item's own `locked` flag
+  // above evaluates false-by-construction in Free (isProEditionBuild is
+  // false, so `isProEditionBuild && !caps.includes(...)` is always
+  // false), so without this it renders as a clickable, unlocked tab whose
+  // destination (AIContentPage.freeStub.tsx) is an upsell placeholder
+  // with no working feature behind it — a reachable dead end, not a
+  // legitimate free feature. Pro is unaffected: content-enhancer still
+  // appears there with its normal capability-based lock state.
+  const navItems = allNavItems.filter((item) => {
+    if (isStandalone && (item.id === "seo" || item.id === "content-enhancer"))
+      return false;
+    if (!isProEditionBuild && item.id === "content-enhancer") return false;
+    return true;
+  });
 
   return (
     <div className="bg-bg-deep dark:text-foreground dark:bg-card selection:bg-swiss-red/20 selection:text-foreground flex min-h-screen overflow-hidden font-sans text-neutral-900 transition-colors duration-300">
@@ -315,14 +328,23 @@ export function DashboardLayout() {
 
             {/* User Profile */}
             <div className="border-border dark:border-border/10 flex items-center gap-4 border-l pl-4">
-              <div className="hidden flex-col items-end lg:flex!">
-                <span className="text-xs font-bold tracking-wider text-neutral-700 uppercase">
-                  License Tier
-                </span>
-                <span className="dark:text-foreground text-xs font-black tracking-wide text-neutral-900 uppercase">
-                  {tierName}
-                </span>
-              </div>
+              {/* ARS Round D (D-K-3, WP.org R4 F-01/F-41, 2026-08-2x):
+                  "License Tier" is Pro-only license vocabulary reachable
+                  on every screen in Free (tierName falls back to "FREE
+                  EDITION" there — the string PRESENCE is the finding, not
+                  whether anything behind it is broken). Extracted to
+                  LicenseTierBadge.tsx so the literal is physically absent
+                  from Free (a runtime-only isProEditionBuild gate is not
+                  enough — this file is the always-present app shell,
+                  never aliasable, so the string would still compile in
+                  even while unreachable). This is a deliberate reversal
+                  of the 2026-08-13 controller ruling that left this block
+                  unchanged (C2 Group H) — the reviewer re-flagged the
+                  same surface in R4, and current Round D doctrine ("Free
+                  bundle must contain zero padlocked/dead controls")
+                  supersedes that prior "leave unchanged" call. Pro is
+                  unaffected. */}
+              {isProEditionBuild && <LicenseTierBadge tierName={tierName} />}
 
               <div className="bg-secondary dark:bg-card/10 dark:text-foreground hover:ring-swiss-red/50 flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl text-xs font-bold text-neutral-600 ring-2 ring-transparent transition-all">
                 AD

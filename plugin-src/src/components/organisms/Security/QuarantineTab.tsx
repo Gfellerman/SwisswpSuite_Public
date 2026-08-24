@@ -190,8 +190,13 @@ const AllowedIpsTable: React.FC<AllowedIpsTableProps> = ({
         ) : null}
       </div>
       <div className="flex gap-4">
+        <label htmlFor="quarantine-allow-ip" className="sr-only">
+          IP address to allow
+        </label>
         <input
           type="text"
+          id="quarantine-allow-ip"
+          name="allowIp"
           placeholder="Enter IP address to allow..."
           value={manualAllowedIp}
           onChange={(e) => onChangeManual(e.target.value)}
@@ -288,8 +293,13 @@ const BlockedIpsTable: React.FC<BlockedIpsTableProps> = ({
         </p>
       </div>
       <div className="flex gap-4">
+        <label htmlFor="quarantine-block-ip" className="sr-only">
+          IP address to block
+        </label>
         <input
           type="text"
+          id="quarantine-block-ip"
+          name="blockIp"
           placeholder="Enter IP address to block..."
           value={manualIp}
           onChange={(e) => onChangeManual(e.target.value)}

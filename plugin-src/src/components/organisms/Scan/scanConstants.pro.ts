@@ -1,5 +1,5 @@
 /**
- * Scan Consolidation — Pro-only scan copy (v2.9.33.17)
+ * Scan Consolidation — Pro-descriptive scan copy (v2.9.33.17)
  *
  * WP.org compliance (B12a residual closure, 2026-08-13): the descriptive
  * labels/copy for the two Pro-only scan types — "full-ai" (deprecated/dead
@@ -19,12 +19,25 @@
  * list ("Deep Malware Scan / Layer 2 label+description" and "Full AI Scan
  * label+description").
  *
- * Fix: extracted into this sibling module, aliased away in the Free build
- * via `plugin/vite.config.ts`'s resolve.alias (exact specifier
+ * Fix: extracted into this sibling module, aliased in the Free build via
+ * `plugin/vite.config.ts`'s resolve.alias (exact specifier
  * "./scanConstants.pro", as written at its one importer, scanConstants.ts)
  * — same mechanism as GeoLockdownCard/EncryptionSettings/TwoFactorSettings/
- * etc. In Free, `scanConstants.pro.freeStub.ts` supplies neutral
- * empty-string placeholders instead.
+ * etc.
+ *
+ * WP.org R4 (owner ruling OD-3, 2026-08-22): "deep-malware" is no longer
+ * Pro-only — the scan itself (enumerate/hashing/vps-hash/local-scan/wpscan/
+ * patchstack phases) is enabled in Free; only the final ai_analysis phase
+ * stays Pro (gated inside the pipeline via
+ * has_capability('sentinel_pro')). This module now supplies the FULL
+ * (AI-inclusive) description consumed by the Pro build; the sibling
+ * `scanConstants.pro.freeStub.ts` supplies a Free-safe description that
+ * describes only the local/free-available phases — no "AI", "tokens", or
+ * "Pro" wording — per this project's string-presence doctrine (a runtime
+ * gate on the AI *result* is not sufficient to keep AI-describing *copy*
+ * out of the Free bundle; the copy itself must differ per edition). "full-
+ * ai" stays fully Pro/empty-in-Free — it has no Free-usable phase at all
+ * (dead card, no ScanCard/ScanResultPanel call site renders it).
  *
  * Dispatch-only data (SCAN_TYPES union keys, SCAN_TIER) stays in
  * scanConstants.ts — those are structural identifiers used for lookups and
@@ -43,7 +56,7 @@ export const PRO_SCAN_DESCRIPTIONS: Record<"full-ai" | "deep-malware", string> =
     "full-ai":
       "Security Audit plus an AI-powered deep pass: CVE database matching, attack-chain analysis, and cross-correlation across layers. Highest accuracy; consumes more AI tokens. Pro only.",
     "deep-malware":
-      "A deep scan with automatic AI verification of every result: enumerates every PHP file in plugins, themes, and uploads, runs them through the SwissSuite VPS hash database plus WPScan and Patchstack CVE lookups, then has AI verify and grade the findings A–F before presenting them. Multi-minute scan; consumes AI tokens. Pro only.",
+      "A deep scan with automatic AI verification of every result: enumerates every PHP file in plugins, themes, and uploads, runs them through the SwissSuite VPS hash database plus WPScan and Patchstack CVE lookups, then has AI verify and grade the findings A–F before presenting them. Multi-minute scan; consumes AI tokens on Pro; runs local-only on Free.",
   };
 
 /**

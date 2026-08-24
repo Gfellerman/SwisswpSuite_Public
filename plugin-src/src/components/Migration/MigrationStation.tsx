@@ -31,7 +31,6 @@ import type {
   ThemeTransferMeta,
   ImportStatus,
 } from "../../types";
-import { useSettings } from "../../hooks/useSettings";
 
 interface MigrationStationProps {
   onCancel: () => void;
@@ -380,10 +379,6 @@ export const MigrationStation: React.FC<MigrationStationProps> = ({
   const importStatusIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
     null
   );
-
-  // Server Profile State
-  const { settings, updateSettings } = useSettings();
-  const [savingProfile, setSavingProfile] = useState(false);
 
   const { apiUrl, nonce } = window.swisswpsuiteData || {};
 
@@ -995,23 +990,6 @@ export const MigrationStation: React.FC<MigrationStationProps> = ({
       // Non-fatal — pre-flight is informational; import can still proceed
     } finally {
       setPreflightLoading(false);
-    }
-  };
-
-  const handleServerProfileChange = async (
-    profile: "auto" | "standard" | "vps"
-  ) => {
-    if (settings?.serverProfile === profile) return;
-    setSavingProfile(true);
-    try {
-      await updateSettings({ serverProfile: profile });
-      toast.success(
-        `Server profile: ${profile === "auto" ? "Auto-Detect" : profile === "standard" ? "Standard Hosting" : "VPS / Dedicated"}`
-      );
-    } catch (e: any) {
-      toast.error("Failed to save: " + (e.message || "Unknown error"));
-    } finally {
-      setSavingProfile(false);
     }
   };
 
@@ -2223,113 +2201,10 @@ export const MigrationStation: React.FC<MigrationStationProps> = ({
           <Server className="h-4 w-4" />
           Advanced Settings
           <span className="text-xs font-normal">
-            — Server profile, environment reset, and diagnostic tools
+            — Environment reset and diagnostic tools
           </span>
         </summary>
         <div className="border-border space-y-4 border-t px-5 pt-4 pb-5">
-          {/* Server Profile */}
-          <div>
-            <p className="dark:text-foreground mb-2 text-sm font-medium text-gray-900">
-              Server Profile
-            </p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <button
-                type="button"
-                onClick={() => handleServerProfileChange("auto")}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleServerProfileChange("auto");
-                  }
-                }}
-                aria-pressed={
-                  settings?.serverProfile === "auto" || !settings?.serverProfile
-                }
-                className={`relative rounded-xl border-2 p-4 text-left transition-all duration-200 focus:ring-2 focus:ring-blue-500/50 focus:outline-none ${
-                  settings?.serverProfile === "auto" || !settings?.serverProfile
-                    ? "border-blue-500 bg-blue-50/30 dark:bg-blue-950/20"
-                    : "border-border bg-transparent hover:border-blue-200 dark:hover:border-blue-800"
-                }`}
-              >
-                {(settings?.serverProfile === "auto" ||
-                  !settings?.serverProfile) && (
-                  <CheckCircle className="absolute top-3 right-3 h-4 w-4 text-blue-500" />
-                )}
-                <div className="pr-6 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Automatic{" "}
-                  <span className="text-xs font-normal text-blue-600 dark:text-blue-400">
-                    (Recommended)
-                  </span>
-                </div>
-                <div className="text-muted-foreground mt-1 text-xs">
-                  Let the plugin figure out the best settings for your server.
-                  Works for 95% of sites.
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleServerProfileChange("standard")}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleServerProfileChange("standard");
-                  }
-                }}
-                aria-pressed={settings?.serverProfile === "standard"}
-                className={`relative rounded-xl border-2 p-4 text-left transition-all duration-200 focus:ring-2 focus:ring-blue-500/50 focus:outline-none ${
-                  settings?.serverProfile === "standard"
-                    ? "border-blue-500 bg-blue-50/30 dark:bg-blue-950/20"
-                    : "border-border bg-transparent hover:border-blue-200 dark:hover:border-blue-800"
-                }`}
-              >
-                {settings?.serverProfile === "standard" && (
-                  <CheckCircle className="absolute top-3 right-3 h-4 w-4 text-blue-500" />
-                )}
-                <div className="pr-6 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Shared Hosting
-                </div>
-                <div className="text-muted-foreground mt-1 text-xs">
-                  For Hostinger, Bluehost, SiteGround, or similar. Choose only
-                  if Automatic isn't working.
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleServerProfileChange("vps")}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleServerProfileChange("vps");
-                  }
-                }}
-                aria-pressed={settings?.serverProfile === "vps"}
-                className={`relative rounded-xl border-2 p-4 text-left transition-all duration-200 focus:ring-2 focus:ring-blue-500/50 focus:outline-none ${
-                  settings?.serverProfile === "vps"
-                    ? "border-blue-500 bg-blue-50/30 dark:bg-blue-950/20"
-                    : "border-border bg-transparent hover:border-blue-200 dark:hover:border-blue-800"
-                }`}
-              >
-                {settings?.serverProfile === "vps" && (
-                  <CheckCircle className="absolute top-3 right-3 h-4 w-4 text-blue-500" />
-                )}
-                <div className="pr-6 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  VPS or Dedicated Server
-                </div>
-                <div className="text-muted-foreground mt-1 text-xs">
-                  For sites on a private server. Faster, but requires specific
-                  server permissions.
-                </div>
-              </button>
-            </div>
-            {savingProfile && (
-              <p className="mt-2 flex items-center gap-1 text-xs text-blue-500">
-                <Loader2 className="h-3 w-3 animate-spin" /> Saving…
-              </p>
-            )}
-          </div>
-
           {/* Stuck? Clear migration data */}
           <div className="flex items-center justify-between rounded-xl border border-red-200/50 bg-red-50/10 p-4 dark:border-red-800/30 dark:bg-red-950/10">
             <div>

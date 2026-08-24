@@ -43,6 +43,18 @@ interface ModuleRow {
 // pitch.
 const MODULES: ModuleRow[] = [
   { name: "Malware scanner & quarantine", free: true },
+  // WP.org R4 (owner ruling OD-3, 2026-08-22, docs/reports/
+  // WPORG_REJECTION_R4_ANALYSIS_2026-08-22.md): Deep Malware Scan's local +
+  // threat-database phases (enumerate, hashing, VPS hash-database lookup,
+  // local signature scan, WPScan/Patchstack CVE lookup) are now Free — only
+  // the final AI-grading phase stays genuinely Pro-only serviceware (see
+  // docs/capabilities/SECURITY_CAPABILITIES_REFERENCE.md's "Deep Malware
+  // Scan" section for the full mechanism).
+  {
+    name: "Deep Malware Scan (Layer 2) — local + threat-database phases",
+    free: true,
+    note: "AI grading is Pro",
+  },
   { name: "Basic firewall (WAF)", free: true },
   { name: "Hardening (all 12 one-click options)", free: true },
   { name: "Login protection & IP allow/ban lists", free: true },

@@ -65,13 +65,13 @@ function BackupCodesPanel({ codes }: { codes: string[] }) {
     <div
       role="region"
       aria-label="Backup recovery codes"
-      className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3"
+      className="mt-4 space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4"
     >
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <AlertTriangle
             size={16}
-            className="text-amber-600 shrink-0"
+            className="shrink-0 text-amber-600"
             aria-hidden="true"
           />
           <span className="text-sm font-semibold text-amber-800">
@@ -99,7 +99,7 @@ function BackupCodesPanel({ codes }: { codes: string[] }) {
           <span
             key={code}
             role="listitem"
-            className="font-mono text-sm text-amber-900 bg-white border border-amber-200 rounded px-3 py-1.5 tracking-widest text-center"
+            className="rounded border border-amber-200 bg-white px-3 py-1.5 text-center font-mono text-sm tracking-widest text-amber-900"
           >
             {code}
           </span>
@@ -150,20 +150,26 @@ export function TwoFactorSettings() {
 
   // ── Fetch status on mount ──────────────────────────────────────────────
 
-  const fetchStatus = useCallback(async () => {
+  const fetchStatus = useCallback(async (): Promise<TwoFactorStatus | null> => {
     setIsLoadingStatus(true);
     try {
       const res = await wpApi<{ success: boolean; status: TwoFactorStatus }>(
-        "/2fa/status",
+        "/2fa/status"
       );
       if (res.success) {
         setStatus(res.status);
         setPhase(res.status.enabled ? "active" : "not_set_up");
+        // UI-Truth Sprint (2026-08-20, U6): return the freshly-fetched status so
+        // callers can gate UI decisions on the genuine live read instead of the
+        // (async, not-yet-committed) `status` state variable.
+        return res.status;
       }
+      return null;
     } catch (err: any) {
       toast.error(
-        "Could not load 2FA status — " + (err.message || "network error"),
+        "Could not load 2FA status — " + (err.message || "network error")
       );
+      return null;
     } finally {
       setIsLoadingStatus(false);
     }
@@ -186,7 +192,7 @@ export function TwoFactorSettings() {
         "/2fa/setup",
         {
           method: "POST",
-        },
+        }
       );
       if (res.success) {
         setSetupData(res.setup);
@@ -197,11 +203,11 @@ export function TwoFactorSettings() {
     } catch (err: any) {
       if (err?.data?.upgrade_required) {
         toast.error(
-          "2FA requires a Pro license — upgrade at swisswpsecure.com/products",
+          "2FA requires a Pro license — upgrade at swisswpsecure.com/products"
         );
       } else {
         toast.error(
-          "Failed to start 2FA setup — " + (err.message || "try again"),
+          "Failed to start 2FA setup — " + (err.message || "try again")
         );
       }
     } finally {
@@ -227,17 +233,51 @@ export function TwoFactorSettings() {
       });
       if (res.success) {
         setBackupCodes(res.backup_codes || []);
-        toast.success("Two-factor authentication enabled");
-        await fetchStatus();
-        // Stay showing backup codes — user must see them before continuing
-        setPhase("active");
-        setVerifyCode("");
-        setSetupData(null);
+        // UI-Truth Sprint (2026-08-20, U6): the backend can now genuinely fail
+        // to persist (500, see complete_setup()'s new read-backs) — but even on
+        // a reported success, don't force the UI to "active" from res.success
+        // alone. Read back the live status fetchStatus() just fetched and gate
+        // the phase transition on THAT, not on the response envelope, so this
+        // line can never paper over a persistence failure the backend
+        // (correctly) reported honestly.
+        const freshStatus = await fetchStatus();
+        // a11y Serious F5 (ADDENDUM-4, 2026-08-20): `freshStatus?.enabled`
+        // alone collapsed two semantically different outcomes into one
+        // branch — fetchStatus()'s own catch path resolves `null` on a
+        // network blip on THIS independent re-fetch, which is
+        // indistinguishable from a genuine `{enabled: false}` under optional
+        // chaining, even though the backend may have genuinely succeeded
+        // (complete_setup()'s U6 read-back gate already confirmed it). A
+        // screen-reader user has no way to sanity-check the still-visible
+        // QR/backup-codes screen against devtools the way a sighted user
+        // might, so the false "Setup did not complete" was a real
+        // truthfulness regression, not just noise. Three explicit branches:
+        if (freshStatus?.enabled === true) {
+          toast.success("Two-factor authentication enabled");
+          // Stay showing backup codes — user must see them before continuing
+          setPhase("active");
+          setVerifyCode("");
+          setSetupData(null);
+        } else if (freshStatus === null) {
+          // Re-fetch blipped — make no claim either way, don't move phase.
+          // Traced conclusively (ADDENDUM-4): no re-enrollment hazard from a
+          // retry here — complete_setup()'s single-use pending-secret
+          // transient is already consumed, and start_2fa_setup() separately
+          // refuses to regenerate a secret once is_2fa_enabled() is true.
+          toast.warning(
+            "Could not confirm setup status — please refresh the page and check before retrying."
+          );
+        } else {
+          // freshStatus.enabled === false — genuinely not enabled.
+          toast.error(
+            "Setup did not complete — 2FA is not active yet. Please try again."
+          );
+        }
       }
     } catch (err: any) {
       toast.error(
         "Verification failed — " +
-          (err.message || "check the code and try again"),
+          (err.message || "check the code and try again")
       );
     } finally {
       setIsVerifying(false);
@@ -256,7 +296,7 @@ export function TwoFactorSettings() {
         {
           method: "POST",
           body: JSON.stringify({ code: disableCode }),
-        },
+        }
       );
       if (res.success) {
         toast.success(res.message || "2FA has been disabled");
@@ -297,8 +337,7 @@ export function TwoFactorSettings() {
       }
     } catch (err: any) {
       toast.error(
-        "Failed to regenerate backup codes — " +
-          (err.message || "invalid code"),
+        "Failed to regenerate backup codes — " + (err.message || "invalid code")
       );
     } finally {
       setIsRegenerating(false);
@@ -323,15 +362,15 @@ export function TwoFactorSettings() {
   if (!hasPro) {
     return (
       <Card className="max-w-3xl p-6">
-        <div className="flex items-center gap-3 border-b border-border pb-4">
-          <div className="p-2 bg-neutral-100 rounded-lg">
+        <div className="border-border flex items-center gap-3 border-b pb-4">
+          <div className="rounded-lg bg-neutral-100 p-2">
             <ShieldCheck
-              className="w-5 h-5 text-neutral-400"
+              className="h-5 w-5 text-neutral-400"
               aria-hidden="true"
             />
           </div>
           <div>
-            <h3 className="font-semibold text-lg">Two-Factor Authentication</h3>
+            <h3 className="text-lg font-semibold">Two-Factor Authentication</h3>
             <p className="text-xs text-neutral-700">
               Protect your account with a second layer of verification
             </p>
@@ -351,7 +390,7 @@ export function TwoFactorSettings() {
           <Badge variant="neutral" icon={Lock}>
             PRO FEATURE
           </Badge>
-          <p className="text-sm text-neutral-500 mt-3 text-center max-w-xs">
+          <p className="mt-3 max-w-xs text-center text-sm text-neutral-500">
             Upgrade to Pro to enable Two-Factor Authentication and protect your
             WordPress admin account.
           </p>
@@ -359,7 +398,7 @@ export function TwoFactorSettings() {
             href="https://swisswpsecure.com/products"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-full bg-green-600 text-white text-xs font-black uppercase tracking-widest hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500/50"
+            className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-green-600 px-5 py-2.5 text-xs font-black tracking-widest text-white uppercase transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500/50 focus:outline-none"
             aria-label="Upgrade to Pro to unlock Two-Factor Authentication"
           >
             Upgrade to Pro
@@ -374,25 +413,25 @@ export function TwoFactorSettings() {
   if (isLoadingStatus) {
     return (
       <Card className="max-w-3xl p-6">
-        <div className="flex items-center gap-3 border-b border-border pb-4">
-          <div className="p-2 bg-green-100 rounded-lg">
+        <div className="border-border flex items-center gap-3 border-b pb-4">
+          <div className="rounded-lg bg-green-100 p-2">
             <ShieldCheck
-              className="w-5 h-5 text-green-600"
+              className="h-5 w-5 text-green-600"
               aria-hidden="true"
             />
           </div>
           <div>
-            <h3 className="font-semibold text-lg">Two-Factor Authentication</h3>
+            <h3 className="text-lg font-semibold">Two-Factor Authentication</h3>
             <p className="text-xs text-neutral-700">Loading status…</p>
           </div>
         </div>
         <div
-          className="py-10 flex justify-center"
+          className="flex justify-center py-10"
           aria-live="polite"
           aria-busy="true"
         >
           <div
-            className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin"
+            className="h-6 w-6 animate-spin rounded-full border-2 border-green-500 border-t-transparent"
             role="status"
             aria-label="Loading"
           />
@@ -407,15 +446,15 @@ export function TwoFactorSettings() {
     return (
       <Card className="max-w-3xl space-y-6 p-6">
         {/* Header */}
-        <div className="flex items-center gap-3 border-b border-border pb-4">
-          <div className="p-2 bg-green-100 rounded-lg">
+        <div className="border-border flex items-center gap-3 border-b pb-4">
+          <div className="rounded-lg bg-green-100 p-2">
             <ShieldCheck
-              className="w-5 h-5 text-green-600"
+              className="h-5 w-5 text-green-600"
               aria-hidden="true"
             />
           </div>
           <div>
-            <h3 className="font-semibold text-lg">Two-Factor Authentication</h3>
+            <h3 className="text-lg font-semibold">Two-Factor Authentication</h3>
             <p className="text-xs text-neutral-700">
               Add a second layer of security to your WordPress admin account
             </p>
@@ -424,17 +463,17 @@ export function TwoFactorSettings() {
 
         {/* Status banner */}
         <div
-          className="p-4 bg-background rounded-lg border border-border"
+          className="bg-background border-border rounded-lg border p-4"
           role="status"
         >
           <div className="flex items-start gap-3">
             <ShieldOff
-              className="w-5 h-5 text-neutral-500 mt-0.5 shrink-0"
+              className="mt-0.5 h-5 w-5 shrink-0 text-neutral-500"
               aria-hidden="true"
             />
             <div>
-              <p className="font-medium text-sm">2FA is not active</p>
-              <p className="text-xs text-neutral-700 mt-1">
+              <p className="text-sm font-medium">2FA is not active</p>
+              <p className="mt-1 text-xs text-neutral-700">
                 Two-factor authentication is currently disabled. Enable it to
                 require a verification code each time you sign in, in addition
                 to your password.
@@ -447,7 +486,7 @@ export function TwoFactorSettings() {
         {/* How it works */}
         <div className="space-y-2">
           <p className="text-sm font-medium">How it works</p>
-          <ol className="list-decimal list-inside space-y-1 text-sm text-neutral-700 pl-1">
+          <ol className="list-inside list-decimal space-y-1 pl-1 text-sm text-neutral-700">
             <li>
               Scan the QR code with an authenticator app (Google Authenticator,
               Authy, etc.)
@@ -482,12 +521,12 @@ export function TwoFactorSettings() {
     return (
       <Card className="max-w-3xl space-y-6 p-6">
         {/* Header */}
-        <div className="flex items-center gap-3 border-b border-border pb-4">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <QrCode className="w-5 h-5 text-blue-600" aria-hidden="true" />
+        <div className="border-border flex items-center gap-3 border-b pb-4">
+          <div className="rounded-lg bg-blue-100 p-2">
+            <QrCode className="h-5 w-5 text-blue-600" aria-hidden="true" />
           </div>
           <div>
-            <h3 className="font-semibold text-lg">
+            <h3 className="text-lg font-semibold">
               Set Up Two-Factor Authentication
             </h3>
             <p className="text-xs text-neutral-700">
@@ -499,39 +538,39 @@ export function TwoFactorSettings() {
         <div className="space-y-6">
           {/* Step 1: QR Code */}
           <section aria-labelledby="step1-heading">
-            <p id="step1-heading" className="text-sm font-semibold mb-3">
+            <p id="step1-heading" className="mb-3 text-sm font-semibold">
               Step 1 — Scan with your authenticator app
             </p>
-            <div className="flex flex-col sm:flex-row gap-6 items-start">
+            <div className="flex flex-col items-start gap-6 sm:flex-row">
               <div className="shrink-0">
                 {/* A-01 FIX: Add aria-label for screen readers */}
                 <QRCodeSVG
                   value={setupData.provisioning_uri}
                   size={200}
                   level="M"
-                  className="rounded-lg border border-border p-1 bg-white"
+                  className="border-border rounded-lg border bg-white p-1"
                   aria-label="QR code for authenticator app setup"
                 />
               </div>
-              <div className="space-y-3 flex-1">
+              <div className="flex-1 space-y-3">
                 <p className="text-sm text-neutral-700">
                   Open <strong>Google Authenticator</strong>,{" "}
                   <strong>Authy</strong>, or any TOTP-compatible app, then scan
                   the QR code on the left.
                 </p>
                 <div>
-                  <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">
+                  <p className="mb-1 text-xs font-semibold tracking-wider text-neutral-700 uppercase">
                     Account
                   </p>
-                  <p className="text-sm font-mono bg-secondary rounded px-3 py-2 border border-border">
+                  <p className="bg-secondary border-border rounded border px-3 py-2 font-mono text-sm">
                     {setupData.account}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">
+                  <p className="mb-1 text-xs font-semibold tracking-wider text-neutral-700 uppercase">
                     Issuer
                   </p>
-                  <p className="text-sm font-mono bg-secondary rounded px-3 py-2 border border-border">
+                  <p className="bg-secondary border-border rounded border px-3 py-2 font-mono text-sm">
                     {setupData.issuer}
                   </p>
                 </div>
@@ -541,20 +580,20 @@ export function TwoFactorSettings() {
 
           {/* Step 2: Manual entry */}
           <section aria-labelledby="step2-heading">
-            <p id="step2-heading" className="text-sm font-semibold mb-2">
+            <p id="step2-heading" className="mb-2 text-sm font-semibold">
               Step 2 — Or enter the secret key manually
             </p>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2">
               <KeyRound
                 size={16}
-                className="text-neutral-500 shrink-0"
+                className="shrink-0 text-neutral-500"
                 aria-hidden="true"
               />
-              <code className="font-mono text-sm bg-secondary border border-border rounded px-3 py-2 tracking-widest break-all">
+              <code className="bg-secondary border-border rounded border px-3 py-2 font-mono text-sm tracking-widest break-all">
                 {setupData.secret_formatted}
               </code>
             </div>
-            <p className="text-xs text-neutral-600 mt-2">
+            <p className="mt-2 text-xs text-neutral-600">
               If you cannot scan the QR code, add the account manually in your
               app using the secret key above. Select TOTP (time-based) as the
               type.
@@ -563,11 +602,11 @@ export function TwoFactorSettings() {
 
           {/* Step 3: Verify */}
           <section aria-labelledby="step3-heading">
-            <p id="step3-heading" className="text-sm font-semibold mb-2">
+            <p id="step3-heading" className="mb-2 text-sm font-semibold">
               Step 3 — Enter the 6-digit code to confirm
             </p>
-            <div className="flex gap-3 items-start flex-wrap">
-              <div className="flex-1 min-w-[180px] max-w-[220px]">
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="max-w-[220px] min-w-[180px] flex-1">
                 <label htmlFor="verify-code-input" className="sr-only">
                   6-digit verification code from authenticator app
                 </label>
@@ -583,7 +622,7 @@ export function TwoFactorSettings() {
                   }
                   placeholder="123456"
                   className={
-                    INPUT_CLASS + " font-mono tracking-[0.4em] text-center"
+                    INPUT_CLASS + " text-center font-mono tracking-[0.4em]"
                   }
                   aria-label="6-digit verification code"
                   aria-required="true"
@@ -603,14 +642,14 @@ export function TwoFactorSettings() {
                 Verify &amp; Enable
               </Button>
             </div>
-            <p className="text-xs text-neutral-500 mt-2">
+            <p className="mt-2 text-xs text-neutral-500">
               The code refreshes every 30 seconds. Enter it exactly as shown in
               your app.
             </p>
           </section>
 
           {/* Cancel */}
-          <div className="pt-2 border-t border-border">
+          <div className="border-border border-t pt-2">
             <Button
               variant="ghost"
               onClick={() => {
@@ -633,12 +672,12 @@ export function TwoFactorSettings() {
   return (
     <Card className="max-w-3xl space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-border pb-4">
-        <div className="p-2 bg-green-100 rounded-lg">
-          <ShieldCheck className="w-5 h-5 text-green-600" aria-hidden="true" />
+      <div className="border-border flex items-center gap-3 border-b pb-4">
+        <div className="rounded-lg bg-green-100 p-2">
+          <ShieldCheck className="h-5 w-5 text-green-600" aria-hidden="true" />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-lg">Two-Factor Authentication</h3>
+          <h3 className="text-lg font-semibold">Two-Factor Authentication</h3>
           <p className="text-xs text-neutral-700">
             Your account is protected with 2FA
           </p>
@@ -651,13 +690,13 @@ export function TwoFactorSettings() {
       <div className="space-y-6">
         {/* Status card */}
         <div
-          className="p-4 bg-background rounded-lg border border-border"
+          className="bg-background border-border rounded-lg border p-4"
           role="status"
           aria-live="polite"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <p className="text-xs text-neutral-500 uppercase tracking-wider font-semibold mb-1">
+              <p className="mb-1 text-xs font-semibold tracking-wider text-neutral-500 uppercase">
                 Status
               </p>
               <div className="flex items-center gap-2">
@@ -673,13 +712,13 @@ export function TwoFactorSettings() {
             </div>
             {status?.setup_date && (
               <div>
-                <p className="text-xs text-neutral-500 uppercase tracking-wider font-semibold mb-1">
+                <p className="mb-1 text-xs font-semibold tracking-wider text-neutral-500 uppercase">
                   Enabled on
                 </p>
                 <div className="flex items-center gap-2">
                   <Clock
                     size={14}
-                    className="text-neutral-400 shrink-0"
+                    className="shrink-0 text-neutral-400"
                     aria-hidden="true"
                   />
                   <span className="text-sm text-neutral-700">
@@ -689,7 +728,7 @@ export function TwoFactorSettings() {
               </div>
             )}
             <div>
-              <p className="text-xs text-neutral-500 uppercase tracking-wider font-semibold mb-1">
+              <p className="mb-1 text-xs font-semibold tracking-wider text-neutral-500 uppercase">
                 Backup codes left
               </p>
               <span
@@ -699,7 +738,7 @@ export function TwoFactorSettings() {
                 {status?.backup_codes_remaining ?? 0}
               </span>
               {(status?.backup_codes_remaining ?? 0) <= 2 && (
-                <span className="ml-2 text-xs text-amber-600 font-medium">
+                <span className="ml-2 text-xs font-medium text-amber-600">
                   — regenerate soon
                 </span>
               )}
@@ -716,14 +755,14 @@ export function TwoFactorSettings() {
             <h4 id="regen-heading" className="text-sm font-semibold">
               Regenerate Backup Codes
             </h4>
-            <p className="text-xs text-neutral-700 mt-0.5">
+            <p className="mt-0.5 text-xs text-neutral-700">
               Generate a new set of backup codes. All existing backup codes will
               be invalidated.
             </p>
           </div>
 
-          <div className="flex gap-3 items-start flex-wrap">
-            <div className="flex-1 min-w-[180px] max-w-[220px]">
+          <div className="flex flex-wrap items-start gap-3">
+            <div className="max-w-[220px] min-w-[180px] flex-1">
               <label htmlFor="regen-code-input" className="sr-only">
                 6-digit authenticator code to confirm regeneration
               </label>
@@ -739,7 +778,7 @@ export function TwoFactorSettings() {
                 }
                 placeholder="Your code"
                 className={
-                  INPUT_CLASS + " font-mono tracking-[0.4em] text-center"
+                  INPUT_CLASS + " text-center font-mono tracking-[0.4em]"
                 }
                 aria-label="6-digit authenticator code to confirm"
                 aria-required="true"
@@ -778,14 +817,14 @@ export function TwoFactorSettings() {
             >
               Disable Two-Factor Authentication
             </h4>
-            <p className="text-xs text-neutral-700 mt-0.5">
+            <p className="mt-0.5 text-xs text-neutral-700">
               Removing 2FA will make your account less secure. Enter your
               current authenticator code to confirm.
             </p>
           </div>
 
-          <div className="flex gap-3 items-start flex-wrap">
-            <div className="flex-1 min-w-[180px] max-w-[220px]">
+          <div className="flex flex-wrap items-start gap-3">
+            <div className="max-w-[220px] min-w-[180px] flex-1">
               <label htmlFor="disable-code-input" className="sr-only">
                 6-digit authenticator code to confirm disabling 2FA
               </label>
@@ -801,7 +840,7 @@ export function TwoFactorSettings() {
                 }
                 placeholder="Your code"
                 className={
-                  INPUT_CLASS + " font-mono tracking-[0.4em] text-center"
+                  INPUT_CLASS + " text-center font-mono tracking-[0.4em]"
                 }
                 aria-label="6-digit authenticator code to confirm disabling 2FA"
                 aria-required="true"

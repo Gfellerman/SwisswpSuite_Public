@@ -201,7 +201,10 @@ export const BackupList: React.FC = () => {
 
   const handleRestore = (backup: BackupArchive) => {
     toast.warning(
-      `This will replace your current files with the backup from ${formatDate(backup.timestamp)}. Your existing files will be overwritten — this version's restore does not modify your database. This cannot be undone.`,
+      // P1-01/R-01 fix (ARS Round C): a full backup DOES restore the database
+      // when the archive includes a dump — the old copy unconditionally
+      // claimed it never did, contradicting the actual restore behaviour.
+      `This will replace your current files with the backup from ${formatDate(backup.timestamp)}. Your existing files will be overwritten and, if this backup includes a database dump, your database will be restored too — a safety copy of your current database is saved first. This cannot be undone.`,
       {
         action: {
           label: "Yes, restore from this backup",
@@ -234,7 +237,11 @@ export const BackupList: React.FC = () => {
       return;
     }
     toast.warning(
-      `Restore your files from the backup created ${formatDate(set.created_at)}? All ${set.file_count} file${set.file_count !== 1 ? "s" : ""} will be restored to disk. This version's restore does not modify your database. This cannot be undone.`,
+      // P1-01/R-01 fix (ARS Round C): restore_backup_set() now classifies
+      // files_only per file from the archive's own contents (not the file's
+      // category label), so a set that carries a database dump is actually
+      // restored — a safety copy of the current database is saved first.
+      `Restore the backup created ${formatDate(set.created_at)}? All ${set.file_count} file${set.file_count !== 1 ? "s" : ""} will be restored to disk, and your database will be restored too if this backup includes a database dump — a safety copy of your current database is saved first. This cannot be undone.`,
       {
         action: {
           label: "Yes, restore this backup",

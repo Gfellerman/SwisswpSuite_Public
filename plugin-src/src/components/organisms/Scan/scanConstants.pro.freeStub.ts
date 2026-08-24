@@ -1,19 +1,32 @@
 /**
  * Free-edition stub for scanConstants.pro.ts (WP.org B12a residual closure,
- * 2026-08-13). Wired via `plugin/vite.config.ts`'s resolve.alias, active
- * only when `EDITION === 'free'` — redirects the exact "./scanConstants.pro"
+ * 2026-08-13; REVISED 2026-08-22 for R4/OD-3). Wired via
+ * `plugin/vite.config.ts`'s resolve.alias, active only when
+ * `EDITION === 'free'` — redirects the exact "./scanConstants.pro"
  * specifier (as written in scanConstants.ts, its one importer) to this file
  * at module-resolve time, before Rollup ever parses the real one.
  *
- * Neutral placeholders ONLY — per this project's B12a doctrine, nothing in
- * the Free bundle may describe, name, or advertise the Pro-only scan types.
- * Deliberately empty strings, not a generic label: the deep-malware/full-ai
- * ScanCard/ScanResultPanel instances that would consume these values are
- * themselves gated behind `isProEditionBuild` at their SecurityHub.tsx call
- * sites and are never actually rendered in a genuine Free install, so there
- * is no user-facing surface these values need to fill — an empty string is
- * the safest placeholder precisely because it can never accidentally read
- * as Pro-descriptive copy.
+ * "full-ai" stays an empty placeholder: it has no Free-usable phase and no
+ * ScanCard/ScanResultPanel call site renders it — per this project's B12a
+ * doctrine, nothing in the Free bundle may describe, name, or advertise a
+ * Pro-only-in-full scan type, and an empty string is the safest placeholder
+ * precisely because it can never accidentally read as Pro-descriptive copy.
+ *
+ * "deep-malware" changed (WP.org R4, owner ruling OD-3, 2026-08-22): this
+ * scan is now enabled in Free (see api-security.php's route-registration
+ * comment + SecurityHub.tsx's ScanCard/ScanResultPanel call site, both no
+ * longer isProEditionBuild-gated), so its label/description ARE a real
+ * user-facing surface in Free now and must not be empty — an empty label
+ * would render a blank card title. The description below covers ONLY the
+ * phases that actually run for a Free/no-license caller (enumerate,
+ * hashing, VPS hash-database lookup, local signature scan, WPScan CVE
+ * lookup, Patchstack CVE lookup) and deliberately omits any mention of AI,
+ * tokens, grading, or "Pro" — the pipeline's final ai_analysis phase still
+ * executes for Free callers (it soft-degrades to `degraded_no_tokens`
+ * inside SwissWPSuite_Deep_Scan_Pipeline::ai_analysis_phase()), but its
+ * *result* is physically excluded from render on Free (see
+ * DeepScanAiResults.tsx's docblock) — this description must not advertise
+ * a capability the Free UI then never shows the output of.
  *
  * Must NOT import from the real scanConstants.pro.ts — even a type-only
  * import — per the established .freeStub convention (see
@@ -26,13 +39,18 @@
 
 export const PRO_SCAN_LABELS: Record<"full-ai" | "deep-malware", string> = {
   "full-ai": "",
-  "deep-malware": "",
+  "deep-malware": "Layer 2 Scan",
 };
 
 export const PRO_SCAN_DESCRIPTIONS: Record<"full-ai" | "deep-malware", string> =
   {
     "full-ai": "",
-    "deep-malware": "",
+    "deep-malware":
+      // R4 follow-up (2026-08-22, controller): the earlier wording claimed VPS
+      // hash-database + WPScan/Patchstack lookups, but those phases soft-degrade
+      // in Free (their client classes are physically excluded from the build) —
+      // describe only what the Free scan actually executes.
+      "A deeper scan: enumerates every PHP file in plugins, themes, and uploads, hashes each one, and runs multi-phase local signature analysis. Multi-minute scan.",
   };
 
 /**

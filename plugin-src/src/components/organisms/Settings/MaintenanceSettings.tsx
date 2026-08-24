@@ -135,19 +135,139 @@ interface MaintenanceSettingsProps {
   isSaving?: boolean;
 }
 
+/**
+ * OrphanedTablesConfirmDialog — the missing second step of the
+ * drop-orphaned-tables flow (D-K-5). Minimal inline confirmation modal;
+ * reuses the a11y pattern established by HardeningConfirmDialog.tsx /
+ * BulkAiConfirmModal.tsx (role=dialog, aria-modal, Escape-to-cancel)
+ * without pulling in either component's heavier, differently-shaped data
+ * contract. This is a genuinely destructive DROP TABLE action — the
+ * dialog exists specifically so a user reviews the exact table names
+ * before they are dropped, never auto-confirmed.
+ */
+interface OrphanedTablesConfirmDialogProps {
+  candidates: string[] | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+function OrphanedTablesConfirmDialog({
+  candidates,
+  onConfirm,
+  onCancel,
+}: OrphanedTablesConfirmDialogProps) {
+  useEffect(() => {
+    if (!candidates) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [candidates, onCancel]);
+
+  if (!candidates) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onCancel}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="orphan-tables-confirm-title"
+        aria-describedby="orphan-tables-confirm-body"
+        className="border-border dark:bg-card w-full max-w-md rounded-2xl border bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <h3
+            id="orphan-tables-confirm-title"
+            className="dark:text-foreground text-base font-black text-neutral-900"
+          >
+            Drop {candidates.length} orphaned table
+            {candidates.length !== 1 ? "s" : ""}?
+          </h3>
+          <button
+            type="button"
+            onClick={onCancel}
+            aria-label="Cancel"
+            className="hover:bg-secondary focus-visible:ring-swiss-navy shrink-0 rounded-full p-1 focus-visible:ring-2 focus-visible:outline-none"
+          >
+            <AlertTriangle
+              size={16}
+              className="text-red-500"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+        <p
+          id="orphan-tables-confirm-body"
+          className="mb-3 text-sm text-neutral-700 dark:text-neutral-300"
+        >
+          These tables were left behind by uninstalled plugins and matched no
+          installed plugin on this site. This cannot be undone — back up your
+          database first.
+        </p>
+        <ul
+          className="bg-background dark:bg-card/30 mb-4 max-h-40 space-y-1 overflow-y-auto rounded-lg p-3 font-mono text-xs"
+          aria-label="Tables that will be dropped"
+        >
+          {candidates.map((table) => (
+            <li key={table} className="text-neutral-800 dark:text-neutral-200">
+              {table}
+            </li>
+          ))}
+        </ul>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="border-border hover:bg-secondary focus-visible:ring-swiss-navy rounded-xl border px-4 py-2 text-sm font-black text-neutral-700 focus-visible:ring-2 focus-visible:outline-none"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            autoFocus
+            className="focus-visible:ring-swiss-navy rounded-xl bg-red-600 px-4 py-2 text-sm font-black text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:outline-none"
+          >
+            Drop {candidates.length === 1 ? "table" : "tables"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function MaintenanceSettings({
   settings,
   onSave,
   isSaving,
 }: MaintenanceSettingsProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  // ARS Round D (D-K-5, WP.org R4 F-11/F-17, 2026-08-2x): "Drop Orphaned
+  // Tables" is a genuine two-step DROP TABLE action backend-side
+  // (class-swisswpsuite-api-settings.php's perform_maintenance() — a first
+  // call with no confirm_tables is ALWAYS a dry run) but this component
+  // never sent the second confirm_tables request, so the button could
+  // never actually drop a table — see
+  // handoff/L-B_orphaned-tables-ui-contract.md. This holds the dry-run
+  // candidate list between the two requests; non-null shows the confirm
+  // dialog.
+  const [orphanTableCandidates, setOrphanTableCandidates] = useState<
+    string[] | null
+  >(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [systemWarnings, setSystemWarnings] = useState<SystemLogsWarning[]>([]);
 
   // Cache Manager state
   const [cacheStatus, setCacheStatus] = useState<CacheStatusResponse | null>(
-    null,
+    null
   );
   const [cachePurging, setCachePurging] = useState(false);
 
@@ -225,7 +345,7 @@ export function MaintenanceSettings({
         {
           method: "POST",
           body: JSON.stringify({ action }),
-        },
+        }
       );
       if (data.success) {
         toast.success(data.message || "Done.");
@@ -234,7 +354,7 @@ export function MaintenanceSettings({
       }
     } catch (e: any) {
       toast.error(
-        "Maintenance action failed: " + (e.message || "Unknown error"),
+        "Maintenance action failed: " + (e.message || "Unknown error")
       );
     } finally {
       setActionLoading(null);
@@ -249,6 +369,73 @@ export function MaintenanceSettings({
         onClick: () => doMaintenance(action),
       },
     });
+  };
+
+  // ARS Round D (D-K-5): step 1 — dry run. The backend NEVER drops a table
+  // on this call (no confirm_tables sent); it returns the candidate list.
+  const handleDropOrphanedTables = async () => {
+    setActionLoading("drop_orphaned_tables");
+    try {
+      const data = await wpApi<{
+        success: boolean;
+        message: string;
+        dry_run: boolean;
+        candidates: string[];
+      }>("/maintenance", {
+        method: "POST",
+        body: JSON.stringify({ action: "drop_orphaned_tables" }),
+      });
+      if (!data.success) {
+        toast.error("Failed: " + data.message);
+        return;
+      }
+      if (data.candidates && data.candidates.length > 0) {
+        setOrphanTableCandidates(data.candidates);
+      } else {
+        // Nothing to confirm — surface the backend's own message
+        // ("No orphaned tables found." or the ambiguous-skip note).
+        toast.success(data.message || "No orphaned tables found.");
+      }
+    } catch (e: any) {
+      toast.error(
+        "Maintenance action failed: " + (e.message || "Unknown error")
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Step 2 — the explicit confirm. Resends the EXACT candidate list step 1
+  // returned, per the backend contract (confirm_tables must match a
+  // current candidate name to be dropped; anything else is ignored).
+  const confirmDropOrphanedTables = async () => {
+    const candidates = orphanTableCandidates;
+    if (!candidates) return;
+    setOrphanTableCandidates(null);
+    setActionLoading("drop_orphaned_tables");
+    try {
+      const data = await wpApi<{ success: boolean; message: string }>(
+        "/maintenance",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            action: "drop_orphaned_tables",
+            confirm_tables: candidates,
+          }),
+        }
+      );
+      if (data.success) {
+        toast.success(data.message || "Done.");
+      } else {
+        toast.error("Failed: " + data.message);
+      }
+    } catch (e: any) {
+      toast.error(
+        "Maintenance action failed: " + (e.message || "Unknown error")
+      );
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   return (
@@ -269,7 +456,7 @@ export function MaintenanceSettings({
                 className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${styles.banner}`}
               >
                 <AlertCircle
-                  className={`w-4 h-4 mt-0.5 shrink-0 ${styles.icon}`}
+                  className={`mt-0.5 h-4 w-4 shrink-0 ${styles.icon}`}
                   aria-hidden="true"
                 />
                 <p className="text-sm leading-relaxed text-neutral-800 dark:text-neutral-200">
@@ -283,19 +470,19 @@ export function MaintenanceSettings({
 
       {/* Maintenance Tools */}
       <Card className="p-6">
-        <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border dark:border-border">
-          <AlertTriangle className="w-4 h-4 text-amber-500" />
-          <h3 className="font-semibold text-base">Maintenance Tools</h3>
+        <div className="border-border dark:border-border mb-4 flex items-center gap-2 border-b pb-4">
+          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          <h3 className="text-base font-semibold">Maintenance Tools</h3>
         </div>
         <div className="space-y-3">
           {MAINTENANCE_ACTIONS.map((tool) => (
             <div
               key={tool.id}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-background dark:bg-card/30 rounded-xl border border-border dark:border-border"
+              className="bg-background dark:bg-card/30 border-border dark:border-border flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
-                <p className="font-medium text-sm">{tool.label}</p>
-                <p className="text-xs text-neutral-700 mt-0.5">{tool.desc}</p>
+                <p className="text-sm font-medium">{tool.label}</p>
+                <p className="mt-0.5 text-xs text-neutral-700">{tool.desc}</p>
               </div>
               <Button
                 variant="outline"
@@ -312,10 +499,10 @@ export function MaintenanceSettings({
 
       {/* Database Cleanup */}
       <Card className="p-6">
-        <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border dark:border-border">
-          <Trash2 className="w-4 h-4 text-red-500" />
-          <h3 className="font-semibold text-base">Database Cleanup</h3>
-          <span className="text-xs text-neutral-500 ml-auto">
+        <div className="border-border dark:border-border mb-4 flex items-center gap-2 border-b pb-4">
+          <Trash2 className="h-4 w-4 text-red-500" />
+          <h3 className="text-base font-semibold">Database Cleanup</h3>
+          <span className="ml-auto text-xs text-neutral-500">
             Removes orphaned data that accumulates over time
           </span>
         </div>
@@ -323,15 +510,24 @@ export function MaintenanceSettings({
           {DATABASE_CLEANUP_ACTIONS.map((tool) => (
             <div
               key={tool.id}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-background dark:bg-card/30 rounded-xl border border-border dark:border-border"
+              className="bg-background dark:bg-card/30 border-border dark:border-border flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
-                <p className="font-medium text-sm">{tool.label}</p>
-                <p className="text-xs text-neutral-700 mt-0.5">{tool.desc}</p>
+                <p className="text-sm font-medium">{tool.label}</p>
+                <p className="mt-0.5 text-xs text-neutral-700">{tool.desc}</p>
               </div>
               <Button
                 variant="outline"
-                onClick={() => handleMaintenance(tool.id)}
+                onClick={() =>
+                  // ARS Round D (D-K-5): drop_orphaned_tables is a real
+                  // two-step DROP TABLE flow (dry run -> review -> confirm
+                  // with the exact candidate list), not the generic
+                  // blind "are you sure" toast every other cleanup action
+                  // uses — that toast can never populate confirm_tables.
+                  tool.id === "drop_orphaned_tables"
+                    ? handleDropOrphanedTables()
+                    : handleMaintenance(tool.id)
+                }
                 loading={actionLoading === tool.id}
                 className="min-h-[40px] shrink-0"
               >
@@ -344,16 +540,16 @@ export function MaintenanceSettings({
 
       {/* Cache Management (FREE TIER) */}
       <Card className="p-6">
-        <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border dark:border-border">
-          <Trash2 className="w-4 h-4 text-blue-500" />
-          <h3 className="font-semibold text-base">Cache Management</h3>
+        <div className="border-border dark:border-border mb-4 flex items-center gap-2 border-b pb-4">
+          <Trash2 className="h-4 w-4 text-blue-500" />
+          <h3 className="text-base font-semibold">Cache Management</h3>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-background dark:bg-card/30 rounded-xl border border-border dark:border-border">
+        <div className="bg-background dark:bg-card/30 border-border dark:border-border flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1.5">
-            <p className="font-medium text-sm">Clear Site Cache</p>
+            <p className="text-sm font-medium">Clear Site Cache</p>
             <p className="text-xs text-neutral-700">
               Purge all server and plugin caches. Detected:{" "}
-              <span className="font-semibold text-neutral-900 dark:text-foreground">
+              <span className="dark:text-foreground font-semibold text-neutral-900">
                 {cacheStatus
                   ? cacheStatus.plugin ||
                     cacheStatus.managed_host ||
@@ -362,7 +558,7 @@ export function MaintenanceSettings({
               </span>
             </p>
             {cacheStatus && (
-              <div className="flex flex-wrap gap-3 text-xs text-neutral-600 mt-1">
+              <div className="mt-1 flex flex-wrap gap-3 text-xs text-neutral-600">
                 <span>
                   Object Cache:{" "}
                   <span className="font-medium">
@@ -376,7 +572,7 @@ export function MaintenanceSettings({
                   </span>
                 </span>
                 {cacheStatus.cooldown_remaining > 0 && (
-                  <span className="text-amber-600 font-medium">
+                  <span className="font-medium text-amber-600">
                     Cooldown: {cacheStatus.cooldown_remaining}s
                   </span>
                 )}
@@ -400,27 +596,27 @@ export function MaintenanceSettings({
 
       {/* System Logs */}
       <Card className="overflow-hidden p-0">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-border bg-background dark:bg-card/50">
+        <div className="border-border dark:border-border bg-background dark:bg-card/50 flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-neutral-700" />
-            <h3 className="font-semibold text-base">System Logs</h3>
-            <span className="text-xs text-neutral-700 uppercase tracking-widest ml-1">
+            <Terminal className="h-4 w-4 text-neutral-700" />
+            <h3 className="text-base font-semibold">System Logs</h3>
+            <span className="ml-1 text-xs tracking-widest text-neutral-700 uppercase">
               Live · 5s refresh
             </span>
           </div>
           <button
             onClick={fetchLogs}
-            className="p-2 rounded-lg hover:bg-muted dark:hover:bg-muted transition-colors"
+            className="hover:bg-muted dark:hover:bg-muted rounded-lg p-2 transition-colors"
             title="Refresh logs"
           >
             <RefreshCw
-              className={`w-4 h-4 text-neutral-700 ${loadingLogs ? "animate-spin" : ""}`}
+              className={`h-4 w-4 text-neutral-700 ${loadingLogs ? "animate-spin" : ""}`}
             />
           </button>
         </div>
-        <div className="bg-card h-64 overflow-y-auto font-mono text-[11px] leading-relaxed p-4">
+        <div className="bg-card h-64 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed">
           {logs.length === 0 ? (
-            <div className="text-neutral-700 italic text-center pt-8 uppercase tracking-widest text-xs">
+            <div className="pt-8 text-center text-xs tracking-widest text-neutral-700 uppercase italic">
               No log entries found.
             </div>
           ) : (
@@ -430,7 +626,7 @@ export function MaintenanceSettings({
                   key={i}
                   className={`flex gap-3 transition-colors ${getLogLineClass(log)}`}
                 >
-                  <span className="text-neutral-600 shrink-0">[{i + 1}]</span>
+                  <span className="shrink-0 text-neutral-600">[{i + 1}]</span>
                   <span>{log}</span>
                 </div>
               ))}
@@ -438,6 +634,12 @@ export function MaintenanceSettings({
           )}
         </div>
       </Card>
+
+      <OrphanedTablesConfirmDialog
+        candidates={orphanTableCandidates}
+        onConfirm={confirmDropOrphanedTables}
+        onCancel={() => setOrphanTableCandidates(null)}
+      />
     </div>
   );
 }

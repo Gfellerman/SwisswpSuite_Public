@@ -160,6 +160,21 @@ const SCHEDULE_DISPLAY: Record<BackupAutomation["schedule"], string> = {
   weekly: "Every week",
 };
 
+/**
+ * E6 (2026-08-20) — day-of-week options for the weekly start-day picker.
+ * Value convention (0=Sunday..6=Saturday) matches PHP DateTime's 'w' format
+ * used server-side in compute_start_time_anchor() — do not renumber.
+ */
+const WEEKDAY_OPTIONS: { value: number; label: string }[] = [
+  { value: 0, label: "Sunday" },
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
+];
+
 const inputClass =
   "w-full px-3 py-2.5 text-sm rounded-lg border border-border bg-background dark:bg-card text-gray-900 dark:text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all";
 
@@ -193,11 +208,7 @@ function formatRelativeTime(isoString: string | null): string {
 }
 
 type CountdownUrgency =
-  | "normal"
-  | "urgent"
-  | "overdue"
-  | "disabled"
-  | "running";
+  "normal" | "urgent" | "overdue" | "disabled" | "running";
 
 interface CountdownParts {
   label: string;
@@ -215,7 +226,7 @@ interface CountdownParts {
 function buildCountdownParts(
   nextRun: string,
   isRunning: boolean,
-  enabled: boolean,
+  enabled: boolean
 ): CountdownParts {
   // Running takes priority regardless of the next_run timestamp.
   if (isRunning) {
@@ -268,7 +279,7 @@ function formatBytes(bytes: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];
   const exponent = Math.min(
     Math.floor(Math.log(bytes) / Math.log(1024)),
-    units.length - 1,
+    units.length - 1
   );
   const value = bytes / Math.pow(1024, exponent);
   return `${value.toFixed(exponent === 0 ? 0 : 1)} ${units[exponent]}`;
@@ -324,7 +335,7 @@ const NextRunBadge: React.FC<NextRunBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${colorClass[urgency]}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${colorClass[urgency]}`}
       aria-live="polite"
       aria-label={label}
     >
@@ -345,7 +356,7 @@ interface StatusBadgeProps {
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   if (status === "success") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
         <CheckCircle2 size={11} aria-hidden="true" />
         Success
       </span>
@@ -353,7 +364,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   }
   if (status === "failed") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+      <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
         <XCircle size={11} aria-hidden="true" />
         Failed
       </span>
@@ -361,14 +372,14 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   }
   if (status === "running") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+      <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
         <Loader2 size={11} className="animate-spin" aria-hidden="true" />
         Running
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+    <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">
       Never run
     </span>
   );
@@ -394,7 +405,7 @@ function useConnectedProviders(enabled: boolean): ConnectedProviders {
     queryKey: ["gdrive-status"],
     queryFn: () =>
       wpApi<{ connected: boolean }>(
-        `/backup/cloud/gdrive/status?_nocache=${Date.now()}`,
+        `/backup/cloud/gdrive/status?_nocache=${Date.now()}`
       ),
     enabled,
     staleTime: 60_000,
@@ -406,7 +417,7 @@ function useConnectedProviders(enabled: boolean): ConnectedProviders {
     queryKey: ["dropbox-status"],
     queryFn: () =>
       wpApi<{ connected: boolean }>(
-        `/backup/cloud/dropbox/status?_nocache=${Date.now()}`,
+        `/backup/cloud/dropbox/status?_nocache=${Date.now()}`
       ),
     enabled,
     staleTime: 60_000,
@@ -418,7 +429,7 @@ function useConnectedProviders(enabled: boolean): ConnectedProviders {
     queryKey: ["cloud-status"],
     queryFn: async () => {
       const res = await wpApi<{ success: boolean; configured: boolean }>(
-        "/backup/cloud/list",
+        "/backup/cloud/list"
       );
       return { configured: res?.configured ?? false };
     },
@@ -432,7 +443,7 @@ function useConnectedProviders(enabled: boolean): ConnectedProviders {
     queryKey: ["ftp-status"],
     queryFn: () =>
       wpApi<{ connected: boolean }>(
-        `/backup/cloud/ftp/status?_nocache=${Date.now()}`,
+        `/backup/cloud/ftp/status?_nocache=${Date.now()}`
       ),
     enabled,
     staleTime: 60_000,
@@ -444,7 +455,7 @@ function useConnectedProviders(enabled: boolean): ConnectedProviders {
     queryKey: ["b2-status"],
     queryFn: () =>
       wpApi<{ connected: boolean }>(
-        `/backup/cloud/b2/status?_nocache=${Date.now()}`,
+        `/backup/cloud/b2/status?_nocache=${Date.now()}`
       ),
     enabled,
     staleTime: 60_000,
@@ -472,6 +483,20 @@ interface AutomationFormData {
   scope: BackupAutomation["scope"];
   destination: BackupAutomation["destination"];
   retention: number;
+  /**
+   * E6 (2026-08-20) — optional site-local time (HH:MM, 24h) the automation
+   * should first fire at. Empty string means "not set" (legacy anchor
+   * behavior). Kept as a plain string (not `string | null`) so the <input
+   * type="time"> element can bind directly without a null-guard on every
+   * render.
+   */
+  start_time: string;
+  /**
+   * E6 — day of week (0=Sunday..6=Saturday) the automation should first fire
+   * on. Only meaningful (and only shown in the UI) when schedule === 'weekly'
+   * AND start_time is set. `null` means "not set".
+   */
+  start_day: number | null;
 }
 
 const DEFAULT_FORM: AutomationFormData = {
@@ -480,6 +505,8 @@ const DEFAULT_FORM: AutomationFormData = {
   scope: "full",
   destination: "local",
   retention: 7,
+  start_time: "",
+  start_day: null,
 };
 
 /**
@@ -518,12 +545,54 @@ export function computeAvailableDestinations(connectedProviders: {
 export function evaluateDestinationReset(
   currentDestination: BackupAutomation["destination"],
   availableDestinations: BackupAutomation["destination"][],
-  isLoading: boolean,
+  isLoading: boolean
 ): { shouldReset: boolean } {
   if (isLoading) {
     return { shouldReset: false };
   }
   return { shouldReset: !availableDestinations.includes(currentDestination) };
+}
+
+/**
+ * E2 fix (2026-08-20, FIX_PLAN_VALIDATION_BACKUP_SCHEDULER audit): the Edit
+ * modal's form always holds every field (it has to — the form needs a value
+ * to render each control), so submitting it unmodified previously sent the
+ * FULL AutomationFormData on every save, including 'schedule', even for a
+ * pure rename or retention change. That is a "stale-looking" resubmit in the
+ * sense the audit was checking for: since E4 now makes an explicitly-present
+ * 'schedule' key force a full cron clear+reschedule (by design — see
+ * automations.php::update()), a full-form PATCH would make EVERY edit
+ * (rename-only, retention-only) also force a cron re-register, which is
+ * unnecessary churn and log noise for changes that never touched the
+ * schedule.
+ *
+ * This pure diff keeps the fix targeted: only fields whose value actually
+ * differs from the automation being edited are included in the PATCH body.
+ * Enable/disable already goes through its own single-field payload
+ * (toggleMutation, below) and was NOT part of this bug — audited and
+ * confirmed unaffected.
+ *
+ * NOT used for create() — a new automation has no "original" to diff
+ * against and the backend's create() path requires the full field set.
+ */
+export function diffAutomationFormData(
+  data: AutomationFormData,
+  original: BackupAutomation
+): Partial<AutomationFormData> {
+  const diff: Partial<AutomationFormData> = {};
+  if (data.name !== original.name) diff.name = data.name;
+  if (data.schedule !== original.schedule) diff.schedule = data.schedule;
+  if (data.scope !== original.scope) diff.scope = data.scope;
+  if (data.destination !== original.destination)
+    diff.destination = data.destination;
+  if (data.retention !== original.retention) diff.retention = data.retention;
+  // start_time: normalize "" (unset) vs null/undefined so an automation that
+  // has never had a start_time set doesn't get diffed against an empty string.
+  const originalStartTime = original.start_time ?? "";
+  if (data.start_time !== originalStartTime) diff.start_time = data.start_time;
+  const originalStartDay = original.start_day ?? null;
+  if (data.start_day !== originalStartDay) diff.start_day = data.start_day;
+  return diff;
 }
 
 // ---------------------------------------------------------------------------
@@ -560,6 +629,8 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
         scope: automation.scope,
         destination: automation.destination,
         retention: automation.retention,
+        start_time: automation.start_time ?? "",
+        start_day: automation.start_day ?? null,
       };
     }
     return { ...DEFAULT_FORM };
@@ -577,7 +648,7 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
       const modal = modalRef.current;
       if (!modal) return;
       const focusable = modal.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -630,16 +701,16 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
     const { shouldReset } = evaluateDestinationReset(
       form.destination,
       availableDestinations,
-      connectedProviders.isLoading,
+      connectedProviders.isLoading
     );
     if (shouldReset) {
       warnedRef.current = true;
       const label = DESTINATION_LABELS[form.destination];
       setDestinationUnavailableWarning(
-        `${label} is not connected anymore, so this automation has been switched to Local storage. Reconnect ${label} in Cloud Storage settings and re-select it below if you want offsite backups to resume, before saving.`,
+        `${label} is not connected anymore, so this automation has been switched to Local storage. Reconnect ${label} in Cloud Storage settings and re-select it below if you want offsite backups to resume, before saving.`
       );
       toast.warning(
-        `${label} is disconnected — this automation was reset to Local storage. Review before saving.`,
+        `${label} is disconnected — this automation was reset to Local storage. Review before saving.`
       );
       setForm((f) => ({ ...f, destination: "local" }));
     }
@@ -682,7 +753,7 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
     }
     if (isSaveBlockedByProviderLoad) {
       toast.error(
-        "Still confirming cloud connection status — please wait a moment before saving.",
+        "Still confirming cloud connection status — please wait a moment before saving."
       );
       return;
     }
@@ -702,26 +773,26 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
     >
       <div
         ref={modalRef}
-        className="bg-card dark:bg-secondary rounded-2xl shadow-2xl border border-border w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="bg-card dark:bg-secondary border-border max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border shadow-2xl"
       >
         {/* Modal header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="border-border flex items-center justify-between border-b p-6">
           <h2
             id={titleId}
-            className="text-lg font-bold text-gray-900 dark:text-foreground"
+            className="dark:text-foreground text-lg font-bold text-gray-900"
           >
             {mode === "create" ? "Create Backup Automation" : "Edit Automation"}
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-gray-900 dark:hover:text-foreground hover:bg-secondary transition-colors"
+            className="text-muted-foreground dark:hover:text-foreground hover:bg-secondary rounded-lg p-1.5 transition-colors hover:text-gray-900"
             aria-label="Close modal"
           >
             <X size={18} aria-hidden="true" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 p-6">
           {/* Name */}
           <div>
             <label htmlFor="automation-name" className={labelClass}>
@@ -738,11 +809,11 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
               maxLength={60}
               required
             />
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-xs">
               Give this automation a name so you can identify it at a glance.
             </p>
             {form.name.length > 40 && (
-              <p className="mt-0.5 text-xs text-muted-foreground text-right">
+              <p className="text-muted-foreground mt-0.5 text-right text-xs">
                 {form.name.length}/60 characters
               </p>
             )}
@@ -751,17 +822,17 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
           {/* Scope — what to back up */}
           <fieldset>
             <legend className={labelClass}>What to back up</legend>
-            <div className="space-y-2 mt-1">
+            <div className="mt-1 space-y-2">
               {SCOPE_OPTIONS.map((opt) => {
                 const Icon = opt.icon;
                 const isSelected = form.scope === opt.value;
                 return (
                   <label
                     key={opt.value}
-                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all ${
                       isSelected
                         ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                        : "border-border hover:border-blue-300 hover:bg-secondary/50"
+                        : "border-border hover:bg-secondary/50 hover:border-blue-300"
                     }`}
                   >
                     <input
@@ -776,16 +847,16 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
                     />
                     <Icon
                       size={18}
-                      className={`flex-shrink-0 mt-0.5 ${isSelected ? "text-blue-500" : "text-muted-foreground"}`}
+                      className={`mt-0.5 flex-shrink-0 ${isSelected ? "text-blue-500" : "text-muted-foreground"}`}
                       aria-hidden="true"
                     />
                     <span>
                       <span
-                        className={`block text-sm font-semibold ${isSelected ? "text-blue-700 dark:text-blue-300" : "text-gray-900 dark:text-foreground"}`}
+                        className={`block text-sm font-semibold ${isSelected ? "text-blue-700 dark:text-blue-300" : "dark:text-foreground text-gray-900"}`}
                       >
                         {opt.label}
                       </span>
-                      <span className="block text-xs text-muted-foreground mt-0.5">
+                      <span className="text-muted-foreground mt-0.5 block text-xs">
                         {opt.description}
                       </span>
                     </span>
@@ -821,13 +892,70 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
               <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
                 <AlertTriangle
                   size={12}
-                  className="flex-shrink-0 mt-0.5"
+                  className="mt-0.5 flex-shrink-0"
                   aria-hidden="true"
                 />
                 Hourly backups generate a lot of files. Make sure your retention
                 limit is low enough to avoid filling up disk space.
               </p>
             )}
+          </div>
+
+          {/* Start time — E6 (2026-08-20). Optional: leaving this blank keeps the
+              existing behavior (first run ~1 interval from now / from last run). */}
+          <div>
+            <label htmlFor="automation-start-time" className={labelClass}>
+              Start time (optional)
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                id="automation-start-time"
+                type="time"
+                value={form.start_time}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, start_time: e.target.value }))
+                }
+                className={`${inputClass} w-36`}
+              />
+              {form.schedule === "weekly" && form.start_time && (
+                <select
+                  id="automation-start-day"
+                  aria-label="Day of the week"
+                  value={form.start_day ?? ""}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      start_day:
+                        e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                  className={`${inputClass} flex-1`}
+                >
+                  <option value="">Any day</option>
+                  {WEEKDAY_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {form.start_time && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((f) => ({ ...f, start_time: "", start_day: null }))
+                  }
+                  className="text-muted-foreground dark:hover:text-foreground flex-shrink-0 rounded px-2 py-1.5 text-xs font-semibold transition-colors hover:text-gray-900"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <p className="text-muted-foreground mt-1 text-xs">
+              {form.start_time
+                ? `First run at ${form.start_time} (your site's local time). Leave this blank to let SwissWPSuite pick a start time automatically.`
+                : "Leave blank to let SwissWPSuite pick a start time automatically, or set one so backups always begin around the same time of day."}
+            </p>
           </div>
 
           {/* Destination — where to send it */}
@@ -840,14 +968,14 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
               >
                 <AlertTriangle
                   size={14}
-                  className="flex-shrink-0 mt-0.5"
+                  className="mt-0.5 flex-shrink-0"
                   aria-hidden="true"
                 />
                 {destinationUnavailableWarning}
               </p>
             )}
             {connectedProviders.isLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground p-3">
+              <div className="text-muted-foreground flex items-center gap-2 p-3 text-sm">
                 <Loader2
                   size={14}
                   className="animate-spin"
@@ -856,16 +984,16 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
                 Loading connected providers…
               </div>
             ) : (
-              <div className="space-y-2 mt-1">
+              <div className="mt-1 space-y-2">
                 {availableDestinations.map((dest) => {
                   const isSelected = form.destination === dest;
                   return (
                     <label
                       key={dest}
-                      className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all ${
                         isSelected
                           ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                          : "border-border hover:border-blue-300 hover:bg-secondary/50"
+                          : "border-border hover:bg-secondary/50 hover:border-blue-300"
                       }`}
                     >
                       <input
@@ -880,16 +1008,16 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
                       />
                       <Cloud
                         size={16}
-                        className={`flex-shrink-0 mt-0.5 ${isSelected ? "text-blue-500" : "text-muted-foreground"}`}
+                        className={`mt-0.5 flex-shrink-0 ${isSelected ? "text-blue-500" : "text-muted-foreground"}`}
                         aria-hidden="true"
                       />
                       <span>
                         <span
-                          className={`block text-sm font-semibold ${isSelected ? "text-blue-700 dark:text-blue-300" : "text-gray-900 dark:text-foreground"}`}
+                          className={`block text-sm font-semibold ${isSelected ? "text-blue-700 dark:text-blue-300" : "dark:text-foreground text-gray-900"}`}
                         >
                           {DESTINATION_LABELS[dest]}
                         </span>
-                        <span className="block text-xs text-muted-foreground mt-0.5">
+                        <span className="text-muted-foreground mt-0.5 block text-xs">
                           {DESTINATION_DESCRIPTIONS[dest]}
                         </span>
                       </span>
@@ -897,10 +1025,10 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
                   );
                 })}
                 {availableDestinations.length === 1 && (
-                  <p className="text-xs text-muted-foreground mt-2 flex items-start gap-1.5">
+                  <p className="text-muted-foreground mt-2 flex items-start gap-1.5 text-xs">
                     <Info
                       size={12}
-                      className="flex-shrink-0 mt-0.5"
+                      className="mt-0.5 flex-shrink-0"
                       aria-hidden="true"
                     />
                     Only Local is available. Connect a cloud provider in the
@@ -931,9 +1059,9 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
                 }
                 className={`${inputClass} w-28`}
               />
-              <span className="text-sm text-muted-foreground">backups</span>
+              <span className="text-muted-foreground text-sm">backups</span>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-xs">
               Older backups are deleted automatically when this limit is
               reached. We recommend at least 5.
             </p>
@@ -941,35 +1069,34 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
               <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
                 <AlertTriangle
                   size={12}
-                  className="flex-shrink-0 mt-0.5"
+                  className="mt-0.5 flex-shrink-0"
                   aria-hidden="true"
                 />
-                This limit also applies to your cloud storage — older
-                backups are deleted from your cloud provider automatically,
-                the same as Local. If a specific file ever can't be removed
-                automatically (e.g. it predates this version), it will be
-                flagged for you above the backup list instead of being kept
-                silently.
+                This limit also applies to your cloud storage — older backups
+                are deleted from your cloud provider automatically, the same as
+                Local. If a specific file ever can't be removed automatically
+                (e.g. it predates this version), it will be flagged for you
+                above the backup list instead of being kept silently.
               </p>
             )}
           </div>
 
           {/* Form actions */}
-          <div className="pt-2 border-t border-border">
+          <div className="border-border border-t pt-2">
             {isSaveBlockedByProviderLoad && (
               <p
                 id={saveBlockedReasonId}
-                className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground"
+                className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs"
                 aria-live="polite"
               >
                 <Loader2
                   size={12}
-                  className="animate-spin flex-shrink-0"
+                  className="flex-shrink-0 animate-spin"
                   aria-hidden="true"
                 />
-                Confirming cloud connection status — Save is disabled until
-                this finishes, so a disconnected provider can&rsquo;t be
-                saved by mistake.
+                Confirming cloud connection status — Save is disabled until this
+                finishes, so a disconnected provider can&rsquo;t be saved by
+                mistake.
               </p>
             )}
             <div className="flex gap-3">
@@ -1162,9 +1289,9 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
   }, [hasActiveEngineJob, runningJobId]);
 
   return (
-    <div className="border border-border rounded-2xl bg-card dark:bg-secondary overflow-hidden transition-all hover:border-border/60">
+    <div className="border-border bg-card dark:bg-secondary hover:border-border/60 overflow-hidden rounded-2xl border transition-all">
       {/* Card header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
+      <div className="border-border/50 flex items-center gap-3 border-b px-4 py-3">
         {/* Enable/disable toggle */}
         <button
           role="switch"
@@ -1178,15 +1305,15 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
               onToggle();
             }
           }}
-          className={`relative w-10 h-5 rounded-full p-0.5 cursor-pointer transition-all duration-300 ring-1 ring-inset flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+          className={`relative h-5 w-10 flex-shrink-0 cursor-pointer rounded-full p-0.5 ring-1 transition-all duration-300 ring-inset focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:outline-none ${
             automation.enabled
               ? "bg-green-500 ring-green-600"
               : "bg-red-500 ring-red-600"
-          } ${isToggling ? "opacity-50 cursor-not-allowed" : ""}`}
+          } ${isToggling ? "cursor-not-allowed opacity-50" : ""}`}
           aria-busy={isToggling}
         >
           <div
-            className="bg-white w-4 h-4 rounded-full shadow-sm transition-transform duration-300"
+            className="h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300"
             style={{
               transform: automation.enabled
                 ? "translateX(20px)"
@@ -1196,11 +1323,11 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
           />
         </button>
 
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm text-gray-900 dark:text-foreground truncate">
+        <div className="min-w-0 flex-1">
+          <p className="dark:text-foreground truncate text-sm font-semibold text-gray-900">
             {automation.name}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-muted-foreground mt-0.5 text-xs">
             {SCHEDULE_DISPLAY[automation.schedule]} &rarr;{" "}
             {DESTINATION_LABELS[automation.destination]}
           </p>
@@ -1219,7 +1346,7 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
               ? "Enable this automation first to run it manually"
               : undefined
           }
-          className={`flex-shrink-0 ${!automation.enabled ? "opacity-50 cursor-not-allowed" : ""}`}
+          className={`flex-shrink-0 ${!automation.enabled ? "cursor-not-allowed opacity-50" : ""}`}
         >
           {!isRunning && <Play size={12} aria-hidden="true" className="mr-1" />}
           Run Now
@@ -1255,7 +1382,7 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
                 setIsCancelling(false);
               }
             }}
-            className="px-2 py-1 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-shrink-0 rounded px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-900/20"
             aria-busy={isCancelling}
             aria-label={`Cancel running backup for "${automation.name}"`}
           >
@@ -1266,43 +1393,43 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
 
       {/* Card body */}
       <div className="px-4 py-3">
-        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+        <div className="text-muted-foreground flex flex-wrap gap-x-6 gap-y-1 text-xs">
           <span>
-            <span className="font-medium text-gray-700 dark:text-foreground/80">
+            <span className="dark:text-foreground/80 font-medium text-gray-700">
               Schedule:
             </span>{" "}
             {SCHEDULE_DISPLAY[automation.schedule]}
           </span>
           <span>
-            <span className="font-medium text-gray-700 dark:text-foreground/80">
+            <span className="dark:text-foreground/80 font-medium text-gray-700">
               Type:
             </span>{" "}
             {SCOPE_OPTIONS.find((s) => s.value === automation.scope)?.label ??
               automation.scope}
           </span>
           <span>
-            <span className="font-medium text-gray-700 dark:text-foreground/80">
+            <span className="dark:text-foreground/80 font-medium text-gray-700">
               Keep:
             </span>{" "}
             {automation.retention}{" "}
             {automation.retention === 1 ? "copy" : "copies"}
           </span>
           <span>
-            <span className="font-medium text-gray-700 dark:text-foreground/80">
+            <span className="dark:text-foreground/80 font-medium text-gray-700">
               Destination:
             </span>{" "}
             {DESTINATION_LABELS[automation.destination]}
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
           <NextRunBadge
             nextRun={automation.next_run}
             lastRunStatus={automation.last_run_status}
             enabled={automation.enabled}
           />
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="font-medium text-gray-700 dark:text-foreground/80">
+          <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+            <span className="dark:text-foreground/80 font-medium text-gray-700">
               Last run:
             </span>{" "}
             <StatusBadge status={automation.last_run_status} />
@@ -1313,7 +1440,7 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
                 automation.last_run_at)) && (
               <span>
                 {formatRelativeTime(
-                  automation.last_successful_at ?? automation.last_run_at,
+                  automation.last_successful_at ?? automation.last_run_at
                 )}
               </span>
             )}
@@ -1332,7 +1459,7 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
               >
                 <Loader2
                   size={10}
-                  className="animate-spin flex-shrink-0"
+                  className="flex-shrink-0 animate-spin"
                   aria-hidden="true"
                 />
                 Checking…
@@ -1344,12 +1471,12 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
         {/* Mini engine progress bar — shown when a job_id is available for this automation */}
         {runningJobId && engineProgress && (
           <div className="mt-3 space-y-1.5" aria-live="polite">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="text-muted-foreground flex items-center justify-between text-xs">
               <span>{enginePhaseLabel || "Running…"}</span>
               <span>{engineProgress.percent}%</span>
             </div>
             <div
-              className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5"
+              className="h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700"
               role="progressbar"
               aria-valuenow={engineProgress.percent}
               aria-valuemin={0}
@@ -1357,7 +1484,7 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
               aria-label={`Backup progress for ${automation.name}`}
             >
               <div
-                className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+                className="h-1.5 rounded-full bg-emerald-500 transition-all duration-500"
                 style={{ width: `${engineProgress.percent}%` }}
               />
             </div>
@@ -1366,13 +1493,13 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
                 up front), so the bytes processed is the reliable "still working"
                 signal. Shown whenever we have a non-trivial byte count. */}
             {engineBytesDone != null && engineBytesDone > 0 && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 {formatBytes(engineBytesDone)} processed
               </p>
             )}
             {engineProgress.eta_seconds != null &&
               engineProgress.eta_seconds > 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   {engineProgress.eta_seconds < 60
                     ? `About ${engineProgress.eta_seconds}s remaining`
                     : `About ${Math.ceil(engineProgress.eta_seconds / 60)} min remaining`}
@@ -1387,35 +1514,35 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
           (automation.last_run_message
             .toLowerCase()
             .includes("circuit breaker") ? (
-            <div className="mt-2 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+            <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-900/20">
               <AlertTriangle
                 size={13}
-                className="flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400"
+                className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400"
                 aria-hidden="true"
               />
               <div>
                 <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
                   Backup paused after 3 consecutive failures.
                 </p>
-                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-400">
                   Click &ldquo;Run Now&rdquo; to reset and try again.
                 </p>
               </div>
             </div>
           ) : (
-            <p className="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-1.5">
+            <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
               {automation.last_run_message}
             </p>
           ))}
       </div>
 
       {/* Card footer — edit / delete */}
-      <div className="flex items-center justify-end gap-2 px-4 py-2 border-t border-border/50 bg-secondary/30 dark:bg-card/20">
+      <div className="border-border/50 bg-secondary/30 dark:bg-card/20 flex items-center justify-end gap-2 border-t px-4 py-2">
         {!isDeleteConfirming ? (
           <>
             <button
               onClick={onEdit}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 dark:text-foreground/70 hover:bg-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="dark:text-foreground/70 hover:bg-secondary inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors focus:ring-2 focus:ring-blue-500 focus:outline-none"
               aria-label={`Edit "${automation.name}"`}
             >
               <Pencil size={12} aria-hidden="true" />
@@ -1423,7 +1550,7 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
             </button>
             <button
               onClick={onDeleteConfirmOpen}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 focus:ring-2 focus:ring-red-500 focus:outline-none dark:hover:bg-red-900/20"
               aria-label={`Delete "${automation.name}"`}
             >
               <Trash2 size={12} aria-hidden="true" />
@@ -1437,25 +1564,25 @@ const AutomationCard: React.FC<AutomationCardProps> = ({
             role="group"
             aria-label="Confirm deletion"
           >
-            <span className="text-xs text-gray-700 dark:text-foreground/80 flex items-center gap-1.5">
+            <span className="dark:text-foreground/80 flex items-center gap-1.5 text-xs text-gray-700">
               <AlertTriangle
                 size={12}
                 className="text-amber-500"
                 aria-hidden="true"
               />
-              Are you sure? Your automation will stop. The files saved until
-              now stay on your target drive — delete them manually if needed.
+              Are you sure? Your automation will stop. The files saved until now
+              stay on your target drive — delete them manually if needed.
             </span>
             <button
               onClick={onDeleteConfirmClose}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 dark:text-foreground/70 hover:bg-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="dark:text-foreground/70 hover:bg-secondary rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
               Cancel
             </button>
             <button
               onClick={onDeleteConfirmExecute}
               disabled={isDeleting}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:outline-none disabled:opacity-50"
               aria-busy={isDeleting}
             >
               {isDeleting && (
@@ -1500,7 +1627,7 @@ export const BackupAutomationsPanel: React.FC = () => {
   const [pollingIds, setPollingIds] = useState<Set<string>>(new Set());
   // Map of automation_id → engine job_id for active engine-based runs
   const [automationJobIds, setAutomationJobIds] = useState<Map<string, string>>(
-    new Map(),
+    new Map()
   );
   // v2.9.30.104 (WS2) — Backup path exclusions panel state
   const [showExclusionPanel, setShowExclusionPanel] = useState(false);
@@ -1518,8 +1645,7 @@ export const BackupAutomationsPanel: React.FC = () => {
       retry: 1,
     });
 
-  const excludePaths: string[] =
-    excludePathsData?.data?.exclude_paths ?? [];
+  const excludePaths: string[] = excludePathsData?.data?.exclude_paths ?? [];
   const nestedInstalls: string[] =
     excludePathsData?.data?.nested_installs ?? [];
 
@@ -1544,7 +1670,7 @@ export const BackupAutomationsPanel: React.FC = () => {
         setIsSavingExclusions(false);
       }
     },
-    [excludePathsData, refetchExcludePaths],
+    [excludePathsData, refetchExcludePaths]
   );
 
   // Add a free-text path from the input field.
@@ -1574,21 +1700,21 @@ export const BackupAutomationsPanel: React.FC = () => {
 
   // WP-Cron notice — dismissed state persisted in localStorage
   const [showCronNotice, setShowCronNotice] = useState<boolean>(
-    () => localStorage.getItem("swisswpsuite_cron_notice_dismissed") !== "1",
+    () => localStorage.getItem("swisswpsuite_cron_notice_dismissed") !== "1"
   );
   // Cron-blocked warning — shown when disable_wp_cron_public hardening is active.
   // Reappears on every page reload (localStorage key cleared on refresh by design).
   const [showCronBlockedWarning, setShowCronBlockedWarning] = useState<boolean>(
     () =>
       localStorage.getItem("swisswpsuite_cron_blocked_warning_dismissed") !==
-      "1",
+      "1"
   );
   // Refs for polling interval and per-automation timeout handles
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-    null,
+    null
   );
   const pollingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
-    new Map(),
+    new Map()
   );
 
   // Load automations list
@@ -1601,7 +1727,7 @@ export const BackupAutomationsPanel: React.FC = () => {
     queryKey: ["backup-automations"],
     queryFn: () =>
       wpApi<BackupAutomationsResponse>(
-        `/backup/automations?_nocache=${Date.now()}`,
+        `/backup/automations?_nocache=${Date.now()}`
       ),
     enabled: hasCloudFeature,
     staleTime: 30_000,
@@ -1614,7 +1740,7 @@ export const BackupAutomationsPanel: React.FC = () => {
   // causing every effect that lists `automations` in its deps to re-run on every render.
   const automations = useMemo(
     () => automationsData?.automations ?? [],
-    [automationsData],
+    [automationsData]
   );
   const stuckJobCount = automationsData?.stuck_job_count ?? 0;
 
@@ -1703,7 +1829,7 @@ export const BackupAutomationsPanel: React.FC = () => {
       }>("/backup/clear-stuck-jobs", { method: "POST" });
       if (result.cleared > 0) {
         toast.success(
-          `Cleared ${result.cleared} stuck job${result.cleared === 1 ? "" : "s"}.`,
+          `Cleared ${result.cleared} stuck job${result.cleared === 1 ? "" : "s"}.`
         );
       } else {
         toast.info("No stuck jobs found.");
@@ -1711,7 +1837,7 @@ export const BackupAutomationsPanel: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["backup-automations"] });
     } catch (err) {
       toast.error(
-        `Could not clear stuck jobs: ${err instanceof Error ? err.message : "Unknown error"}`,
+        `Could not clear stuck jobs: ${err instanceof Error ? err.message : "Unknown error"}`
       );
     } finally {
       setIsClearingStuck(false);
@@ -1774,7 +1900,7 @@ export const BackupAutomationsPanel: React.FC = () => {
         resolved.push(id);
       } else if (automation.last_run_status === "failed") {
         toast.error(
-          `"${automation.name}" backup failed.${automation.last_run_message ? ` ${automation.last_run_message}` : ""}`,
+          `"${automation.name}" backup failed.${automation.last_run_message ? ` ${automation.last_run_message}` : ""}`
         );
         resolved.push(id);
       }
@@ -1821,8 +1947,16 @@ export const BackupAutomationsPanel: React.FC = () => {
   });
 
   // UPDATE mutation
+  // E2 fix (2026-08-20): `data` is a targeted diff (Partial<AutomationFormData>),
+  // not the full form — see diffAutomationFormData() above for why.
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: AutomationFormData }) =>
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<AutomationFormData>;
+    }) =>
       wpApi<BackupAutomationResponse>(`/backup/automations/${id}`, {
         method: "PATCH",
         body: JSON.stringify(data),
@@ -1860,7 +1994,7 @@ export const BackupAutomationsPanel: React.FC = () => {
         `/backup/automations/${id}`,
         {
           method: "DELETE",
-        },
+        }
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["backup-automations"] });
@@ -1882,9 +2016,25 @@ export const BackupAutomationsPanel: React.FC = () => {
           message: string;
           /** Present when the engine is used — links this automation run to a job. */
           job_id?: string;
+          /** U8 (2026-08-20 gate): present on a decline — see run_automation_now(). */
+          reason?: string;
         }>(`/backup/automations/${id}/run`, { method: "POST" });
+        // U8 (2026-08-20 gate): the backend now returns every decline (license
+        // missing, automation disabled/not-found, concurrent-start lock held,
+        // etc.) as a non-2xx status, which wpApi() already throws on — this
+        // check is defense-in-depth for the shape, not the primary guard.
+        // Before this gate, a decline could reach here as success:true-shaped
+        // (run_automation_backup() returned null, and the response was built
+        // unconditionally around it), so the panel toasted "started", began
+        // polling, and either silently timed out after 15 minutes or --
+        // worse -- surfaced a FALSE "completed"/"failed" toast within ~5
+        // seconds by reading a PREVIOUS run's stale last_run_status. Never
+        // trust an HTTP 2xx alone for a "did the job actually start" claim.
+        if (!response.success) {
+          throw new Error(response.message || "Could not start the backup.");
+        }
         toast.success(
-          `"${name}" backup started. Status will update automatically.`,
+          `"${name}" backup started. Status will update automatically.`
         );
         // Phase 5: capture engine job_id if the backend returned one
         if (response.job_id) {
@@ -1911,7 +2061,7 @@ export const BackupAutomationsPanel: React.FC = () => {
             });
             pollingTimeoutsRef.current.delete(id);
           },
-          15 * 60 * 1_000,
+          15 * 60 * 1_000
         );
         pollingTimeoutsRef.current.set(id, timeout);
         // Initial refresh after short delay to pick up 'running' status
@@ -1920,7 +2070,7 @@ export const BackupAutomationsPanel: React.FC = () => {
         }, 1_500);
       } catch (err) {
         toast.error(
-          `Could not start backup: ${err instanceof Error ? err.message : "Unknown error"}`,
+          `Could not start backup: ${err instanceof Error ? err.message : "Unknown error"}`
         );
       } finally {
         setRunningIds((prev) => {
@@ -1930,7 +2080,7 @@ export const BackupAutomationsPanel: React.FC = () => {
         });
       }
     },
-    [queryClient],
+    [queryClient]
   );
 
   const handleSave = useCallback(
@@ -1938,10 +2088,18 @@ export const BackupAutomationsPanel: React.FC = () => {
       if (modalState === "create") {
         createMutation.mutate(data);
       } else if (typeof modalState === "string") {
-        updateMutation.mutate({ id: modalState, data });
+        // E2 fix (2026-08-20): send only the fields that actually changed,
+        // not the full form — see diffAutomationFormData() docblock. Falls
+        // back to the full form only in the (should-be-impossible) case
+        // where editingAutomation is null, e.g. the automation vanished from
+        // the cache between opening Edit and clicking Save.
+        const payload = editingAutomation
+          ? diffAutomationFormData(data, editingAutomation)
+          : data;
+        updateMutation.mutate({ id: modalState, data: payload });
       }
     },
-    [modalState, createMutation, updateMutation],
+    [modalState, createMutation, updateMutation, editingAutomation]
   );
 
   // v2.9.30.112 fix: tracks automation IDs whose engine jobs have recently
@@ -1952,7 +2110,9 @@ export const BackupAutomationsPanel: React.FC = () => {
   // rehydration effect re-adopts it → onJobGone fires again → loop → #185.
   // Entries are evicted after 15 s (long enough for the 8 s activeJobs poll
   // to return fresh data without the stale completed job).
-  const recentlyGoneAutoIds = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const recentlyGoneAutoIds = useRef<
+    Map<string, ReturnType<typeof setTimeout>>
+  >(new Map());
 
   // v2.9.30.102 fix: clear automationJobIds (and pollingIds) for an automation
   // whose engine job has gone away (cancelled, zombie-guard deleted, or completed).
@@ -1968,7 +2128,7 @@ export const BackupAutomationsPanel: React.FC = () => {
       automationId,
       setTimeout(() => {
         recentlyGoneAutoIds.current.delete(automationId);
-      }, 15_000),
+      }, 15_000)
     );
 
     setAutomationJobIds((prev) => {
@@ -1991,17 +2151,17 @@ export const BackupAutomationsPanel: React.FC = () => {
 
   if (!hasCloudFeature) {
     return (
-      <Card className="border-dashed border-2 border-border" noPadding>
+      <Card className="border-border border-2 border-dashed" noPadding>
         <div className="p-6">
-          <div className="flex items-center gap-3 mb-3">
+          <div className="mb-3 flex items-center gap-3">
             <div
-              className="p-2 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg"
+              className="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-900/20"
               aria-hidden="true"
             >
-              <CalendarClock className="w-5 h-5 text-emerald-600" />
+              <CalendarClock className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-foreground">
+              <h3 className="dark:text-foreground font-semibold text-gray-900">
                 Backup Automations
               </h3>
               <Badge variant="neutral" className="mt-0.5">
@@ -2009,11 +2169,11 @@ export const BackupAutomationsPanel: React.FC = () => {
               </Badge>
             </div>
             <Lock
-              className="w-5 h-5 text-muted-foreground ml-auto flex-shrink-0"
+              className="text-muted-foreground ml-auto h-5 w-5 flex-shrink-0"
               aria-hidden="true"
             />
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Automatically back up your site on a schedule — daily, weekly, or
             hourly. Not included on this plan — see Settings for details.
           </p>
@@ -2036,14 +2196,14 @@ export const BackupAutomationsPanel: React.FC = () => {
         <div className="p-6 pb-4">
           <div className="flex items-start gap-3">
             <div
-              className="p-2 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg flex-shrink-0 mt-0.5"
+              className="mt-0.5 flex-shrink-0 rounded-lg bg-emerald-100 p-2 dark:bg-emerald-900/20"
               aria-hidden="true"
             >
-              <CalendarClock className="w-5 h-5 text-emerald-600" />
+              <CalendarClock className="h-5 w-5 text-emerald-600" />
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-foreground">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <h2 className="dark:text-foreground text-lg font-bold text-gray-900">
                   Backup Automations
                 </h2>
                 {automations.length > 0 && (
@@ -2068,13 +2228,13 @@ export const BackupAutomationsPanel: React.FC = () => {
           </div>
 
           {/* Explanation banner */}
-          <div className="mt-4 flex items-start gap-2.5 p-3.5 bg-blue-50 dark:bg-blue-900/15 border border-blue-200 dark:border-blue-800 rounded-xl">
+          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-blue-200 bg-blue-50 p-3.5 dark:border-blue-800 dark:bg-blue-900/15">
             <Info
               size={15}
-              className="flex-shrink-0 mt-0.5 text-blue-500"
+              className="mt-0.5 flex-shrink-0 text-blue-500"
               aria-hidden="true"
             />
-            <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+            <p className="text-xs leading-relaxed text-blue-800 dark:text-blue-300">
               Automations run automatically on a schedule — no manual action
               needed. Each automation is independent: you can have a daily full
               backup to Google Drive <em>and</em> a weekly database backup to
@@ -2083,8 +2243,33 @@ export const BackupAutomationsPanel: React.FC = () => {
             </p>
           </div>
 
+          {/* E14 (owner-ordered, 2026-08-20) — small, persistent (not dismissible)
+              reassurance note. Purpose: deflect "why didn't my backup start exactly
+              on time" support emails by explaining, in plain language, that WordPress
+              cron is triggered by the site's own visitor traffic, so start times can
+              drift by a few minutes depending on the host. This is distinct from the
+              dismissible WP-Cron notice above (which is a call-to-action about
+              guaranteed timing) — this one stays visible so the explanation is there
+              whenever someone checks back after a backup ran a little later than
+              expected. */}
+          <p
+            className="text-muted-foreground mt-2 flex items-start gap-1.5 text-xs"
+            role="note"
+            aria-label="About backup timing"
+          >
+            <Clock
+              size={12}
+              className="mt-0.5 flex-shrink-0"
+              aria-hidden="true"
+            />
+            Scheduled backups are triggered by your site&rsquo;s own visitor
+            traffic (&ldquo;WordPress cron&rdquo;), so the exact start time can
+            vary by a few minutes depending on your host — that&rsquo;s normal
+            and not a sign anything is wrong.
+          </p>
+
           {isAtLimit && (
-            <p className="mt-2 text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
               <AlertTriangle size={12} aria-hidden="true" />
               You have reached the {MAX_AUTOMATIONS}-automation limit. Delete an
               existing one to add a new one.
@@ -2094,17 +2279,17 @@ export const BackupAutomationsPanel: React.FC = () => {
           {/* WP-Cron notice — shown when at least one automation with a cron schedule exists and not yet dismissed */}
           {showCronNotice && automations.length > 0 && (
             <div
-              className="mt-3 flex items-start gap-2.5 p-3.5 bg-blue-50 dark:bg-blue-900/15 border border-blue-200 dark:border-blue-800 rounded-xl"
+              className="mt-3 flex items-start gap-2.5 rounded-xl border border-blue-200 bg-blue-50 p-3.5 dark:border-blue-800 dark:bg-blue-900/15"
               role="note"
               aria-label="WordPress cron notice"
             >
               <Info
                 size={15}
-                className="flex-shrink-0 mt-0.5 text-blue-500"
+                className="mt-0.5 flex-shrink-0 text-blue-500"
                 aria-hidden="true"
               />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs leading-relaxed text-blue-800 dark:text-blue-300">
                   <span className="font-semibold">
                     Scheduled backups rely on WordPress&rsquo;s built-in cron,
                     which only runs when your site receives traffic.
@@ -2112,7 +2297,7 @@ export const BackupAutomationsPanel: React.FC = () => {
                   If your site has quiet periods, backups may fire late or be
                   skipped. For guaranteed timing, add a real server cron job:
                 </p>
-                <code className="mt-1.5 block text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-900 dark:text-blue-200 rounded px-2 py-1 font-mono break-all select-all">
+                <code className="mt-1.5 block rounded bg-blue-100 px-2 py-1 font-mono text-xs break-all text-blue-900 select-all dark:bg-blue-900/40 dark:text-blue-200">
                   {`curl -s "https://${window.location.hostname}/wp-cron.php?doing_wp_cron" >/dev/null 2>&1`}
                 </code>
               </div>
@@ -2120,11 +2305,11 @@ export const BackupAutomationsPanel: React.FC = () => {
                 onClick={() => {
                   localStorage.setItem(
                     "swisswpsuite_cron_notice_dismissed",
-                    "1",
+                    "1"
                   );
                   setShowCronNotice(false);
                 }}
-                className="flex-shrink-0 p-1 rounded text-blue-500 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-shrink-0 rounded p-1 text-blue-500 transition-colors hover:bg-blue-100 hover:text-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:hover:bg-blue-800/40"
                 aria-label="Dismiss WordPress cron notice"
               >
                 <X size={14} aria-hidden="true" />
@@ -2135,20 +2320,20 @@ export const BackupAutomationsPanel: React.FC = () => {
           {/* Cron-blocked warning — shown when disable_wp_cron_public hardening is active */}
           {showCronBlockedWarning && automationsData?.cron_blocked && (
             <div
-              className="mt-3 flex items-start gap-2.5 p-3.5 bg-amber-50 dark:bg-amber-900/15 border border-amber-300 dark:border-amber-700 rounded-xl"
+              className="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 p-3.5 dark:border-amber-700 dark:bg-amber-900/15"
               role="alert"
               aria-label="Scheduled backups blocked warning"
             >
               <AlertTriangle
                 size={15}
-                className="flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400"
+                className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400"
                 aria-hidden="true"
               />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 mb-0.5">
+              <div className="min-w-0 flex-1">
+                <p className="mb-0.5 text-xs font-semibold text-amber-800 dark:text-amber-300">
                   Scheduled backups are blocked
                 </p>
-                <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-300">
                   The{" "}
                   <span className="font-semibold">
                     &ldquo;Disable Visitor-Triggered Scheduling&rdquo;
@@ -2158,7 +2343,7 @@ export const BackupAutomationsPanel: React.FC = () => {
                     Security &rarr; Hardening
                   </span>
                   . This blocks{" "}
-                  <code className="font-mono bg-amber-100 dark:bg-amber-900/40 px-1 rounded">
+                  <code className="rounded bg-amber-100 px-1 font-mono dark:bg-amber-900/40">
                     wp-cron.php
                   </code>
                   , so your automations will never run automatically. Either
@@ -2166,13 +2351,13 @@ export const BackupAutomationsPanel: React.FC = () => {
                   hosting panel.
                 </p>
                 {/* F-309: copy-paste cron command so users can fix it without leaving the tab */}
-                <div className="mt-2.5 rounded-lg bg-amber-100/70 dark:bg-amber-900/30 border border-amber-300/60 dark:border-amber-700/60 p-2.5">
-                  <p className="text-[11px] font-medium text-amber-900 dark:text-amber-200 mb-1.5">
+                <div className="mt-2.5 rounded-lg border border-amber-300/60 bg-amber-100/70 p-2.5 dark:border-amber-700/60 dark:bg-amber-900/30">
+                  <p className="mb-1.5 text-[11px] font-medium text-amber-900 dark:text-amber-200">
                     Paste this into your hosting control panel&rsquo;s Cron Jobs
                     section (runs every 5 minutes):
                   </p>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 min-w-0 text-[11px] font-mono bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 rounded px-2 py-1.5 break-all select-all">
+                    <code className="min-w-0 flex-1 rounded bg-amber-50 px-2 py-1.5 font-mono text-[11px] break-all text-amber-900 select-all dark:bg-amber-950/60 dark:text-amber-200">
                       {`*/5 * * * * wget -q -O - ${
                         (typeof window !== "undefined" &&
                           (window.swisswpsuiteData?.homeUrl ||
@@ -2195,16 +2380,16 @@ export const BackupAutomationsPanel: React.FC = () => {
                             .then(() => toast.success("Cron command copied"))
                             .catch(() =>
                               toast.error(
-                                "Copy failed — select the text and copy manually",
-                              ),
+                                "Copy failed — select the text and copy manually"
+                              )
                             );
                         } else {
                           toast.error(
-                            "Clipboard unavailable — select the text and copy manually",
+                            "Clipboard unavailable — select the text and copy manually"
                           );
                         }
                       }}
-                      className="flex-shrink-0 rounded px-2.5 py-1.5 text-[11px] font-semibold bg-amber-200 dark:bg-amber-800/60 text-amber-900 dark:text-amber-100 hover:bg-amber-300 dark:hover:bg-amber-700 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="flex-shrink-0 rounded bg-amber-200 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900 transition-colors hover:bg-amber-300 focus:ring-2 focus:ring-amber-500 focus:outline-none dark:bg-amber-800/60 dark:text-amber-100 dark:hover:bg-amber-700"
                       aria-label="Copy cron command to clipboard"
                     >
                       Copy
@@ -2216,11 +2401,11 @@ export const BackupAutomationsPanel: React.FC = () => {
                 onClick={() => {
                   localStorage.setItem(
                     "swisswpsuite_cron_blocked_warning_dismissed",
-                    "1",
+                    "1"
                   );
                   setShowCronBlockedWarning(false);
                 }}
-                className="flex-shrink-0 p-1 rounded text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-800/40 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="flex-shrink-0 rounded p-1 text-amber-600 transition-colors hover:bg-amber-100 hover:text-amber-800 focus:ring-2 focus:ring-amber-500 focus:outline-none dark:text-amber-400 dark:hover:bg-amber-800/40 dark:hover:text-amber-200"
                 aria-label="Dismiss scheduled backups blocked warning"
               >
                 <X size={14} aria-hidden="true" />
@@ -2231,21 +2416,21 @@ export const BackupAutomationsPanel: React.FC = () => {
           {/* Stuck jobs warning — shown when engine state rows are orphaned */}
           {stuckJobCount > 0 && (
             <div
-              className="mt-3 flex items-start gap-2.5 p-3.5 bg-red-50 dark:bg-red-900/15 border border-red-300 dark:border-red-700 rounded-xl"
+              className="mt-3 flex items-start gap-2.5 rounded-xl border border-red-300 bg-red-50 p-3.5 dark:border-red-700 dark:bg-red-900/15"
               role="alert"
               aria-label="Stuck backup jobs warning"
             >
               <AlertTriangle
                 size={15}
-                className="flex-shrink-0 mt-0.5 text-red-600 dark:text-red-400"
+                className="mt-0.5 flex-shrink-0 text-red-600 dark:text-red-400"
                 aria-hidden="true"
               />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-red-800 dark:text-red-300 mb-0.5">
+              <div className="min-w-0 flex-1">
+                <p className="mb-0.5 text-xs font-semibold text-red-800 dark:text-red-300">
                   {stuckJobCount} stuck backup job
                   {stuckJobCount === 1 ? "" : "s"} detected
                 </p>
-                <p className="text-xs text-red-800 dark:text-red-300 leading-relaxed">
+                <p className="text-xs leading-relaxed text-red-800 dark:text-red-300">
                   These jobs have been stuck for over 2 hours and are consuming
                   server resources. Clear them to stop the retry loop.
                 </p>
@@ -2261,7 +2446,7 @@ export const BackupAutomationsPanel: React.FC = () => {
                   <>
                     <Loader2
                       size={14}
-                      className="animate-spin mr-1"
+                      className="mr-1 animate-spin"
                       aria-hidden="true"
                     />
                     Clearing…
@@ -2279,7 +2464,7 @@ export const BackupAutomationsPanel: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowExclusionPanel((v) => !v)}
-            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 rounded"
+            className="text-muted-foreground hover:text-foreground flex items-center gap-2 rounded text-xs transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:outline-none"
             aria-expanded={showExclusionPanel}
             aria-controls="backup-exclusion-panel"
           >
@@ -2287,7 +2472,7 @@ export const BackupAutomationsPanel: React.FC = () => {
             <span className="font-medium">
               {showExclusionPanel ? "Hide" : "Configure"} backup exclusions
             </span>
-            <span className="text-[10px] text-muted-foreground/70">
+            <span className="text-muted-foreground/70 text-[10px]">
               (skip folders like staging sub-sites, large media dirs)
             </span>
           </button>
@@ -2295,13 +2480,13 @@ export const BackupAutomationsPanel: React.FC = () => {
           {showExclusionPanel && (
             <div
               id="backup-exclusion-panel"
-              className="mt-3 rounded-xl border border-border bg-muted/30 dark:bg-muted/10 p-4 space-y-3"
+              className="border-border bg-muted/30 dark:bg-muted/10 mt-3 space-y-3 rounded-xl border p-4"
             >
               <div>
-                <p className="text-xs font-semibold text-foreground mb-0.5">
+                <p className="text-foreground mb-0.5 text-xs font-semibold">
                   Exclude paths from backups
                 </p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-muted-foreground text-xs leading-relaxed">
                   Paths are relative to your WordPress root. The plugin&rsquo;s
                   own backup/snapshot directories are always excluded regardless
                   of these settings.
@@ -2318,27 +2503,27 @@ export const BackupAutomationsPanel: React.FC = () => {
                   {nestedInstalls.map((dir) => (
                     <label
                       key={dir}
-                      className="flex items-center gap-2.5 cursor-pointer group"
+                      className="group flex cursor-pointer items-center gap-2.5"
                     >
                       <input
                         type="checkbox"
                         checked={excludePaths.includes(dir)}
                         onChange={() => handleToggleExcludePath(dir)}
                         disabled={isSavingExclusions}
-                        className="w-3.5 h-3.5 rounded accent-blue-600"
+                        className="h-3.5 w-3.5 rounded accent-blue-600"
                         aria-label={`Exclude ${dir} from backups`}
                       />
-                      <code className="text-xs font-mono bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 px-1.5 py-0.5 rounded">
+                      <code className="rounded bg-amber-50 px-1.5 py-0.5 font-mono text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
                         {dir}/
                       </code>
-                      <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                      <span className="text-muted-foreground group-hover:text-foreground text-xs transition-colors">
                         {excludePaths.includes(dir)
                           ? "excluded"
                           : "will be included"}
                       </span>
                     </label>
                   ))}
-                  <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 pl-6">
+                  <p className="pl-6 text-[11px] text-amber-700/80 dark:text-amber-400/80">
                     These sub-directories contain a WordPress install. Checking
                     them (recommended) prevents doubling your backup size.
                   </p>
@@ -2349,24 +2534,21 @@ export const BackupAutomationsPanel: React.FC = () => {
               {excludePaths.filter((p) => !nestedInstalls.includes(p)).length >
                 0 && (
                 <div className="space-y-1">
-                  <p className="text-[11px] font-medium text-muted-foreground">
+                  <p className="text-muted-foreground text-[11px] font-medium">
                     Custom exclusions
                   </p>
                   {excludePaths
                     .filter((p) => !nestedInstalls.includes(p))
                     .map((path) => (
-                      <div
-                        key={path}
-                        className="flex items-center gap-2 group"
-                      >
-                        <code className="flex-1 min-w-0 text-xs font-mono bg-muted text-foreground px-2 py-0.5 rounded truncate">
+                      <div key={path} className="group flex items-center gap-2">
+                        <code className="bg-muted text-foreground min-w-0 flex-1 truncate rounded px-2 py-0.5 font-mono text-xs">
                           {path}
                         </code>
                         <button
                           type="button"
                           onClick={() => handleToggleExcludePath(path)}
                           disabled={isSavingExclusions}
-                          className="flex-shrink-0 p-0.5 rounded text-muted-foreground hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                          className="text-muted-foreground flex-shrink-0 rounded p-0.5 transition-colors hover:text-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
                           aria-label={`Remove ${path} from exclusions`}
                         >
                           <X size={12} aria-hidden="true" />
@@ -2389,7 +2571,7 @@ export const BackupAutomationsPanel: React.FC = () => {
                     }
                   }}
                   placeholder="e.g. test or wp-content/uploads/large-dir"
-                  className="flex-1 min-w-0 text-xs font-mono bg-background border border-border rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-muted-foreground/60"
+                  className="bg-background border-border placeholder:text-muted-foreground/60 min-w-0 flex-1 rounded border px-2.5 py-1.5 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   aria-label="Add path to exclusion list"
                   disabled={isSavingExclusions}
                 />
@@ -2397,7 +2579,7 @@ export const BackupAutomationsPanel: React.FC = () => {
                   type="button"
                   onClick={() => void handleAddCustomExcludePath()}
                   disabled={isSavingExclusions || !excludePathInput.trim()}
-                  className="flex-shrink-0 rounded px-2.5 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-shrink-0 rounded bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label="Add exclusion path"
                 >
                   {isSavingExclusions ? (
@@ -2419,7 +2601,7 @@ export const BackupAutomationsPanel: React.FC = () => {
           {/* Loading state */}
           {isLoading && (
             <div
-              className="flex items-center justify-center gap-2 py-12 text-muted-foreground"
+              className="text-muted-foreground flex items-center justify-center gap-2 py-12"
               role="status"
               aria-live="polite"
             >
@@ -2432,7 +2614,7 @@ export const BackupAutomationsPanel: React.FC = () => {
           {isError && !isLoading && (
             <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
               <XCircle size={28} className="text-red-400" aria-hidden="true" />
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Could not load automations.
               </p>
               <Button variant="secondary" size="sm" onClick={() => refetch()}>
@@ -2445,16 +2627,16 @@ export const BackupAutomationsPanel: React.FC = () => {
           {!isLoading && !isError && automations.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
               <div
-                className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center"
+                className="bg-secondary flex h-14 w-14 items-center justify-center rounded-2xl"
                 aria-hidden="true"
               >
                 <Inbox size={28} className="text-muted-foreground" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900 dark:text-foreground">
+                <p className="dark:text-foreground font-semibold text-gray-900">
                   No automations set up yet
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">
+                <p className="text-muted-foreground mx-auto mt-1 max-w-xs text-sm">
                   Your site is not being backed up automatically. Create your
                   first automation to protect your data.
                 </p>

@@ -6,6 +6,31 @@
  * DESIGN RULE: No "Save Settings" buttons (CLAUDE.md).
  * - Toggles and server profile cards auto-save on change via AJAX.
  * - alertEmail saves on blur (debounced text field).
+ *
+ * ARS Round D (D-K-4, WP.org R4 F-11, 2026-08-2x): "Server Profile"
+ * control REMOVED — it had zero readers anywhere in the codebase
+ * (confirmed by L-B's tree-wide grep, handoff/L-B_auto-update-manifest.md)
+ * and its option write handler was removed backend-side this round, so
+ * the control would now silently do nothing at all. "Automatic Updates"
+ * is UNCHANGED and stays — it now has a real consumer
+ * (auto_update_plugin filter, same hand-off).
+ *
+ * FOLLOW-UP FIX (lane-K verifier D-K-4, 2026-08-24): the original D-K-4
+ * pass also deleted the "Beta Features" toggle outright, on the premise
+ * that its write gate (api-settings.php save_settings(),
+ * class_exists('SwissWPSuite_Api_Sync')) never fires in Free. That is
+ * true, but `swisswpsuite_beta_features` is a real, actively-consumed
+ * PRO option — BackupsPage.tsx reads settings.betaFeatures to gate its
+ * Sync/Migration sections, and this was its ONLY UI writer anywhere in
+ * the codebase. Outright deletion broke Pro (no way left to ever enable
+ * beta features). RESTORED below via BetaFeaturesToggleRow.tsx, extracted
+ * the same way LicenseTierBadge.tsx was (D-K-3) so it can be aliased to a
+ * null-rendering stub in the Free build instead of just runtime-gated —
+ * this file is the always-present Settings > General shell (never
+ * aliasable), so a plain `isProEditionBuild && <ToggleRow .../>` would
+ * still compile the "Beta Features" string into the Free bundle even
+ * though it never renders there. See BetaFeaturesToggleRow.tsx's own
+ * docblock for the full rationale.
  */
 
 import { useState, useEffect, useRef, useCallback, useId } from "react";
@@ -13,7 +38,9 @@ import { Card } from "../../ui/Card";
 import { SwissSettings } from "../../../hooks/useSettings";
 import { ApiError } from "../../../services/api";
 import { toast } from "sonner";
-import { Settings, Zap, Server, Mail, Loader2 } from "lucide-react";
+import { Settings, Mail, Loader2 } from "lucide-react";
+import { isProEdition } from "../../../lib/edition";
+import { BetaFeaturesToggleRow } from "./BetaFeaturesToggleRow";
 
 /**
  * SET-04 FIX: client-side pre-flight format check for the Alert Email field.
@@ -95,29 +122,19 @@ function ToggleRow({
   );
 }
 
-const SERVER_PROFILES = [
-  {
-    id: "auto",
-    label: "Auto-Detect (Recommended)",
-    desc: "Automatically selects the best strategy based on available resources.",
-  },
-  {
-    id: "standard",
-    label: "Standard Hosting",
-    desc: "Optimized for shared hosts (Hostinger, Bluehost). Uses PHP chunking.",
-  },
-  {
-    id: "vps",
-    label: "VPS / Dedicated",
-    desc: "Best for VPS or dedicated servers with higher resource limits and longer execution windows.",
-  },
-];
-
 export function GeneralSettings({
   settings,
   onSave,
   isSaving,
 }: GeneralSettingsProps) {
+  // ARS Round D (D-K-4 follow-up, lane-K verifier, 2026-08-24): Beta
+  // Features gates Sync/Migration (BackupsPage.tsx), both fully Pro-only
+  // — see BetaFeaturesToggleRow.tsx's docblock. Redundant with the
+  // build-time alias (which already renders null in Free) the same way
+  // DashboardLayout.tsx's `isProEditionBuild && <LicenseTierBadge .../>`
+  // is redundant with its own stub — belt-and-suspenders, matches this
+  // codebase's established convention for extracted/aliased controls.
+  const isProEditionBuild = isProEdition();
   const [config, setConfig] = useState<Partial<SwissSettings>>({});
   // C-03 FIX: Initialize from adminEmail to match backend default (get_option('admin_email')).
   const [alertEmail, setAlertEmail] = useState<string>(
@@ -135,7 +152,7 @@ export function GeneralSettings({
         emailNotifications: settings.emailNotifications,
         betaFeatures: settings.betaFeatures,
         transferStrategy: settings.transferStrategy,
-        serverProfile: settings.serverProfile,
+        pageviewTrackingEnabled: settings.pageviewTrackingEnabled,
       });
       const initialEmail = settings.alertEmail ?? "";
       setAlertEmail(initialEmail);
@@ -196,10 +213,13 @@ export function GeneralSettings({
     }
   }, [alertEmail, onSave]);
 
-  const handleEmailChange = useCallback((value: string) => {
-    setAlertEmail(value);
-    if (emailError) setEmailError(null);
-  }, [emailError]);
+  const handleEmailChange = useCallback(
+    (value: string) => {
+      setAlertEmail(value);
+      if (emailError) setEmailError(null);
+    },
+    [emailError]
+  );
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -219,15 +239,22 @@ export function GeneralSettings({
         <ToggleRow
           label="Email Notifications"
           desc="Receive security digests and backup reports"
-          checked={config.emailNotifications ?? true}
+          checked={config.emailNotifications ?? false}
           onChange={(v) => autoSave("emailNotifications", v)}
           isSaving={isSaving}
         />
+        {isProEditionBuild && (
+          <BetaFeaturesToggleRow
+            checked={config.betaFeatures ?? false}
+            onChange={(v) => autoSave("betaFeatures", v)}
+            isSaving={isSaving}
+          />
+        )}
         <ToggleRow
-          label="Beta Features"
-          desc="Access experimental features before public release"
-          checked={config.betaFeatures ?? false}
-          onChange={(v) => autoSave("betaFeatures", v)}
+          label="Dashboard Traffic Counter"
+          desc="Counts pageviews per day and page type to power the Dashboard traffic chart. Runs entirely on your server: no IP addresses, cookies, or personal data are collected or transmitted. Off by default."
+          checked={config.pageviewTrackingEnabled ?? false}
+          onChange={(v) => autoSave("pageviewTrackingEnabled", v)}
           isSaving={isSaving}
         />
       </Card>
@@ -261,7 +288,9 @@ export function GeneralSettings({
               }`}
               aria-invalid={emailError ? true : undefined}
               aria-describedby={
-                emailError ? `${emailErrorId} alertEmail-desc` : "alertEmail-desc"
+                emailError
+                  ? `${emailErrorId} alertEmail-desc`
+                  : "alertEmail-desc"
               }
             />
             {emailSaving && (
@@ -273,7 +302,11 @@ export function GeneralSettings({
             )}
           </div>
           {emailError && (
-            <p id={emailErrorId} role="alert" className="mt-1 text-xs text-red-600">
+            <p
+              id={emailErrorId}
+              role="alert"
+              className="mt-1 text-xs text-red-600"
+            >
               {emailError}
             </p>
           )}
@@ -281,53 +314,6 @@ export function GeneralSettings({
             Email address for security alerts and diagnostic notifications.
             Saved automatically when you leave the field.
           </p>
-        </div>
-      </Card>
-
-      {/* Server Profile Card */}
-      <Card className="space-y-4 p-6">
-        <div className="border-border dark:border-border mb-2 flex items-center gap-2 border-b pb-3">
-          <Server className="h-4 w-4 text-neutral-700" />
-          <h3 className="text-base font-semibold">Server Profile</h3>
-        </div>
-        <p className="text-sm text-neutral-700">
-          Define your hosting environment to optimize Backup &amp; Migration
-          performance.
-        </p>
-        <div className="grid grid-cols-1 gap-3">
-          {SERVER_PROFILES.map((profile) => {
-            const isActive = (config.serverProfile || "auto") === profile.id;
-            return (
-              <div
-                key={profile.id}
-                role="radio"
-                aria-checked={isActive}
-                tabIndex={0}
-                onClick={() => autoSave("serverProfile", profile.id)}
-                onKeyDown={(e) =>
-                  (e.key === "Enter" || e.key === " ") &&
-                  autoSave("serverProfile", profile.id)
-                }
-                className={`cursor-pointer rounded-xl border-2 p-4 transition-all duration-200 ${
-                  isActive
-                    ? "border-blue-500 bg-blue-50/20"
-                    : "border-border dark:border-border hover:border-blue-200 dark:hover:border-blue-800"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {isActive && (
-                    <Zap className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-                  )}
-                  <p className="dark:text-foreground text-sm font-semibold text-neutral-900">
-                    {profile.label}
-                  </p>
-                </div>
-                <p className="mt-1 ml-0 text-xs text-neutral-700">
-                  {profile.desc}
-                </p>
-              </div>
-            );
-          })}
         </div>
       </Card>
     </div>

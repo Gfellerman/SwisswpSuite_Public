@@ -6,7 +6,7 @@
 
 import { ReactNode } from "react";
 import { Card } from "../../ui/Card";
-import { SETTINGS_API_TAB_LABEL } from "./settingsApiTabLabel";
+import { SETTINGS_TABS } from "./settingsTabs";
 
 interface SettingsLayoutProps {
   children: ReactNode;
@@ -23,17 +23,13 @@ export function SettingsLayout({
   // panel (ApiConfig.tsx) but, in Free, is now the consolidated "Editions &
   // AI" informational section (EditionsAiInfo.tsx) — label reflects which
   // one actually renders. See SettingsPage.tsx's "api" tab branch.
-  // v2.9.33.18 (WP.org string census closure, R5): label now comes from the
+  // v2.9.33.18 (WP.org string census closure, R5): label comes from the
   // build-time-aliased settingsApiTabLabel module instead of a runtime
   // isProEdition() ternary — see that module's docblock for why.
-  const tabs = [
-    { id: "general", label: "General" },
-    { id: "api", label: SETTINGS_API_TAB_LABEL },
-    { id: "security", label: "Security" },
-    { id: "seo", label: "SEO" },
-    { id: "license", label: "License" },
-    { id: "maintenance", label: "Maintenance" },
-  ];
+  // ARS Round C P1-21 (F-41, 2026-08-23): the tab LIST itself (including
+  // whether "license" appears at all) now comes from the build-time-
+  // aliased settingsTabs module for the same reason — see its docblock.
+  const tabs = SETTINGS_TABS;
 
   return (
     <div className="space-y-6">

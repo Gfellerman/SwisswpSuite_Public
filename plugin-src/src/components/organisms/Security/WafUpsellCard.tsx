@@ -35,7 +35,7 @@ export const WafUpsellCard: React.FC = () => (
       ))}
     </ul>
     <a
-      href="https://swisswpsecure.com/#pricing"
+      href="https://swisswpsecure.com/products/"
       target="_blank"
       rel="noopener noreferrer"
       className="text-swiss-navy inline-flex items-center gap-1 text-xs font-black tracking-widest uppercase hover:underline"

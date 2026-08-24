@@ -31,7 +31,7 @@
  * (not a boolean) — see that logic below.
  */
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp, Lock } from "lucide-react";
+import { ChevronDown, ChevronUp, Lock, AlertTriangle } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { HardeningOption, PreToggleCheckResult } from "../../../types";
 import { HardeningConfirmDialog } from "./HardeningConfirmDialog";
@@ -168,6 +168,26 @@ const HardeningOptionCard: React.FC<HardeningOptionCardProps> = ({
             className="shrink-0 text-neutral-400"
             aria-hidden="true"
           />
+        )}
+        {/*
+          ADDENDUM-2 F-U9 (2026-08-20, condition (5)): a server-level
+          (.htaccess) rule warning — informational only. Deliberately does
+          NOT flip opt.enabled / the switch's visual state or aria-checked
+          above; the toggle continues to reflect the real, PHP-enforced DB
+          state. `tabIndex={0}` + native `title` makes the reason reachable
+          on keyboard focus (shown on hover for pointer users), and the
+          sr-only span carries the same text for screen readers that don't
+          reliably announce `title`.
+        */}
+        {opt.enabled && opt.htaccess_warning && (
+          <span
+            className="inline-flex shrink-0 cursor-help items-center text-amber-600"
+            title={opt.htaccess_warning}
+            tabIndex={0}
+          >
+            <AlertTriangle size={12} aria-hidden="true" />
+            <span className="sr-only">{opt.htaccess_warning}</span>
+          </span>
         )}
       </h4>
       <p className="mb-4 text-sm leading-relaxed font-medium text-neutral-700">

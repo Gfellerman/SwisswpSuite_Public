@@ -11,11 +11,35 @@
  *  - Inline errors: role="alert"
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Clock } from 'lucide-react';
-import { wpApi } from '../../../services/api';
-import type { UpdateGuardReview } from '../../../types';
-import { formatIsoDate } from './SnapshotList';
+import React, { useState, useEffect, useRef } from "react";
+import { Clock } from "lucide-react";
+import { wpApi, ApiError } from "../../../services/api";
+import type { UpdateGuardReview } from "../../../types";
+import { formatIsoDate } from "./SnapshotList";
+
+/**
+ * U1 (v2.9.33.29): extract the most accurate human-readable message from a
+ * failed wpApi() call. Confirmed by running this component's own test suite
+ * against the ALREADY-LANDED U10 hardening of wpApi() (services/api.ts) in
+ * this same release: wpApi() now THROWS an ApiError whenever a response body
+ * carries `success: false`, at ANY status (2xx included, since
+ * /update-guard/reviews/approve|reject are not in U10's allowSuccessFalse
+ * opt-out list) -- it never resolves normally with a success:false body. So
+ * a `result?.success === false` check inside the try block, as originally
+ * drafted, is dead code that can never run; the real failure path is always
+ * this catch block. Both this file's REST handlers (api-update-guard.php)
+ * and its 400-status error shapes key the machine-readable reason as
+ * `error` (e.g. `{success:false, error:'missing_slug'}`), not `message` --
+ * ApiError.data carries the original parsed body, so `.data.error` is
+ * checked first, matching what the backend actually sends.
+ */
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    const data = err.data as { error?: string; message?: string } | undefined;
+    return data?.error || data?.message || err.message || fallback;
+  }
+  return err instanceof Error ? err.message : fallback;
+}
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -27,7 +51,11 @@ interface ReviewRowProps {
   onAnnounce: (message: string) => void;
 }
 
-const ReviewRow: React.FC<ReviewRowProps> = ({ review, onQueueChange, onAnnounce }) => {
+const ReviewRow: React.FC<ReviewRowProps> = ({
+  review,
+  onQueueChange,
+  onAnnounce,
+}) => {
   const [approveLoading, setApproveLoading] = useState(false);
   const [rejectLoading, setRejectLoading] = useState(false);
   const [rowError, setRowError] = useState<string | null>(null);
@@ -41,17 +69,30 @@ const ReviewRow: React.FC<ReviewRowProps> = ({ review, onQueueChange, onAnnounce
     setRowError(null);
     setApproveLoading(true);
     try {
-      await wpApi('/update-guard/reviews/approve', {
-        method: 'POST',
-        body: JSON.stringify({ slug: review.slug }),
-      });
+      // U1 (v2.9.33.29): response.success is now enforced by wpApi() itself (U10,
+      // this same release) — a success:false body throws an ApiError instead of
+      // resolving, so there is no separate `if (!success)` branch to write here;
+      // the catch block below is the single failure path. See extractErrorMessage()
+      // above for why.
+      await wpApi<{ success: boolean; slug?: string }>(
+        "/update-guard/reviews/approve",
+        {
+          method: "POST",
+          body: JSON.stringify({ slug: review.slug }),
+        }
+      );
       // WCAG 4.1.3 (A-4 fix): announce a surgical message rather than letting
       // AT serialize the full <li> content (which includes buttons, icons, badge text).
-      onAnnounce(`${review.slug} approved. Removed from review queue.`);
+      // Wording reflects the GENUINE-ALLOW semantics (owner ruling, 2026-08-20): approval
+      // is scoped to this exact slug+version+package — a different build or a version bump
+      // will still be blocked and re-queued for review, not silently let through.
+      onAnnounce(
+        `${review.slug} approved — this exact version will be allowed on the next update.`
+      );
       onQueueChange();
     } catch (err) {
       rowErrorSeq.current += 1;
-      setRowError(err instanceof Error ? err.message : 'Approve failed.');
+      setRowError(extractErrorMessage(err, "Approve failed."));
     } finally {
       setApproveLoading(false);
     }
@@ -61,52 +102,62 @@ const ReviewRow: React.FC<ReviewRowProps> = ({ review, onQueueChange, onAnnounce
     setRowError(null);
     setRejectLoading(true);
     try {
-      await wpApi('/update-guard/reviews/reject', {
-        method: 'POST',
-        body: JSON.stringify({ slug: review.slug }),
-      });
+      // U1 (v2.9.33.29): same rationale as handleApprove above — wpApi() itself
+      // (U10) throws on success:false, so the single failure path is the catch.
+      await wpApi<{ success: boolean; slug?: string }>(
+        "/update-guard/reviews/reject",
+        {
+          method: "POST",
+          body: JSON.stringify({ slug: review.slug }),
+        }
+      );
       // WCAG 4.1.3 (A-4 fix): surgical announcement on reject.
       onAnnounce(`${review.slug} rejected. Removed from review queue.`);
       onQueueChange();
     } catch (err) {
       rowErrorSeq.current += 1;
-      setRowError(err instanceof Error ? err.message : 'Reject failed.');
+      setRowError(extractErrorMessage(err, "Reject failed."));
     } finally {
       setRejectLoading(false);
     }
   };
 
   return (
-    <li className="flex flex-col gap-2 p-3 rounded-xl border border-border bg-card">
+    <li className="border-border bg-card flex flex-col gap-2 rounded-xl border p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         {/* Info */}
-        <div className="flex flex-col gap-0.5 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <code className="font-mono text-xs font-black text-neutral-800">{review.slug}</code>
-            <span className="text-xs text-neutral-600 font-medium">v{review.version}</span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="font-mono text-xs font-black text-neutral-800">
+              {review.slug}
+            </code>
+            <span className="text-xs font-medium text-neutral-600">
+              v{review.version}
+            </span>
             {review.findings_count > 0 && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-black border bg-amber-50 text-amber-700 border-amber-200">
-                {review.findings_count} finding{review.findings_count !== 1 ? 's' : ''}
+              <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-black text-amber-700">
+                {review.findings_count} finding
+                {review.findings_count !== 1 ? "s" : ""}
               </span>
             )}
           </div>
-          <span className="text-xs text-neutral-600 font-medium flex items-center gap-1">
+          <span className="flex items-center gap-1 text-xs font-medium text-neutral-600">
             <Clock size={10} aria-hidden="true" />
             Held {formatIsoDate(review.held_at)}
           </span>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex shrink-0 items-center gap-1.5">
           <button
             type="button"
             onClick={handleApprove}
             disabled={isActing}
             aria-label={`Approve update for ${review.slug}`}
             aria-busy={approveLoading}
-            className="inline-flex items-center px-3 py-1 rounded-lg bg-swiss-navy text-white text-xs font-black hover:opacity-90 border border-swiss-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-swiss-navy disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="bg-swiss-navy border-swiss-navy focus-visible:ring-swiss-navy inline-flex items-center rounded-lg border px-3 py-1 text-xs font-black text-white transition-colors hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {approveLoading ? 'Approving…' : 'Approve'}
+            {approveLoading ? "Approving…" : "Approve"}
           </button>
           <button
             type="button"
@@ -114,9 +165,9 @@ const ReviewRow: React.FC<ReviewRowProps> = ({ review, onQueueChange, onAnnounce
             disabled={isActing}
             aria-label={`Reject update for ${review.slug}`}
             aria-busy={rejectLoading}
-            className="inline-flex items-center px-3 py-1 rounded-lg border border-border bg-secondary text-xs font-black text-neutral-600 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-swiss-navy disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="border-border bg-secondary focus-visible:ring-swiss-navy inline-flex items-center rounded-lg border px-3 py-1 text-xs font-black text-neutral-600 transition-colors hover:bg-neutral-100 focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {rejectLoading ? 'Rejecting…' : 'Reject'}
+            {rejectLoading ? "Rejecting…" : "Reject"}
           </button>
         </div>
       </div>
@@ -126,7 +177,7 @@ const ReviewRow: React.FC<ReviewRowProps> = ({ review, onQueueChange, onAnnounce
         <span
           key={`row-err-${rowErrorSeq.current}`}
           role="alert"
-          className="text-xs text-red-600 font-medium"
+          className="text-xs font-medium text-red-600"
         >
           {rowError}
         </span>
@@ -164,13 +215,13 @@ const UpdateReviewPanel: React.FC<UpdateReviewPanelProps> = ({
     The <ul> retains aria-label for AT to identify the region, but aria-live
     is moved off the list onto the dedicated announcement span.
   */
-  const [announcement, setAnnouncement] = useState('');
+  const [announcement, setAnnouncement] = useState("");
 
   // NVDA two-step pattern: clear the announcement after a tick so that
   // the same message can be re-announced if the same action is retried.
   useEffect(() => {
     if (announcement) {
-      const id = setTimeout(() => setAnnouncement(''), 3000);
+      const id = setTimeout(() => setAnnouncement(""), 3000);
       return () => clearTimeout(id);
     }
   }, [announcement]);
@@ -180,7 +231,7 @@ const UpdateReviewPanel: React.FC<UpdateReviewPanelProps> = ({
     // one render, so the span stays empty until the next tick. Use a functional
     // update with a micro-delay to guarantee the empty → populated mutation
     // that NVDA observes.
-    setAnnouncement('');
+    setAnnouncement("");
     setTimeout(() => setAnnouncement(message), 0);
   };
 
@@ -189,7 +240,7 @@ const UpdateReviewPanel: React.FC<UpdateReviewPanelProps> = ({
       This outer div is always in the DOM. The role="status" span inside is
       always mounted so AT can observe it. Visible content is conditional.
     */
-    <div className={reviews.length > 0 ? 'mb-5' : ''}>
+    <div className={reviews.length > 0 ? "mb-5" : ""}>
       {/*
         WCAG 4.1.3 / NVDA two-step: always-mounted announcement region.
         role="status" implies aria-live="polite" + aria-atomic="true".
@@ -202,7 +253,7 @@ const UpdateReviewPanel: React.FC<UpdateReviewPanelProps> = ({
 
       {reviews.length > 0 && (
         <>
-          <p className="text-xs font-black uppercase tracking-[0.08em] text-neutral-600 mb-3">
+          <p className="mb-3 text-xs font-black tracking-[0.08em] text-neutral-600 uppercase">
             Review Queue ({reviews.length})
           </p>
           {/*

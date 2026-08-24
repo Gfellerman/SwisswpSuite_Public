@@ -29,6 +29,7 @@ import React, {
 import { Shield, Eye, CheckCheck, Lock, Link } from "lucide-react";
 import { wpApi } from "../../../services/api";
 import { toast } from "sonner";
+import { PRO_UPGRADE_URL } from "../../../lib/edition";
 import type {
   UpdateGuardStatus,
   UpdateGuardReview,
@@ -755,7 +756,7 @@ const UpdateGuardCard: React.FC<UpdateGuardCardProps> = ({
                 Advanced blocking, review controls, and trusted URL allowlist
                 available with{" "}
                 <a
-                  href="https://swisswpsecure.com/#pricing"
+                  href={PRO_UPGRADE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-black text-swiss-navy hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-swiss-navy rounded"

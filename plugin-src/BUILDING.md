@@ -76,20 +76,26 @@ EDITION=pro npm run build    # Pro edition (same as unset)
 ```
 
 When `EDITION=free`, `vite.config.ts`'s `resolve.alias` block redirects a
-short, explicit list of Pro-only module import specifiers — the AI Content
-page, Sync page/manager, the License Manager organism, the token-balance
-hook, Migration Station, Cloud Storage panel, the Update Guard card,
-Two-Factor Settings and its own small nudge-link sibling, Encryption
-Settings, the Geo-Lockdown card, the AI SEO bulk-generation workbench and
-its per-category quick-fix button, and the AI Log Advisor's guide-content
-data module — to their `*.freeStub.tsx`/`*.freeStub.ts` counterparts
-already present in `src/`. This is a Vite-level, module-resolution-time
-substitution — the real Pro implementations, and everything they
-transitively import, never enter the Free build's module graph, so they
-cannot end up in the compiled Free bundle. This is why the Free edition's
-zip does not contain the Pro/AI code even though both editions build from
-the same `src/` tree. Both `EDITION=free` and the default (Pro) build were
-verified to complete successfully as part of preparing this publication.
+growing, individually-dated list of Pro-only module import specifiers (37
+entries as of v2.9.33.36, each added by its own dated code comment
+recording the exact call site and rationale — grep `resolve.alias` in
+`vite.config.ts` for the current, authoritative, itemized list; do not
+hand-maintain a name list here, it has already gone stale once) — covering
+areas such as the AI Content page, Sync page/manager, the License Manager
+organism, the token-balance hook, Migration Station, Cloud Storage panel,
+the Update Guard card, Two-Factor Settings, the Geo-Lockdown card, the AI
+SEO bulk-generation workbench, and the AI Log Advisor's guide-content data
+module — to their `*.freeStub.tsx`/`*.freeStub.ts` counterparts already
+present in `src/`. (Encryption Settings was REMOVED from this list on
+2026-08-22 — backup encryption-at-rest is now enabled in Free, so the real
+component ships in both editions.) This is a Vite-level,
+module-resolution-time substitution — the real Pro implementations, and
+everything they transitively import, never enter the Free build's module
+graph, so they cannot end up in the compiled Free bundle. This is why the
+Free edition's zip does not contain the Pro/AI code even though both
+editions build from the same `src/` tree. Both `EDITION=free` and the
+default (Pro) build were verified to complete successfully as part of
+preparing this publication.
 
 Separately, and unconditionally in **both** editions, `vite.config.ts`
 also aliases `react`/`react-dom`/`react-dom/client`/`react/jsx-runtime`/

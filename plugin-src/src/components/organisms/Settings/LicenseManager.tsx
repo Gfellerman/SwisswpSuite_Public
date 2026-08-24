@@ -25,7 +25,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import { wpApi } from "../../../services/api";
+import { wpApi, ApiError } from "../../../services/api";
 import {
   isFreeEdition,
   PRO_UPGRADE_URL,
@@ -781,15 +781,44 @@ export function LicenseManager({
       return;
     }
 
+    // U3xU10 UI-truth fix (gate report 2026-08-20, adapted combined design):
+    // activate_license()'s requiresPro branch now returns HTTP 403 +
+    // upgrade_required:true (previously HTTP 200 + success:false, which
+    // wpApi() resolved normally and this handler never inspected — a false
+    // "License Activated!" toast, UI_TRUTH_AUDIT finding #3, CRITICAL). The
+    // requiresPro case is therefore now a CATCH-path branch, not a resolved
+    // value to check.
+    //
+    // Reload fires ONLY on the success path and the requiresPro path — NOT
+    // on a genuine activation failure (invalid key, network error). The
+    // requiresPro reload is intentional: activate_license() already persists
+    // a genuinely valid key locally even in that case (zero-migration
+    // carryover to a later Pro install), so the reload is what flips
+    // effectiveLicense/isProKeyInFreeBuild to the correct "Pro Key, Free
+    // Plugin" explainer view. A genuine failure changes nothing server-side
+    // worth refreshing for — reloading there would just discard the user's
+    // typed key and the error toast for no benefit.
     try {
       await onActivate(key);
       toast.success("License Activated! Reloading...");
-      // CRITICAL: Hard reload to refresh PHP globals/capabilities
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch (err: any) {
-      toast.error(err.message || "Activation failed");
+    } catch (err) {
+      if (err instanceof ApiError && err.data?.upgrade_required) {
+        toast.info(
+          err.data?.message ||
+            "This license is valid — download SwissSuite AI Pro to use it."
+        );
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        toast.error(
+          (err instanceof Error ? err.message : undefined) ||
+            "Activation failed"
+        );
+      }
     }
   };
 
@@ -1031,6 +1060,41 @@ export function LicenseManager({
 
             {!isActive ? (
               <div className="space-y-6">
+                {/* F6 (2026-08-18): the unlicensed state had no purchase path at
+                    all — "Already paid?" below only helps existing customers.
+                    Real, visible <a> (no ARIA additions needed — plain link
+                    semantics already meet WCAG AA), styled per the licensed
+                    state's "Upgrade your plan" CTA at ~:1500 (text-brand-accent
+                    + Zap icon idiom) so the two purchase entry points read as
+                    one consistent pattern. */}
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-5 dark:border-indigo-800/50 dark:bg-indigo-950/20">
+                  <div className="flex items-start gap-3">
+                    <Zap
+                      className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <p className="text-xs font-black tracking-widest text-indigo-900 uppercase dark:text-indigo-200">
+                        Don&apos;t have a license yet?
+                      </p>
+                      <p className="mt-1.5 text-xs leading-relaxed text-neutral-700 dark:text-neutral-300">
+                        Cloud backup, 2FA, hardening, geo-blocking, AI security
+                        scans, AI SEO &amp; AI content are available in
+                        SwissSuite AI Pro.
+                      </p>
+                      <a
+                        href={PRO_UPGRADE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand-accent mt-3 inline-flex items-center gap-2 text-xs font-black tracking-widest uppercase hover:underline"
+                      >
+                        <Zap className="h-3.5 w-3.5" aria-hidden="true" />
+                        Get a License
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="text-muted-foreground mb-3 block text-xs font-black tracking-widest uppercase">
                     License Key
@@ -1060,7 +1124,7 @@ export function LicenseManager({
                   <p className="text-muted-foreground mt-3 text-xs">
                     Already paid?{" "}
                     <a
-                      href="https://swisswpsecure.com/pricing"
+                      href={PRO_UPGRADE_URL}
                       target="_blank"
                       rel="noopener"
                       className="text-blue-600 hover:underline"
@@ -1189,9 +1253,7 @@ export function LicenseManager({
                         This license is managed manually. To change your plan or
                         billing, please{" "}
                         <a
-                          href="https://swisswpsecure.com/contact"
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          href="mailto:support@swisswpsecure.com"
                           className="font-semibold text-slate-700 underline hover:no-underline dark:text-slate-300"
                         >
                           contact support

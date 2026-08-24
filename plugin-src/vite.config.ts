@@ -193,11 +193,16 @@ export default defineConfig(({ mode }) => {
         // specific leak turned out to already be fixed by the F3 entry
         // above at the time of the re-audit — this pass found two more that
         // were NOT yet covered).
-        // '../components/organisms/Settings/EncryptionSettings' is imported
-        // once, in src/pages/SettingsPage.tsx (the backup-archive
-        // encryption password field, gated `isProEdition() &&` right next
-        // to the TwoFactorSettings gate — TD-60: Free's restorer hard-
-        // rejects .zip.enc files, so Free must never even offer to set one).
+        // TD-60 / WP.org R4 OD-2 (2026-08-22): the
+        // '../components/organisms/Settings/EncryptionSettings' alias entry
+        // that used to sit here is REMOVED — backup encryption-at-rest is now
+        // ENABLED in Free (owner ruling OD-2,
+        // docs/reports/WPORG_REJECTION_R4_ANALYSIS_2026-08-22.md), so the real
+        // component now ships in the Free bundle instead of the freeStub. The
+        // now-orphaned 'src/components/organisms/Settings/
+        // EncryptionSettings.freeStub.tsx' file WAS deleted as part of this
+        // same 2026-08-22 R4 sprint, together with the alias removal above —
+        // it is no longer present on disk or referenced anywhere in src/.
         // './organisms/Security/GeoLockdownCard' is imported once, in
         // src/components/SecurityHub.tsx — NEWLY extracted from inline JSX
         // in that file specifically so it CAN be aliased (geo-blocking was
@@ -309,11 +314,6 @@ export default defineConfig(({ mode }) => {
                 __dirname,
                 "src/components/organisms/Settings/ApiConfig.freeStub.tsx"
               ),
-              "../components/organisms/Settings/EncryptionSettings":
-                path.resolve(
-                  __dirname,
-                  "src/components/organisms/Settings/EncryptionSettings.freeStub.tsx"
-                ),
               "./organisms/Security/GeoLockdownCard": path.resolve(
                 __dirname,
                 "src/components/organisms/Security/GeoLockdownCard.freeStub.tsx"
@@ -334,6 +334,12 @@ export default defineConfig(({ mode }) => {
                 __dirname,
                 "src/components/organisms/Seo/SeoCategoryQuickFixButton.freeStub.tsx"
               ),
+              // ARS Round D (D-K-7, WP.org R4 F-07, 2026-08-2x): see
+              // SeoFixNonCompliantButton.tsx's own docblock.
+              "./organisms/Seo/SeoFixNonCompliantButton": path.resolve(
+                __dirname,
+                "src/components/organisms/Seo/SeoFixNonCompliantButton.freeStub.tsx"
+              ),
               "./scanConstants.pro": path.resolve(
                 __dirname,
                 "src/components/organisms/Scan/scanConstants.pro.freeStub.ts"
@@ -347,6 +353,17 @@ export default defineConfig(({ mode }) => {
               "./organisms/Scan/scanConstants.pro": path.resolve(
                 __dirname,
                 "src/components/organisms/Scan/scanConstants.pro.freeStub.ts"
+              ),
+              // WP.org R4 (owner ruling OD-3, 2026-08-22): deep-malware's AI
+              // grade badge + "AI: {status}" pill, extracted from
+              // ScanResultPanel.tsx's MalwareResultView so they can be
+              // aliased to no-ops in Free — see DeepScanAiResults.tsx's
+              // docblock. Only one importer, one specifier ("./DeepScanAiResults",
+              // written from within the Scan/ directory) — no hazard-#1
+              // duplicate needed.
+              "./DeepScanAiResults": path.resolve(
+                __dirname,
+                "src/components/organisms/Scan/DeepScanAiResults.freeStub.tsx"
               ),
               // WP.org B12a residual closure (2026-08-13, v2.9.33.17,
               // controller-directed expansion): WpscanApiKeyField.tsx /
@@ -408,6 +425,27 @@ export default defineConfig(({ mode }) => {
                 __dirname,
                 "src/components/organisms/Scan/EditionMismatchDownloadCta.freeStub.tsx"
               ),
+              // ARS Round D (D-K-1, WP.org R4 F-01, 2026-08-2x): the 4
+              // AI bulk/per-file "locked" controls in ScanResultPanel.tsx
+              // (2 button components + the confirm modal they can open)
+              // are extracted so the whole control disappears from the
+              // Free build instead of merely relabeling it (superseding
+              // the 2026-08-13 "KEEP-BUT-RENAME" treatment of the same
+              // surface) — see each real module's own docblock. Each
+              // specifier below is the exact relative path written at its
+              // one importer, ScanResultPanel.tsx (same directory).
+              "./AiAnalyzeFileButton": path.resolve(
+                __dirname,
+                "src/components/organisms/Scan/AiAnalyzeFileButton.freeStub.tsx"
+              ),
+              "./BulkAiAnalyzeButton": path.resolve(
+                __dirname,
+                "src/components/organisms/Scan/BulkAiAnalyzeButton.freeStub.tsx"
+              ),
+              "./BulkAiConfirmModal": path.resolve(
+                __dirname,
+                "src/components/organisms/Scan/BulkAiConfirmModal.freeStub.tsx"
+              ),
               "./hardeningProCopy": path.resolve(
                 __dirname,
                 "src/components/organisms/Security/hardeningProCopy.freeStub.ts"
@@ -434,6 +472,65 @@ export default defineConfig(({ mode }) => {
               "./settingsApiTabLabel": path.resolve(
                 __dirname,
                 "src/components/organisms/Settings/settingsApiTabLabel.freeStub.ts"
+              ),
+              // ARS Round C P1-21 (F-41, 2026-08-23): three more locked-
+              // control-shaped surfaces the reviewer flagged in the compiled
+              // Free bundle — Backup page's migrate/sync tabs + "Locked"
+              // badge, Dashboard's "activate your license" empty-state
+              // copy, and the Settings "License" tab. Each specifier below
+              // is exactly what its one importer writes; see each real/
+              // .freeStub module pair's own docblock.
+              "./backupsPageProCopy": path.resolve(
+                __dirname,
+                "src/pages/backupsPageProCopy.freeStub.ts"
+              ),
+              "./dashboardProCopy": path.resolve(
+                __dirname,
+                "src/components/dashboardProCopy.freeStub.ts"
+              ),
+              "./settingsTabs": path.resolve(
+                __dirname,
+                "src/components/organisms/Settings/settingsTabs.freeStub.ts"
+              ),
+              // ARS Round D (D-K-3, WP.org R4 F-01/F-41, 2026-08-2x): see
+              // LicenseTierBadge.tsx's own docblock. Specifier as written
+              // at its one importer, DashboardLayout.tsx (same
+              // directory).
+              "./LicenseTierBadge": path.resolve(
+                __dirname,
+                "src/components/templates/LicenseTierBadge.freeStub.tsx"
+              ),
+              // ARS Round D (D-K-4 follow-up fix, lane-K verifier,
+              // 2026-08-24): see BetaFeaturesToggleRow.tsx's own
+              // docblock — the original D-K-4 pass deleted this control
+              // outright, which broke Pro (its ONLY UI writer for the
+              // actively-consumed `swisswpsuite_beta_features` option,
+              // which gates BackupsPage.tsx's Sync/Migration sections).
+              // Restored as an extracted, aliasable component instead of
+              // an inline runtime gate, so it still ships in Pro but is
+              // physically absent from Free (Sync/Migration are
+              // themselves Pro-only, so Free has nothing for this toggle
+              // to unlock). Specifier as written at its one importer,
+              // GeneralSettings.tsx (same directory).
+              "./BetaFeaturesToggleRow": path.resolve(
+                __dirname,
+                "src/components/organisms/Settings/BetaFeaturesToggleRow.freeStub.tsx"
+              ),
+              // ARS Round D delta (M1, SOCRATIC_AUDIT_ROUND_D.md MEDIUM-1,
+              // 2026-08-24): see BetaFeatureGate.tsx's own docblock —
+              // BackupsPage.tsx's inline BetaGate/BetaBanner compiled the
+              // literal "Beta Features" string into the Free bundle even
+              // though both only render when isProEditionBuild is true
+              // (Sync/Migration are Pro-only). Extracted + aliased so Free
+              // gets the null-rendering stub instead. Specifier as written
+              // at its one importer, BackupsPage.tsx
+              // ("../components/organisms/Backups/BetaFeatureGate" — note
+              // this key differs from the other entries in this block,
+              // which import from the same directory; BackupsPage.tsx is
+              // in src/pages/, one level up from src/components/).
+              "../components/organisms/Backups/BetaFeatureGate": path.resolve(
+                __dirname,
+                "src/components/organisms/Backups/BetaFeatureGate.freeStub.tsx"
               ),
             }
           : {}),

@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   SecurityLog,
@@ -105,6 +111,7 @@ import type {
   UpdateGuardStatus,
   UpdateSnapshot,
   UpdateGuardReview,
+  HardeningToggleResponse,
 } from "../types";
 
 interface RemediateResponse {
@@ -160,6 +167,13 @@ const FixNowButton = ({
         {
           method: "POST",
           body: JSON.stringify(body),
+          // U10 (gate report 2026-08-20, FINAL R2 opt-out list): this
+          // endpoint intentionally ships success:false at HTTP 200 as a
+          // non-fatal "auto-fix unavailable, here's the manual guide"
+          // outcome — the code below already branches on data.manual_fix.
+          // Without this, wpApi() would throw and that branch would become
+          // unreachable dead code.
+          allowSuccessFalse: true,
         }
       );
 
@@ -179,7 +193,13 @@ const FixNowButton = ({
       }
     } catch (e) {
       console.error(e);
-      toast.error("Fix Failed: Network Error");
+      // U10 (gate report 2026-08-20, condition b): prefer the real backend
+      // message over a hardcoded generic string — a genuinely thrown error
+      // here (network failure, non-2xx, or an unopted-out 200+success:false
+      // from a future change to this endpoint) now carries real information.
+      toast.error(
+        e instanceof ApiError ? e.message : "Fix Failed: Network Error"
+      );
     } finally {
       setLoading(false);
     }
@@ -603,8 +623,12 @@ const SecurityHub: React.FC = () => {
   const [previewHtml, setPreviewHtml] = React.useState<string | null>(null);
 
   // Deep Scan State
-  // TODO: deprecated — showDeepScanModal is no longer triggered after v2.9.28.0 scan consolidation. Remove in v2.9.30.
-  const [showDeepScanModal, setShowDeepScanModal] = useState(false);
+  // ARS Round D (D-K-10, 2026-08-2x): showDeepScanModal/setShowDeepScanModal
+  // REMOVED — the pre-existing TODO above already flagged it dead since
+  // v2.9.28.0 (never read anywhere); this round's deletion of
+  // proceedDeepScan()/startDeepScan() removed its one remaining WRITE,
+  // making it provably 100% dead (confirmed via `command grep -n
+  // "showDeepScanModal"` → only the declaration itself remained).
   const [deepScanStatus, setDeepScanStatus] = useState<DeepScanStatus>({
     status: "idle",
   });
@@ -731,11 +755,23 @@ const SecurityHub: React.FC = () => {
     []
   );
   const [loadingHardening, setLoadingHardening] = useState(false);
+  // ARS Round C P1-24 / LiveQA-F3 (2026-08-23): serialises toggleHardening()
+  // calls so at most one optimistic write + POST is ever in flight. The
+  // earlier fix for this race was applied to plugin/src/hooks/useHardening.ts,
+  // an orphaned hook with zero callers — the live handler wired to
+  // HardeningOptionsGrid's onToggle is toggleHardening() below, so the
+  // serialisation must live here.
+  const hardeningMutationQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   // Abandoned Plugin Detection State
   const [abandonedPlugins, setAbandonedPlugins] =
     useState<AbandonedPluginsStatus | null>(null);
   const [abandonedRefreshing, setAbandonedRefreshing] = useState(false);
+  // DX-4a (ARS Round D, MEDIUM-3 — handoff/DX4_abandoned-async-ui-contract.md):
+  // flips true once POST /security/abandoned-plugins/refresh dispatches the
+  // background check (202) or confirms one is already running (429); the
+  // polling useEffect near handleAbandonedPluginsRefresh watches this flag.
+  const [abandonedCheckPending, setAbandonedCheckPending] = useState(false);
 
   // Cloud Shield (Cloudflare detection) State
   const [cloudflareDetected, setCloudflareDetected] = useState(false);
@@ -1738,20 +1774,97 @@ const SecurityHub: React.FC = () => {
     }
   };
 
+  // DX-4a (ARS Round D, MEDIUM-3 — handoff/DX4_abandoned-async-ui-contract.md):
+  // POST /security/abandoned-plugins/refresh no longer runs the check
+  // inline (it could take several minutes against api.wordpress.org and
+  // risk a 502/504 on shared hosting). It now returns 202 immediately with
+  // `in_progress: true` and dispatches the check in the background — or
+  // 429 with `in_progress: true` if one was already running. Either way
+  // this handler now hands off to the polling effect below instead of
+  // treating the POST response itself as the final result; the response
+  // no longer carries `plugins`/a real `last_check`.
   const handleAbandonedPluginsRefresh = async () => {
     setAbandonedRefreshing(true);
     try {
-      const data = await wpApi<AbandonedPluginsStatus>(
-        "/security/abandoned-plugins/refresh",
-        { method: "POST" }
-      );
-      setAbandonedPlugins(data);
+      const data = await wpApi<
+        AbandonedPluginsStatus & { in_progress?: boolean }
+      >("/security/abandoned-plugins/refresh", { method: "POST" });
+      if (data.in_progress) {
+        setAbandonedCheckPending(true);
+      } else {
+        // Defensive: the contract's happy path always returns
+        // in_progress:true at 202 — only reachable if a future backend
+        // revision reintroduces a synchronous-shaped response.
+        setAbandonedPlugins(data);
+        setAbandonedRefreshing(false);
+      }
     } catch (e) {
+      if (e instanceof ApiError && e.status === 429) {
+        // Contract's suggested UI pattern: 429 means a check is ALREADY
+        // running — not an error, just "start polling the run in flight".
+        setAbandonedCheckPending(true);
+        return;
+      }
       toast.error("Failed to refresh abandoned plugin data.");
-    } finally {
       setAbandonedRefreshing(false);
     }
   };
+
+  /**
+   * DX-4a async "Refresh" poller. Fires once abandonedCheckPending flips
+   * true and polls the EXISTING GET /security/abandoned-plugins status
+   * route (DX-4a taught it to also return `in_progress`) every 3s until the
+   * dispatched check finishes (in_progress:false && last_check>0) or 60s
+   * elapse, whichever comes first — mirrors the Deep Malware Scan poller's
+   * cancelled-flag/attempt-cap pattern above (React.useEffect keyed off
+   * deepMalwareJobId) for unmount-safety and codebase consistency.
+   */
+  React.useEffect(() => {
+    if (!abandonedCheckPending) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    const MAX_POLLS = 20; // 20 x 3s = 60s
+    const POLL_INTERVAL_MS = 3000;
+
+    const runPoller = async () => {
+      for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
+        await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+        if (cancelled) return;
+
+        try {
+          const status = await wpApi<
+            AbandonedPluginsStatus & { in_progress?: boolean }
+          >("/security/abandoned-plugins");
+          if (cancelled) return;
+          if (!status.in_progress && status.last_check > 0) {
+            setAbandonedPlugins(status);
+            setAbandonedCheckPending(false);
+            setAbandonedRefreshing(false);
+            return;
+          }
+        } catch (e) {
+          // Transient network hiccup mid-poll — keep trying until the cap
+          // rather than aborting the whole in-flight background check.
+          console.error("Failed to poll abandoned-plugin status", e);
+        }
+      }
+      if (!cancelled) {
+        toast.info(
+          "Still checking for abandoned plugins — this can take a few minutes on large sites. Check back shortly."
+        );
+        setAbandonedCheckPending(false);
+        setAbandonedRefreshing(false);
+      }
+    };
+
+    runPoller();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [abandonedCheckPending]);
 
   // @deprecated v2.9.30.117 — replaced by useQuery(["security-logs"]) above.
   const fetchLogs = async () => {
@@ -2008,56 +2121,17 @@ const SecurityHub: React.FC = () => {
   // by ScanCard / ScanResultPanel. The endpoint + BasicScanResults organism
   // remain available for future reuse.
 
-  const proceedDeepScan = async () => {
-    setShowDeepScanModal(false);
-    setHistoricalScanDetail(null); // Clear historical view when starting a new scan
-    setDeepScanStatus({
-      status: "running",
-      message: "Starting...",
-      processed_folders: 0,
-      total_folders: 1,
-    });
-    try {
-      await wpApi<{ success: boolean; message?: string }>(
-        "/security/deep-scan/start",
-        {
-          method: "POST",
-        }
-      );
-      fetchDeepScanStatus();
-    } catch (e) {
-      console.error("Deep scan failed to start", e);
-      const msg =
-        e instanceof Error
-          ? e.message
-          : "Failed to start scan. Please check your connection.";
-      setDeepScanStatus({ status: "error", message: msg });
-      toast.error(msg);
-    }
-  };
-
-  const startDeepScan = async () => {
-    // Pre-Flight Check
-    try {
-      const status = await wpApi<{ dirty: boolean; locked: number }>(
-        "/backup/environment-status"
-      );
-      if (status.dirty) {
-        const reason = status.locked
-          ? "a process lock is active"
-          : "temporary files were found from a previous operation";
-        showConfirm(
-          `System Alert: The temporary environment has activity (${reason}).\n\nStarting a Deep Scan might conflict with running backups or migrations.\n\nProceed anyway?`,
-          () => proceedDeepScan()
-        );
-        return;
-      }
-    } catch (e) {
-      console.error("Env check failed", e);
-    }
-
-    proceedDeepScan();
-  };
+  // ARS Round D (D-K-10, 2026-08-2x, surfaced by C5 — not itself an R4
+  // finding, CLAUDE.md two-proof dead-code doctrine applies): proceedDeepScan()
+  // + startDeepScan() DELETED. Two-proof: (1) source — zero callers anywhere
+  // in this file besides each other (confirmed via `command grep -n
+  // "proceedDeepScan\|startDeepScan"`); the actual deep-malware trigger
+  // wired to the UI is handleTriggerScan("deep-malware") below, a
+  // completely separate code path hitting a different route
+  // (/security/malware/start vs. these two's /security/deep-scan/start,
+  // /backup/environment-status). (2) built-bundle — fresh Free AND Pro
+  // `vite build`, `command grep -rl "environment-status\|proceedDeepScan"
+  // assets/` → 0 hits in both, confirmed before and after this deletion.
 
   // @deprecated v2.9.30.117 — replaced by useQuery(["sentinel-status"]) above.
   const fetchSentinelStatus = async () => {
@@ -2200,35 +2274,55 @@ const SecurityHub: React.FC = () => {
     }
   };
 
-  const toggleHardening = async (key: string, enabled: boolean) => {
-    // Optimistic update — toggle immediately so UI reacts at once
-    setHardeningOptions((prev) =>
-      prev.map((opt) => (opt.key === key ? { ...opt, enabled } : opt))
-    );
-    try {
-      const data = await wpApi<{
-        success: boolean;
-        message?: string;
-        upgrade_required?: boolean;
-      }>("/hardening/toggle", {
-        method: "POST",
-        body: JSON.stringify({ option: key, enable: enabled }),
-      });
-      if (!data.success) {
-        toast.error("Failed to toggle: " + (data.message || "Unknown error"));
-        // v2.9.30.117: invalidate cache so UI reverts to server truth immediately
-        queryClient.invalidateQueries({ queryKey: ["hardening-status"] });
+  const toggleHardening = (key: string, enabled: boolean): Promise<void> => {
+    // ARS Round C P1-24 / LiveQA-F3 (2026-08-23): every call is chained onto
+    // hardeningMutationQueueRef instead of firing immediately, so at most one
+    // optimistic write + POST + settle-refetch is ever in flight. A second
+    // rapid click (same option or a different one) waits its turn instead of
+    // racing the first — this is what makes the final state converge on
+    // backend truth instead of a stale intermediate optimistic value.
+    const run = async (): Promise<void> => {
+      // Optimistic update — toggle immediately so UI reacts at once
+      setHardeningOptions((prev) =>
+        prev.map((opt) => (opt.key === key ? { ...opt, enabled } : opt))
+      );
+      try {
+        const data = await wpApi<HardeningToggleResponse>("/hardening/toggle", {
+          method: "POST",
+          body: JSON.stringify({ option: key, enable: enabled }),
+        });
+        if (!data.success) {
+          toast.error("Failed to toggle: " + (data.message || "Unknown error"));
+        } else if (data.htaccess_warning) {
+          // U9 (2026-08-20 UI truth fix): the DB flag saved but the paired
+          // server-level (.htaccess) rule failed to write — a toggle that
+          // silently stayed "on" in the UI while not actually enforced at
+          // the server level. Surface it instead of a plain success.
+          toast.warning(data.htaccess_warning);
+        }
+      } catch (e: unknown) {
+        console.error(e);
+        if (e instanceof Error) {
+          toast.error(e.message || "Network error — could not save setting.");
+        } else {
+          toast.error("Network error — could not save setting.");
+        }
+      } finally {
+        // Re-fetch the authoritative status after EVERY settle (success OR
+        // failure), not just on failure as before — this guarantees the
+        // store ends on backend truth even if two rapid toggles briefly
+        // disagreed about what the "current" state was.
+        await queryClient.invalidateQueries({ queryKey: ["hardening-status"] });
       }
-    } catch (e: unknown) {
-      console.error(e);
-      if (e instanceof Error) {
-        toast.error(e.message || "Network error — could not save setting.");
-      } else {
-        toast.error("Network error — could not save setting.");
-      }
-      // v2.9.30.117: invalidate cache to revert optimistic update on error
-      queryClient.invalidateQueries({ queryKey: ["hardening-status"] });
-    }
+    };
+
+    // `.then(run, run)` (not just `.then(run)`) keeps the queue alive even
+    // if a previous link somehow rejects — run() itself never rejects
+    // (every error path above is caught), but the queue must not wedge
+    // permanently if that ever changes.
+    const next = hardeningMutationQueueRef.current.then(run, run);
+    hardeningMutationQueueRef.current = next;
+    return next;
   };
 
   const applyAllHardening = () => {
@@ -2642,6 +2736,12 @@ const SecurityHub: React.FC = () => {
         const data = await wpApi<RemediateResponse>("/security/findings/fix", {
           method: "POST",
           body: JSON.stringify(payload),
+          // U10 (gate report 2026-08-20, FINAL R2 opt-out list): this is the
+          // named gold-pattern example of an intentional 200+success:false
+          // "here's why, here's the manual guide" outcome — the code below
+          // already branches on data.manual_fix; without this opt-out
+          // wpApi() would throw and that branch would become unreachable.
+          allowSuccessFalse: true,
         });
         if (data.success) {
           // SEC-4 FIX: Mark the finding as 'fixed' in local state AND persist to backend.
@@ -2674,9 +2774,14 @@ const SecurityHub: React.FC = () => {
               "Fix failed. See the manual steps for an alternative approach."
           );
         }
-      } catch {
+      } catch (e) {
+        // U10 (gate report 2026-08-20, condition b): prefer the real backend
+        // message over a hardcoded generic string — a genuinely thrown error
+        // here now carries real information instead of masking it.
         toast.error(
-          "Fix request failed — check your connection and try again."
+          e instanceof ApiError
+            ? e.message
+            : "Fix request failed — check your connection and try again."
         );
       }
     };
@@ -3122,6 +3227,10 @@ const SecurityHub: React.FC = () => {
                 ? { issue_id: issueId, confirm: true }
                 : { issue_id: issueId }
             ),
+            // U10 (gate report 2026-08-20, FINAL R2 opt-out list): same
+            // opt-out as FixNowButton's handleFix() above — this endpoint's
+            // manual_fix branch below needs the resolved value, not a throw.
+            allowSuccessFalse: true,
           }
         );
         if (data.success) {
@@ -3926,6 +4035,7 @@ const SecurityHub: React.FC = () => {
                   onClick={handleAbandonedPluginsRefresh}
                   disabled={abandonedRefreshing}
                   loading={abandonedRefreshing}
+                  aria-busy={abandonedRefreshing}
                 >
                   {abandonedRefreshing ? (
                     <>
@@ -4158,61 +4268,57 @@ const SecurityHub: React.FC = () => {
               Security Plan" copy were REMOVED — Sprint W1 de-gated
               deep-malware's local phases (enumerate, hash, local scan) in
               the PHP, so at the time they ran free in every edition.
-              SUPERSEDED (LiveQA Fix Sprint, 2026-08-04, owner scan-edition
-              ruling): the owner has since drawn the Free/Pro line at the
-              whole-scan level, not the phase level — "Deep scan" (this
-              pipeline) is Pro-only in full, alongside the AI-diagnostic
-              surfaces. `/security/scan/malware/start` + `/status` are now
-              registered ONLY when SWISSWPSUITE_EDITION === 'pro'
-              (api-security.php ~:641), so a Free build calling either route
-              gets nothing — the route is physically absent. Per WP.org
-              Guideline 5, a Free-absent feature must not render as a
-              clickable-but-broken OR locked-teaser card (ScanCard.tsx's own
-              dimmed-overlay/Lock-icon/CTA branch is exactly the kind of
-              per-feature upsell the 2026-08-03 redesign ruling forbids), so
-              this card + its result panel are gated at this call site on
-              isProEditionBuild instead of passed a `locked` prop — see
-              ScanCard.tsx's isProLocked comment for why deep-malware stays
-              OUT of that clause even though it is Pro-only again. The
-              "scan" sub-tab had no FeaturePointer of its own before this —
-              added below for the Free case; variant="ai" because this
-              pipeline is genuinely AI-backed (its final phase is
-              ai_analysis and SCAN_DESCRIPTIONS already says "consumes AI
-              tokens"), unlike the "edition" pointer used elsewhere on the
-              dashboard sub-tab for non-AI Pro features.
-              Package E / D3 (2026-08-13): re-presented as "Layer 2" — copy/
-              naming only (scanConstants.ts), gating below is BYTE-
-              EQUIVALENT to before this session (isProEditionBuild condition
-              unchanged, route registration untouched). */}
-          {isProEditionBuild && (
-            <>
-              <ScanCard
-                scanType="deep-malware"
-                tier={currentTier}
-                onTrigger={() => handleTriggerScan("deep-malware")}
-                isLoading={deepMalwareStatus === "running"}
-                result={deepMalwareResult}
-                loadingMessage={
-                  deepMalwarePhase
-                    ? (DEEP_MALWARE_PHASE_LABELS[deepMalwarePhase] ?? undefined)
-                    : undefined
-                }
-              />
-              <ScanResultPanel
-                scanType="deep-malware"
-                result={deepMalwareResult}
-                isLoading={deepMalwareStatus === "running"}
-                onViewHistory={handleViewScanInHistory}
-                onMarkSafe={handleMarkMalwareSafe}
-                onQuarantine={handleQuarantine}
-                onBulkAction={handleScanPanelBulkAction}
-                onAnalyze={handleAiAnalyze}
-                analyzingFile={analyzingFile}
-                hasSentinelPro={isProEditionBuild && hasSecurity}
-                canRemediate={true}
-              />
-            </>
-          )}
+              SUPERSEDED then SUPERSEDED AGAIN (owner ruling OD-3, WP.org R4,
+              2026-08-22 — docs/reports/WPORG_REJECTION_R4_ANALYSIS_2026-08-22.md):
+              the 2026-08-04 scan-edition ruling had drawn the Free/Pro line
+              at the whole-scan level and gated this card on
+              isProEditionBuild to match the (now-removed)
+              SWISSWPSUITE_EDITION registration gate on the backend routes.
+              The WP.org reviewer explicitly rejected that
+              registered-but-gated shape as trialware regardless of the
+              gate's location, so BOTH the backend route gate (see
+              api-security.php's route-registration comment) and this
+              render-level gate are removed together — a route enabled in
+              Free but hidden behind a render-level isProEditionBuild check
+              would be the exact same violation moved one layer up. The
+              card now renders unconditionally, same as the ai-audit card
+              above. Its AI-specific sub-elements (grade badge, AI status
+              pill) are physically excluded from the Free bundle instead —
+              see DeepScanAiResults.tsx's docblock — because the pipeline's
+              ai_analysis phase still runs (and still degrades) for a
+              Free/no-license caller exactly as it always has; only the
+              *result of that phase* needs to stay invisible in Free, not
+              the scan itself. The FeaturePointer below is UNCHANGED (not
+              removed) — it is still accurate: the per-finding "Analyze
+              with AI" action inside this card's result panel, and the one
+              on the ai-audit card above, both stay genuinely Pro-gated
+              (hasSentinelPro), so Free users on this sub-tab do still have
+              AI-backed options that require a connection. */}
+          <ScanCard
+            scanType="deep-malware"
+            tier={currentTier}
+            onTrigger={() => handleTriggerScan("deep-malware")}
+            isLoading={deepMalwareStatus === "running"}
+            result={deepMalwareResult}
+            loadingMessage={
+              deepMalwarePhase
+                ? (DEEP_MALWARE_PHASE_LABELS[deepMalwarePhase] ?? undefined)
+                : undefined
+            }
+          />
+          <ScanResultPanel
+            scanType="deep-malware"
+            result={deepMalwareResult}
+            isLoading={deepMalwareStatus === "running"}
+            onViewHistory={handleViewScanInHistory}
+            onMarkSafe={handleMarkMalwareSafe}
+            onQuarantine={handleQuarantine}
+            onBulkAction={handleScanPanelBulkAction}
+            onAnalyze={handleAiAnalyze}
+            analyzingFile={analyzingFile}
+            hasSentinelPro={isProEditionBuild && hasSecurity}
+            canRemediate={true}
+          />
           {!isProEditionBuild && <FeaturePointer variant="ai" />}
 
           <ScanReportSettingsPanel
@@ -4301,7 +4407,6 @@ const SecurityHub: React.FC = () => {
       {activeTab === "history" && (
         <ScanHistoryTable
           scanHistory={scanHistory}
-          hasSentinelPro={hasSentinelPro}
           loadingRecordId={loadingHistoricalScanId}
           onRefresh={fetchScanHistory}
           onViewRecord={(record) => {

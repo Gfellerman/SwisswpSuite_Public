@@ -12,20 +12,17 @@ import { BackupControl } from "../components/organisms/Backups/BackupControl";
 import { BackupList } from "../components/organisms/Backups/BackupList";
 import { BackupAutomationsPanel } from "../components/organisms/Backups/BackupAutomationsPanel";
 import { CloudStoragePanel } from "../components/organisms/Backups/CloudStoragePanel";
+import { BetaGate, BetaBanner } from "../components/organisms/Backups/BetaFeatureGate";
 import MigrationStation from "../components/Migration/MigrationStation";
 import { useBackups } from "../hooks/useBackups";
 import { useSettings } from "../hooks/useSettings";
 import { FeaturePointer } from "../components/organisms/Upsell/FeaturePointer";
 import { isProEdition } from "../lib/edition";
 import {
-  HardDrive,
-  GitMerge,
-  RefreshCw,
-  ShieldAlert,
-  FlaskConical,
-  Settings as SettingsIcon,
-  Lock,
-} from "lucide-react";
+  BACKUP_PAGE_DESCRIPTION,
+  BACKUP_SECTIONS,
+} from "./backupsPageProCopy";
+import { HardDrive, ShieldAlert, FlaskConical } from "lucide-react";
 
 type BackupSection = "backup" | "migration" | "sync";
 
@@ -63,94 +60,23 @@ const BackupsPage: React.FC = () => {
     </span>
   );
 
-  // Freemium Dual-Build: in the Free edition, Migration/Sync are Pro-local
-  // (physically absent), so the nav shows a "Pro" badge — never "Beta" — to
-  // stay coherent with the neutral FeaturePointer shown in the panel body
-  // (upsell redesign, 2026-08-04).
-  // Upsell redesign (2026-08-04, extra find beyond the named T3 files):
-  // neutral copy — no "Pro" word, matching the rest of this sprint's rule.
-  const ProBadge: React.FC<{ className?: string }> = ({ className = "" }) => (
-    <span
-      className={`inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-indigo-800 uppercase dark:border-indigo-800/50 dark:bg-indigo-900/30 dark:text-indigo-300 ${className}`}
-      aria-label="Not included in this edition"
-    >
-      <Lock className="h-2.5 w-2.5" aria-hidden="true" />
-      Locked
-    </span>
-  );
+  // ARS Round C P1-21 (F-41, 2026-08-23): the "Locked — Not included in
+  // this edition" ProBadge that used to render here for the migration/sync
+  // tabs is REMOVED. It is provably dead in both editions now: BACKUP_SECTIONS
+  // (below, from backupsPageProCopy) freeStubs down to a single "backup"
+  // entry in Free — never in BETA_SECTIONS — so isBetaSection() is never
+  // true for anything Free actually iterates over; in Pro, isProEditionBuild
+  // is always true, so the render below always picks BetaBadge, never
+  // ProBadge, regardless of BACKUP_SECTIONS' contents. Deleting the
+  // component (not just its call site) removes the "Locked"/"Not included
+  // in this edition" strings from the Free bundle's bytes, per this
+  // project's string-presence doctrine (see backupsPageProCopy.ts).
 
-  const BetaGate: React.FC<{ feature: string }> = ({ feature }) => (
-    <div
-      role="region"
-      aria-label={`${feature} is a Beta feature`}
-      className="flex flex-col items-start gap-4 rounded-xl border border-amber-200 bg-amber-50/80 p-6 sm:flex-row dark:border-amber-800 dark:bg-amber-900/10"
-    >
-      <FlaskConical
-        className="mt-0.5 h-6 w-6 flex-shrink-0 text-amber-600"
-        aria-hidden="true"
-      />
-      <div className="flex-1">
-        <h3 className="flex items-center gap-2 text-base font-semibold text-amber-900 dark:text-amber-200">
-          {feature} is a Beta feature
-          <BetaBadge />
-        </h3>
-        <p className="mt-1.5 max-w-2xl text-sm text-amber-800 dark:text-amber-300">
-          This module is still in active testing. To try it, enable{" "}
-          <strong>Beta Features</strong> in Settings &rarr; General. You can
-          turn it off again at any time — your data is not affected.
-        </p>
-        <a
-          href="#/settings"
-          className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-amber-700 focus:ring-2 focus:ring-amber-500/60 focus:outline-none"
-        >
-          <SettingsIcon className="h-3.5 w-3.5" aria-hidden="true" />
-          Open Settings
-        </a>
-      </div>
-    </div>
-  );
-
-  const BetaBanner: React.FC<{ feature: string }> = ({ feature }) => (
-    <div
-      role="note"
-      className="flex items-start gap-3 rounded-lg border border-amber-200/70 bg-amber-50/60 p-3 text-sm dark:border-amber-800/50 dark:bg-amber-900/10"
-    >
-      <FlaskConical
-        className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600"
-        aria-hidden="true"
-      />
-      <p className="text-amber-800 dark:text-amber-300">
-        <strong>{feature}</strong> is a Beta feature. It works in our testing,
-        but edge cases may exist. Please back up your site before using it.
-      </p>
-    </div>
-  );
-
-  const sections: {
-    id: BackupSection;
-    label: string;
-    icon: React.ElementType;
-    desc: string;
-  }[] = [
-    {
-      id: "backup",
-      label: "Backups",
-      icon: HardDrive,
-      desc: "Save and restore copies of your site",
-    },
-    {
-      id: "migration",
-      label: "Move to New Host",
-      icon: GitMerge,
-      desc: "Transfer your site to a different server or domain",
-    },
-    {
-      id: "sync",
-      label: "Sync Two Sites",
-      icon: RefreshCw,
-      desc: "Keep a staging site and a live site in sync",
-    },
-  ];
+  // BetaGate/BetaBanner extracted to BetaFeatureGate.tsx (ARS Round D delta
+  // M1, 2026-08-24) — see that file's docblock. Aliased to a null-rendering
+  // stub in the Free build so the "Beta Features" copy is physically
+  // absent from the Free bundle (this file itself is not aliasable — it
+  // hosts the always-free local Backup/Restore feature).
 
   return (
     <div className="animate-in fade-in space-y-8 duration-500">
@@ -160,14 +86,13 @@ const BackupsPage: React.FC = () => {
           Backup
         </h1>
         <p className="text-muted-foreground mt-2 max-w-3xl">
-          Backup, migrate, and synchronize your WordPress site — all in one
-          place.
+          {BACKUP_PAGE_DESCRIPTION}
         </p>
       </header>
 
       {/* Sub-section Navigator */}
       <div className="bg-secondary dark:bg-card/50 flex w-fit flex-col gap-2 rounded-xl p-1 sm:flex-row">
-        {sections.map((section) => {
+        {BACKUP_SECTIONS.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
           return (
@@ -186,8 +111,9 @@ const BackupsPage: React.FC = () => {
               <span className="text-left">
                 <span className="block flex items-center gap-1.5">
                   {section.label}
-                  {isBetaSection(section.id) &&
-                    (isProEditionBuild ? <BetaBadge /> : <ProBadge />)}
+                  {isBetaSection(section.id) && isProEditionBuild && (
+                    <BetaBadge />
+                  )}
                 </span>
                 <span className="text-muted-foreground block text-[11px] leading-tight font-normal">
                   {section.desc}

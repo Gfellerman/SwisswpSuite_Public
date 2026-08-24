@@ -561,6 +561,14 @@ export interface SyncSchedule {
   last_run_status?: "success" | "partial" | "failed";
   status: "active" | "inactive";
   sentinel_status?: SentinelJobStatus;
+  /**
+   * U7 (gate report 2026-08-20): whether wp_schedule_event() was verifiably confirmed
+   * via a post-write wp_next_scheduled() re-read. Only present on the save_schedule()
+   * response's `job` field (F1 template) — absent on schedules returned by
+   * GET /sync/schedules, since re-verifying every stored schedule's live cron state on
+   * every list read is out of this fix's scope.
+   */
+  scheduled?: boolean;
 }
 
 export interface SyncCapsulePayload {
@@ -593,6 +601,25 @@ export interface SyncInspectResult {
   success: boolean;
   local: SyncCapsule;
   remote: SyncCapsule;
+}
+
+/**
+ * Response shape of POST /sync/compare (class-swisswpsuite-api-sync.php::proxy_diff()).
+ *
+ * Sync repair sprint (2026-08-17, audit MEDIUM #3): `meta` is the single source of truth
+ * for which content types Sync actually covers (post/page/product — CPTs are structurally
+ * out of scope). The frontend disclosure copy in SyncManager.tsx is driven by
+ * `meta.supported_types_note` so it can never silently drift from what the backend
+ * actually queries (class-swisswpsuite-api-content.php::get_content_items()).
+ */
+export interface SyncDiffResponse {
+  success: boolean;
+  results?: Record<number, string>;
+  message?: string;
+  meta?: {
+    supported_content_types: string[];
+    supported_types_note: string;
+  };
 }
 
 export interface ScanHistoryRecord {
@@ -1053,6 +1080,17 @@ export interface BackupAutomation {
   /** UTC datetime of the last SUCCESSFUL completion (set only on status='success'). */
   last_successful_at?: string | null;
   next_run: string;
+  /**
+   * E6 (2026-08-20) — optional site-local time (HH:MM, 24h) this automation's
+   * first occurrence should anchor to. `null`/absent means "not set" (legacy
+   * last_run_at + stagger anchor behavior, unchanged).
+   */
+  start_time?: string | null;
+  /**
+   * E6 — day of week (0=Sunday..6=Saturday) the automation should anchor to.
+   * Only meaningful when `schedule === 'weekly'` and `start_time` is set.
+   */
+  start_day?: number | null;
 }
 
 export interface BackupAutomationsResponse {
@@ -1123,6 +1161,37 @@ export interface HardeningOption {
   tier?: "essential" | "advanced";
   /** When true, enabling this option triggers a pre-toggle conflict check before applying. */
   requires_confirmation?: boolean;
+  /**
+   * ADDENDUM-2 F-U9 (2026-08-20, tri-state correction): present when `enabled`
+   * is true (a DB-stored ON) but the paired root-.htaccess marker is absent on
+   * a host where .htaccess IS honored (Apache/LiteSpeed) — the option is
+   * still enforced at the PHP level (this field is NOT a downgrade of
+   * `enabled`, unlike block_php_uploads which has no PHP-level fallback and
+   * downgrades `enabled` directly instead). Absent entirely on Nginx/
+   * OpenLiteSpeed hosts, where the marker is expected to never exist. Same
+   * shape/semantic as the sibling mutation-response field,
+   * HardeningToggleResponse.htaccess_warning below — this is the read-path
+   * (GET /hardening/status) counterpart of that write-path field.
+   */
+  htaccess_warning?: string;
+}
+
+/**
+ * Response from POST /hardening/toggle.
+ *
+ * `htaccess_warning` (U9, 2026-08-20 UI truth fix) is present when the DB
+ * flag was written successfully but the paired server-level (.htaccess)
+ * rule could not be applied (Nginx/OpenLiteSpeed, read-only file, a host
+ * restore that reset the file) — the option is NOT fully protecting the
+ * site despite the toggle showing "on". PHP-level protection (where it
+ * exists for that option) is still active; only the server-level layer
+ * is missing.
+ */
+export interface HardeningToggleResponse {
+  success: boolean;
+  message?: string;
+  upgrade_required?: boolean;
+  htaccess_warning?: string;
 }
 
 /**
@@ -1310,6 +1379,7 @@ export interface AbandonedPluginsStatus {
   enabled: boolean;
   last_check: number;
   plugins: AbandonedPluginItem[];
+  in_progress?: boolean;
 }
 
 // ---------------------------------------------------------------------------

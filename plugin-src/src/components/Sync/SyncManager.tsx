@@ -23,7 +23,15 @@ import type {
   SyncCapsule,
   SyncCapsulePayload,
   SyncInspectResult,
+  SyncDiffResponse,
 } from "../../types";
+
+// Sync repair sprint (2026-08-17, audit MEDIUM #3): fallback text shown before the first
+// successful /sync/compare response. Matches the backend's default wording exactly
+// (class-swisswpsuite-api-sync.php::proxy_diff() `supported_types_note`) so there is no
+// visible flash of different text — the fetched value simply confirms/replaces it.
+const DEFAULT_SUPPORTED_TYPES_NOTE =
+  "Syncs posts, pages and products (plus design templates); other content types are not synced.";
 
 const SyncManager: React.FC = () => {
   const [view, setView] = useState<
@@ -72,6 +80,13 @@ const SyncManager: React.FC = () => {
     diff_count: number;
   } | null>(null);
   const [isLoadingMetaDiff, setIsLoadingMetaDiff] = useState(false);
+
+  // Sync repair sprint (2026-08-17, audit MEDIUM #3): CPT scope disclosure, driven by the
+  // /sync/compare response meta so this text can never drift from what the backend
+  // actually queries.
+  const [supportedTypesNote, setSupportedTypesNote] = useState<string>(
+    DEFAULT_SUPPORTED_TYPES_NOTE
+  );
 
   // Initial Load
   useEffect(() => {
@@ -263,11 +278,19 @@ const SyncManager: React.FC = () => {
   };
 
   const doDeleteConnection = async (id: string) => {
-    await fetch(`${apiUrl}/sync/connections/${id}`, {
+    // U7/finding #15: previously the fetch() result was never read (not even
+    // res.ok) — a failed DELETE (network error, 500) still removed the row from
+    // local state, while the connection kept existing server-side.
+    const res = await fetch(`${apiUrl}/sync/connections/${id}`, {
       method: "DELETE",
       headers: { "X-WP-Nonce": nonce },
     });
-    setConnections(connections.filter((c) => c.id !== id));
+    const data = await res.json().catch(() => null);
+    if (res.ok && data?.success !== false) {
+      setConnections(connections.filter((c) => c.id !== id));
+    } else {
+      toast.error(data?.message || "Failed to delete connection.");
+    }
   };
 
   const handleDeleteConnection = (id: string) => {
@@ -310,18 +333,34 @@ const SyncManager: React.FC = () => {
     });
     const data = await res.json();
     if (data.success) {
-      setSchedules([...schedules, data.job]);
+      // U7/finding #7: previously echo-spliced `data.job` straight into local state
+      // and never refetched — a good place to diverge from what the option store
+      // actually holds. Refetch from the server (the same source /sync/schedules
+      // GET uses) so the row shown matches the confirmed, persisted record.
+      await fetchSchedules();
       form.reset();
       toast.success("Schedule Created!");
+    } else {
+      // U7/finding #7: previously had no else branch at all — a success:false
+      // response (e.g. the cron event failed to register) produced total silence.
+      toast.error(data.message || "Failed to create schedule.");
     }
   };
 
   const doDeleteSchedule = async (id: string) => {
-    await fetch(`${apiUrl}/sync/schedules/${id}`, {
+    // U7/finding #15: previously the fetch() result was never read (not even
+    // res.ok) — a failed DELETE still removed the row from local state while the
+    // schedule kept firing server-side, with no explanation until next page mount.
+    const res = await fetch(`${apiUrl}/sync/schedules/${id}`, {
       method: "DELETE",
       headers: { "X-WP-Nonce": nonce },
     });
-    setSchedules(schedules.filter((s) => s.id !== id));
+    const data = await res.json().catch(() => null);
+    if (res.ok && data?.success !== false) {
+      setSchedules(schedules.filter((s) => s.id !== id));
+    } else {
+      toast.error(data?.message || "Failed to stop schedule.");
+    }
   };
 
   const handleDeleteSchedule = (id: string) => {
@@ -411,10 +450,13 @@ const SyncManager: React.FC = () => {
         toast.error(`Diff comparison failed (HTTP ${res.status}).`);
         return;
       }
-      const data = await res.json();
+      const data: SyncDiffResponse = await res.json();
       if (data.success && data.results) {
         setDiffResults(data.results);
         setLogs((prev) => [`Diff Updated`, ...prev]);
+      }
+      if (data.meta?.supported_types_note) {
+        setSupportedTypesNote(data.meta.supported_types_note);
       }
     } catch (e) {
       console.error(e);
@@ -542,13 +584,42 @@ const SyncManager: React.FC = () => {
     );
   };
 
-  const generateLocalKey = async () => {
+  // Sync repair sprint (2026-08-17, audit MEDIUM #4): rotating the key silently breaks
+  // every paired site until it is re-paired (each peer's connection entry holds a copy of
+  // the OLD key). The backend now requires confirm:true to rotate an EXISTING key
+  // (class-swisswpsuite-api-sync.php::generate_key()) — this dialog is where that consent
+  // is obtained, matching the existing toast.warning confirm idiom used for
+  // handleDeleteConnection/handleDeleteSchedule above.
+  const doGenerateLocalKey = async () => {
     const res = await fetch(`${apiUrl}/sync/key`, {
       method: "POST",
-      headers: { "X-WP-Nonce": nonce },
+      headers: { "Content-Type": "application/json", "X-WP-Nonce": nonce },
+      body: JSON.stringify({ confirm: true }),
     });
     const data = await res.json();
-    if (data.key) setLocalKey(data.key);
+    if (data.key) {
+      setLocalKey(data.key);
+      toast.success("New sync key generated.");
+    } else if (data.message) {
+      toast.error(data.message);
+    }
+  };
+
+  const generateLocalKey = () => {
+    if (!localKey) {
+      // First-time generation — no existing peers can be broken, no confirmation needed.
+      doGenerateLocalKey();
+      return;
+    }
+    toast.warning(
+      "Rotating the key disconnects every paired site until it is re-paired with the new key. Continue?",
+      {
+        action: {
+          label: "Rotate Key",
+          onClick: () => doGenerateLocalKey(),
+        },
+      }
+    );
   };
 
   const handleInspect = useCallback(
@@ -1792,6 +1863,13 @@ const SyncManager: React.FC = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* Sync repair sprint (2026-08-17, audit MEDIUM #3): CPT scope disclosure —
+                    text is sourced from the /sync/compare response meta, not a second
+                    hard-coded copy, so it can never silently drift from get_content_items(). */}
+                <p className="text-muted-foreground mb-3 text-xs">
+                  {supportedTypesNote}
+                </p>
 
                 <div
                   className="mb-4 flex gap-2"

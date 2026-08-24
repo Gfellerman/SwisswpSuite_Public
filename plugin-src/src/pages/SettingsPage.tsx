@@ -201,15 +201,17 @@ export default function SettingsPage() {
         {activeTab === "security" && (
           <div className="space-y-6">
             {isProEdition() && <TwoFactorSettings />}
-            {/* TD-60 FIX (2026-08-09): backup encryption is Pro-only — the Free
-                restorer (class-swisswpsuite-restorer.php) hard-rejects any
-                .zip.enc file with encrypted_backup_not_supported, so a Free
-                user allowed to SET a password here would create backups they
-                can never restore in-product. Same idiom as the TwoFactorSettings
-                gate above. See docs/TECHNICAL_DEBT.md TD-60. */}
-            {isProEdition() && (
-              <EncryptionSettings settings={settings!} onSave={updateSettings} />
-            )}
+            {/* TD-60 / WP.org R4 OD-2 (2026-08-22): backup encryption-at-rest is
+                now ENABLED in Free — the Pro-only render gate that used to sit
+                here is REMOVED per owner ruling OD-2
+                (docs/reports/WPORG_REJECTION_R4_ANALYSIS_2026-08-22.md). The
+                companion restorer-side .zip.enc hard-rejection this comment
+                used to warn about is fixed in the same sprint (decrypt-on-restore,
+                edition-universal — class-swisswpsuite-restorer.php), so Free can
+                now both create AND restore its own encrypted backups. The
+                TwoFactorSettings gate directly above stays Pro-only — 2FA is
+                unaffected by this change. See docs/TECHNICAL_DEBT.md TD-60. */}
+            <EncryptionSettings settings={settings!} onSave={updateSettings} />
             <WpscanApiKeyField
               settings={settings!}
               onSave={updateSettings}

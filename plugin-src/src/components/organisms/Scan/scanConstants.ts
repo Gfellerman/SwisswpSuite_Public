@@ -104,12 +104,24 @@ export const SCAN_DESCRIPTIONS: Record<ScanTypeValue, string> = {
  * 'none'  — available on every tier (no license required)
  * 'free'  — available on the free tier and above
  * 'pro'   — requires an active Pro license
+ *
+ * WP.org R4 (owner ruling OD-3, 2026-08-22): "deep-malware" changed from
+ * 'pro' to 'free' — the route now registers unconditionally
+ * (api-security.php) and the ScanCard/ScanResultPanel render unconditionally
+ * (SecurityHub.tsx). Leaving this at 'pro' would have made the ScanCard's
+ * TierBadge show "PRO" on a scan every Free user can now actually trigger —
+ * a truthfulness defect, not just a compliance one (same class of bug this
+ * project's UI-truthfulness sprint, v2.9.33.29, was about). AI verification
+ * within the scan stays genuinely Pro (gated inside
+ * ai_analysis_phase()/has_capability('sentinel_pro')), which is why
+ * "full-ai" (the retired all-in-one card) stays 'pro' — it has no
+ * Free-usable local phase at all.
  */
 export const SCAN_TIER: Record<ScanTypeValue, "none" | "free" | "pro"> = {
   "ai-audit": "free",
   malware: "free",
   "full-ai": "pro",
-  "deep-malware": "pro",
+  "deep-malware": "free",
 };
 
 // ── Malware scan modes ───────────────────────────────────────────────────────

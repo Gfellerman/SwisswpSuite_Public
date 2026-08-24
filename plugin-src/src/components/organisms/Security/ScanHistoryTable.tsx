@@ -1,6 +1,13 @@
 /**
  * ScanHistoryTable — extracted from SecurityHub.tsx (HIGH-36)
- * Renders the History tab: scan records table with Pro gating.
+ * Renders the History tab: full scan records table (ARS R-05, 2026-08-22 —
+ * the server already returns the full window to every user; the table no
+ * longer truncates). The "additional plan required" banner that used to sit
+ * above the table (see the sibling notice component this file no longer
+ * imports) was removed the same day (controller-verified: neither
+ * `/security/sentinel/scan-history` list nor `/{id}` record-view route gates
+ * on a plan/capability server-side — `check_permission` is `manage_options`
+ * only — so that banner's copy advertised a paywall that does not exist).
  */
 import React from "react";
 import { History, Loader } from "lucide-react";
@@ -8,7 +15,6 @@ import { Badge } from "../../ui/Badge";
 import { Button } from "../../ui/Button";
 import { SentinelGradeBadge } from "../Sentinel/SentinelGradeBadge";
 import { ScanHistoryRecord } from "../../../types";
-import { AdditionalPlanRequiredNotice } from "./AdditionalPlanRequiredNotice";
 import {
   HISTORY_LABEL_DEEP_MALWARE,
   HISTORY_LABEL_FULL_AI,
@@ -16,7 +22,6 @@ import {
 
 interface ScanHistoryTableProps {
   scanHistory: ScanHistoryRecord[];
-  hasSentinelPro: boolean;
   loadingRecordId: number | null;
   onRefresh: () => void;
   onViewRecord: (record: ScanHistoryRecord) => void;
@@ -24,72 +29,66 @@ interface ScanHistoryTableProps {
 
 export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
   scanHistory,
-  hasSentinelPro,
   loadingRecordId,
   onRefresh,
   onViewRecord,
 }) => {
-  const visibleRecords = hasSentinelPro ? scanHistory : scanHistory.slice(0, 1);
-  const hiddenCount = scanHistory.length - 1;
-
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+    <div className="animate-in fade-in slide-in-from-right-4 space-y-6">
       <div className="bg-card border border-black p-6">
-        <div className="flex justify-between items-center mb-8 border-b border-black pb-4">
-          <h3 className="font-black text-xs uppercase tracking-widest text-black flex items-center gap-2">
+        <div className="mb-8 flex items-center justify-between border-b border-black pb-4">
+          <h3 className="flex items-center gap-2 text-xs font-black tracking-widest text-black uppercase">
             <History size={16} className="text-black" aria-hidden="true" />
             Scan History
           </h3>
           <Button
             variant="ghost"
             onClick={onRefresh}
-            className="text-sm font-black uppercase tracking-widest hover:bg-background"
+            className="hover:bg-background text-sm font-black tracking-widest uppercase"
             aria-label="Refresh scan history"
           >
             Refresh
           </Button>
         </div>
 
-        {!hasSentinelPro && <AdditionalPlanRequiredNotice />}
-
-        <div className="border border-black overflow-hidden">
+        <div className="overflow-hidden border border-black">
           <table
-            className="w-full text-left text-sm font-black uppercase tracking-widest"
+            className="w-full text-left text-sm font-black tracking-widest uppercase"
             aria-label="Scan history"
           >
             <thead className="bg-background text-foreground dark:text-foreground">
-              <tr className="bg-background dark:bg-secondary border-b border-border dark:border-border/10 text-left text-sm font-black tracking-widest uppercase text-neutral-700">
-                <th className="p-4 border-r border-border dark:border-border/10">
+              <tr className="bg-background dark:bg-secondary border-border dark:border-border/10 border-b text-left text-sm font-black tracking-widest text-neutral-700 uppercase">
+                <th className="border-border dark:border-border/10 border-r p-4">
                   Date
                 </th>
-                <th className="p-4 border-r border-border dark:border-border/10">
+                <th className="border-border dark:border-border/10 border-r p-4">
                   Type
                 </th>
-                <th className="p-4 border-r border-border dark:border-border/10 text-center">
+                <th className="border-border dark:border-border/10 border-r p-4 text-center">
                   Grade
                 </th>
-                <th className="p-4 border-r border-border dark:border-border/10 text-center">
+                <th className="border-border dark:border-border/10 border-r p-4 text-center">
                   Findings
                 </th>
-                <th className="p-4 border-r border-border dark:border-border/10 text-center">
+                <th className="border-border dark:border-border/10 border-r p-4 text-center">
                   Critical
                 </th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/10">
-              {visibleRecords.length === 0 ? (
+              {scanHistory.length === 0 ? (
                 <tr>
                   <td
                     colSpan={6}
-                    className="p-12 text-center text-neutral-500 text-xs font-black uppercase tracking-widest"
+                    className="p-12 text-center text-xs font-black tracking-widest text-neutral-500 uppercase"
                   >
-                    No scan history yet. Run a scan to start tracking
-                    your security posture.
+                    No scan history yet. Run a scan to start tracking your
+                    security posture.
                   </td>
                 </tr>
               ) : (
-                visibleRecords.map((record) => (
+                scanHistory.map((record) => (
                   <tr
                     key={record.id}
                     className="hover:bg-secondary/50 transition-colors"
@@ -128,14 +127,14 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
                               : "Quick Scan"}
                       </Badge>
                     </td>
-                    <td className="p-4 flex justify-center">
+                    <td className="flex justify-center p-4">
                       {record.security_grade ? (
                         <SentinelGradeBadge
                           grade={record.security_grade}
                           size="sm"
                         />
                       ) : (
-                        <span className="text-xs text-neutral-400 font-black uppercase tracking-widest">
+                        <span className="text-xs font-black tracking-widest text-neutral-400 uppercase">
                           --
                         </span>
                       )}
@@ -154,7 +153,7 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
                       <button
                         onClick={() => onViewRecord(record)}
                         disabled={loadingRecordId === record.id}
-                        className="text-xs font-black uppercase tracking-widest text-swiss-navy hover:text-brand-accent transition-colors underline underline-offset-2 disabled:opacity-50 disabled:cursor-wait inline-flex items-center gap-1"
+                        className="text-swiss-navy hover:text-brand-accent inline-flex items-center gap-1 text-xs font-black tracking-widest uppercase underline underline-offset-2 transition-colors disabled:cursor-wait disabled:opacity-50"
                         aria-label={`View scan from ${record.scanned_at}`}
                       >
                         {loadingRecordId === record.id ? (
@@ -177,28 +176,6 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
             </tbody>
           </table>
         </div>
-
-        {/* Upsell redesign (2026-08-04, T3): neutral copy — no "Pro"/
-            "Upgrade"/pricing words. Not an edition gate (hasSentinelPro is a
-            paid-plan capability reachable in either edition), so the canned
-            FeaturePointer "edition" copy isn't accurate here; custom neutral
-            text instead. */}
-        {!hasSentinelPro && hiddenCount > 0 && (
-          <div className="mt-4 p-4 bg-background border border-border rounded-xl text-center">
-            <p className="text-xs font-black uppercase tracking-widest text-neutral-500">
-              {hiddenCount} older scan{hiddenCount !== 1 ? "s" : ""} hidden.{" "}
-              <a
-                href="https://swisswpsecure.com/products"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-brand-accent underline underline-offset-2 hover:text-swiss-navy"
-              >
-                Learn more
-              </a>{" "}
-              to view full history.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

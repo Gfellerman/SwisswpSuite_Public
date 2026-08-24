@@ -4,7 +4,6 @@ import { ContentType, SeoScanResult } from "../types";
 import {
   Sparkles,
   Check,
-  RefreshCw,
   FileText,
   Image as ImageIcon,
   Layout,
@@ -24,6 +23,12 @@ import { FeaturePointer } from "./organisms/Upsell/FeaturePointer";
 import { isProEdition } from "../lib/edition";
 import { SeoAiWorkbench } from "./organisms/Seo/SeoAiWorkbench";
 import { SeoCategoryQuickFixButton } from "./organisms/Seo/SeoCategoryQuickFixButton";
+// ARS Round D (D-K-7, WP.org R4 F-07, 2026-08-2x): see this module's own
+// docblock — replaces the two unconditional "Re-Generate All"/
+// "Re-Generate Descriptions" controls that used to call
+// handleFixNonCompliant() inline in this file.
+import { SeoFixNonCompliantButton } from "./organisms/Seo/SeoFixNonCompliantButton";
+import { useSettings } from "../hooks/useSettings";
 
 const SeoManager: React.FC = () => {
   // Freemium Dual-Build (Phase 3, 2026-07-17): SEO is a MIXED tab — AI meta
@@ -53,9 +58,19 @@ const SeoManager: React.FC = () => {
   const [scanResult, setScanResult] = useState<SeoScanResult | null>(null);
   const [scanning, setScanning] = useState(false);
   const [showNonCompliantDetails, setShowNonCompliantDetails] = useState(false);
-  const [fixingNonCompliant, setFixingNonCompliant] = useState(false);
 
   const { apiUrl, nonce, homeUrl } = window.swisswpsuiteData || {};
+
+  // A-3 (ARS Round C Phase 1b, F-08 handoff/lane4_seomanager.md): the
+  // "Your Sitemap" modal previously showed an unconditional "Sitemap
+  // Active" badge regardless of the swisswpsuite_sitemap_enabled setting —
+  // a UX contradiction, since /sitemap.xml genuinely 404s while the
+  // opt-in-disabled default holds. Read the live flag from the shared
+  // settings query (same ["settings"] cache SettingsPage/SeoSettings use —
+  // no extra network round-trip if it's already warm).
+  const { settings: seoManagerSettings, isLoading: seoSettingsLoading } =
+    useSettings();
+  const sitemapEnabled = seoManagerSettings?.sitemapEnabled ?? false;
 
   const handleScan = async () => {
     setScanning(true);
@@ -74,39 +89,6 @@ const SeoManager: React.FC = () => {
       toast.error("Health audit failed. Please try again.");
     }
     setScanning(false);
-  };
-
-  const handleFixNonCompliant = async () => {
-    if (!apiUrl || fixingNonCompliant) return;
-    setFixingNonCompliant(true);
-    try {
-      const res = await fetch(`${apiUrl}/seo/fix-noncompliant`, {
-        method: "POST",
-        headers: {
-          "X-WP-Nonce": nonce,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        if (data.count === 0) {
-          toast.info(data.message);
-        } else {
-          toast.success(
-            `${data.count} items queued for re-generation. New SEO descriptions will appear within ~${data.estimated_minutes} minutes.`
-          );
-          // Close the scan modal so the user can see the background queue progress
-          setActiveModal(null);
-        }
-      } else {
-        toast.error(data.message || "Failed to start non-compliant fix.");
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to fix non-compliant items. Please try again.");
-    }
-    setFixingNonCompliant(false);
   };
 
   const fetchLlmContent = async () => {
@@ -494,21 +476,10 @@ const SeoManager: React.FC = () => {
                                     Description Too Short — Can Be Improved
                                   </span>
                                 </div>
-                                <button
-                                  onClick={handleFixNonCompliant}
-                                  disabled={fixingNonCompliant}
-                                  className="hover:text-brand-accent flex items-center gap-1 text-xs font-black tracking-widest text-orange-700 uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                                >
-                                  <RefreshCw
-                                    size={10}
-                                    className={
-                                      fixingNonCompliant ? "animate-spin" : ""
-                                    }
-                                  />
-                                  {fixingNonCompliant
-                                    ? "Queuing..."
-                                    : "Re-Generate All"}
-                                </button>
+                                <SeoFixNonCompliantButton
+                                  variant="inline"
+                                  onQueued={() => setActiveModal(null)}
+                                />
                               </div>
                               <p className="mb-3 text-[11px] leading-relaxed text-neutral-500">
                                 These items have descriptions under 150
@@ -612,27 +583,19 @@ const SeoManager: React.FC = () => {
                               i.reason === "short_content" ||
                               i.reason === "missing")
                         ) && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={handleFixNonCompliant}
-                            loading={fixingNonCompliant}
-                            disabled={fixingNonCompliant}
-                            className="bg-brand-accent hover:bg-brand-accent/90 mt-3 rounded-xl border-none px-5 py-2 text-xs font-black tracking-widest text-white uppercase transition-all"
-                            icon={RefreshCw}
-                          >
-                            {fixingNonCompliant
-                              ? "Queuing..."
-                              : `Re-Generate Descriptions (${
-                                  scanResult.non_compliant_items.filter(
-                                    (i) =>
-                                      i.type !== "image" &&
-                                      (i.reason === "below_threshold" ||
-                                        i.reason === "short_content" ||
-                                        i.reason === "missing")
-                                  ).length
-                                })`}
-                          </Button>
+                          <SeoFixNonCompliantButton
+                            variant="primary"
+                            count={
+                              scanResult.non_compliant_items.filter(
+                                (i) =>
+                                  i.type !== "image" &&
+                                  (i.reason === "below_threshold" ||
+                                    i.reason === "short_content" ||
+                                    i.reason === "missing")
+                              ).length
+                            }
+                            onQueued={() => setActiveModal(null)}
+                          />
                         )}
                       </div>
                     </div>
@@ -702,14 +665,28 @@ const SeoManager: React.FC = () => {
               </p>
 
               <div className="space-y-6">
-                <div className="flex items-center justify-between rounded-2xl border border-emerald-100/50 bg-emerald-50/50 p-5">
-                  <span className="text-sm font-black tracking-widest text-emerald-800 uppercase">
-                    Sitemap Active
-                  </span>
-                  <div className="text-foreground dark:text-foreground rounded-full bg-emerald-500 p-1">
-                    <Check size={12} />
+                {seoSettingsLoading ? (
+                  <div className="border-border bg-background rounded-2xl border p-5 text-center">
+                    <span className="text-sm font-medium text-neutral-700">
+                      Checking sitemap status…
+                    </span>
                   </div>
-                </div>
+                ) : sitemapEnabled ? (
+                  <div className="flex items-center justify-between rounded-2xl border border-emerald-100/50 bg-emerald-50/50 p-5">
+                    <span className="text-sm font-black tracking-widest text-emerald-800 uppercase">
+                      Sitemap Active
+                    </span>
+                    <div className="text-foreground dark:text-foreground rounded-full bg-emerald-500 p-1">
+                      <Check size={12} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-amber-100/50 bg-amber-50/50 p-5 text-center">
+                    <span className="text-sm font-medium text-amber-800">
+                      Enable the XML sitemap in Settings → SEO.
+                    </span>
+                  </div>
+                )}
 
                 <div className="bg-card border-border group flex items-center justify-between rounded-2xl border p-5 font-mono text-sm shadow-xl">
                   <span className="mr-4 truncate font-bold tracking-tight text-neutral-700 uppercase transition-colors group-hover:text-emerald-400">
