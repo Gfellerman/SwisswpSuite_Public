@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.38] - 2026-08-24
+
+### Erratum (corrections to the 2.9.33.36 and 2.9.33.37 entries below)
+
+An external review (ARS round 7) found four claims in the two entries below that the shipped code did not fully honor. Each is corrected here rather than silently edited in place, per this project's policy of never rewriting a published changelog entry.
+
+- **"Root .htaccess is never created or modified by the free plugin" (2.9.33.36, Fixed).** This was true only for the *unprompted* first-admin-load rewrite that entry actually fixed (round-6 finding F-14), which is genuinely gone — a fresh install now leaves the root `.htaccess` untouched. It was not, and was never intended to be, true for *opt-in* hardening: turning on any of five Free hardening toggles (Force Security Headers, Block Bad Bots, Disable XML-RPC, Hide WP Version, Content-Security-Policy — four of which are part of the one-click "Apply Recommended" preset) still writes a managed block into the site's root `.htaccess`, exactly as a security plugin's hardening feature is expected to. The original sentence should have said "on activation," not unconditionally.
+- **"Backup engine tick never runs in anonymous visitors' requests" (2.9.33.36, Changed).** This is a 60-second deferral, not an elimination: an anonymous request's shutdown hook still drives the backup engine's tick once the 60-second anonymous-fallback window has elapsed since the last authenticated tick. The deferral exists to keep the engine progressing on hosts where the loopback self-ping (used to advance backups without waiting on visitor traffic) is blocked — including our own fleet — while avoiding running the tick on every single anonymous page view.
+- **"State writes now re-read and merge before persisting" (2.9.33.37, Fixed).** Only the two chain-failure counters received a re-read-and-merge writer (`persist_chain_failure_counters()`). The backup engine's general state writer (`save_state()`) is unchanged and remains a direct `update_option()` overwrite — the retry-race fix that entry describes was scoped to those two counters only, not to backup-engine state as a whole.
+- **"The XOR fallback was removed (fail-closed without OpenSSL)" (2.9.33.36, Security).** True for `encrypt_string()` as shipped. It was not true for the backup-archive encryption path, `encrypt_file()`: on a host with neither the Sodium nor the OpenSSL PHP extension, that path called an undefined function and fataled mid-backup instead of failing closed. This release closes that gap — `encrypt_file()` now refuses cleanly (a `WP_Error`, backup marked failed, nothing written) under the same conditions `encrypt_string()` already refused under, matching the fail-closed contract the 2.9.33.36 entry described for the encryption system as a whole.
+
 ## [2.9.33.37] - 2026-08-24
 
 ### Fixed

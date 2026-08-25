@@ -73,8 +73,14 @@ describe("wpApi() — U10 200+success:false hardening", () => {
     };
     vi.stubGlobal("fetch", mockFetchOnce(body, 200));
 
+    // Endpoint string kept realistic (matches the WpApiOptions.allowSuccessFalse
+    // doc comment's "gold pattern" opt-out example, api.ts:70-75): this was
+    // "/security/findings/fix" until ARS Round E (F-08) deleted that route and
+    // its sole frontend caller as dead code — SecurityHub.tsx's remaining
+    // allowSuccessFalse callers (handleFix / handleLogActionFix) both use
+    // /security/sentinel/remediate, so that is what's exercised here now.
     await expect(
-      wpApi("/security/findings/fix", { allowSuccessFalse: true })
+      wpApi("/security/sentinel/remediate", { allowSuccessFalse: true })
     ).resolves.toEqual(body);
   });
 

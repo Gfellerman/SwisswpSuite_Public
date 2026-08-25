@@ -24,6 +24,17 @@
  * toggle (`swisswpsuite_seo_rewrite_titles`, SeoAiWorkbench.tsx) — see
  * handoff/L-H_seo-rewrite-titles-ui.md — so the label/description below
  * are worded to avoid implying they are the same setting.
+ *
+ * F-14 fix (ARS Round E, R7 report, 2026-08-24): added a fourth toggle for
+ * `seoCompatOverrideEnabled` — class-swisswpsuite-seo-compat.php's OVERRIDE
+ * opt-in (unhooking a host-bundled competing SEO plugin's own wp_head
+ * output, e.g. Hostinger AI Assistant). The option already existed and its
+ * suppression logic already worked, but no Settings UI control existed
+ * anywhere — the admin notice it drives told users to "Turn on the
+ * ... setting" for a setting that could never be turned on. Label text
+ * below deliberately echoes the notice's own wording ("Override
+ * host-bundled SEO plugins") so an admin can find the control the notice is
+ * pointing at.
  */
 
 import { useState } from "react";
@@ -116,11 +127,19 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
   // P1-03/P1-06: which endpoint toggle (if any) has an in-flight save, so we
   // can disable/aria-busy just that row rather than the whole card.
   const [savingToggle, setSavingToggle] = useState<
-    "sitemapEnabled" | "llmsTxtEnabled" | "seoMetaInjectionEnabled" | null
+    | "sitemapEnabled"
+    | "llmsTxtEnabled"
+    | "seoMetaInjectionEnabled"
+    | "seoCompatOverrideEnabled"
+    | null
   >(null);
 
   const handleToggleSave = async (
-    field: "sitemapEnabled" | "llmsTxtEnabled" | "seoMetaInjectionEnabled",
+    field:
+      | "sitemapEnabled"
+      | "llmsTxtEnabled"
+      | "seoMetaInjectionEnabled"
+      | "seoCompatOverrideEnabled",
     value: boolean
   ) => {
     setSavingToggle(field);
@@ -135,6 +154,10 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
         seoMetaInjectionEnabled: [
           "Basic SEO meta tags enabled",
           "Basic SEO meta tags disabled",
+        ],
+        seoCompatOverrideEnabled: [
+          "Now overriding host-bundled SEO plugins",
+          "No longer overriding host-bundled SEO plugins",
         ],
       };
       const [onMsg, offMsg] = messages[field];
@@ -356,6 +379,42 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
             checked={settings.seoMetaInjectionEnabled ?? false}
             onChange={(v) => handleToggleSave("seoMetaInjectionEnabled", v)}
             isSaving={savingToggle === "seoMetaInjectionEnabled"}
+          />
+        </div>
+      </Card>
+
+      {/* F-14 fix (ARS Round E, R7 report): the missing control the SEO-compat
+          admin notice (class-swisswpsuite-seo-compat.php) points admins to.
+          Only meaningful when a competing host-bundled SEO plugin is detected
+          (e.g. Hostinger AI Assistant) -- shown unconditionally here since
+          this panel has no reliable signal of that detection, mirroring how
+          the other toggles above are always shown regardless of context. */}
+      <Card className="p-6 space-y-4">
+        <div className="flex items-center gap-3 border-b border-border pb-4">
+          <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+            <Layout
+              className="w-5 h-5 text-amber-600 dark:text-amber-400"
+              aria-hidden="true"
+            />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-lg text-neutral-900 dark:text-foreground">
+              Host-Bundled SEO Plugins
+            </h3>
+            <p className="text-xs text-neutral-700">
+              Only relevant if your host pre-installed its own SEO plugin —
+              off by default
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <ToggleRow
+            label="Override Host-Bundled SEO Plugins"
+            desc="If a host-bundled SEO plugin (e.g. Hostinger AI Assistant) is active, take over its SEO meta tags so both plugins' tags don't appear together. Only has an effect when such a plugin is detected — see the notice above the Settings page if one is active on this site."
+            checked={settings.seoCompatOverrideEnabled ?? false}
+            onChange={(v) => handleToggleSave("seoCompatOverrideEnabled", v)}
+            isSaving={savingToggle === "seoCompatOverrideEnabled"}
           />
         </div>
       </Card>

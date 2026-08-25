@@ -2687,116 +2687,19 @@ const SecurityHub: React.FC = () => {
   };
 
   // ---------------------------------------------------------------------------
-  // Fix it feature — parse finding evidence into fix API payload
+  // ARS Round E (F-08): parseFindingForFix() and handleL1Fix() — the
+  // frontend caller of the now-deleted POST /security/findings/fix route —
+  // were removed here as dead code. Two-proof (validator, VALIDATOR_E.md
+  // §3.4/§0): `grep -rn "handleL1Fix" plugin/src` had exactly one hit (this
+  // definition, zero callers) both before and after checking the built Free
+  // and Pro zips for any remaining reference to the route string; the
+  // backend route + handler were deleted in the same round (LE-B, see
+  // RoundELaneB_F08_DeadRouteDeletionTest.php). `SentinelLayer1Finding`'s
+  // `fix_type` field is unaffected and still used elsewhere (the "N issues
+  // can be fixed" summary badge below, ScanResultPanel's
+  // classifyFindingForAi()) — only the dead POST-and-remediate flow itself
+  // was removed.
   // ---------------------------------------------------------------------------
-
-  const parseFindingForFix = (
-    finding: SentinelLayer1Finding
-  ): { fix_type: string; target_path: string; target_perms: string } => {
-    const evidence = finding.evidence || "";
-    // Extract file path from evidence (e.g. "wp-config.php (0644)" -> "wp-config.php")
-    const pathMatch = evidence.match(/^([^\s(]+)/);
-    const targetPath = pathMatch ? pathMatch[1] : "";
-    // Determine target perms based on fix_type
-    let targetPerms = "0644";
-    if (finding.fix_type === "chmod_file") {
-      // wp-config.php should be 0600, others 0644
-      targetPerms = targetPath.includes("wp-config") ? "0600" : "0644";
-    } else if (finding.fix_type === "chmod_dir") {
-      targetPerms = "0755";
-    }
-    return {
-      fix_type: finding.fix_type || "",
-      target_path: targetPath,
-      target_perms: targetPerms,
-    };
-  };
-
-  const handleL1Fix = async (finding: SentinelLayer1Finding): Promise<void> => {
-    if (
-      !finding.fix_type ||
-      finding.fix_type === "manual" ||
-      finding.fix_type === "navigate_hardening"
-    )
-      return;
-    const runFix = async () => {
-      try {
-        const payload = {
-          ...parseFindingForFix(finding),
-          // SEC-4: Pass finding_code so the backend can persist it as "fixed" across refreshes.
-          // Bug fix: finding.code and finding.file_path may be undefined — fall back to id/evidence/title
-          finding_code:
-            (finding.code || finding.id || "") +
-            ":" +
-            (finding.evidence || finding.title || ""),
-          // WP.org round-3 (Sprint W3): disable_wp_debug now requires explicit
-          // confirmation server-side — this rewrites wp-config.php.
-          ...(finding.fix_type === "disable_wp_debug" ? { confirm: true } : {}),
-        };
-        const data = await wpApi<RemediateResponse>("/security/findings/fix", {
-          method: "POST",
-          body: JSON.stringify(payload),
-          // U10 (gate report 2026-08-20, FINAL R2 opt-out list): this is the
-          // named gold-pattern example of an intentional 200+success:false
-          // "here's why, here's the manual guide" outcome — the code below
-          // already branches on data.manual_fix; without this opt-out
-          // wpApi() would throw and that branch would become unreachable.
-          allowSuccessFalse: true,
-        });
-        if (data.success) {
-          // SEC-4 FIX: Mark the finding as 'fixed' in local state AND persist to backend.
-          // Local state: hides the finding immediately in the current session.
-          // Backend: the fix endpoint appends the finding ID to swisswpsuite_security_fixed_findings
-          // wp_option, so fetchLatestScanReport() filters it on future page loads.
-          setSentinelReport((prev) => {
-            if (!prev) return prev;
-            const markFixed = (f: SentinelLayer1Finding) =>
-              f.id === finding.id ? { ...f, status: "fixed" } : f;
-            if (prev.layer === 1) {
-              return { ...prev, findings: prev.findings.map(markFixed) };
-            }
-            return {
-              ...prev,
-              individual_findings: (
-                prev as SentinelLayer2Report
-              ).individual_findings.map(markFixed),
-            };
-          });
-          toast.success(
-            data.message || "Fixed successfully. Re-run scan to confirm."
-          );
-        } else if (data.manual_fix) {
-          // Bug fix: chmod failures on Hostinger return a manual_fix guide — display it
-          setL1ManualFix(data.manual_fix);
-        } else {
-          toast.error(
-            data.message ||
-              "Fix failed. See the manual steps for an alternative approach."
-          );
-        }
-      } catch (e) {
-        // U10 (gate report 2026-08-20, condition b): prefer the real backend
-        // message over a hardcoded generic string — a genuinely thrown error
-        // here now carries real information instead of masking it.
-        toast.error(
-          e instanceof ApiError
-            ? e.message
-            : "Fix request failed — check your connection and try again."
-        );
-      }
-    };
-    // WP.org round-3 (Sprint W3, T5): disable_wp_debug rewrites wp-config.php —
-    // confirm with the user before asserting `confirm: true` to the backend.
-    // Mirrors the identical gate in handleLogActionFix (debug_mode_enabled).
-    if (finding.fix_type === "disable_wp_debug") {
-      showConfirm(
-        "Disable WP_DEBUG mode? This rewrites your wp-config.php file.",
-        runFix
-      );
-      return;
-    }
-    await runFix();
-  };
 
   const handleL1NavigateHardening = () => {
     setActiveTab("hardening");

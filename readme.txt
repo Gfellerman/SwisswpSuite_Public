@@ -4,7 +4,7 @@ Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.9.33.37
+Stable tag: 2.9.33.38
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,7 +20,7 @@ On activation the plugin disables the theme/plugin file editor by default; re-en
 
 = Security (free) =
 * Malware scanner - 38+ local signature patterns; Quick Scan (on-demand + daily) checks the newest 100 of up to 5,000 tracked files per pass, skipping 32 trusted plugin/theme paths and /vendor/ folders; no file contents leave your site
-* Deep malware scan - full-site multi-phase local analysis; AI result grading is a Pro add-on
+* Deep malware scan - multi-phase local analysis of active plugins, the active theme (and parent), and your uploads folder, up to 5,000 PHP files per run; AI result grading is a Pro add-on
 * Web Application Firewall - starts in observe (simulation) mode on install so it never blocks by surprise; enable active blocking any time at Security -> Firewall, with a threat log and automatic IP banning
 * IP management - manually ban, unban, and allowlist IP addresses
 * One-click hardening - 12 hardening options (XML-RPC, file editing, user enumeration, REST API, bot blocking, and more)
@@ -61,7 +61,7 @@ AI and remote-service features above run only in SwissSuite AI Pro.
 
 = Privacy & Data =
 
-The free plugin does not phone home on install. No telemetry, no phone-home tracking, no account, and no license key. An optional, off-by-default local pageview counter (Dashboard Traffic Counter) powers the Dashboard traffic chart; no IP addresses or cookies stored, nothing leaves your server. Security email alerts and the daily security report are off until enabled. All scanning, backup, and SEO analysis runs locally, and the plugin makes no AI calls. The only external service contacted is WordPress.org - for update checks, core-file checksum verification during a scan, and a daily abandoned-plugin check; see External Services below. Failed-login IPs and usernames are logged locally; the lockout itself expires in 15 minutes, but the log row is kept for a separate, configurable retention window (default 90 days) before automatic deletion. SwissSuite AI can route site email through an SMTP server (Settings -> General); off until configured, password stored in your database. Deleting the plugin removes its settings, database tables, quarantined files, backup archives, and all other data it created under wp-content/uploads/ (swisswpsuite-backups, -quarantine, -snapshots, -journals, -transport, -exports-temp) - download anything you need first.
+The free plugin does not phone home on install. No telemetry, no phone-home tracking, no account, and no license key. An optional, off-by-default local pageview counter (Dashboard Traffic Counter) powers the Dashboard traffic chart; no IP addresses or cookies stored, nothing leaves your server. Security email alerts and the daily security report are off until enabled. All scanning, backup, and SEO analysis runs locally, and the plugin makes no AI calls. The only external service contacted is WordPress.org - for update checks, core-file checksum verification during a scan, and a daily abandoned-plugin check; see External Services below. Failed-login IPs and usernames are logged locally; the lockout itself expires in 15 minutes, but the log row is kept for a separate, configurable retention window (default 90 days) before automatic deletion. SwissSuite AI can route site email through an SMTP server (Settings -> General); off until configured, password stored in your database. Deleting the plugin removes its settings, database tables, quarantined files, backup archives, and all other data it created under wp-content/uploads/ (swisswpsuite-backups, -quarantine, -snapshots, -journals, -transport, -exports-temp, -temp, swisssuite-ai) - download anything you need first.
 
 == Source Code ==
 
@@ -103,7 +103,7 @@ For full details on what data is transmitted and your rights, see our Privacy Po
 
 == Changelog ==
 
-= 2.9.33.37 =
-* Live-QA fix round: sitemap/llms.txt toggles now purge the page cache so changes apply immediately; backup engine no longer loses progress under retry races; cancelling a backup can no longer affect the next one; backup downloads work reliably on object-cache hosts; product branding unified as SwissSuite AI.
+= 2.9.33.38 =
+* Review-round fixes: Plugin Check i18n errors resolved; SMTP password no longer lost on hosts without OpenSSL/Sodium; restore skips foreign-prefix tables per statement; editor content-save firewall handling corrected; changelog errata for four earlier entries; disclosure and hygiene fixes.
 
 For the full version history, see CHANGELOG.md in the plugin folder or https://github.com/Gfellerman/SwisswpSuite_Public/blob/main/CHANGELOG.md

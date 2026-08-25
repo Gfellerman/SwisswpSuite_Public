@@ -257,3 +257,70 @@ describe("SeoSettings — Basic SEO Meta Tags toggle (ARS Round D delta, M6)", (
     );
   });
 });
+
+describe("SeoSettings — Override Host-Bundled SEO Plugins toggle (ARS Round E, F-14)", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("renders OFF (aria-checked=false) when seoCompatOverrideEnabled is absent — opt-in contract", () => {
+    renderSeoSettings(baseSettings(), async () => ({ success: true }));
+
+    const toggle = screen.getByRole("switch", {
+      name: /override host-bundled seo plugins/i,
+    });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("renders ON (aria-checked=true) when seoCompatOverrideEnabled is true", () => {
+    renderSeoSettings(
+      baseSettings({ seoCompatOverrideEnabled: true }),
+      async () => ({ success: true })
+    );
+
+    const toggle = screen.getByRole("switch", {
+      name: /override host-bundled seo plugins/i,
+    });
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("clicking the toggle calls onSave with { seoCompatOverrideEnabled: true } — one-click AJAX save, no Save button", () => {
+    const onSave = vi.fn(async () => ({ success: true }));
+    renderSeoSettings(baseSettings(), onSave);
+
+    const toggle = screen.getByRole("switch", {
+      name: /override host-bundled seo plugins/i,
+    });
+    toggle.click();
+
+    expect(onSave).toHaveBeenCalledWith({ seoCompatOverrideEnabled: true });
+  });
+
+  it("is independent from the other SEO toggles — flipping it does not touch their fields in the onSave payload", () => {
+    const onSave = vi.fn(async () => ({ success: true }));
+    renderSeoSettings(
+      baseSettings({
+        sitemapEnabled: true,
+        llmsTxtEnabled: true,
+        seoMetaInjectionEnabled: true,
+      }),
+      onSave
+    );
+
+    const toggle = screen.getByRole("switch", {
+      name: /override host-bundled seo plugins/i,
+    });
+    toggle.click();
+
+    expect(onSave).toHaveBeenCalledWith({ seoCompatOverrideEnabled: true });
+    expect(onSave).not.toHaveBeenCalledWith(
+      expect.objectContaining({ sitemapEnabled: expect.anything() })
+    );
+    expect(onSave).not.toHaveBeenCalledWith(
+      expect.objectContaining({ llmsTxtEnabled: expect.anything() })
+    );
+    expect(onSave).not.toHaveBeenCalledWith(
+      expect.objectContaining({ seoMetaInjectionEnabled: expect.anything() })
+    );
+  });
+});

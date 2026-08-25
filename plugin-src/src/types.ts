@@ -167,20 +167,6 @@ export interface SecurityLog {
   blocked: boolean | number; // DB returns 0/1 (number)
 }
 
-/** Response from POST /security/findings/fix — covers all three remediation paths. */
-export interface RemediateResponse {
-  success: boolean;
-  fixed: boolean;
-  finding_id?: string; // recorded internally; not always returned in response
-  auto_fixed?: boolean;
-  message: string;
-  error?: string;
-  manual_fix?: {
-    how: string[];
-    step_count?: number;
-  };
-}
-
 export interface SecurityStatus {
   firewall_enabled: boolean;
   spam_enabled: boolean;
@@ -426,11 +412,15 @@ export interface SentinelLayer1Finding {
   /** Human-readable fix instruction. Null when AI did not provide one. */
   remediation: string | null;
   /**
-   * Backend-supplied fix type for one-click remediation.
+   * Backend-supplied fix type, used for local UI classification only
+   * (ARS Round E, F-08: the dedicated POST /security/findings/fix
+   * remediation route and its sole frontend caller were both deleted as
+   * dead code — see RoundELaneB_F08_DeadRouteDeletionTest.php).
    * Empty string or absent = informational finding (no Fix it button).
    * "manual" = show inline step-by-step guide.
    * "navigate_hardening" = switch to Hardening tab.
-   * All others are sent to POST /security/findings/fix.
+   * Any other value still drives local classification, e.g.
+   * ScanResultPanel's classifyFindingForAi() file-fix heuristics.
    */
   fix_type?: string;
   /** Finding lifecycle status returned by PHP. Typically "open" or "fixed". */
