@@ -25,7 +25,15 @@
  */
 import { createRequire } from "node:module";
 import "@testing-library/jest-dom/vitest";
-import { describe, it, expect, afterEach, beforeAll, beforeEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  vi,
+} from "vitest";
 
 vi.mock("sonner", () => ({
   toast: {
@@ -86,6 +94,13 @@ async function openSitemapModal() {
   openButton.click();
 }
 
+async function openLlmModal() {
+  const openButton = screen.getByRole("button", {
+    name: /ai assistant guide/i,
+  });
+  openButton.click();
+}
+
 describe("SeoManager — Sitemap modal gated on sitemapEnabled (A-3, ARS Round C Phase 1b)", () => {
   beforeEach(() => {
     delete (window as any).swisswpsuiteData;
@@ -142,6 +157,80 @@ describe("SeoManager — Sitemap modal gated on sitemapEnabled (A-3, ARS Round C
     expect(screen.queryByText(/sitemap active/i)).not.toBeInTheDocument();
     expect(
       screen.queryByText(/enable the xml sitemap in settings.*seo/i)
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("SeoManager — llms.txt 'Check Live File' link gated on llmsTxtEnabled (FIX-8, D-3, FIX_PLAN_v2.9.33.39, 2026-08-31)", () => {
+  beforeEach(() => {
+    delete (window as any).swisswpsuiteData;
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it("shows the disabled explanation, not a live link, when llmsTxtEnabled is false", async () => {
+    mockSettings({ llmsTxtEnabled: false });
+    render(React.createElement(SeoManager));
+
+    await openLlmModal();
+
+    expect(
+      screen.queryByRole("link", { name: /check live file/i })
+    ).not.toBeInTheDocument();
+    const disabledEl = screen.getByTitle(
+      /enable the llms\.txt feature to publish this file first/i
+    );
+    expect(disabledEl).toBeInTheDocument();
+    expect(disabledEl).not.toHaveAttribute("aria-disabled");
+    expect(
+      screen.getByText(
+        /unavailable: enable the llms\.txt feature to publish this file first/i
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("shows the disabled explanation when llmsTxtEnabled is absent from settings (opt-in-disabled default)", async () => {
+    mockSettings({});
+    render(React.createElement(SeoManager));
+
+    await openLlmModal();
+
+    expect(
+      screen.queryByRole("link", { name: /check live file/i })
+    ).not.toBeInTheDocument();
+    const disabledEl = screen.getByTitle(
+      /enable the llms\.txt feature to publish this file first/i
+    );
+    expect(disabledEl).toBeInTheDocument();
+    expect(disabledEl).not.toHaveAttribute("aria-disabled");
+    expect(
+      screen.getByText(
+        /unavailable: enable the llms\.txt feature to publish this file first/i
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("shows the live 'Check Live File' link when llmsTxtEnabled is true", async () => {
+    mockSettings({ llmsTxtEnabled: true });
+    render(React.createElement(SeoManager));
+
+    await openLlmModal();
+
+    expect(
+      screen.getByRole("link", { name: /check live file/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTitle(
+        /enable the llms\.txt feature to publish this file first/i
+      )
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        /unavailable: enable the llms\.txt feature to publish this file first/i
+      )
     ).not.toBeInTheDocument();
   });
 });

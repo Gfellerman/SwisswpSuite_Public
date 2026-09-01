@@ -72,6 +72,15 @@ const SeoManager: React.FC = () => {
     useSettings();
   const sitemapEnabled = seoManagerSettings?.sitemapEnabled ?? false;
 
+  // FIX-8 (D-3, LOW, FIX_PLAN_v2.9.33.39, 2026-08-31): the "Check Live File"
+  // anchor below used to render unconditionally and 404 while the llms.txt
+  // feature toggle (Settings → SEO) is off. Mirrors the sitemapEnabled read
+  // above — same shared ["settings"] cache, same opt-in-disabled default.
+  // No page-collision detection is built here (ruled out by the plan —
+  // sanitize_title_with_dashes() yields slug `llms-txt`, so that mechanism
+  // cannot fire).
+  const llmsTxtEnabled = seoManagerSettings?.llmsTxtEnabled ?? false;
+
   const handleScan = async () => {
     setScanning(true);
     setActiveModal("scan");
@@ -825,14 +834,29 @@ const SeoManager: React.FC = () => {
               )}
             </div>
             <div className="border-border bg-background/50 flex items-center justify-between border-t p-8">
-              <a
-                href={`${homeUrl}/llms.txt`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-swiss-navy hover:text-brand-accent flex items-center gap-2 text-sm font-black tracking-widest uppercase transition-all"
-              >
-                <ExternalLink size={14} /> Check Live File
-              </a>
+              {llmsTxtEnabled ? (
+                <a
+                  href={`${homeUrl}/llms.txt`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-swiss-navy hover:text-brand-accent flex items-center gap-2 text-sm font-black tracking-widest uppercase transition-all"
+                >
+                  <ExternalLink size={14} /> Check Live File
+                </a>
+              ) : (
+                <span
+                  className="flex cursor-not-allowed items-center gap-2 text-sm font-black tracking-widest text-neutral-700 uppercase"
+                  title="Enable the llms.txt feature to publish this file first"
+                >
+                  <ExternalLink size={14} aria-hidden="true" />
+                  Check Live File
+                  <span className="sr-only">
+                    {" "}
+                    — unavailable: enable the llms.txt feature to publish this
+                    file first
+                  </span>
+                </span>
+              )}
               <Button
                 variant="ghost"
                 className="hover:text-swiss-navy text-sm font-black tracking-widest text-neutral-700 uppercase"

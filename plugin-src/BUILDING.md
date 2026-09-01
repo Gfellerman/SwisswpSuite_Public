@@ -76,8 +76,8 @@ EDITION=pro npm run build    # Pro edition (same as unset)
 ```
 
 When `EDITION=free`, `vite.config.ts`'s `resolve.alias` block redirects a
-growing, individually-dated list of Pro-only module import specifiers (37
-entries as of v2.9.33.36, each added by its own dated code comment
+growing, individually-dated list of Pro-only module import specifiers (41
+entries as of v2.9.33.41, each added by its own dated code comment
 recording the exact call site and rationale — grep `resolve.alias` in
 `vite.config.ts` for the current, authoritative, itemized list; do not
 hand-maintain a name list here, it has already gone stale once) — covering

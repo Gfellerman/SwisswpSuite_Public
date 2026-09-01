@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { wpApi } from "../services/api";
@@ -8,6 +8,24 @@ import {
   BackupEngineStatus,
   BackupSet,
 } from "../types";
+
+/**
+ * WP.org R9 fix (FIX-1 / R-01, 2026-08-31): the persisted report written by
+ * SwissWPSuite_Core::post_import_recovery() Step 8 (read-only detection of
+ * active_plugins entries whose plugin file is missing on this site --
+ * nothing is removed). Surfaced on GET /backup/local/list (see below) so it
+ * survives the hard reload restoreBackupMutation triggers when db_restored
+ * is true -- a plain in-request field on the restore response alone would
+ * not reach the page after that reload. '' when there is nothing to report.
+ */
+interface MissingPluginsReport {
+  plugins: string[];
+  time: number;
+}
+
+function formatMissingPluginsNotice(report: MissingPluginsReport): string {
+  return `Note: ${report.plugins.length} plugin(s) referenced by the restored database are not installed on this site: ${report.plugins.join(", ")}. They were left untouched — review them on the Plugins screen.`;
+}
 
 interface GenerateDownloadTokenResponse {
   success: boolean;
@@ -85,17 +103,31 @@ export function useBackups() {
   } = useQuery({
     queryKey: ["backups"],
     queryFn: async () => {
-      // API returns { success: true, backups: [...], sets: [...] }
+      // API returns { success: true, backups: [...], sets: [...], missing_plugins_report: {...} | null }
       return wpApi<{
         success: boolean;
         backups: BackupArchive[];
         sets?: BackupSet[];
+        missing_plugins_report?: MissingPluginsReport | null;
       }>(`/backup/local/list?_nocache=${Date.now()}`);
     },
     staleTime: 30000, // 30 seconds
   });
 
   const backups = backupsResponse?.backups ?? [];
+
+  // WP.org R9 fix (FIX-1 / R-01, 2026-08-31): surface a persisted
+  // missing-plugins report the moment the list loads -- this is what makes
+  // the notice survive the post-restore hard reload (the mutation's onSuccess
+  // below never runs after a reload; only this query does, on every mount).
+  // `prev ?? …` never overwrites a notice already showing from the SAME
+  // session's restore (e.g. a files-only db_notice).
+  useEffect(() => {
+    const report = backupsResponse?.missing_plugins_report;
+    if (report && report.plugins.length > 0) {
+      setRestoreNotice((prev) => prev ?? formatMissingPluginsNotice(report));
+    }
+  }, [backupsResponse?.missing_plugins_report]);
 
   // 2. Create Backup (Synchronous - High Timeout)
   const createBackupMutation = useMutation({
@@ -147,7 +179,7 @@ export function useBackups() {
         // the user reload manually if/when they choose to.
         queryClient.invalidateQueries({ queryKey: ["backups"] });
         setRestoreNotice(
-          [data.db_notice, data.plugins_notice].filter(Boolean).join(" "),
+          [data.db_notice, data.plugins_notice].filter(Boolean).join(" ")
         );
         return;
       }
@@ -184,7 +216,7 @@ export function useBackups() {
         {
           method: "POST",
           body: JSON.stringify({ filename }),
-        },
+        }
       );
       return response;
     },
@@ -202,7 +234,20 @@ export function useBackups() {
     },
   });
 
-  const clearRestoreNotice = () => setRestoreNotice(null);
+  const clearRestoreNotice = () => {
+    setRestoreNotice(null);
+    // WP.org R9 fix (FIX-1 / R-01, 2026-08-31): best-effort dismiss of the
+    // persisted report -- without this it would simply reappear on the next
+    // ["backups"] refetch (staleTime is only 30s). Harmless no-op when there
+    // was nothing to dismiss (e.g. a plain files-only db_notice with no
+    // missing_plugins_report) -- delete_option() on an absent key is a no-op.
+    wpApi("/backup/dismiss-missing-plugins-notice", { method: "POST" }).catch(
+      () => {
+        // Best-effort: a failed dismiss just means the notice may reappear
+        // on the next list refresh -- not worth surfacing as an error toast.
+      }
+    );
+  };
 
   return {
     backups,
@@ -269,13 +314,13 @@ export function useCleanupOrphans() {
     mutationFn: () =>
       wpApi<{ success: boolean; deleted_count: number; freed_space: string }>(
         "/backup/local/cleanup",
-        { method: "POST" },
+        { method: "POST" }
       ),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["backups"] });
       queryClient.invalidateQueries({ queryKey: ["backup-orphans"] });
       toast.success(
-        `Cleaned up ${data.deleted_count} orphaned files, freed ${data.freed_space}`,
+        `Cleaned up ${data.deleted_count} orphaned files, freed ${data.freed_space}`
       );
     },
     onError: () => {
@@ -329,9 +374,7 @@ export function useBackupSets() {
   // W6-A: same files-only-restore notice pattern as useBackups() above, kept
   // as separate state since set-restore and single-file-restore are
   // independent mutations that can each be mid-flight/notice-holding.
-  const [restoreSetNotice, setRestoreSetNotice] = useState<string | null>(
-    null,
-  );
+  const [restoreSetNotice, setRestoreSetNotice] = useState<string | null>(null);
 
   // Read sets from the already-cached list response (zero extra requests).
   const { data: backupsResponse, isLoading } = useQuery({
@@ -370,7 +413,7 @@ export function useBackupSets() {
         // above for why this must not reload immediately.
         queryClient.invalidateQueries({ queryKey: ["backups"] });
         setRestoreSetNotice(
-          [data.db_notice, data.plugins_notice].filter(Boolean).join(" "),
+          [data.db_notice, data.plugins_notice].filter(Boolean).join(" ")
         );
         return;
       }
@@ -426,7 +469,7 @@ export function useBackupEngineStatus(jobId: string | null) {
     queryKey: ["backup-engine-status", jobId],
     queryFn: () =>
       wpApi<{ success: boolean; data: BackupEngineStatus }>(
-        `/backup/engine/status?job_id=${jobId}`,
+        `/backup/engine/status?job_id=${jobId}`
       ),
     enabled: !!jobId,
     refetchInterval: 2000,

@@ -4,6 +4,43 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.41] - 2026-09-01
+
+### Fixed
+- **Restores the R9 F-01 remediation that build 2.9.33.40 silently shipped without**: the activation seed for `swisswpsuite_auto_update` is again `'no'` (opt-in). Root cause: the fix was uncommitted when a formatter-collateral revert reconstructed the file from the last commit; full post-mortem in `docs/reports/WPORG_R10_POSTMORTEM_AND_V40_BLOCKERS_2026-09-01.md`.
+- The one-time migration that resets the old always-on default is widened to cover installs that took 2.9.33.40 (gate raised to `< 2.9.33.41`). Trade-off disclosed as for 2.9.33.39: an explicit admin 'yes' set between 2.9.33.39 and 2.9.33.41 is re-flipped once — accepted because no such installs exist outside the owner's test fleet, which already migrated.
+- New permanent regression tests assert the activation-seeded default at its write site (the gap that let 2.9.33.40 ship green) and the widened migration's behavior across all populations.
+
+### Changed
+- Public source mirror (`SwisswpSuite_Public/plugin-src`) re-synced to this exact version (it had been stale at 2.9.33.38 while shipped bundles changed — WordPress.org Guideline 4).
+
+## [2.9.33.40] - 2026-09-01
+
+### Security
+- The backup storage directory (`wp-content/uploads/swisswpsuite-backups/`) is now created with deny-all `.htaccess` + `index.php` protection at every live creation path (engine start/init/complete, scheduled automation, cancel), via a new shared `SwissWPSuite_Archiver::secure_data_directory()`; existing installs are backfilled on their next activation/update. Previously the modern tick-engine path created it unprotected (only the legacy worker path protected it), leaving completed backup archives exposed on hosts with directory indexing.
+
+### Fixed
+- The wp-config.php 0600 permission-hardening action now records the prior file mode (idempotently) and `uninstall.php` restores it (fallback 0644) — the same revert guarantee added for the root `.htaccess` in 2.9.33.39.
+
+### Changed
+- readme.txt condensed from 11,475 to 9,933 bytes (under the directory's 10KB threshold); every disclosure fact preserved, External Services and changelog sections untouched.
+
+## [2.9.33.39] - 2026-08-31
+
+### Changed
+- Post-restore recovery no longer rewrites the WordPress core `active_plugins` option. Plugins referenced by a restored database but missing on disk are left untouched and reported in a dismissible notice that survives the post-restore reload (`GET /backup/local/list` `missing_plugins_report` + dismiss endpoint). WordPress core already skips missing plugin files safely at load time.
+- The plugin auto-update preference is opt-in (default off), only ever ADDS enablement, and never overrides the user's own WordPress per-plugin auto-update choice. A one-time migration resets the previous always-on default to off (re-enable in Settings if desired). Disclosed in readme.txt.
+- Restore extraction routes SQL dumps (including all candidates of ambiguous multi-dump archives) directly into the protected uploads temp directory - never into the site root - via entry-selective two-pass extraction, with post-restore cleanup of both locations.
+
+### Fixed
+- Silent corruption of double-serialized (nested-serialized) values during domain-change restore: string leaves that are themselves serialized payloads are now detected via strict round-trip and re-descended (depth-capped), on both the normal and the large-query fallback paths.
+- `swisswpsuite_security_log_retention_days` now survives restore (bounded integer validation) instead of being discarded and logged as tampering.
+- Restores on sites that never configured some security settings no longer log false "Possible tampered file" warnings for them; three optional toggles are no longer blanked to an empty string on restore.
+- A stale "missing plugins" notice from an earlier restore is cleared when a later restore's recovery finds nothing missing.
+- The root `.htaccess` read-only hardening action now records the prior permission mode (idempotently) and `uninstall.php` restores it, so deleting the plugin no longer leaves the file locked read-only.
+- `swisswpsuite_firewall_simulation_mode_user_set` registered in the config manifest.
+- The SEO page's "Check Live File" llms.txt link no longer renders (404-ing) while the feature is disabled; the disabled state carries a screen-reader-accessible explanation and AA-compliant contrast.
+
 ## [2.9.33.38] - 2026-08-24
 
 ### Erratum (corrections to the 2.9.33.36 and 2.9.33.37 entries below)

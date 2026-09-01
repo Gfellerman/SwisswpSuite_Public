@@ -4,7 +4,7 @@ Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.9.33.38
+Stable tag: 2.9.33.41
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,64 +12,60 @@ WordPress security & backup core - malware scanner, firewall, backup & restore, 
 
 == Description ==
 
-SwissSuite AI (free) is a security and backup core for WordPress: local malware scanning, firewall, hardening, full backup/restore, quarantine, login protection, an on-page SEO audit, and an XML sitemap - all on your server, no account or AI calls required.
-
-Everything in the free plugin runs locally, no AI processing. Pro adds cloud backup, two-factor auth, geo-blocking, migration, sync, and AI tools.
+SwissSuite AI (free) is a local WordPress security & backup core: malware scanning, firewall, hardening, backup/restore, quarantine, login protection, on-page SEO, XML sitemap - no account, no AI. Pro adds cloud backup, 2FA, geo-blocking, migration, sync, AI tools.
 
 On activation the plugin disables the theme/plugin file editor by default; re-enable it at Security -> Hardening.
 
 = Security (free) =
-* Malware scanner - 38+ local signature patterns; Quick Scan (on-demand + daily) checks the newest 100 of up to 5,000 tracked files per pass, skipping 32 trusted plugin/theme paths and /vendor/ folders; no file contents leave your site
-* Deep malware scan - multi-phase local analysis of active plugins, the active theme (and parent), and your uploads folder, up to 5,000 PHP files per run; AI result grading is a Pro add-on
-* Web Application Firewall - starts in observe (simulation) mode on install so it never blocks by surprise; enable active blocking any time at Security -> Firewall, with a threat log and automatic IP banning
-* IP management - manually ban, unban, and allowlist IP addresses
-* One-click hardening - 12 hardening options (XML-RPC, file editing, user enumeration, REST API, bot blocking, and more)
-* Login protection - brute-force lockout plus comment/contact-form honeypot spam blocking
+* Malware scanner - 38+ local signatures; Quick Scan (daily + on-demand) checks 100 of up to 5,000 tracked files/pass, skipping 32 trusted paths + /vendor/; no file contents leave your site
+* Deep malware scan - local analysis of active plugins/theme (+parent) and uploads, up to 5,000 PHP files/run; AI grading is Pro
+* WAF - starts in observe mode; enable active blocking at Security -> Firewall (threat log + auto IP banning)
+* IP management - ban, unban, allowlist IPs
+* One-click hardening - 12 options (XML-RPC, file editing, user enumeration, REST API, bot blocking, more)
+* Login protection - brute-force lockout plus honeypot spam blocking
 * Malware quarantine - isolate suspicious files before removal
-* Security dashboard, threat log, and daily email security report
+* Security dashboard, threat log, daily email report
 
 = Backup & restore (free) =
-* Full WordPress backup - files plus database, pure-PHP zip engine (no shell exec); files over 100MB are skipped
-* One-click restore from any local backup, including AES-256-encrypted archives
-* Optional AES-256 encryption at rest for backup archives
-* Keeps your 10 most recent local backups by default (configurable, Backup settings)
-* Adaptive backup engine tuned for slow shared hosting
+* Full backup - files + database, pure-PHP zip engine (no shell exec); files over 100MB skipped
+* One-click restore, incl. AES-256-encrypted archives
+* Optional AES-256 encryption at rest
+* Keeps 10 most recent backups by default (configurable)
+* Adaptive engine tuned for slow shared hosting
 
 = SEO (free) =
-* On-page SEO audit and score, runs locally, no AI
-* XML sitemap generator with custom post type support
-* Optional /llms.txt AI-summary file, off by default (SEO Settings); skips password-protected and unpublished content
+* On-page SEO audit and score, local, no AI
+* XML sitemap with custom post type support
+* Optional /llms.txt AI-summary file, off by default; skips password-protected/unpublished content
 
 = SwissSuite AI Pro =
 
-Upgrade at https://swisswpsecure.com/products/ to unlock these Pro-only features:
+Upgrade at https://swisswpsecure.com/products/ for:
 
-* Two-Factor Authentication (TOTP) for every user role
-* Geo-blocking by country (allow/deny rules)
-* Advanced firewall rules - expanded attack-pattern library (XXE, command injection)
-* Cloud backup - Google Drive, S3, Backblaze B2, Dropbox, FTP/SFTP
-* Scheduled backups with rolling retention
-* Site migration - plugin-to-plugin and standalone-receiver modes
-* Two-way content sync between staging and production
-* Update-guard - automatic rollback and pre-update snapshots
-* AI deep malware analysis (Groq-powered)
-* AI SEO - bulk meta generation plus vision AI for alt text
-* AI content - rewriting, tone control, and generation
-* Vulnerability lookups via WPScan/Patchstack (BYO API key)
-
-AI and remote-service features above run only in SwissSuite AI Pro.
+* Two-Factor Authentication (TOTP), every role
+* Geo-blocking by country
+* Advanced firewall rules (XXE, command injection)
+* Cloud backup - GDrive, S3, B2, Dropbox, FTP/SFTP
+* Scheduled backups, rolling retention
+* Site migration (plugin-to-plugin or standalone receiver)
+* Two-way staging/production content sync
+* Update-guard - rollback + pre-update snapshots
+* AI deep malware analysis (Groq)
+* AI SEO - bulk meta + vision alt text
+* AI content generation, rewriting, tone control
+* WPScan/Patchstack vulnerability lookups (BYO key)
 
 = Privacy & Data =
 
-The free plugin does not phone home on install. No telemetry, no phone-home tracking, no account, and no license key. An optional, off-by-default local pageview counter (Dashboard Traffic Counter) powers the Dashboard traffic chart; no IP addresses or cookies stored, nothing leaves your server. Security email alerts and the daily security report are off until enabled. All scanning, backup, and SEO analysis runs locally, and the plugin makes no AI calls. The only external service contacted is WordPress.org - for update checks, core-file checksum verification during a scan, and a daily abandoned-plugin check; see External Services below. Failed-login IPs and usernames are logged locally; the lockout itself expires in 15 minutes, but the log row is kept for a separate, configurable retention window (default 90 days) before automatic deletion. SwissSuite AI can route site email through an SMTP server (Settings -> General); off until configured, password stored in your database. Deleting the plugin removes its settings, database tables, quarantined files, backup archives, and all other data it created under wp-content/uploads/ (swisswpsuite-backups, -quarantine, -snapshots, -journals, -transport, -exports-temp, -temp, swisssuite-ai) - download anything you need first.
+No phone-home, telemetry, account, or license key. Scanning, backup, and SEO run locally - no AI calls. Only WordPress.org is contacted: update checks, checksum verification, and a daily abandoned-plugin check (see External Services). The optional, off-by-default Dashboard Traffic Counter stores no IPs/cookies and sends nothing off-server. Security alerts and the daily report stay off until enabled. Auto-updates honor WordPress core's own per-plugin toggle; the plugin's own off-by-default setting can only add consent, never remove it. Failed-login IPs/usernames are logged locally, retained for a configurable window (default 90 days) after the 15-minute lockout expires. An optional SMTP relay (off until configured, password stored in your database) can route site email. Deleting the plugin removes its settings, tables, quarantined files, backups, and all data under wp-content/uploads/ (swisswpsuite-backups, -quarantine, -snapshots, -journals, -transport, -exports-temp, -temp, swisssuite-ai) - download first.
 
 == Source Code ==
 
-SwissSuite AI is free software licensed under GPLv2 or later. The complete, uncompiled, human-readable source code - including the React and TypeScript sources behind the admin interface and the build scripts used to generate the distributed minified JavaScript and CSS - is published at:
+SwissSuite AI is free software (GPLv2 or later). The complete, uncompiled, human-readable source - including the React/TypeScript admin UI and the build scripts for the distributed JS/CSS - is published at:
 
 https://github.com/Gfellerman/SwisswpSuite_Public/tree/main/plugin-src
 
-Build instructions for regenerating the compiled assets from source are in that directory's BUILDING.md.
+Build instructions for regenerating the compiled assets are in that directory's BUILDING.md.
 
 == External Services ==
 
@@ -103,7 +99,12 @@ For full details on what data is transmitted and your rights, see our Privacy Po
 
 == Changelog ==
 
-= 2.9.33.38 =
-* Review-round fixes: Plugin Check i18n errors resolved; SMTP password no longer lost on hosts without OpenSSL/Sodium; restore skips foreign-prefix tables per statement; editor content-save firewall handling corrected; changelog errata for four earlier entries; disclosure and hygiene fixes.
+= 2.9.33.41 =
+* Restores the opt-in (off) auto-update default that build 2.9.33.40 shipped without, and widens the one-time reset to cover installs that took 2.9.33.40; a regression test now guards the seeded default.
+* Published source mirror re-synced to this exact version.
+
+= 2.9.33.40 =
+* Backup storage directory now gets deny-all web-access protection on every creation path; existing installs backfilled on update.
+* wp-config.php permission hardening records the prior mode; uninstall restores it (as for .htaccess in 2.9.33.39).
 
 For the full version history, see CHANGELOG.md in the plugin folder or https://github.com/Gfellerman/SwisswpSuite_Public/blob/main/CHANGELOG.md

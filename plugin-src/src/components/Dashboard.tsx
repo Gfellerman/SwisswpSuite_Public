@@ -185,7 +185,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 drifts by construction — there is no mechanism keeping it
                 in sync). */}
             <span className="text-swiss-red text-[12px] font-black tracking-[0.5em] uppercase">
-              SwissSuite v{window.swisswpsuiteData?.version || "2.9.33.38"}
+              SwissSuite v{window.swisswpsuiteData?.version || "2.9.33.41"}
             </span>
           </div>
           <h2 className="text-foreground dark:text-foreground mb-6 text-7xl leading-none font-black tracking-tighter">
