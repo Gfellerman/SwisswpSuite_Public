@@ -4,7 +4,7 @@ Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.9.33.44
+Stable tag: 2.9.33.46
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,9 @@ On activation the plugin disables the theme/plugin file editor by default; re-en
 * XML sitemap with custom post type support
 * Optional /llms.txt AI-summary file, off by default; skips password-protected/unpublished content
 
+= Maintenance (free) =
+* Database maintenance - clear the plugin's own transients, delete revisions/spam/trash/stale drafts, remove orphaned metadata/relationships, optimize tables, and drop tables left behind by uninstalled plugins (every action confirmed; table removal previews first)
+
 = SwissSuite AI Pro =
 
 Upgrade at https://swisswpsecure.com/products/ for:
@@ -58,6 +61,8 @@ Upgrade at https://swisswpsecure.com/products/ for:
 = Privacy & Data =
 
 No phone-home, telemetry, account, or license key. Scanning, backup, and SEO run locally - no AI calls. Only WordPress.org is contacted by default: update checks, checksum verification, and a daily abandoned-plugin check (see External Services). The optional, off-by-default Dashboard Traffic Counter stores no IPs/cookies and sends nothing off-server. Security alerts and the daily report stay off until enabled. Auto-updates honor WordPress core's own per-plugin toggle; the plugin's own off-by-default setting can only add consent, never remove it. Failed-login IPs/usernames are logged locally, retained for a configurable window (default 90 days) after the 15-minute lockout expires. An optional SMTP relay (off until configured; you supply the server address of your own mail provider, whose password is stored in your database) can route site email. Deleting the plugin removes its settings, tables, quarantined files, backups, and all data under wp-content/uploads/ (swisswpsuite-backups, -quarantine, -snapshots, -journals, -transport, -exports-temp, -temp, swisssuite-ai) - download first.
+
+Some security actions modify files outside the plugin folder. The "disable debug mode" fix rewrites wp-config.php after an explicit confirmation (the original is backed up first). One-click hardening options write rule blocks into the site-root .htaccess and the uploads folder's .htaccess (removed again on deactivation). The "fix permissions" actions set stricter file modes on wp-config.php and .htaccess (the prior modes are recorded and restored at uninstall if the files are still as the plugin left them). The maintenance tool can permanently delete post revisions, trashed content, spam comments, and stale auto-drafts after a single confirmation, and, after a preview run and a second explicit confirmation, drop database tables it identifies as orphaned by uninstalled plugins.
 
 == Source Code ==
 
@@ -99,10 +104,10 @@ For full details on what data is transmitted and your rights, see our Privacy Po
 
 == Changelog ==
 
+= 2.9.33.46 =
+* Privacy & Data section now discloses the actions that modify wp-config.php, the root .htaccess, and file permissions, plus the maintenance tool's deletion and orphaned-table removal steps; the maintenance tool is now listed in the feature description.
+
 = 2.9.33.44 =
 * Author URI and all internal links moved off the "www" subdomain (CDN-edge reachability variance affected automated checkers); apex domain verified responsive to all user agents.
-
-= 2.9.33.43 =
-* Plugin URI updated to a directly-responding page (review feedback); every core-include require site now carries a defensive guard, enforced by a permanent build gate.
 
 For the full version history, see CHANGELOG.md in the plugin folder or https://github.com/Gfellerman/SwisswpSuite_Public/blob/main/CHANGELOG.md

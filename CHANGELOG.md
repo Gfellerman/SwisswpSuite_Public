@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.46] - 2026-09-01
+
+### Changed
+- Description now lists the Free edition's database maintenance tool; Privacy & Data disclosure wording tightened: single-confirmation deletions vs. preview-plus-confirmation table removal.
+
+## [2.9.33.45] - 2026-09-01
+
+### Changed
+- Privacy & Data section in readme.txt now discloses the file-system-level side effects of several security/maintenance actions: the debug-mode-disable fix rewrites wp-config.php (backed up first, gated on explicit confirmation); one-click hardening writes rule blocks into the site-root and uploads-folder .htaccess files (removed on deactivation); the permissions-fix actions tighten wp-config.php and .htaccess file modes (prior modes recorded, restored at uninstall if unchanged since); and the maintenance tool's one-step deletions (revisions, trashed content, spam comments, stale auto-drafts) plus its preview-then-confirm orphaned-table drop are now named explicitly. Responds to an independent pre-submission review's disclosure notes FLAG-2/3/5.
+
 ## [2.9.33.44] - 2026-09-01
 
 ### Changed
