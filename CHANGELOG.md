@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.44] - 2026-09-01
+
+### Changed
+- Author URI and every internal `@link` reference (85 files incl. two TS headers feeding the compiled bundle) moved off the "www"-prefixed hostname to the apex domain: the subdomain rides a CDN edge with per-network reachability variance that timed out automated review checkers, while the apex answers all user agents in under 2s (verified after disabling the site's plugin-level bot controls). No shipped file reconstructs the retired hostname as a fetchable literal.
+
 ## [2.9.33.43] - 2026-09-01
 
 ### Changed

@@ -1,7 +1,7 @@
 {
   "name": "swisssuite-ai-admin",
   "private": true,
-  "version": "2.9.33.43",
+  "version": "2.9.33.44",
   "type": "module",
   "scripts": {
     "dev": "vite",
