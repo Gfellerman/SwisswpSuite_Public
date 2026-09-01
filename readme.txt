@@ -4,7 +4,7 @@ Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.9.33.41
+Stable tag: 2.9.33.42
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -57,7 +57,7 @@ Upgrade at https://swisswpsecure.com/products/ for:
 
 = Privacy & Data =
 
-No phone-home, telemetry, account, or license key. Scanning, backup, and SEO run locally - no AI calls. Only WordPress.org is contacted: update checks, checksum verification, and a daily abandoned-plugin check (see External Services). The optional, off-by-default Dashboard Traffic Counter stores no IPs/cookies and sends nothing off-server. Security alerts and the daily report stay off until enabled. Auto-updates honor WordPress core's own per-plugin toggle; the plugin's own off-by-default setting can only add consent, never remove it. Failed-login IPs/usernames are logged locally, retained for a configurable window (default 90 days) after the 15-minute lockout expires. An optional SMTP relay (off until configured, password stored in your database) can route site email. Deleting the plugin removes its settings, tables, quarantined files, backups, and all data under wp-content/uploads/ (swisswpsuite-backups, -quarantine, -snapshots, -journals, -transport, -exports-temp, -temp, swisssuite-ai) - download first.
+No phone-home, telemetry, account, or license key. Scanning, backup, and SEO run locally - no AI calls. Only WordPress.org is contacted by default: update checks, checksum verification, and a daily abandoned-plugin check (see External Services). The optional, off-by-default Dashboard Traffic Counter stores no IPs/cookies and sends nothing off-server. Security alerts and the daily report stay off until enabled. Auto-updates honor WordPress core's own per-plugin toggle; the plugin's own off-by-default setting can only add consent, never remove it. Failed-login IPs/usernames are logged locally, retained for a configurable window (default 90 days) after the 15-minute lockout expires. An optional SMTP relay (off until configured; you supply the server address of your own mail provider, whose password is stored in your database) can route site email. Deleting the plugin removes its settings, tables, quarantined files, backups, and all data under wp-content/uploads/ (swisswpsuite-backups, -quarantine, -snapshots, -journals, -transport, -exports-temp, -temp, swisssuite-ai) - download first.
 
 == Source Code ==
 
@@ -99,12 +99,11 @@ For full details on what data is transmitted and your rights, see our Privacy Po
 
 == Changelog ==
 
+= 2.9.33.42 =
+* Removes a previously-flagged promotional phrase that survived in internal file headers and one compiled asset; wording and notices polished per review-simulation feedback.
+
 = 2.9.33.41 =
 * Restores the opt-in (off) auto-update default that build 2.9.33.40 shipped without, and widens the one-time reset to cover installs that took 2.9.33.40; a regression test now guards the seeded default.
 * Published source mirror re-synced to this exact version.
-
-= 2.9.33.40 =
-* Backup storage directory now gets deny-all web-access protection on every creation path; existing installs backfilled on update.
-* wp-config.php permission hardening records the prior mode; uninstall restores it (as for .htaccess in 2.9.33.39).
 
 For the full version history, see CHANGELOG.md in the plugin folder or https://github.com/Gfellerman/SwisswpSuite_Public/blob/main/CHANGELOG.md

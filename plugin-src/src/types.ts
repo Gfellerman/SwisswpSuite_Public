@@ -1,5 +1,5 @@
 /**
- * SwissSuite AI - The Ultimate All-in-One WordPress Plugin
+ * SwissSuite AI - WordPress Security, Backup & SEO Plugin
  *
  * @package   SwissSuite_AI
  * @author    Swisswpsecure Team <info@swisswpsecure.com>

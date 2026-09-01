@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.42] - 2026-09-01
+
+### Changed
+- Purged a previously reviewer-flagged promotional tagline from all 87 remaining internal file headers, `composer.json`, and (via rebuild) the compiled admin bundle; replaced with the factual "WordPress Security, Backup & SEO Plugin". A permanent `verify_zip.sh` assertion now blocks any build carrying the old tagline.
+- readme Privacy wording clarified: WordPress.org is the only host contacted **by default**; the optional SMTP relay routes mail through the admin's own configured provider.
+- The two build-manifest failure notices are now dismissible and user-actionable (reinstall guidance instead of developer build commands).
+
 ## [2.9.33.41] - 2026-09-01
 
 ### Fixed
