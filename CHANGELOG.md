@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.43] - 2026-09-01
+
+### Changed
+- Plugin URI header updated to `https://swisswpsecure.com/products/` — the previous `/resources/` URL (with a www redirect leg) timed out for the directory reviewer's checker; the new target answers directly in under 2 seconds from multiple networks.
+- The one `require_once ABSPATH . 'wp-admin/...'` site lacking a defensive conditional guard (api-security.php, WP_Filesystem load) now has one; a permanent `verify_zip.sh` assertion fails any future build containing an unguarded core-include require.
+
 ## [2.9.33.42] - 2026-09-01
 
 ### Changed

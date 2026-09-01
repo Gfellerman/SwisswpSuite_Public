@@ -4,7 +4,7 @@ Tags: security, malware scanner, firewall, backup, login security
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.9.33.42
+Stable tag: 2.9.33.43
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -99,11 +99,10 @@ For full details on what data is transmitted and your rights, see our Privacy Po
 
 == Changelog ==
 
+= 2.9.33.43 =
+* Plugin URI updated to a directly-responding page (review feedback); every core-include require site now carries a defensive guard, enforced by a permanent build gate.
+
 = 2.9.33.42 =
 * Removes a previously-flagged promotional phrase that survived in internal file headers and one compiled asset; wording and notices polished per review-simulation feedback.
-
-= 2.9.33.41 =
-* Restores the opt-in (off) auto-update default that build 2.9.33.40 shipped without, and widens the one-time reset to cover installs that took 2.9.33.40; a regression test now guards the seeded default.
-* Published source mirror re-synced to this exact version.
 
 For the full version history, see CHANGELOG.md in the plugin folder or https://github.com/Gfellerman/SwisswpSuite_Public/blob/main/CHANGELOG.md
