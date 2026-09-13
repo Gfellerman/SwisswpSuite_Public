@@ -71,7 +71,7 @@ Host: api.wordpress.org
 Used for: (1) core file checksum verification, to detect modified/infected core files; (2) standard plugin update checks, performed by WordPress itself; (3) a daily check of installed plugins against the WordPress.org directory, warning if one was closed or removed (often a sign of an unpatched or compromised plugin).
 Data sent: your WordPress version and site locale (checksum requests), and your installed plugin slugs (update checks, abandoned-plugin check). No personal data, file contents, or site content is sent.
 When contacted: (1) runs during any security scan that includes core-file integrity checking, and automatically once per day via a background check. (2) runs whenever WordPress checks for plugin updates - standard WordPress behavior, not specific to this plugin. (3) runs automatically once per day, and immediately if you click "Refresh" on the Abandoned Plugins panel; can be turned off at Settings -> Scan Coverage -> "Abandoned Plugin Detection".
-Terms of Service: https://wordpress.org/about/license/
+Terms of Service: WordPress.org publishes no separate terms for this API, which WordPress core itself calls on every site.
 Privacy Policy: https://wordpress.org/about/privacy/
 
 For full details on what data is transmitted and your rights, see our Privacy Policy at https://swisswpsecure.com/privacy.
