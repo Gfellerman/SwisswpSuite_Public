@@ -17,7 +17,7 @@ WordPress.org resubmission release.
 - The deep scan's status response lists only the phases this package performs (file enumeration, then a local signature scan).
 - "Hide WordPress Fingerprints" limits itself to the WordPress version: it removes it from the generator tag and from asset URLs that carry it, and leaves other plugins' asset version strings and page output untouched.
 - Scan history records now use the internal type name `security_audit`; existing records are relabelled automatically the first time this update runs, no action needed.
-- Internal housekeeping: unused option keys, a database table name and a log-message filter that nothing in this package reads were removed; deactivation now clears every scheduled event this plugin owns; the REST route for the security audit is `/security/scan/security-audit`.
+- Internal housekeeping: unused option keys, a database table name and a log-message filter that nothing in this package reads were removed; deactivation now clears every scheduled event this plugin owns.
 
 ## [2.9.33.53] - 2026-09-07
 
