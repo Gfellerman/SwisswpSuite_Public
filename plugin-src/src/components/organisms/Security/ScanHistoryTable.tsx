@@ -1,13 +1,7 @@
 /**
  * ScanHistoryTable — extracted from SecurityHub.tsx (HIGH-36)
- * Renders the History tab: full scan records table (ARS R-05, 2026-08-22 —
- * the server already returns the full window to every user; the table no
- * longer truncates). The "additional plan required" banner that used to sit
- * above the table (see the sibling notice component this file no longer
- * imports) was removed the same day (controller-verified: neither
- * `/security/sentinel/scan-history` list nor `/{id}` record-view route gates
- * on a plan/capability server-side — `check_permission` is `manage_options`
- * only — so that banner's copy advertised a paywall that does not exist).
+ * Renders the History tab: the full scan-records table. The server returns
+ * the whole window, so the table shows every row it is given.
  */
 import React from "react";
 import { History, Loader } from "lucide-react";
@@ -15,10 +9,7 @@ import { Badge } from "../../ui/Badge";
 import { Button } from "../../ui/Button";
 import { SentinelGradeBadge } from "../Sentinel/SentinelGradeBadge";
 import { ScanHistoryRecord } from "../../../types";
-import {
-  HISTORY_LABEL_DEEP_MALWARE,
-  HISTORY_LABEL_FULL_AI,
-} from "../Scan/scanConstants.pro";
+import { getScanHistoryBadge } from "./scanHistoryBadge";
 
 interface ScanHistoryTableProps {
   scanHistory: ScanHistoryRecord[];
@@ -102,30 +93,12 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
                       })}
                     </td>
                     <td className="p-4">
-                      {/* v2.9.29.0 — 'malware_deep' is the new Deep Malware
-                          Scan pipeline scan type. 'full_ai' and 'full' are
-                          legacy types kept so historical records render
-                          correctly after the 3-Scan Redesign rollout. */}
-                      <Badge
-                        variant={
-                          record.scan_type === "ai_audit"
-                            ? "info"
-                            : record.scan_type === "full" ||
-                                record.scan_type === "full_ai" ||
-                                record.scan_type === "malware_deep"
-                              ? "success"
-                              : "neutral"
-                        }
-                      >
-                        {record.scan_type === "ai_audit"
-                          ? "Security Audit"
-                          : record.scan_type === "malware_deep"
-                            ? HISTORY_LABEL_DEEP_MALWARE
-                            : record.scan_type === "full" ||
-                                record.scan_type === "full_ai"
-                              ? HISTORY_LABEL_FULL_AI
-                              : "Quick Scan"}
-                      </Badge>
+                      {(() => {
+                        const badge = getScanHistoryBadge(record.scan_type);
+                        return (
+                          <Badge variant={badge.variant}>{badge.label}</Badge>
+                        );
+                      })()}
                     </td>
                     <td className="flex justify-center p-4">
                       {record.security_grade ? (

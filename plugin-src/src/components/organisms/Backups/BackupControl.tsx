@@ -1,7 +1,6 @@
 // frontend-specialist fix: atoms/ → ui/ to eliminate cva TDZ in shared chunk
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CLOUD_TTL } from "../../../lib/cacheTtl";
 import { Card } from "../../ui/Card";
 import { Button } from "../../ui/Button";
 import {
@@ -11,7 +10,7 @@ import {
 } from "../../../hooks/useBackups";
 import { useSettings } from "../../../hooks/useSettings";
 import { wpApi } from "../../../services/api";
-import { toast } from "sonner";
+import { toast } from "../../../lib/toast";
 import {
   Loader2,
   AlertTriangle,
@@ -19,8 +18,6 @@ import {
   Database,
   FileText,
   XCircle,
-  Server,
-  Cloud,
   Lock,
   FolderX,
   X,
@@ -29,8 +26,6 @@ import type { CreateBackupVariables } from "../../../hooks/useBackups";
 import type { BackupExcludePathsResponse } from "../../../types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type CloudProvider = "gdrive" | "dropbox" | "s3" | "ftp" | "b2";
 
 interface NestedInstallDialogState {
   isOpen: boolean;
@@ -41,121 +36,6 @@ interface NestedInstallDialogState {
   /** Whether the "Exclude it" button is in-flight (saving exclusions). */
   isSaving: boolean;
 }
-type BackupDestination = "local" | CloudProvider;
-
-// Normalised status shape — every provider endpoint returns at least one of these.
-// We treat a provider as "available" when ANY truthy flag is present.
-interface CloudProviderStatus {
-  connected?: boolean;
-  configured?: boolean;
-  has_keys?: boolean;
-}
-
-// ─── Hook: Connected Providers ────────────────────────────────────────────────
-// refetchOnMount: "always" ensures we get live status on every page visit, not
-// cached data from before the user added credentials.  staleTime: 0 lets
-// background refetches stay fast while mount always goes to the network.
-
-interface ConnectedProviders {
-  gdrive: boolean;
-  dropbox: boolean;
-  s3: boolean;
-  ftp: boolean;
-  b2: boolean;
-  isLoading: boolean;
-}
-
-/** Returns true if any truthy flag is present in the status response. */
-function isProviderReady(data: CloudProviderStatus | undefined): boolean {
-  if (!data) return false;
-  return !!(data.connected || data.configured || data.has_keys);
-}
-
-function useConnectedProviders(): ConnectedProviders {
-  // EXP-4: Skip cloud status queries for free-tier users.
-  // All 5 cloud endpoints require check_pro_permission — free-tier gets 403 on every call.
-  // Without this guard, 5 providers × 2 retries = 10 failing requests per backup page visit.
-  const hasCloudCapability =
-    Array.isArray(window.swisswpsuiteData?.license?.capabilities) &&
-    window.swisswpsuiteData.license.capabilities.includes("backup_cloud");
-
-  // v2.9.30.117: staleTime 0→CLOUD_TTL (120 s), refetchOnMount "always"→true.
-  // Cloud provider connection state changes only on user action (connect/disconnect),
-  // which calls queryClient.invalidateQueries on the matching key — so freshness
-  // is guaranteed on action while idle tab-switches are served from cache.
-  const queryOpts = {
-    staleTime: CLOUD_TTL,
-    refetchOnMount: true,
-    retry: 1,
-    enabled: hasCloudCapability,
-  };
-
-  const { data: gdriveData, isLoading: gdriveLoading } =
-    useQuery<CloudProviderStatus>({
-      queryKey: ["gdrive-status"],
-      queryFn: () =>
-        wpApi<CloudProviderStatus>(
-          `/backup/cloud/gdrive/status?_nocache=${Date.now()}`
-        ),
-      ...queryOpts,
-    });
-  const { data: dropboxData, isLoading: dropboxLoading } =
-    useQuery<CloudProviderStatus>({
-      queryKey: ["dropbox-status"],
-      queryFn: () =>
-        wpApi<CloudProviderStatus>(
-          `/backup/cloud/dropbox/status?_nocache=${Date.now()}`
-        ),
-      ...queryOpts,
-    });
-  // S3 uses a dedicated status endpoint (not /cloud/list which only returns
-  // configured=true after files already exist there).
-  const { data: s3Data, isLoading: s3Loading } = useQuery<CloudProviderStatus>({
-    queryKey: ["s3-status"],
-    queryFn: () =>
-      wpApi<CloudProviderStatus>(
-        `/backup/cloud/s3/status?_nocache=${Date.now()}`
-      ),
-    ...queryOpts,
-  });
-  const { data: ftpData, isLoading: ftpLoading } =
-    useQuery<CloudProviderStatus>({
-      queryKey: ["ftp-status"],
-      queryFn: () =>
-        wpApi<CloudProviderStatus>(
-          `/backup/cloud/ftp/status?_nocache=${Date.now()}`
-        ),
-      ...queryOpts,
-    });
-  const { data: b2Data, isLoading: b2Loading } = useQuery<CloudProviderStatus>({
-    queryKey: ["b2-status"],
-    queryFn: () =>
-      wpApi<CloudProviderStatus>(
-        `/backup/cloud/b2/status?_nocache=${Date.now()}`
-      ),
-    ...queryOpts,
-  });
-
-  return {
-    gdrive: isProviderReady(gdriveData),
-    dropbox: isProviderReady(dropboxData),
-    s3: isProviderReady(s3Data),
-    ftp: isProviderReady(ftpData),
-    b2: isProviderReady(b2Data),
-    isLoading:
-      gdriveLoading || dropboxLoading || s3Loading || ftpLoading || b2Loading,
-  };
-}
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const CLOUD_DESTINATION_LABELS: Record<CloudProvider, string> = {
-  gdrive: "Google Drive",
-  dropbox: "Dropbox",
-  s3: "Amazon S3",
-  ftp: "FTP",
-  b2: "Backblaze B2",
-};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -168,7 +48,6 @@ export const BackupControl: React.FC = () => {
   const { settings: appSettings } = useSettings();
   const encryptionActive = Boolean(appSettings?.hasEncryptionPassword);
   const [scope, setScope] = useState<"full" | "db" | "files">("full");
-  const [destination, setDestination] = useState<BackupDestination>("local");
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
 
   // ── Nested-install detection dialog state ──────────────────────────────
@@ -202,8 +81,6 @@ export const BackupControl: React.FC = () => {
   // re-adopts the same job → engine status returns "complete" again → loop → #185.
   const terminatedJobIds = useRef<Set<string>>(new Set());
 
-  const providers = useConnectedProviders();
-
   // Poll engine status every 2s while a job is active.
   const { data: engineStatusResponse } = useBackupEngineStatus(engineJobId);
   const engineStatus = engineStatusResponse?.data ?? null;
@@ -213,8 +90,8 @@ export const BackupControl: React.FC = () => {
   // MANUAL backup via /backup/engine/active and re-adopt its job_id. Adopting it
   // re-enables useBackupEngineStatus (which keys off engineJobId) so the existing
   // progress UI reappears and keeps advancing. We only rediscover while we are NOT
-  // already tracking a job, and only adopt the manual job (automations render their
-  // own progress inside BackupAutomationsPanel via automationJobIds).
+  // already tracking a job, and only adopt a job whose trigger is "manual" — a
+  // job started any other way is not this control's progress bar to display.
   const { data: activeJobsResponse } = useActiveBackupJobs(!engineJobId);
   useEffect(() => {
     if (engineJobId) return; // Already tracking — nothing to rediscover.
@@ -265,12 +142,6 @@ export const BackupControl: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engineStatus?.status, queryClient]);
-
-  // Build the list of connected cloud destinations to show in the picker.
-  const connectedCloudProviders = (
-    Object.keys(CLOUD_DESTINATION_LABELS) as CloudProvider[]
-  ).filter((p) => providers[p]);
-  const hasMultipleDestinations = connectedCloudProviders.length > 0;
 
   // ── Focusable selector (matches HardeningConfirmDialog pattern) ──────────
   const FOCUSABLE_SELECTOR =
@@ -326,9 +197,6 @@ export const BackupControl: React.FC = () => {
     const controller = new AbortController();
     abortControllerRef.current = controller;
     const vars: CreateBackupVariables = { scope, signal: controller.signal };
-    if (destination !== "local") {
-      vars.destination = destination;
-    }
     createBackup(vars, {
       onSuccess: (data) => {
         const jobId = (data as { job_id?: string }).job_id;
@@ -337,7 +205,7 @@ export const BackupControl: React.FC = () => {
         }
       },
     });
-  }, [createBackup, scope, destination]);
+  }, [createBackup, scope]);
 
   // ── "Save Backup Now" click — detect unexcluded nested installs first ────
   const handleCreate = useCallback(
@@ -395,8 +263,8 @@ export const BackupControl: React.FC = () => {
         method: "POST",
         body: JSON.stringify({ paths: next }),
       });
-      // Invalidate the exclude-paths cache so BackupAutomationsPanel stays
-      // in sync if the user opens it later in the same session.
+      // Invalidate the exclude-paths cache so anything reading it elsewhere
+      // stays in sync if the user opens it later in the same session.
       queryClient.invalidateQueries({ queryKey: ["backup-exclude-paths"] });
       toast.success("Nested install excluded. Starting backup…");
     } catch (err) {
@@ -438,8 +306,8 @@ export const BackupControl: React.FC = () => {
 
     try {
       if (engineJobId) {
-        // Phase 5: engine-based cancel — sends job_id so the engine can clean up
-        // partial ZIPs and abort cloud sessions for this specific job.
+        // Phase 5: engine-based cancel — sends job_id so the engine can clean
+        // up any partial ZIPs for this specific job.
         await wpApi<{ success: boolean }>("/backup/engine/cancel", {
           method: "POST",
           body: JSON.stringify({ job_id: engineJobId }),
@@ -757,75 +625,6 @@ export const BackupControl: React.FC = () => {
             })}
           </div>
 
-          {/* ── Destination picker ───────────────────────────────── */}
-          {hasMultipleDestinations && (
-            <div className="space-y-2">
-              <label
-                htmlFor="backup-destination"
-                className="dark:text-foreground block text-sm font-medium text-gray-900"
-              >
-                Save to:
-              </label>
-              <div
-                className="flex flex-wrap gap-2"
-                role="radiogroup"
-                aria-label="Backup destination"
-              >
-                {/* Local option — always present */}
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={destination === "local"}
-                  onClick={() => setDestination("local")}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setDestination("local");
-                    }
-                  }}
-                  className={`inline-flex min-h-[36px] cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all focus:ring-2 focus:ring-blue-500/50 focus:outline-none ${
-                    destination === "local"
-                      ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500 dark:bg-emerald-900/20 dark:text-emerald-400"
-                      : "bg-card border-border dark:text-foreground text-gray-700 hover:border-emerald-400"
-                  } `}
-                >
-                  <Server className="h-3.5 w-3.5" aria-hidden="true" />
-                  Local Server
-                </button>
-
-                {/* Connected cloud providers */}
-                {connectedCloudProviders.map((provider) => (
-                  <button
-                    key={provider}
-                    type="button"
-                    role="radio"
-                    aria-checked={destination === provider}
-                    onClick={() => setDestination(provider)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setDestination(provider);
-                      }
-                    }}
-                    className={`inline-flex min-h-[36px] cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all focus:ring-2 focus:ring-blue-500/50 focus:outline-none ${
-                      destination === provider
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500 dark:bg-emerald-900/20 dark:text-emerald-400"
-                        : "bg-card border-border dark:text-foreground text-gray-700 hover:border-emerald-400"
-                    } `}
-                  >
-                    <Cloud className="h-3.5 w-3.5" aria-hidden="true" />
-                    {CLOUD_DESTINATION_LABELS[provider]}
-                  </button>
-                ))}
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {destination === "local"
-                  ? "Backup will be stored on this server only."
-                  : `Backup will be created locally, then automatically uploaded to ${CLOUD_DESTINATION_LABELS[destination as CloudProvider]}.`}
-              </p>
-            </div>
-          )}
-
           {/* ── Create button + encryption status ────────────────── */}
           <div className="flex flex-col items-center gap-2 pt-2">
             <Button
@@ -876,7 +675,7 @@ export const BackupControl: React.FC = () => {
             aria-modal="true"
             aria-labelledby="nested-install-dialog-title"
             aria-describedby="nested-install-dialog-desc"
-            className="bg-card shadow-premium border-border animate-in zoom-in-95 flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border duration-300"
+            className="bg-card border-border animate-in zoom-in-95 flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border duration-300"
           >
             {/* Header */}
             <div className="border-border flex items-start justify-between gap-4 border-b p-6">

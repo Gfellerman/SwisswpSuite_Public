@@ -46,7 +46,7 @@ import {
   vi,
 } from "vitest";
 
-vi.mock("sonner", () => ({
+vi.mock("../../../lib/toast", () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -59,8 +59,7 @@ vi.mock("../../../services/api", () => ({
   wpApi: vi.fn(),
 }));
 
-type MaintenanceSettingsModule =
-  typeof import("./MaintenanceSettings");
+type MaintenanceSettingsModule = typeof import("./MaintenanceSettings");
 type TestingLibraryModule = typeof import("@testing-library/react");
 type ReactModule = typeof import("react");
 type ApiModule = typeof import("../../../services/api");
@@ -84,9 +83,8 @@ beforeAll(async () => {
   window.ReactDOM = { ...RealReactDOM, ...RealReactDOMClient };
 
   ({ MaintenanceSettings } = await import("./MaintenanceSettings"));
-  ({ render, screen, cleanup, fireEvent, waitFor, within } = await import(
-    "@testing-library/react"
-  ));
+  ({ render, screen, cleanup, fireEvent, waitFor, within } =
+    await import("@testing-library/react"));
   ({ wpApi } = await import("../../../services/api"));
   React = await import("react");
 });
@@ -132,7 +130,7 @@ function setupWpApiMock() {
         });
       }
       return Promise.resolve({});
-    },
+    }
   );
 
   return calls;
@@ -154,9 +152,8 @@ describe("MaintenanceSettings — Drop Orphaned Tables two-step confirm (D-K-5)"
 
     // Multiple "Clean" buttons exist (one per DATABASE_CLEANUP_ACTIONS row) —
     // scope to the one in the "Drop Orphaned Tables" row specifically.
-    const row = screen
-      .getByText("Drop Orphaned Tables")
-      .closest("div")!.parentElement as HTMLElement;
+    const row = screen.getByText("Drop Orphaned Tables").closest("div")!
+      .parentElement as HTMLElement;
     const dropButton = within(row).getByRole("button", { name: /clean/i });
     fireEvent.click(dropButton);
 
@@ -164,15 +161,15 @@ describe("MaintenanceSettings — Drop Orphaned Tables two-step confirm (D-K-5)"
       expect(
         calls.some(
           (c) =>
-            c.body.action === "drop_orphaned_tables" && !c.body.confirm_tables,
-        ),
+            c.body.action === "drop_orphaned_tables" && !c.body.confirm_tables
+        )
       ).toBe(true);
     });
 
     // The dry-run response must never itself carry confirm_tables.
     expect(
       calls.find((c) => c.body.action === "drop_orphaned_tables")?.body
-        .confirm_tables,
+        .confirm_tables
     ).toBeUndefined();
 
     // Confirm dialog now shows the REAL candidate name from the response.
@@ -186,9 +183,8 @@ describe("MaintenanceSettings — Drop Orphaned Tables two-step confirm (D-K-5)"
     const calls = setupWpApiMock();
     render(React.createElement(MaintenanceSettings));
 
-    const row = screen
-      .getByText("Drop Orphaned Tables")
-      .closest("div")!.parentElement as HTMLElement;
+    const row = screen.getByText("Drop Orphaned Tables").closest("div")!
+      .parentElement as HTMLElement;
     const dropButton = within(row).getByRole("button", { name: /clean/i });
     fireEvent.click(dropButton);
 
@@ -205,7 +201,7 @@ describe("MaintenanceSettings — Drop Orphaned Tables two-step confirm (D-K-5)"
       const confirmedCall = calls.find(
         (c) =>
           c.body.action === "drop_orphaned_tables" &&
-          Array.isArray(c.body.confirm_tables),
+          Array.isArray(c.body.confirm_tables)
       );
       expect(confirmedCall).toBeDefined();
       expect(confirmedCall!.body.confirm_tables).toEqual([CANDIDATE_TABLE]);

@@ -24,7 +24,7 @@ import { createRequire } from "node:module";
 import "@testing-library/jest-dom/vitest";
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 
-vi.mock("sonner", () => ({
+vi.mock("../../../lib/toast", () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -58,9 +58,8 @@ beforeAll(async () => {
 
   ({ SeoSettings } = await import("./SeoSettings"));
   ({ render, screen, cleanup } = await import("@testing-library/react"));
-  ({ QueryClient, QueryClientProvider } = await import(
-    "@tanstack/react-query"
-  ));
+  ({ QueryClient, QueryClientProvider } =
+    await import("@tanstack/react-query"));
   React = await import("react");
 });
 
@@ -68,13 +67,7 @@ function baseSettings(
   overrides: Partial<import("../../../hooks/useSettings").SwissSettings> = {}
 ): import("../../../hooks/useSettings").SwissSettings {
   return {
-    apiKey: "",
-    useCustomApi: false,
-    customApiUrl: "",
-    customModelId: "",
-    autoUpdatePlugin: true,
     emailNotifications: true,
-    betaFeatures: false,
     loginMaxRetries: 5,
     ...overrides,
   };
@@ -111,10 +104,9 @@ describe("SeoSettings — Sitemap toggle (P1-03/F-08)", () => {
   });
 
   it("renders ON (aria-checked=true) when sitemapEnabled is true", () => {
-    renderSeoSettings(
-      baseSettings({ sitemapEnabled: true }),
-      async () => ({ success: true })
-    );
+    renderSeoSettings(baseSettings({ sitemapEnabled: true }), async () => ({
+      success: true,
+    }));
 
     const toggle = screen.getByRole("switch", { name: /xml sitemap/i });
     expect(toggle).toHaveAttribute("aria-checked", "true");
@@ -146,10 +138,9 @@ describe("SeoSettings — AI Assistant Guide (llms.txt) toggle (P1-06/F-11)", ()
   });
 
   it("renders ON (aria-checked=true) when llmsTxtEnabled is true", () => {
-    renderSeoSettings(
-      baseSettings({ llmsTxtEnabled: true }),
-      async () => ({ success: true })
-    );
+    renderSeoSettings(baseSettings({ llmsTxtEnabled: true }), async () => ({
+      success: true,
+    }));
 
     const toggle = screen.getByRole("switch", {
       name: /ai assistant guide/i,
@@ -223,10 +214,7 @@ describe("SeoSettings — Basic SEO Meta Tags toggle (ARS Round D delta, M6)", (
 
   it("clicking again (currently ON) calls onSave with { seoMetaInjectionEnabled: false }", () => {
     const onSave = vi.fn(async () => ({ success: true }));
-    renderSeoSettings(
-      baseSettings({ seoMetaInjectionEnabled: true }),
-      onSave
-    );
+    renderSeoSettings(baseSettings({ seoMetaInjectionEnabled: true }), onSave);
 
     const toggle = screen.getByRole("switch", {
       name: /basic seo meta tags/i,
@@ -254,73 +242,6 @@ describe("SeoSettings — Basic SEO Meta Tags toggle (ARS Round D delta, M6)", (
     );
     expect(onSave).not.toHaveBeenCalledWith(
       expect.objectContaining({ llmsTxtEnabled: expect.anything() })
-    );
-  });
-});
-
-describe("SeoSettings — Override Host-Bundled SEO Plugins toggle (ARS Round E, F-14)", () => {
-  afterEach(() => {
-    cleanup();
-  });
-
-  it("renders OFF (aria-checked=false) when seoCompatOverrideEnabled is absent — opt-in contract", () => {
-    renderSeoSettings(baseSettings(), async () => ({ success: true }));
-
-    const toggle = screen.getByRole("switch", {
-      name: /override host-bundled seo plugins/i,
-    });
-    expect(toggle).toHaveAttribute("aria-checked", "false");
-  });
-
-  it("renders ON (aria-checked=true) when seoCompatOverrideEnabled is true", () => {
-    renderSeoSettings(
-      baseSettings({ seoCompatOverrideEnabled: true }),
-      async () => ({ success: true })
-    );
-
-    const toggle = screen.getByRole("switch", {
-      name: /override host-bundled seo plugins/i,
-    });
-    expect(toggle).toHaveAttribute("aria-checked", "true");
-  });
-
-  it("clicking the toggle calls onSave with { seoCompatOverrideEnabled: true } — one-click AJAX save, no Save button", () => {
-    const onSave = vi.fn(async () => ({ success: true }));
-    renderSeoSettings(baseSettings(), onSave);
-
-    const toggle = screen.getByRole("switch", {
-      name: /override host-bundled seo plugins/i,
-    });
-    toggle.click();
-
-    expect(onSave).toHaveBeenCalledWith({ seoCompatOverrideEnabled: true });
-  });
-
-  it("is independent from the other SEO toggles — flipping it does not touch their fields in the onSave payload", () => {
-    const onSave = vi.fn(async () => ({ success: true }));
-    renderSeoSettings(
-      baseSettings({
-        sitemapEnabled: true,
-        llmsTxtEnabled: true,
-        seoMetaInjectionEnabled: true,
-      }),
-      onSave
-    );
-
-    const toggle = screen.getByRole("switch", {
-      name: /override host-bundled seo plugins/i,
-    });
-    toggle.click();
-
-    expect(onSave).toHaveBeenCalledWith({ seoCompatOverrideEnabled: true });
-    expect(onSave).not.toHaveBeenCalledWith(
-      expect.objectContaining({ sitemapEnabled: expect.anything() })
-    );
-    expect(onSave).not.toHaveBeenCalledWith(
-      expect.objectContaining({ llmsTxtEnabled: expect.anything() })
-    );
-    expect(onSave).not.toHaveBeenCalledWith(
-      expect.objectContaining({ seoMetaInjectionEnabled: expect.anything() })
     );
   });
 });

@@ -11,7 +11,7 @@ import { useState, useEffect } from "react";
 import { Card } from "../../ui/Card";
 import { Button } from "../../ui/Button";
 import { wpApi } from "../../../services/api";
-import { toast } from "sonner";
+import { toast } from "../../../lib/toast";
 import {
   AlertTriangle,
   AlertCircle,
@@ -123,7 +123,13 @@ function getLogLineClass(log: string): string {
   if (/\[ERROR\]/.test(log)) {
     return "text-red-700 dark:text-red-400 font-semibold";
   }
-  if (/\[WARNING\]/.test(log)) {
+  // DIAG-EMAIL E-1 (VALIDATOR_DIAG_EMAIL.md §4 D1, note 2): the PHP writer's
+  // normalize_level() maps 'warn' -> 'WARNING' going forward, but entries
+  // already in the ring (and the 4 hand-built writers at backup.php that
+  // bypass log() entirely — see the write-timeline §6.1 W3-W6) keep the old
+  // [WARN] tag forever. Match both spellings so historical entries don't
+  // silently lose their color.
+  if (/\[WARN(ING)?\]/.test(log)) {
     return "text-amber-800 dark:text-amber-400 font-semibold";
   }
   return "text-emerald-400/80 hover:text-emerald-300";
@@ -138,10 +144,9 @@ interface MaintenanceSettingsProps {
 /**
  * OrphanedTablesConfirmDialog — the missing second step of the
  * drop-orphaned-tables flow (D-K-5). Minimal inline confirmation modal;
- * reuses the a11y pattern established by HardeningConfirmDialog.tsx /
- * BulkAiConfirmModal.tsx (role=dialog, aria-modal, Escape-to-cancel)
- * without pulling in either component's heavier, differently-shaped data
- * contract. This is a genuinely destructive DROP TABLE action — the
+ * reuses the a11y pattern established by HardeningConfirmDialog.tsx
+ * (role=dialog, aria-modal, Escape-to-cancel) without pulling in that
+ * component's heavier, differently-shaped data contract. This is a genuinely destructive DROP TABLE action — the
  * dialog exists specifically so a user reviews the exact table names
  * before they are dropped, never auto-confirmed.
  */

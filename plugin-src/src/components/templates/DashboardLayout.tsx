@@ -10,25 +10,21 @@
 
 import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Toaster } from "sonner";
+import { Toaster } from "../atoms/Toaster";
 import { ThemeToggle } from "../ThemeToggle";
-import { isProEdition } from "../../lib/edition";
-// ARS Round D (D-K-3, WP.org R4 F-01/F-41, 2026-08-2x): see
-// LicenseTierBadge.tsx's own docblock.
-import { LicenseTierBadge } from "./LicenseTierBadge";
+import { HeaderAccountCluster } from "./HeaderAccountCluster";
+import { BRAND_TAGLINE } from "./brandTagline";
 import {
   LayoutDashboard,
   Shield,
   Search,
   Database,
-  PenTool,
   Settings as SettingsIcon,
   Menu,
   X,
   RefreshCw,
   PanelLeftClose,
   Key,
-  Lock,
 } from "lucide-react";
 
 interface NavItemConfig {
@@ -36,7 +32,6 @@ interface NavItemConfig {
   label: string;
   path: string;
   icon: React.ElementType;
-  locked?: boolean;
 }
 
 export function DashboardLayout() {
@@ -70,42 +65,10 @@ export function DashboardLayout() {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Get capabilities from window context
-  const license = window.swisswpsuiteData?.license;
-  // Defensive: caps must be a flat string array. If PHP ever sends an object, degrade gracefully.
-  const rawCaps = license?.capabilities;
-  const caps: string[] = Array.isArray(rawCaps) ? rawCaps : [];
-  const tierName = license?.tier_name || "FREE EDITION";
-  // E3 (2026-08-13): `isTrial` (window.swisswpsuiteData.trial.active) and its header badge
-  // were REMOVED as part of the trial-tier decommission — the field was provably dead (the
-  // VPS never sent `trial_active`, PHP injector removed to match). See
-  // .claude/audit-reports/H1_DEAD_CODE_AUDIT_2026-08-11.md §G.10.
-  const isStandalone = !!window.swisswpsuiteData?.isStandalone;
-  // Freemium Dual-Build (Phase 3): SEO and AI Content are MIXED/premium tabs
-  // respectively. In the Free edition they must be reachable (never a
-  // disabled-but-present nav item) so the page itself can show the free
-  // content (SEO) or the upsell placeholder (AI Content) — see SeoManager.tsx
-  // and AIContentPage.tsx. Capability-based locking (Pro edition, plan
-  // lacks the feature) is unchanged.
-  const isProEditionBuild = isProEdition();
-
-  const allNavItems: NavItemConfig[] = [
+  const navItems: NavItemConfig[] = [
     { id: "dashboard", label: "Dashboard", path: "/", icon: LayoutDashboard },
     { id: "security", label: "Security", path: "/security", icon: Shield },
-    {
-      id: "seo",
-      label: "SEO",
-      path: "/seo",
-      icon: Search,
-      locked: isProEditionBuild && !caps.includes("seo_meta"),
-    },
-    {
-      id: "content-enhancer",
-      label: "AI Content",
-      path: "/ai-content",
-      icon: PenTool,
-      locked: isProEditionBuild && !caps.includes("content_rewrite"),
-    },
+    { id: "seo", label: "SEO", path: "/seo", icon: Search },
     { id: "backups", label: "Backup", path: "/backups", icon: Database },
     {
       id: "settings",
@@ -114,23 +77,6 @@ export function DashboardLayout() {
       icon: SettingsIcon,
     },
   ];
-
-  // When standalone mode is active, hide SEO and AI Content tabs (TD-4 fix).
-  // ARS Round D (D-K-2, WP.org R4 F-01, 2026-08-2x): AI Content is ALSO
-  // hidden in Free unconditionally — the nav item's own `locked` flag
-  // above evaluates false-by-construction in Free (isProEditionBuild is
-  // false, so `isProEditionBuild && !caps.includes(...)` is always
-  // false), so without this it renders as a clickable, unlocked tab whose
-  // destination (AIContentPage.freeStub.tsx) is an upsell placeholder
-  // with no working feature behind it — a reachable dead end, not a
-  // legitimate free feature. Pro is unaffected: content-enhancer still
-  // appears there with its normal capability-based lock state.
-  const navItems = allNavItems.filter((item) => {
-    if (isStandalone && (item.id === "seo" || item.id === "content-enhancer"))
-      return false;
-    if (!isProEditionBuild && item.id === "content-enhancer") return false;
-    return true;
-  });
 
   return (
     <div className="bg-bg-deep dark:text-foreground dark:bg-card selection:bg-swiss-red/20 selection:text-foreground flex min-h-screen overflow-hidden font-sans text-neutral-900 transition-colors duration-300">
@@ -201,7 +147,7 @@ export function DashboardLayout() {
                   SWISS<span className="text-swiss-red">SUITE</span>
                 </span>
                 <span className="mt-1 items-center text-xs font-bold tracking-[0.2em] text-neutral-700 uppercase">
-                  AI SECURITY SUITE
+                  {BRAND_TAGLINE}
                 </span>
               </div>
             )}
@@ -230,7 +176,7 @@ export function DashboardLayout() {
                   isActive
                     ? "bg-swiss-red/10 text-swiss-redred dark:text-foreground shadow-sm"
                     : "hover:bg-secondaryforeground dark:hover:text-foreground dark:hover:bg-secondary text-neutral-600 hover:text-neutral-900 dark:bg-transparent"
-                } ${isSidebarCollapsed ? "justify-center px-2" : ""} ${item.locked ? "pointer-events-none cursor-not-allowed opacity-50 grayscale" : ""} `
+                } ${isSidebarCollapsed ? "justify-center px-2" : ""} `
               }
               title={isSidebarCollapsed ? item.label : ""}
             >
@@ -245,10 +191,6 @@ export function DashboardLayout() {
                     <span className="text-sm font-semibold tracking-wide whitespace-nowrap">
                       {item.label}
                     </span>
-                  )}
-
-                  {!isSidebarCollapsed && item.locked && (
-                    <Lock size={14} className="ml-auto opacity-50" />
                   )}
 
                   {/* Collapsed Tooltip */}
@@ -327,29 +269,7 @@ export function DashboardLayout() {
             </div>
 
             {/* User Profile */}
-            <div className="border-border dark:border-border/10 flex items-center gap-4 border-l pl-4">
-              {/* ARS Round D (D-K-3, WP.org R4 F-01/F-41, 2026-08-2x):
-                  "License Tier" is Pro-only license vocabulary reachable
-                  on every screen in Free (tierName falls back to "FREE
-                  EDITION" there — the string PRESENCE is the finding, not
-                  whether anything behind it is broken). Extracted to
-                  LicenseTierBadge.tsx so the literal is physically absent
-                  from Free (a runtime-only isProEditionBuild gate is not
-                  enough — this file is the always-present app shell,
-                  never aliasable, so the string would still compile in
-                  even while unreachable). This is a deliberate reversal
-                  of the 2026-08-13 controller ruling that left this block
-                  unchanged (C2 Group H) — the reviewer re-flagged the
-                  same surface in R4, and current Round D doctrine ("Free
-                  bundle must contain zero padlocked/dead controls")
-                  supersedes that prior "leave unchanged" call. Pro is
-                  unaffected. */}
-              {isProEditionBuild && <LicenseTierBadge tierName={tierName} />}
-
-              <div className="bg-secondary dark:bg-card/10 dark:text-foreground hover:ring-swiss-red/50 flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl text-xs font-bold text-neutral-600 ring-2 ring-transparent transition-all">
-                AD
-              </div>
-            </div>
+            <HeaderAccountCluster />
           </div>
         </header>
 
@@ -362,7 +282,7 @@ export function DashboardLayout() {
       </main>
 
       {/* Global Toast Notifications — must live inside the layout, not index.tsx, to avoid chunk TDZ */}
-      <Toaster position="top-right" richColors closeButton />
+      <Toaster position="bottom-right" />
     </div>
   );
 }

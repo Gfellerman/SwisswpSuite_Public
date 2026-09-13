@@ -42,26 +42,19 @@
   <div id="swisswpsuite-app-root"></div>
 
   <script>
-    // MOCK DATA FOR LOCAL DEVELOPMENT
+    // Placeholder bootstrap payload for `npm run dev` only. WordPress
+    // supplies the real object via wp_localize_script; this branch never
+    // runs inside wp-admin.
     if (!window.swisswpsuiteData) {
-      console.warn('⚠️ ROLLING OUT SWISSWAY SIMULATION MODE ⚠️');
       window.swisswpsuiteData = {
         root: 'http://localhost:3000/wp-json/',
         homeUrl: 'http://localhost:3000',
-        nonce: 'mock-nonce-123',
-        apiUrl: 'https://api.swisswpsecure.com/v1',
-        apiKey: 'mock-api-key',
-        license: {
-          active: true,
-          status: 'active',
-          tier: 'agency_elite',
-          expires_at: '2099-12-31',
-          masked_key: 'SWISS-XXXXXXXX-DEV',
-          capabilities: ['seo_meta', 'content_rewrite', 'backup_cloud', 'sentinel_pro', 'waf_pro', 'ai_audit']
-        },
-        trial: { active: false, ends_at: null },
-        tokens: { balance: 5000000, usage: 125000 },
-        isStandalone: false
+        nonce: 'dev-nonce',
+        apiUrl: 'http://localhost:3000/wp-json/swisswpsuite/v1',
+        version: '0.0.0-dev',
+        isStandalone: false,
+        hasWooCommerce: false,
+        adminEmail: 'dev@example.com'
       };
     }
   </script>

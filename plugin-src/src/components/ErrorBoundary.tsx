@@ -93,7 +93,10 @@ export class ErrorBoundary extends React.Component<
     }
   }
 
-  componentDidUpdate(_prevProps: ErrorBoundaryProps, prevState: ErrorBoundaryState): void {
+  componentDidUpdate(
+    _prevProps: ErrorBoundaryProps,
+    prevState: ErrorBoundaryState
+  ): void {
     // Covers the other case: children rendered successfully at least once
     // and a LATER update throws (prevState.hasError false -> true) — here
     // componentDidMount already ran (for the earlier, successful render),
@@ -127,14 +130,14 @@ export class ErrorBoundary extends React.Component<
           tabIndex={-1}
           className="bg-card border-border max-w-md rounded-2xl border p-8 text-center shadow-lg"
         >
-          <h1 className="text-neutral-900 dark:text-foreground mb-3 text-lg font-bold">
+          <h1 className="dark:text-foreground mb-3 text-lg font-bold text-neutral-900">
             Something went wrong in the SwissSuite admin interface
           </h1>
-          <p className="text-neutral-700 dark:text-muted-foreground mb-2 text-sm">
-            Your site is <strong>NOT affected</strong> — this is only the
-            admin panel view. Reloading the page usually resolves this.
+          <p className="dark:text-muted-foreground mb-2 text-sm text-neutral-700">
+            Your site is <strong>NOT affected</strong> — this is only the admin
+            panel view. Reloading the page usually resolves this.
           </p>
-          <p className="text-neutral-700 dark:text-muted-foreground mb-6 text-xs">
+          <p className="dark:text-muted-foreground mb-6 text-xs text-neutral-700">
             If the problem persists after reloading, please contact support.
           </p>
           <Button variant="primary" onClick={this.handleReload}>

@@ -11,9 +11,8 @@
  * the change immediately after an admin action.
  *
  * Query key registry:
- *   ["security-status"]    — /security/status (WAF, spam, geo, login, alerts)
+ *   ["security-status"]    — /security/status (WAF, spam, login)
  *   ["security-logs"]      — /security/logs
- *   ["sentinel-status"]    — /security/sentinel/status (credits, identity)
  *   ["hardening-status"]   — /hardening/status (hardening options)
  *   ["security-banned-ips"]— /security/banned-ips (flat list + typeMap)
  *   ["security-environment"]— /security/environment (Cloudflare detection)
@@ -22,14 +21,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { wpApi } from "../services/api";
-import {
-  SecurityLog,
-  HardeningOption,
-  SecurityAlert,
-  SentinelAuditResult,
-  SentinelCredits,
-  LatestScanResponse,
-} from "../types";
+import { SecurityLog, HardeningOption, LatestScanResponse } from "../types";
 import { STATUS_TTL, HARDENING_TTL, LOGS_TTL } from "../lib/cacheTtl";
 
 // ─── /security/status ────────────────────────────────────────────────────────
@@ -40,12 +32,9 @@ export interface SecurityStatusData {
   block_sqli: boolean;
   block_xss: boolean;
   simulation_mode: boolean;
-  geo_enabled: boolean;
-  global_geo_block: boolean;
   login_enabled: boolean;
   login_max_retries?: number;
   last_scan: string;
-  alerts?: SecurityAlert;
 }
 
 export function useSecurityStatus() {
@@ -76,23 +65,6 @@ export function useSecurityLogs() {
       return normalizeLogs(data);
     },
     staleTime: LOGS_TTL,
-  });
-}
-
-// ─── /security/sentinel/status ───────────────────────────────────────────────
-
-export interface SentinelStatusData {
-  has_audit: boolean;
-  audit?: SentinelAuditResult;
-  credits?: SentinelCredits;
-  identity_valid?: boolean;
-}
-
-export function useSentinelStatus() {
-  return useQuery<SentinelStatusData>({
-    queryKey: ["sentinel-status"],
-    queryFn: () => wpApi<SentinelStatusData>("/security/sentinel/status"),
-    staleTime: STATUS_TTL,
   });
 }
 

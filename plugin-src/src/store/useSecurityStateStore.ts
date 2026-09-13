@@ -4,13 +4,11 @@
  * Introduced in v2.9.30.118 (TD-1 refactor) to consolidate state shared across
  * multiple Security Hub tabs (Dashboard / Quarantine / Cloud Shield) and the
  * global modals. Reading via selectors keeps re-renders scoped — the Quarantine
- * tab does NOT re-render when Geo settings change.
+ * tab does NOT re-render when the banned-IP list changes.
  *
  * Scope (WHY these fields live here):
  * - Banned / allowed IPs are read by Quarantine tab, Log Advisor modal,
  *   Firewall Advisor modal, and Cloud Shield status block.
- * - Geo settings are read by the Dashboard tab and (in future) the Geo Blocking
- *   tab. Currently inline in SecurityHub.tsx.
  * - Quarantined files + ignored paths are read by the Quarantine tab.
  * - Ignored findings (id-based safelist) are read by SentinelSafelistSheet
  *   (already extracted) — hoisted here for symmetry with the path-based list.
@@ -19,7 +17,6 @@
  * - Scan results (useScanStore owns those)
  * - Logs / security status (TanStack Query via useSecurityStatus)
  * - Hardening options (useHardening hook owns those)
- * - Sentinel report / credits (useLicenseStore)
  * - Modal open/close state (useUiStore owns those — debounce / focus traps)
  *
  * This store intentionally does NOT auto-fetch on mount. Each value is set by:
@@ -31,22 +28,6 @@
  */
 import { create } from "zustand";
 import type { QuarantineFile, HardeningOption } from "../types";
-
-/**
- * Geo-Lockdown list mode + country list. Mirrors the server-side option
- * `swisswpsuite_geo_settings` (list_mode: blacklist | whitelist, countries: ISO codes).
- */
-export interface GeoSettings {
-  list_mode: "blacklist" | "whitelist";
-  countries: string[];
-}
-
-/** Single country record for the country picker. */
-export interface CountryRecord {
-  code: string;
-  name: string;
-  flag: string;
-}
 
 export interface SecurityState {
   // ── IP management ─────────────────────────────────────────────────────────
@@ -74,15 +55,6 @@ export interface SecurityState {
   /** Finding ids excluded from automated scans (id-based safelist). */
   ignoredFindings: string[];
 
-  // ── Geo settings ──────────────────────────────────────────────────────────
-  geoSettings: GeoSettings;
-  /** All countries (for the country picker). Loaded once on mount. */
-  allCountries: CountryRecord[];
-  /** Search filter for the country picker. UI-only. */
-  geoSearch: string;
-  /** True while POST /geo/settings is in flight. */
-  savingGeo: boolean;
-
   // ── Hardening (state-only; queries in useHardening hook) ──────────────────
   /** Cached hardening options. Written by the useHardening hook after
    *  GET /hardening/status resolves. */
@@ -107,12 +79,6 @@ export interface SecurityStateSetters {
   setIgnoredFindings: (ids: string[]) => void;
   removeIgnoredFinding: (id: string) => void;
 
-  // Geo
-  setGeoSettings: (settings: GeoSettings) => void;
-  setAllCountries: (countries: CountryRecord[]) => void;
-  setGeoSearch: (q: string) => void;
-  setSavingGeo: (busy: boolean) => void;
-
   // Hardening
   setHardeningOptions: (options: HardeningOption[]) => void;
   /** Optimistic toggle — flips one option's `enabled` without a refetch. */
@@ -120,56 +86,46 @@ export interface SecurityStateSetters {
   setLoadingHardening: (busy: boolean) => void;
 }
 
-export const useSecurityStateStore = create<SecurityState & SecurityStateSetters>(
-  (set) => ({
-    // ── Defaults ────────────────────────────────────────────────────────────
-    bannedIps: [],
-    bannedIpTypes: {},
-    manualIp: "",
-    allowedIps: [],
-    currentIp: "",
-    manualAllowedIp: "",
+export const useSecurityStateStore = create<
+  SecurityState & SecurityStateSetters
+>((set) => ({
+  // ── Defaults ────────────────────────────────────────────────────────────
+  bannedIps: [],
+  bannedIpTypes: {},
+  manualIp: "",
+  allowedIps: [],
+  currentIp: "",
+  manualAllowedIp: "",
 
-    quarantinedFiles: [],
-    ignoredPaths: [],
-    ignoredFindings: [],
+  quarantinedFiles: [],
+  ignoredPaths: [],
+  ignoredFindings: [],
 
-    geoSettings: { list_mode: "blacklist", countries: [] },
-    allCountries: [],
-    geoSearch: "",
-    savingGeo: false,
+  hardeningOptions: [],
+  loadingHardening: false,
 
-    hardeningOptions: [],
-    loadingHardening: false,
+  // ── Setters ─────────────────────────────────────────────────────────────
+  setBannedIps: (ips) => set({ bannedIps: ips }),
+  setBannedIpTypes: (map) => set({ bannedIpTypes: map }),
+  setManualIp: (ip) => set({ manualIp: ip }),
+  setAllowedIps: (ips) => set({ allowedIps: ips }),
+  setCurrentIp: (ip) => set({ currentIp: ip }),
+  setManualAllowedIp: (ip) => set({ manualAllowedIp: ip }),
 
-    // ── Setters ─────────────────────────────────────────────────────────────
-    setBannedIps: (ips) => set({ bannedIps: ips }),
-    setBannedIpTypes: (map) => set({ bannedIpTypes: map }),
-    setManualIp: (ip) => set({ manualIp: ip }),
-    setAllowedIps: (ips) => set({ allowedIps: ips }),
-    setCurrentIp: (ip) => set({ currentIp: ip }),
-    setManualAllowedIp: (ip) => set({ manualAllowedIp: ip }),
+  setQuarantinedFiles: (files) => set({ quarantinedFiles: files }),
+  setIgnoredPaths: (paths) => set({ ignoredPaths: paths }),
+  setIgnoredFindings: (ids) => set({ ignoredFindings: ids }),
+  removeIgnoredFinding: (id) =>
+    set((s) => ({
+      ignoredFindings: s.ignoredFindings.filter((fid) => fid !== id),
+    })),
 
-    setQuarantinedFiles: (files) => set({ quarantinedFiles: files }),
-    setIgnoredPaths: (paths) => set({ ignoredPaths: paths }),
-    setIgnoredFindings: (ids) => set({ ignoredFindings: ids }),
-    removeIgnoredFinding: (id) =>
-      set((s) => ({
-        ignoredFindings: s.ignoredFindings.filter((fid) => fid !== id),
-      })),
-
-    setGeoSettings: (settings) => set({ geoSettings: settings }),
-    setAllCountries: (countries) => set({ allCountries: countries }),
-    setGeoSearch: (q) => set({ geoSearch: q }),
-    setSavingGeo: (busy) => set({ savingGeo: busy }),
-
-    setHardeningOptions: (options) => set({ hardeningOptions: options }),
-    toggleHardeningOption: (key, enabled) =>
-      set((s) => ({
-        hardeningOptions: s.hardeningOptions.map((opt) =>
-          opt.key === key ? { ...opt, enabled } : opt
-        ),
-      })),
-    setLoadingHardening: (busy) => set({ loadingHardening: busy }),
-  })
-);
+  setHardeningOptions: (options) => set({ hardeningOptions: options }),
+  toggleHardeningOption: (key, enabled) =>
+    set((s) => ({
+      hardeningOptions: s.hardeningOptions.map((opt) =>
+        opt.key === key ? { ...opt, enabled } : opt
+      ),
+    })),
+  setLoadingHardening: (busy) => set({ loadingHardening: busy }),
+}));

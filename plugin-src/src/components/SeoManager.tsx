@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "../lib/toast";
 import { ContentType, SeoScanResult } from "../types";
 import {
   Sparkles,
@@ -19,25 +19,23 @@ import {
 import { Button } from "./ui/Button";
 import { Badge } from "./ui/Badge";
 import { SectionHeader } from "./ui/SectionHeader";
-import { FeaturePointer } from "./organisms/Upsell/FeaturePointer";
-import { isProEdition } from "../lib/edition";
-import { SeoAiWorkbench } from "./organisms/Seo/SeoAiWorkbench";
-import { SeoCategoryQuickFixButton } from "./organisms/Seo/SeoCategoryQuickFixButton";
-// ARS Round D (D-K-7, WP.org R4 F-07, 2026-08-2x): see this module's own
-// docblock — replaces the two unconditional "Re-Generate All"/
-// "Re-Generate Descriptions" controls that used to call
-// handleFixNonCompliant() inline in this file.
-import { SeoFixNonCompliantButton } from "./organisms/Seo/SeoFixNonCompliantButton";
+import {
+  SEO_SHORT_DESCRIPTION_HEADING,
+  SEO_SHORT_DESCRIPTION_NOTE,
+  SEO_THIN_CONTENT_HEADING,
+  SEO_THIN_CONTENT_NOTE,
+  SEO_THIN_COUNT_NOTE,
+  buildSeoNextStep,
+  seoBulkActions,
+  seoCategoryActions,
+  seoPagePanels,
+} from "./organisms/Seo/seoHealthAdvice";
 import { useSettings } from "../hooks/useSettings";
 
 const SeoManager: React.FC = () => {
-  // Freemium Dual-Build (Phase 3, 2026-07-17): SEO is a MIXED tab — AI meta
-  // generation (SeoAiWorkbench, below) is serviceware and physically absent
-  // from the Free zip (see that component's own docblock for the
-  // 2026-08-12 extraction that made it aliasable). Sitemap and SEO Health
-  // Check (both local, no AI) stay free and are NOT gated — they are
-  // separate modals triggered from the header buttons below.
-  const isProEditionBuild = isProEdition();
+  // The Sitemap, llms.txt guide and SEO Health Check all run on this site's
+  // own server; each is a separate modal opened from the header buttons
+  // below.
 
   // LiveQA §3.10 fix (2026-08-04): the 3 SEO modals (Sitemap, llms.txt,
   // Scan/Health) previously each owned an independent boolean, so any
@@ -133,11 +131,7 @@ const SeoManager: React.FC = () => {
     <div className="animate-in fade-in min-w-0 space-y-12 pb-20 duration-700">
       <SectionHeader
         title="SEO & Search Visibility"
-        description={
-          isProEditionBuild
-            ? "Improve how your site appears in search engines and AI assistants — AI generates your titles, descriptions, and image captions automatically. For rewriting WooCommerce product descriptions with tone control, see AI Content."
-            : "Improve how your site appears in search engines and AI assistants. Run a free SEO Health Check, generate your Sitemap, and create an AI Assistant Guide below — AI-generated titles, descriptions, and image captions require an AI connection."
-        }
+        description="Improve how your site appears in search engines and AI assistants. Run an SEO Health Check, generate your Sitemap, and create an AI Assistant Guide below."
         action={
           <div className="flex flex-wrap gap-4">
             <Button
@@ -161,7 +155,7 @@ const SeoManager: React.FC = () => {
               onClick={() => setActiveModal("llm")}
               icon={FileText}
               className="border-border hover:bg-background rounded-xl text-sm font-black tracking-widest uppercase transition-all"
-              title="Generates an llms.txt guide that helps AI assistants like ChatGPT and Perplexity understand and cite your site correctly. Free, local — no AI tokens used."
+              title="Generates an llms.txt guide that helps AI assistants like ChatGPT and Perplexity understand and cite your site correctly. Generated locally on your own server."
             >
               AI Assistant Guide
             </Button>
@@ -169,28 +163,11 @@ const SeoManager: React.FC = () => {
         }
       />
 
-      {/* AI SEO Meta Generation workbench (Pro-only serviceware) — extracted
-          to SeoAiWorkbench.tsx (2026-08-12, WP.org frontend physical-
-          exclusion sweep) so it has a real file boundary to alias away in
-          the Free build. Self-contained: owns its own state/effects/
-          handlers, needs no props from this parent. See that file's
-          docblock for the full extraction rationale, including why the AI
-          bulk-generate buttons that used to sit inline in this header's
-          action slot now render as their own row inside the panel below
-          instead (a minor, documented visual reflow —
-          docs/capabilities/SEO_CAPABILITIES_REFERENCE.md). */}
-      {isProEditionBuild ? (
-        <SeoAiWorkbench />
-      ) : (
-        // Upsell redesign (2026-08-04, design point 1/2): the full "AI SEO
-        // Meta Generation" ProUpsellPlaceholder (bullets + CTA pair) is
-        // removed — bulk AI generation is the only Pro-gated part of this
-        // page (Health Check, Sitemap, and llms.txt above stay fully free),
-        // so this section carries one neutral "ai" FeaturePointer.
-        <FeaturePointer variant="ai" />
-      )}
+      {seoPagePanels.map((Panel, i) => (
+        <Panel key={i} />
+      ))}
 
-      {/* Scan Modal — fully free (SEO Health Check) */}
+      {/* Scan Modal — SEO Health Check */}
       {showScanModal && (
         <div
           className="bg-swiss-navy/40 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm duration-300"
@@ -204,7 +181,7 @@ const SeoManager: React.FC = () => {
           }}
         >
           <div
-            className="bg-card dark:bg-card shadow-premium border-border dark:border-border/10 animate-in zoom-in-95 flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-[2.5rem] border duration-300"
+            className="bg-card dark:bg-card border-border dark:border-border/10 animate-in zoom-in-95 flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-[2.5rem] border duration-300"
             ref={(el) => {
               if (el) {
                 const focusable = el.querySelector<HTMLElement>(
@@ -342,24 +319,20 @@ const SeoManager: React.FC = () => {
                             {thinCount > 0 && (
                               <p className="text-[11px] leading-relaxed text-neutral-500">
                                 + {thinCount} thin content{" "}
-                                {key === "image" ? "files" : "pages"} (normal —
-                                too little content for AI to improve)
+                                {key === "image" ? "files" : "pages"} (
+                                {SEO_THIN_COUNT_NOTE})
                               </p>
                             )}
-                            {/* Per-category AI quick-fix — Pro-only, extracted
-                                to SeoCategoryQuickFixButton.tsx (2026-08-12)
-                                so this always-free modal never carries the
-                                real Pro-only fetch/toast logic inline. See
-                                that file's docblock for the tab-preselection
-                                UX trade-off this replacement made. */}
-                            {needsAction && isProEditionBuild && (
-                              <SeoCategoryQuickFixButton
-                                targetType={contentTypeMap[key]}
-                                actionableCount={actionableCount}
-                                categoryLabel={labelMap[key] ?? key}
-                                onQueued={() => setActiveModal(null)}
-                              />
-                            )}
+                            {needsAction &&
+                              seoCategoryActions.map((Action, i) => (
+                                <Action
+                                  key={i}
+                                  targetType={contentTypeMap[key]}
+                                  actionableCount={actionableCount}
+                                  categoryLabel={labelMap[key] ?? key}
+                                  onQueued={() => setActiveModal(null)}
+                                />
+                              ))}
                           </div>
                         );
                       })}
@@ -393,15 +366,11 @@ const SeoManager: React.FC = () => {
                               <div className="mb-2 flex items-center gap-2">
                                 <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                                 <span className="text-[11px] font-black tracking-widest text-amber-700 uppercase">
-                                  Thin Content — Improvable
+                                  {SEO_THIN_CONTENT_HEADING}
                                 </span>
                               </div>
                               <p className="mb-3 text-[11px] leading-relaxed text-neutral-500">
-                                These pages have minimal source content, but the
-                                AI can still write a description for them using
-                                the page title and site context as a fallback.
-                                They're included in{" "}
-                                <strong>Re-Generate Descriptions</strong> below.
+                                {SEO_THIN_CONTENT_NOTE}
                               </p>
                               <div className="space-y-1.5">
                                 {scanResult.non_compliant_items
@@ -482,18 +451,19 @@ const SeoManager: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                   <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
                                   <span className="text-[11px] font-black tracking-widest text-orange-700 uppercase">
-                                    Description Too Short — Can Be Improved
+                                    {SEO_SHORT_DESCRIPTION_HEADING}
                                   </span>
                                 </div>
-                                <SeoFixNonCompliantButton
-                                  variant="inline"
-                                  onQueued={() => setActiveModal(null)}
-                                />
+                                {seoBulkActions.map((Action, i) => (
+                                  <Action
+                                    key={i}
+                                    variant="inline"
+                                    onQueued={() => setActiveModal(null)}
+                                  />
+                                ))}
                               </div>
                               <p className="mb-3 text-[11px] leading-relaxed text-neutral-500">
-                                These items have descriptions under 150
-                                characters despite sufficient page content.
-                                Re-running optimization may improve them.
+                                {SEO_SHORT_DESCRIPTION_NOTE}
                               </p>
                               <div className="space-y-1.5">
                                 {scanResult.non_compliant_items
@@ -525,7 +495,7 @@ const SeoManager: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Dynamic Intelligence Suggestion */}
+                  {/* What To Do Next */}
                   <div className="bg-swiss-navy text-foreground dark:text-foreground group relative overflow-hidden rounded-3xl p-6">
                     <div className="bg-secondary dark:bg-secondary absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full" />
                     <div className="relative z-10 flex gap-4">
@@ -538,52 +508,7 @@ const SeoManager: React.FC = () => {
                           What To Do Next
                         </span>
                         <p className="text-xs leading-relaxed font-medium opacity-90">
-                          {scanResult.non_compliant_items.length === 0 &&
-                          (scanResult.details?.post?.missing ?? 0) === 0 &&
-                          (scanResult.details?.page?.missing ?? 0) === 0 &&
-                          (scanResult.details?.image?.missing ?? 0) === 0 ? (
-                            <>
-                              Everything looks great — all your content has SEO
-                              titles and descriptions.
-                            </>
-                          ) : scanResult.non_compliant_items.some(
-                              (i) => i.reason === "missing"
-                            ) ? (
-                            <>
-                              Use the <strong>Generate SEO</strong> buttons
-                              above to create titles, descriptions, and FAQs in
-                              one pass for items that have no SEO data yet — or
-                              use <strong>Re-Generate</strong> below, which now
-                              also covers items with no description at all.
-                            </>
-                          ) : (
-                            <>
-                              {
-                                scanResult.non_compliant_items.filter(
-                                  (i) =>
-                                    i.reason === "below_threshold" ||
-                                    i.reason === "short_content"
-                                ).length
-                              }{" "}
-                              item
-                              {scanResult.non_compliant_items.filter(
-                                (i) =>
-                                  i.reason === "below_threshold" ||
-                                  i.reason === "short_content"
-                              ).length !== 1
-                                ? "s have"
-                                : " has"}{" "}
-                              a short or missing description and can be
-                              re-generated for better results.
-                              {scanResult.faq_bonus < 5 ? (
-                                <>
-                                  {" "}
-                                  Generating <strong>FAQs</strong> can earn up
-                                  to {5 - scanResult.faq_bonus} bonus points.
-                                </>
-                              ) : null}
-                            </>
-                          )}
+                          {buildSeoNextStep(scanResult)}
                         </p>
                         {scanResult.non_compliant_items.some(
                           (i) =>
@@ -591,21 +516,23 @@ const SeoManager: React.FC = () => {
                             (i.reason === "below_threshold" ||
                               i.reason === "short_content" ||
                               i.reason === "missing")
-                        ) && (
-                          <SeoFixNonCompliantButton
-                            variant="primary"
-                            count={
-                              scanResult.non_compliant_items.filter(
-                                (i) =>
-                                  i.type !== "image" &&
-                                  (i.reason === "below_threshold" ||
-                                    i.reason === "short_content" ||
-                                    i.reason === "missing")
-                              ).length
-                            }
-                            onQueued={() => setActiveModal(null)}
-                          />
-                        )}
+                        ) &&
+                          seoBulkActions.map((Action, i) => (
+                            <Action
+                              key={i}
+                              variant="primary"
+                              count={
+                                scanResult.non_compliant_items.filter(
+                                  (item) =>
+                                    item.type !== "image" &&
+                                    (item.reason === "below_threshold" ||
+                                      item.reason === "short_content" ||
+                                      item.reason === "missing")
+                                ).length
+                              }
+                              onQueued={() => setActiveModal(null)}
+                            />
+                          ))}
                       </div>
                     </div>
                   </div>
@@ -649,7 +576,7 @@ const SeoManager: React.FC = () => {
           }}
         >
           <div
-            className="bg-card dark:bg-card shadow-premium border-border dark:border-border/10 animate-in zoom-in-95 w-full max-w-md overflow-hidden rounded-[2.5rem] border duration-300"
+            className="bg-card dark:bg-card border-border dark:border-border/10 animate-in zoom-in-95 w-full max-w-md overflow-hidden rounded-[2.5rem] border duration-300"
             ref={(el) => {
               if (el) {
                 const focusable = el.querySelector<HTMLElement>(
@@ -751,7 +678,7 @@ const SeoManager: React.FC = () => {
           }}
         >
           <div
-            className="bg-card dark:bg-card shadow-premium border-border dark:border-border/10 animate-in zoom-in-95 flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[2.5rem] border duration-300"
+            className="bg-card dark:bg-card border-border dark:border-border/10 animate-in zoom-in-95 flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[2.5rem] border duration-300"
             ref={(el) => {
               if (el) {
                 const focusable = el.querySelector<HTMLElement>(

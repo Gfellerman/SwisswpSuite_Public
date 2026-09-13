@@ -35,7 +35,7 @@ import {
   vi,
 } from "vitest";
 
-vi.mock("sonner", () => ({
+vi.mock("../lib/toast", () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -46,8 +46,8 @@ vi.mock("../hooks/useSettings", () => ({
   useSettings: vi.fn(),
 }));
 
-vi.mock("./organisms/Upsell/FeaturePointer", () => ({
-  FeaturePointer: () => null,
+vi.mock("./organisms/Seo/SeoAiWorkbench", () => ({
+  SeoAiWorkbench: () => null,
 }));
 
 type SeoManagerModule = typeof import("./SeoManager");

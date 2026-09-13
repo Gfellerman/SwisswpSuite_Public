@@ -1,46 +1,19 @@
 /**
- * AGENT: frontend-specialist
- * Skills: react-patterns, ui-ux-pro-max
- * Date: 2026-04-11
+ * GeneralSettings — Settings > General.
  *
- * DESIGN RULE: No "Save Settings" buttons (CLAUDE.md).
- * - Toggles and server profile cards auto-save on change via AJAX.
- * - alertEmail saves on blur (debounced text field).
- *
- * ARS Round D (D-K-4, WP.org R4 F-11, 2026-08-2x): "Server Profile"
- * control REMOVED — it had zero readers anywhere in the codebase
- * (confirmed by L-B's tree-wide grep, handoff/L-B_auto-update-manifest.md)
- * and its option write handler was removed backend-side this round, so
- * the control would now silently do nothing at all. "Automatic Updates"
- * is UNCHANGED and stays — it now has a real consumer
- * (auto_update_plugin filter, same hand-off).
- *
- * FOLLOW-UP FIX (lane-K verifier D-K-4, 2026-08-24): the original D-K-4
- * pass also deleted the "Beta Features" toggle outright, on the premise
- * that its write gate (api-settings.php save_settings(),
- * class_exists('SwissWPSuite_Api_Sync')) never fires in Free. That is
- * true, but `swisswpsuite_beta_features` is a real, actively-consumed
- * PRO option — BackupsPage.tsx reads settings.betaFeatures to gate its
- * Sync/Migration sections, and this was its ONLY UI writer anywhere in
- * the codebase. Outright deletion broke Pro (no way left to ever enable
- * beta features). RESTORED below via BetaFeaturesToggleRow.tsx, extracted
- * the same way LicenseTierBadge.tsx was (D-K-3) so it can be aliased to a
- * null-rendering stub in the Free build instead of just runtime-gated —
- * this file is the always-present Settings > General shell (never
- * aliasable), so a plain `isProEditionBuild && <ToggleRow .../>` would
- * still compile the "Beta Features" string into the Free bundle even
- * though it never renders there. See BetaFeaturesToggleRow.tsx's own
- * docblock for the full rationale.
+ * Every control here saves on change (one-click AJAX); there is no Save
+ * button. The General Preferences switches come from
+ * generalPreferenceRows.ts.
  */
 
 import { useState, useEffect, useRef, useCallback, useId } from "react";
 import { Card } from "../../ui/Card";
 import { SwissSettings } from "../../../hooks/useSettings";
 import { ApiError } from "../../../services/api";
-import { toast } from "sonner";
+import { toast } from "../../../lib/toast";
 import { Settings, Mail, Loader2 } from "lucide-react";
-import { isProEdition } from "../../../lib/edition";
-import { BetaFeaturesToggleRow } from "./BetaFeaturesToggleRow";
+import { generalPreferenceRows } from "./generalPreferenceRows";
+import { AiProductNote } from "./aiProductNote";
 
 /**
  * SET-04 FIX: client-side pre-flight format check for the Alert Email field.
@@ -127,14 +100,6 @@ export function GeneralSettings({
   onSave,
   isSaving,
 }: GeneralSettingsProps) {
-  // ARS Round D (D-K-4 follow-up, lane-K verifier, 2026-08-24): Beta
-  // Features gates Sync/Migration (BackupsPage.tsx), both fully Pro-only
-  // — see BetaFeaturesToggleRow.tsx's docblock. Redundant with the
-  // build-time alias (which already renders null in Free) the same way
-  // DashboardLayout.tsx's `isProEditionBuild && <LicenseTierBadge .../>`
-  // is redundant with its own stub — belt-and-suspenders, matches this
-  // codebase's established convention for extracted/aliased controls.
-  const isProEditionBuild = isProEdition();
   const [config, setConfig] = useState<Partial<SwissSettings>>({});
   // C-03 FIX: Initialize from adminEmail to match backend default (get_option('admin_email')).
   const [alertEmail, setAlertEmail] = useState<string>(
@@ -148,11 +113,9 @@ export function GeneralSettings({
   useEffect(() => {
     if (settings) {
       setConfig({
-        autoUpdatePlugin: settings.autoUpdatePlugin,
         emailNotifications: settings.emailNotifications,
-        betaFeatures: settings.betaFeatures,
-        transferStrategy: settings.transferStrategy,
         pageviewTrackingEnabled: settings.pageviewTrackingEnabled,
+        alertDigestFrequency: settings.alertDigestFrequency,
       });
       const initialEmail = settings.alertEmail ?? "";
       setAlertEmail(initialEmail);
@@ -229,34 +192,16 @@ export function GeneralSettings({
           <Settings className="h-4 w-4 text-neutral-700" />
           <h3 className="text-base font-semibold">General Preferences</h3>
         </div>
-        <ToggleRow
-          label="Automatic Updates"
-          desc="Keep the plugin updated automatically"
-          checked={config.autoUpdatePlugin ?? true}
-          onChange={(v) => autoSave("autoUpdatePlugin", v)}
-          isSaving={isSaving}
-        />
-        <ToggleRow
-          label="Email Notifications"
-          desc="Receive security digests and backup reports"
-          checked={config.emailNotifications ?? false}
-          onChange={(v) => autoSave("emailNotifications", v)}
-          isSaving={isSaving}
-        />
-        {isProEditionBuild && (
-          <BetaFeaturesToggleRow
-            checked={config.betaFeatures ?? false}
-            onChange={(v) => autoSave("betaFeatures", v)}
+        {generalPreferenceRows.map((row) => (
+          <ToggleRow
+            key={row.field as string}
+            label={row.label}
+            desc={row.desc}
+            checked={(config[row.field] as boolean | undefined) ?? row.fallback}
+            onChange={(v) => autoSave(row.field, v)}
             isSaving={isSaving}
           />
-        )}
-        <ToggleRow
-          label="Dashboard Traffic Counter"
-          desc="Counts pageviews per day and page type to power the Dashboard traffic chart. Runs entirely on your server: no IP addresses, cookies, or personal data are collected or transmitted. Off by default."
-          checked={config.pageviewTrackingEnabled ?? false}
-          onChange={(v) => autoSave("pageviewTrackingEnabled", v)}
-          isSaving={isSaving}
-        />
+        ))}
       </Card>
 
       {/* Alert Email Card */}
@@ -315,7 +260,48 @@ export function GeneralSettings({
             Saved automatically when you leave the field.
           </p>
         </div>
+
+        {/* DIAG-EMAIL E-5 (VALIDATOR_DIAG_EMAIL.md §4 D6): cadence for the
+            ERROR/WARNING alert digest. Saves immediately on change — no
+            Save button (CLAUDE.md). Server default is 'daily' (owner gate
+            G2), mirrored here so the control never renders blank before
+            the settings response loads. */}
+        <div>
+          <label
+            htmlFor="alertDigestFrequency"
+            className="dark:text-foreground mb-1 block text-sm font-medium text-neutral-900"
+          >
+            Alert Digest Frequency
+          </label>
+          <select
+            id="alertDigestFrequency"
+            value={config.alertDigestFrequency ?? "daily"}
+            onChange={(e) =>
+              autoSave(
+                "alertDigestFrequency",
+                e.target.value as SwissSettings["alertDigestFrequency"]
+              )
+            }
+            disabled={isSaving}
+            className="border-border bg-background dark:text-foreground w-full rounded-lg border px-3 py-2 text-sm text-neutral-900 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <option value="off">Off</option>
+            <option value="daily">Once a day</option>
+            <option value="twicedaily">Twice a day</option>
+          </select>
+          <p
+            id="alertDigestFrequency-desc"
+            className="mt-1 text-xs text-neutral-700"
+          >
+            Critical alerts are sent immediately when alert e-mails are switched
+            on (at most 5 per day). Everything else is bundled into this summary
+            — turning the summary off also discards any events still waiting to
+            be summarised.
+          </p>
+        </div>
       </Card>
+
+      <AiProductNote />
     </div>
   );
 }

@@ -26,7 +26,7 @@ const BASIC_SCAN_KNOWN_SAFE = new Set([
 function classifyBasicScanFinding(
   file: string,
   status: string,
-  category?: string,
+  category?: string
 ): string {
   // Use PHP-supplied category when present (new scans).
   if (category) return category;
@@ -103,6 +103,11 @@ const SEVERITY_BORDER: Record<string, string> = {
 export interface BasicScanResultsProps {
   scanResults: {
     issues_found: number;
+    // INTEG-441 (fleet-findings-2026-09-03, B2): count of findings in an
+    // informational category (known_safe_missing/bundled_plugin/theme_modified)
+    // — additive alongside the narrowed `issues_found` (core_modified/
+    // core_missing only). See SwissWPSuite_Security::perform_core_scan().
+    informational_found: number;
     details: { file: string; status: string; category?: string }[];
   };
   expanded: boolean;
@@ -153,13 +158,13 @@ export const BasicScanResults: React.FC<BasicScanResultsProps> = ({
         init[g.key] = g.defaultExpanded;
       }
       return init;
-    },
+    }
   );
 
-  if (scanResults.issues_found === 0) {
+  if (scanResults.issues_found === 0 && scanResults.informational_found === 0) {
     return (
-      <div className="rounded-2xl border p-4 text-xs font-bold bg-emerald-50 border-emerald-200 text-emerald-700">
-        <p className="uppercase tracking-widest font-black">
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-700">
+        <p className="font-black tracking-widest uppercase">
           All core files intact
         </p>
       </div>
@@ -167,10 +172,10 @@ export const BasicScanResults: React.FC<BasicScanResultsProps> = ({
   }
 
   return (
-    <div className="rounded-2xl border border-border p-4 text-xs space-y-3">
+    <div className="border-border space-y-3 rounded-2xl border p-4 text-xs">
       {/* Summary header */}
       <div className="flex items-center justify-between">
-        <p className="uppercase tracking-widest font-black text-neutral-700">
+        <p className="font-black tracking-widest text-neutral-700 uppercase">
           WordPress Core File Integrity
         </p>
         {realIssueCount > 0 ? (
@@ -179,25 +184,27 @@ export const BasicScanResults: React.FC<BasicScanResultsProps> = ({
             {realIssueCount === 1 ? "issue" : "issues"}
           </Badge>
         ) : (
-          <Badge variant="info">{scanResults.issues_found} informational</Badge>
+          <Badge variant="info">
+            {scanResults.informational_found} informational
+          </Badge>
         )}
       </div>
 
       {/* No real issues banner */}
       {realIssueCount === 0 && (
-        <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+        <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
           <ShieldCheck
             size={18}
-            className="text-emerald-600 shrink-0 mt-0.5"
+            className="mt-0.5 shrink-0 text-emerald-600"
             aria-hidden="true"
           />
           <div>
             <p className="text-sm font-semibold text-emerald-800">
               No core file tampering detected
             </p>
-            <p className="text-xs text-emerald-700 mt-1">
-              {scanResults.issues_found} file{" "}
-              {scanResults.issues_found === 1
+            <p className="mt-1 text-xs text-emerald-700">
+              {scanResults.informational_found} file{" "}
+              {scanResults.informational_found === 1
                 ? "difference was"
                 : "differences were"}{" "}
               found, but all are expected (uninstalled plugins, removed files,
@@ -219,7 +226,7 @@ export const BasicScanResults: React.FC<BasicScanResultsProps> = ({
         return (
           <div
             key={meta.key}
-            className="border border-border rounded-xl overflow-hidden"
+            className="border-border overflow-hidden rounded-xl border"
           >
             <button
               type="button"
@@ -229,11 +236,11 @@ export const BasicScanResults: React.FC<BasicScanResultsProps> = ({
                   [meta.key]: !prev[meta.key],
                 }))
               }
-              className="w-full flex items-center gap-3 p-3 bg-secondary hover:bg-secondary/80 transition-colors text-left"
+              className="bg-secondary hover:bg-secondary/80 flex w-full items-center gap-3 p-3 text-left transition-colors"
               aria-expanded={isOpen}
             >
-              <div className="flex-1 min-w-0">
-                <span className="font-black text-xs uppercase tracking-widest text-neutral-700">
+              <div className="min-w-0 flex-1">
+                <span className="text-xs font-black tracking-widest text-neutral-700 uppercase">
                   {meta.label}
                 </span>
                 <span className="ml-2 text-xs font-medium text-neutral-500">
@@ -251,23 +258,23 @@ export const BasicScanResults: React.FC<BasicScanResultsProps> = ({
               >
                 {items.length}
               </Badge>
-              <span className="text-neutral-400 text-xs shrink-0">
+              <span className="shrink-0 text-xs text-neutral-400">
                 {isOpen ? "▼" : "▶"}
               </span>
             </button>
 
             {isOpen && (
-              <div className="p-3 space-y-1">
-                <p className="text-xs text-neutral-500 font-medium mb-2">
+              <div className="space-y-1 p-3">
+                <p className="mb-2 text-xs font-medium text-neutral-500">
                   {meta.description}
                 </p>
                 {(expanded ? items : items.slice(0, 10)).map((f, i) => (
                   <div
                     key={i}
-                    className={`flex items-center gap-2 py-1 border-b ${borderColor} last:border-b-0`}
+                    className={`flex items-center gap-2 border-b py-1 ${borderColor} last:border-b-0`}
                   >
                     <span
-                      className={`shrink-0 text-xs font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${
+                      className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-black tracking-widest uppercase ${
                         f.status === "modified"
                           ? "bg-red-200 text-red-800"
                           : "bg-amber-200 text-amber-800"
@@ -275,7 +282,7 @@ export const BasicScanResults: React.FC<BasicScanResultsProps> = ({
                     >
                       {f.status === "modified" ? "MOD" : "MISS"}
                     </span>
-                    <code className="text-xs font-mono truncate flex-1">
+                    <code className="flex-1 truncate font-mono text-xs">
                       {f.file}
                     </code>
                   </div>
@@ -283,7 +290,7 @@ export const BasicScanResults: React.FC<BasicScanResultsProps> = ({
                 {!expanded && items.length > 10 && (
                   <button
                     onClick={onToggleExpanded}
-                    className="mt-1 text-xs font-black uppercase tracking-widest text-brand-accent hover:underline"
+                    className="text-brand-accent mt-1 text-xs font-black tracking-widest uppercase hover:underline"
                   >
                     Show all {items.length} files
                   </button>
@@ -298,7 +305,7 @@ export const BasicScanResults: React.FC<BasicScanResultsProps> = ({
       {expanded && scanResults.details.length > 10 && (
         <button
           onClick={onToggleExpanded}
-          className="text-xs font-black uppercase tracking-widest text-brand-accent hover:underline"
+          className="text-brand-accent text-xs font-black tracking-widest uppercase hover:underline"
         >
           Show less
         </button>
@@ -306,7 +313,7 @@ export const BasicScanResults: React.FC<BasicScanResultsProps> = ({
 
       {/* Remediation advice */}
       {realIssueCount > 0 && (
-        <p className="text-xs text-neutral-600 font-medium mt-2">
+        <p className="mt-2 text-xs font-medium text-neutral-600">
           Use Dashboard &gt; Updates &gt; &ldquo;Reinstall version&rdquo; to
           restore modified or missing core files.
         </p>

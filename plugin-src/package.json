@@ -1,7 +1,7 @@
 {
   "name": "swisssuite-ai-admin",
   "private": true,
-  "version": "2.9.33.46",
+  "version": "2.9.33.58",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -21,7 +21,6 @@
     "react-router-dom": "^7.13.0",
     "react-window": "^2.2.7",
     "recharts": "^3.6.0",
-    "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.1",
     "zustand": "^5.0.11"
   },

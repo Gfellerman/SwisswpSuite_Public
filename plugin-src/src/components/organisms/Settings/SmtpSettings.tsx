@@ -24,7 +24,7 @@ import { Card } from "../../ui/Card";
 import { Button } from "../../ui/Button";
 import { wpApi } from "../../../services/api";
 import { SMTP_TTL } from "../../../lib/cacheTtl";
-import { toast } from "sonner";
+import { toast } from "../../../lib/toast";
 import {
   Mail,
   Send,

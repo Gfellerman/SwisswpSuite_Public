@@ -5,8 +5,8 @@ import { SecurityLog } from "../../../types";
 export interface SecurityLogsPanelProps {
   logs: SecurityLog[];
   // BUG #4 FIX (v2.9.28.45): Restore the per-row "Ban IP" action that was lost during F-004
-  // organism extraction. Free of the AI-advisor gating and the manual-IP input field, the
-  // user can ban a suspicious IP directly from the log row in one click.
+  // organism extraction. The user can ban a suspicious IP directly from the
+  // log row in one click.
   onBanIp?: (ip: string) => void;
   bannedIps?: string[];
 }
@@ -23,31 +23,31 @@ export function SecurityLogsPanel({
   bannedIps = [],
 }: SecurityLogsPanelProps) {
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+    <div className="animate-in fade-in slide-in-from-right-4 space-y-6">
       <div className="bg-card border border-black p-6">
-        <div className="flex justify-between items-center mb-8 border-b border-black pb-4">
-          <h3 className="font-black text-xs uppercase tracking-widest text-black flex items-center gap-2">
+        <div className="mb-8 flex items-center justify-between border-b border-black pb-4">
+          <h3 className="flex items-center gap-2 text-xs font-black tracking-widest text-black uppercase">
             <FileText size={16} className="text-black" /> Security Event Log
           </h3>
         </div>
 
-        <div className="border border-black overflow-hidden">
-          <table className="w-full text-left text-sm font-black uppercase tracking-widest">
+        <div className="overflow-hidden border border-black">
+          <table className="w-full text-left text-sm font-black tracking-widest uppercase">
             <thead className="bg-background text-foreground dark:text-foreground">
-              <tr className="bg-background dark:bg-secondary border-b border-border dark:border-border/10 text-left text-sm font-black tracking-widest uppercase text-neutral-700 ">
-                <th className="p-4 border-r border-border dark:border-border/10 w-32">
+              <tr className="bg-background dark:bg-secondary border-border dark:border-border/10 border-b text-left text-sm font-black tracking-widest text-neutral-700 uppercase">
+                <th className="border-border dark:border-border/10 w-32 border-r p-4">
                   Timestamp
                 </th>
-                <th className="p-4 border-r border-border dark:border-border/10 w-24">
+                <th className="border-border dark:border-border/10 w-24 border-r p-4">
                   Type
                 </th>
-                <th className="p-4 border-r border-border dark:border-border/10 w-32">
+                <th className="border-border dark:border-border/10 w-32 border-r p-4">
                   Origin
                 </th>
-                <th className="p-4 border-r border-border dark:border-border/10">
+                <th className="border-border dark:border-border/10 border-r p-4">
                   Details
                 </th>
-                {onBanIp && <th className="p-4 w-28 text-center">Action</th>}
+                {onBanIp && <th className="w-28 p-4 text-center">Action</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-black/10">
@@ -55,7 +55,7 @@ export function SecurityLogsPanel({
                 <tr>
                   <td
                     colSpan={onBanIp ? 5 : 4}
-                    className="p-8 text-center text-sm font-black uppercase tracking-widest text-neutral-500"
+                    className="p-8 text-center text-sm font-black tracking-widest text-neutral-500 uppercase"
                   >
                     No security events recorded yet. Events will appear here as
                     your WAF and login protection activate.
@@ -74,7 +74,7 @@ export function SecurityLogsPanel({
                       day: "numeric",
                       hour: "2-digit",
                       minute: "2-digit",
-                    },
+                    }
                   );
                   const ip = log.ip_address || "";
                   const isAlreadyBanned = ip !== "" && bannedIps.includes(ip);
@@ -83,23 +83,23 @@ export function SecurityLogsPanel({
                       key={log.id}
                       className={index % 2 === 0 ? "bg-background" : ""}
                     >
-                      <td className="p-4 border-r border-black/10 text-neutral-700 text-xs">
+                      <td className="border-r border-black/10 p-4 text-xs text-neutral-700">
                         {formattedDate}
                       </td>
-                      <td className="p-4 border-r border-black/10">
+                      <td className="border-r border-black/10 p-4">
                         <span
-                          className={`border px-2 py-0.5 text-xs font-black uppercase tracking-widest ${badgeClass}`}
+                          className={`border px-2 py-0.5 text-xs font-black tracking-widest uppercase ${badgeClass}`}
                         >
                           {log.severity}
                         </span>
                       </td>
-                      <td className="p-4 border-r border-black/10 text-xs font-mono">
+                      <td className="border-r border-black/10 p-4 font-mono text-xs">
                         {log.ip_address || "—"}
                       </td>
-                      <td className="p-4 border-r border-black/10 text-xs">
+                      <td className="border-r border-black/10 p-4 text-xs">
                         {log.event}
                         {isBlocked && (
-                          <span className="ml-2 border border-red-600 text-red-600 px-1.5 py-0.5 text-xs font-black uppercase tracking-widest bg-red-50">
+                          <span className="ml-2 border border-red-600 bg-red-50 px-1.5 py-0.5 text-xs font-black tracking-widest text-red-600 uppercase">
                             BLOCKED
                           </span>
                         )}
@@ -109,7 +109,7 @@ export function SecurityLogsPanel({
                           {ip === "" ? (
                             <span className="text-xs text-neutral-400">—</span>
                           ) : isAlreadyBanned ? (
-                            <span className="inline-flex items-center gap-1 border border-neutral-400 text-neutral-500 px-2 py-1 text-xs font-black uppercase tracking-widest bg-neutral-50">
+                            <span className="inline-flex items-center gap-1 border border-neutral-400 bg-neutral-50 px-2 py-1 text-xs font-black tracking-widest text-neutral-500 uppercase">
                               <Ban size={12} aria-hidden="true" />
                               Banned
                             </span>
@@ -118,7 +118,7 @@ export function SecurityLogsPanel({
                               type="button"
                               onClick={() => onBanIp(ip)}
                               aria-label={`Ban IP address ${ip}`}
-                              className="inline-flex items-center gap-1 border border-red-600 text-red-600 hover:bg-red-50 active:bg-red-100 px-2 py-1 text-xs font-black uppercase tracking-widest transition-colors focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-1"
+                              className="inline-flex items-center gap-1 border border-red-600 px-2 py-1 text-xs font-black tracking-widest text-red-600 uppercase transition-colors hover:bg-red-50 focus:ring-2 focus:ring-red-600 focus:ring-offset-1 focus:outline-none active:bg-red-100"
                             >
                               <Ban size={12} aria-hidden="true" />
                               Ban IP
@@ -133,8 +133,8 @@ export function SecurityLogsPanel({
             </tbody>
           </table>
         </div>
-        <p className="text-xs font-black text-neutral-700 uppercase tracking-widest mt-4 text-center">
-          Only the most recent 50 high-priority security events are shown here.
+        <p className="mt-4 text-center text-xs font-black tracking-widest text-neutral-700 uppercase">
+          Only the most recent 20 high-priority security events are shown here.
         </p>
       </div>
     </div>

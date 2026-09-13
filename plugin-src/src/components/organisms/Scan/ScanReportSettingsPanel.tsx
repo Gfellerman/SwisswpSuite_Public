@@ -14,7 +14,7 @@
  *  - isSaving state uses aria-busy on the fieldset
  */
 
-import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   Mail,
   Send,
@@ -22,14 +22,14 @@ import {
   CheckCircle2,
   AlertCircle,
   BellRing,
-} from 'lucide-react';
-import { wpApi } from '../../../services/api';
-import type { ScanReportConfig } from '../../../types';
+} from "lucide-react";
+import { wpApi } from "../../../services/api";
+import type { ScanReportConfig } from "../../../types";
 
 // ── Rate limit helpers ────────────────────────────────────────────────────────
 
-const RATE_LIMIT_KEY = 'swisswpsuite_scan_test_send_ts';
-const RATE_LIMIT_MS  = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_KEY = "swisswpsuite_scan_test_send_ts";
+const RATE_LIMIT_MS = 60 * 60 * 1000; // 1 hour
 
 function getLastSendTs(): number | null {
   try {
@@ -84,7 +84,7 @@ interface ToggleRowProps {
    * 'default' — navy ON / gray OFF (standard)
    * 'traffic'  — green ON / red OFF (use for critical enable/disable controls)
    */
-  colorScheme?: 'default' | 'traffic';
+  colorScheme?: "default" | "traffic";
 }
 
 const ToggleRow: React.FC<ToggleRowProps> = ({
@@ -94,7 +94,7 @@ const ToggleRow: React.FC<ToggleRowProps> = ({
   checked,
   disabled = false,
   onChange,
-  colorScheme = 'default',
+  colorScheme = "default",
 }) => {
   /*
    * TAILWIND JIT NOTE: All class strings here must be FULL literal strings visible
@@ -108,28 +108,30 @@ const ToggleRow: React.FC<ToggleRowProps> = ({
 
   // Build the full className imperatively so every branch is a complete literal string.
   let trackAndRingClasses: string;
-  if (colorScheme === 'traffic') {
+  if (colorScheme === "traffic") {
     trackAndRingClasses = checked
-      ? 'bg-emerald-600 border-emerald-600 focus-visible:ring-emerald-600'
-      : 'bg-red-500 border-red-500 focus-visible:ring-red-500';
+      ? "bg-emerald-600 border-emerald-600 focus-visible:ring-emerald-600"
+      : "bg-red-500 border-red-500 focus-visible:ring-red-500";
   } else {
     trackAndRingClasses = checked
-      ? 'bg-swiss-navy border-swiss-navy focus-visible:ring-swiss-navy'
-      : 'bg-neutral-200 border-neutral-300 focus-visible:ring-swiss-navy';
+      ? "bg-swiss-navy border-swiss-navy focus-visible:ring-swiss-navy"
+      : "bg-neutral-200 border-neutral-300 focus-visible:ring-swiss-navy";
   }
 
   return (
     <div className="flex items-start justify-between gap-4 py-3">
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <label
           htmlFor={id}
-          className="text-sm font-black text-neutral-800 cursor-pointer select-none"
+          className="cursor-pointer text-sm font-black text-neutral-800 select-none"
         >
           {label}
         </label>
         {/* WCAG 1.4.3: text-neutral-500 on white is ~3.5:1 (FAIL) → text-neutral-600 is ~5.9:1 (PASS) */}
         {description && (
-          <p className="text-xs text-neutral-600 font-medium mt-0.5 leading-relaxed">{description}</p>
+          <p className="mt-0.5 text-xs leading-relaxed font-medium text-neutral-600">
+            {description}
+          </p>
         )}
       </div>
       {/* Accessible toggle switch */}
@@ -142,22 +144,22 @@ const ToggleRow: React.FC<ToggleRowProps> = ({
         disabled={disabled}
         onClick={() => onChange(!checked)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
+          if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             onChange(!checked);
           }
         }}
         className={[
-          'relative inline-flex items-center shrink-0 w-10 h-5 rounded-full border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2',
+          "relative inline-flex h-5 w-10 shrink-0 items-center rounded-full border transition-all duration-200 focus-visible:ring-2 focus-visible:outline-none",
           trackAndRingClasses,
-          disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
-        ].join(' ')}
+          disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+        ].join(" ")}
       >
         <span
           className={[
-            'absolute w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200',
-            checked ? 'translate-x-5' : 'translate-x-0.5',
-          ].join(' ')}
+            "absolute h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200",
+            checked ? "translate-x-5" : "translate-x-0.5",
+          ].join(" ")}
           aria-hidden="true"
         />
       </button>
@@ -175,23 +177,21 @@ interface ScanReportSettingsPanelProps {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export const ScanReportSettingsPanel: React.FC<ScanReportSettingsPanelProps> = ({
-  config,
-  onSave,
-  isSaving,
-}) => {
-  const emailId   = useId();
-  const statusId  = useId();
+export const ScanReportSettingsPanel: React.FC<
+  ScanReportSettingsPanelProps
+> = ({ config, onSave, isSaving }) => {
+  const emailId = useId();
+  const statusId = useId();
 
   // ── Email field state ───────────────────────────────────────────────────────
 
-  const [emailValue, setEmailValue]   = useState(config?.scan_report_email ?? '');
-  const [emailError, setEmailError]   = useState<string | null>(null);
-  const prevEmailRef                  = useRef(config?.scan_report_email ?? '');
+  const [emailValue, setEmailValue] = useState(config?.scan_report_email ?? "");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const prevEmailRef = useRef(config?.scan_report_email ?? "");
 
   // Keep email field in sync when config reloads (e.g. after initial fetch)
   useEffect(() => {
-    const incoming = config?.scan_report_email ?? '';
+    const incoming = config?.scan_report_email ?? "";
     setEmailValue(incoming);
     prevEmailRef.current = incoming;
   }, [config?.scan_report_email]);
@@ -203,8 +203,8 @@ export const ScanReportSettingsPanel: React.FC<ScanReportSettingsPanelProps> = (
     if (trimmed === prevEmailRef.current) return;
 
     // Validation
-    if (trimmed !== '' && !isValidEmail(trimmed)) {
-      setEmailError('Please enter a valid email address.');
+    if (trimmed !== "" && !isValidEmail(trimmed)) {
+      setEmailError("Please enter a valid email address.");
       return;
     }
 
@@ -215,7 +215,9 @@ export const ScanReportSettingsPanel: React.FC<ScanReportSettingsPanelProps> = (
 
   // ── Enabled toggle ──────────────────────────────────────────────────────────
 
-  const [enabledLocal, setEnabledLocal] = useState(config?.scan_report_enabled ?? false);
+  const [enabledLocal, setEnabledLocal] = useState(
+    config?.scan_report_enabled ?? false
+  );
 
   useEffect(() => {
     setEnabledLocal(config?.scan_report_enabled ?? false);
@@ -226,16 +228,16 @@ export const ScanReportSettingsPanel: React.FC<ScanReportSettingsPanelProps> = (
       setEnabledLocal(next);
       onSave({ scan_report_enabled: next });
     },
-    [onSave],
+    [onSave]
   );
 
   // ── Test-send button state ──────────────────────────────────────────────────
 
   const [testSendStatus, setTestSendStatus] = useState<
-    'idle' | 'sending' | 'success' | 'error'
-  >('idle');
+    "idle" | "sending" | "success" | "error"
+  >("idle");
   const [testSendMessage, setTestSendMessage] = useState<string | null>(null);
-  const [cooldownMs, setCooldownMs]           = useState(() => getRemainingCooldownMs());
+  const [cooldownMs, setCooldownMs] = useState(() => getRemainingCooldownMs());
 
   // Countdown ticker
   useEffect(() => {
@@ -249,35 +251,38 @@ export const ScanReportSettingsPanel: React.FC<ScanReportSettingsPanelProps> = (
   }, [cooldownMs]);
 
   const handleTestSend = useCallback(async () => {
-    if (cooldownMs > 0 || testSendStatus === 'sending') return;
+    if (cooldownMs > 0 || testSendStatus === "sending") return;
 
-    setTestSendStatus('sending');
+    setTestSendStatus("sending");
     setTestSendMessage(null);
 
     try {
       const result = await wpApi<{ success: boolean; message: string }>(
-        '/security/scan/report-test-send',
-        { method: 'POST' },
+        "/security/scan/report-test-send",
+        { method: "POST" }
       );
 
       if (result.success) {
-        setTestSendStatus('success');
-        setTestSendMessage(result.message || 'Test email sent successfully.');
+        setTestSendStatus("success");
+        setTestSendMessage(result.message || "Test email sent successfully.");
         recordSendTs();
         setCooldownMs(RATE_LIMIT_MS);
       } else {
-        setTestSendStatus('error');
-        setTestSendMessage(result.message || 'Failed to send test email.');
+        setTestSendStatus("error");
+        setTestSendMessage(result.message || "Failed to send test email.");
       }
     } catch (err) {
-      setTestSendStatus('error');
+      setTestSendStatus("error");
       setTestSendMessage(
-        err instanceof Error ? err.message : 'An error occurred while sending the test email.',
+        err instanceof Error
+          ? err.message
+          : "An error occurred while sending the test email."
       );
     }
   }, [cooldownMs, testSendStatus]);
 
-  const isTestSendDisabled = cooldownMs > 0 || testSendStatus === 'sending' || isSaving;
+  const isTestSendDisabled =
+    cooldownMs > 0 || testSendStatus === "sending" || isSaving;
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -285,33 +290,34 @@ export const ScanReportSettingsPanel: React.FC<ScanReportSettingsPanelProps> = (
     <section
       id="scan-report-settings-panel"
       aria-label="Scan report settings"
-      className="bg-card border border-border rounded-2xl p-6 flex flex-col gap-5"
+      className="bg-card border-border flex flex-col gap-5 rounded-2xl border p-6"
     >
       {/* Section header */}
       <div className="flex items-center gap-3">
-        <div className="p-2.5 bg-secondary rounded-xl shrink-0">
+        <div className="bg-secondary shrink-0 rounded-xl p-2.5">
           <BellRing size={18} className="text-swiss-navy" aria-hidden="true" />
         </div>
         <div>
-          <h3 className="font-black text-sm text-swiss-navy uppercase tracking-tight">
+          <h3 className="text-swiss-navy text-sm font-black tracking-tight uppercase">
             Scheduled Scan Report
           </h3>
           {/* WCAG 1.4.3: text-neutral-500 on white is ~3.5:1 (FAIL) → text-neutral-600 is ~5.9:1 (PASS) */}
-          <p className="text-xs font-medium text-neutral-600 mt-0.5">
-            Configure automated email reports after each scheduled scan. Changes save instantly.
+          <p className="mt-0.5 text-xs font-medium text-neutral-600">
+            Configure automated email reports after each scheduled scan. Changes
+            save instantly.
           </p>
         </div>
         {isSaving && (
           <Loader2
             size={14}
-            className="animate-spin text-neutral-400 ml-auto shrink-0"
+            className="ml-auto shrink-0 animate-spin text-neutral-400"
             aria-label="Saving…"
           />
         )}
       </div>
 
       <fieldset
-        className="flex flex-col gap-4 border-0 p-0 m-0 min-w-0"
+        className="m-0 flex min-w-0 flex-col gap-4 border-0 p-0"
         aria-busy={isSaving}
         disabled={isSaving}
       >
@@ -328,20 +334,21 @@ export const ScanReportSettingsPanel: React.FC<ScanReportSettingsPanelProps> = (
           colorScheme="traffic"
         />
 
-        <div className="border-t border-border" aria-hidden="true" />
+        <div className="border-border border-t" aria-hidden="true" />
 
         {/* Email input */}
         <div className="flex flex-col gap-2">
           <label
             htmlFor={emailId}
-            className="text-sm font-black text-neutral-800 flex items-center gap-1.5"
+            className="flex items-center gap-1.5 text-sm font-black text-neutral-800"
           >
             <Mail size={14} className="text-neutral-400" aria-hidden="true" />
             Report email address
           </label>
           {/* WCAG 1.4.3: text-neutral-500 on white is ~3.5:1 (FAIL) → text-neutral-600 is ~5.9:1 (PASS) */}
           <p className="text-xs font-medium text-neutral-600">
-            Scan reports will be sent to this address. Saved automatically when you leave the field.
+            Scan reports will be sent to this address. Saved automatically when
+            you leave the field.
           </p>
           <input
             id={emailId}
@@ -356,16 +363,18 @@ export const ScanReportSettingsPanel: React.FC<ScanReportSettingsPanelProps> = (
             aria-describedby={emailError ? `${emailId}-error` : undefined}
             aria-invalid={!!emailError}
             className={[
-              'w-full px-4 py-2.5 rounded-xl border text-sm font-medium bg-background text-neutral-800 placeholder-neutral-400',
-              'transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-swiss-navy',
-              emailError ? 'border-red-400' : 'border-border hover:border-swiss-navy/40',
-            ].join(' ')}
+              "bg-background w-full rounded-xl border px-4 py-2.5 text-sm font-medium text-neutral-800 placeholder-neutral-400",
+              "focus-visible:ring-swiss-navy transition-colors duration-200 focus:outline-none focus-visible:ring-2",
+              emailError
+                ? "border-red-400"
+                : "border-border hover:border-swiss-navy/40",
+            ].join(" ")}
           />
           {emailError && (
             <p
               id={`${emailId}-error`}
               role="alert"
-              className="text-xs font-black text-red-600 flex items-center gap-1.5"
+              className="flex items-center gap-1.5 text-xs font-black text-red-600"
             >
               <AlertCircle size={12} aria-hidden="true" />
               {emailError}
@@ -373,18 +382,21 @@ export const ScanReportSettingsPanel: React.FC<ScanReportSettingsPanelProps> = (
           )}
         </div>
 
-        <div className="border-t border-border" aria-hidden="true" />
+        <div className="border-border border-t" aria-hidden="true" />
 
         {/* Test-send button */}
         <div className="flex flex-col gap-3">
           <div>
-            <p className="text-sm font-black text-neutral-800">Send a test email</p>
+            <p className="text-sm font-black text-neutral-800">
+              Send a test email
+            </p>
             {/* WCAG 1.4.3: text-neutral-500 on white is ~3.5:1 (FAIL) → text-neutral-600 is ~5.9:1 (PASS) */}
-            <p className="text-xs font-medium text-neutral-600 mt-0.5">
-              Sends a sample report to the configured address so you can check formatting and delivery.
+            <p className="mt-0.5 text-xs font-medium text-neutral-600">
+              Sends a sample report to the configured address so you can check
+              formatting and delivery.
               {cooldownMs > 0 && (
                 // WCAG 1.4.3: text-amber-600 on white is ~3.5:1 (FAIL) → text-amber-700 is ~4.7:1 (PASS)
-                <span className="text-amber-700 font-black ml-1">
+                <span className="ml-1 font-black text-amber-700">
                   Available in {formatCountdown(cooldownMs)}.
                 </span>
               )}
@@ -395,20 +407,20 @@ export const ScanReportSettingsPanel: React.FC<ScanReportSettingsPanelProps> = (
             type="button"
             onClick={handleTestSend}
             disabled={isTestSendDisabled}
-            aria-busy={testSendStatus === 'sending'}
+            aria-busy={testSendStatus === "sending"}
             aria-label={
               cooldownMs > 0
                 ? `Test email rate limited — try again in ${formatCountdown(cooldownMs)}`
-                : 'Send test scan report email'
+                : "Send test scan report email"
             }
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary border border-border text-xs font-black uppercase tracking-[0.08em] text-neutral-700 hover:bg-card hover:border-swiss-navy/40 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-swiss-navy disabled:opacity-50 disabled:cursor-not-allowed self-start"
+            className="bg-secondary border-border hover:bg-card hover:border-swiss-navy/40 focus-visible:ring-swiss-navy inline-flex items-center gap-2 self-start rounded-xl border px-4 py-2.5 text-xs font-black tracking-[0.08em] text-neutral-700 uppercase transition-all duration-200 focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {testSendStatus === 'sending' ? (
+            {testSendStatus === "sending" ? (
               <Loader2 size={13} className="animate-spin" aria-hidden="true" />
             ) : (
               <Send size={13} aria-hidden="true" />
             )}
-            {testSendStatus === 'sending' ? 'Sending…' : 'Send Test Email'}
+            {testSendStatus === "sending" ? "Sending…" : "Send Test Email"}
           </button>
 
           {/*
@@ -429,12 +441,12 @@ export const ScanReportSettingsPanel: React.FC<ScanReportSettingsPanelProps> = (
             aria-live="polite"
             aria-atomic="true"
             className={`flex items-center gap-1.5 text-xs font-black ${
-              testSendStatus === 'success' ? 'text-emerald-600' : 'text-red-600'
+              testSendStatus === "success" ? "text-emerald-600" : "text-red-600"
             }`}
           >
             {testSendMessage && (
               <>
-                {testSendStatus === 'success' ? (
+                {testSendStatus === "success" ? (
                   <CheckCircle2 size={13} aria-hidden="true" />
                 ) : (
                   <AlertCircle size={13} aria-hidden="true" />

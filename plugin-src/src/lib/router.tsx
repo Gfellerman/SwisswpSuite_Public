@@ -2,103 +2,58 @@
  * Authored by: Frontend Specialist
  * Skills: react-patterns, frontend-design, typescript-expert
  * Date: 2026-02-17
- * 
+ *
  * React Router v7 Configuration
  * Uses HashRouter for WordPress admin compatibility
- * Code splitting with React.lazy for performance
+ *
+ * Pages are statically imported. `vite.config.ts` builds this bundle as a
+ * single JS file (`build.rollupOptions.output.inlineDynamicImports`), and a
+ * static import keeps every route's module inside that one file with no
+ * runtime loader involved at all — every enqueued script comes from
+ * `wp_enqueue_script()` alone.
  */
 
-import { createHashRouter, Navigate } from 'react-router-dom';
-import React, { Suspense } from 'react';
+import { createHashRouter, Navigate } from "react-router-dom";
+import DashboardPage from "../pages/DashboardPage";
+import SecurityPage from "../pages/SecurityPage";
+import SeoPage from "../pages/SeoPage";
+import BackupsPage from "../pages/BackupsPage";
+import SettingsPage from "../pages/SettingsPage";
 
-// Lazy load pages for code splitting (react-patterns: performance optimization)
-const DashboardPage = React.lazy(() => import('../pages/DashboardPage'));
-const SecurityPage = React.lazy(() => import('../pages/SecurityPage'));
-const SeoPage = React.lazy(() => import('../pages/SeoPage'));
-const BackupsPage = React.lazy(() => import('../pages/BackupsPage'));
-const AIContentPage = React.lazy(() => import('../pages/AIContentPage'));
-const SettingsPage = React.lazy(() => import('../pages/SettingsPage'));
-
-const SyncPage = React.lazy(() => import('../pages/SyncPage'));
-
-// Loading fallback component
-const LoadingFallback = () => (
-    <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-brand border-r-transparent"></div>
-            <p className="mt-4 text-neutral-600 ">Loading...</p>
-        </div>
-    </div>
-);
-
-import { DashboardLayout } from '../components/templates/DashboardLayout';
+import { DashboardLayout } from "../components/templates/DashboardLayout";
+import { EXTRA_ROUTES } from "./extraRoutes";
 
 // Router configuration with HashRouter strategy
 export const router = createHashRouter([
-    {
-        path: '/',
-        element: <DashboardLayout />,
-        children: [
-            {
-                index: true,
-                element: (
-                    <Suspense fallback={<LoadingFallback />}>
-                        <DashboardPage />
-                    </Suspense>
-                ),
-            },
-            {
-                path: 'dashboard',
-                element: <Navigate to="/" replace />,
-            },
-            {
-                path: 'security',
-                element: (
-                    <Suspense fallback={<LoadingFallback />}>
-                        <SecurityPage />
-                    </Suspense>
-                ),
-            },
-            {
-                path: 'seo',
-                element: (
-                    <Suspense fallback={<LoadingFallback />}>
-                        <SeoPage />
-                    </Suspense>
-                ),
-            },
-            {
-                path: 'backups',
-                element: (
-                    <Suspense fallback={<LoadingFallback />}>
-                        <BackupsPage />
-                    </Suspense>
-                ),
-            },
-            {
-                path: 'ai-content',
-                element: (
-                    <Suspense fallback={<LoadingFallback />}>
-                        <AIContentPage />
-                    </Suspense>
-                ),
-            },
-            {
-                path: 'sync',
-                element: (
-                    <Suspense fallback={<LoadingFallback />}>
-                        <SyncPage />
-                    </Suspense>
-                ),
-            },
-            {
-                path: 'settings',
-                element: (
-                    <Suspense fallback={<LoadingFallback />}>
-                        <SettingsPage />
-                    </Suspense>
-                ),
-            },
-        ]
-    },
+  {
+    path: "/",
+    element: <DashboardLayout />,
+    children: [
+      {
+        index: true,
+        element: <DashboardPage />,
+      },
+      {
+        path: "dashboard",
+        element: <Navigate to="/" replace />,
+      },
+      {
+        path: "security",
+        element: <SecurityPage />,
+      },
+      {
+        path: "seo",
+        element: <SeoPage />,
+      },
+      {
+        path: "backups",
+        element: <BackupsPage />,
+      },
+      {
+        path: "settings",
+        element: <SettingsPage />,
+      },
+      ...EXTRA_ROUTES,
+    ],
+  },
 ]);

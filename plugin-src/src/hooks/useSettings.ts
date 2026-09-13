@@ -10,26 +10,16 @@ import {
   useQueryClient,
   keepPreviousData,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "../lib/toast";
 import { wpApi } from "../services/api";
 
 export interface SwissSettings {
-  /**
-   * @deprecated SET-002/SET-024: Dead state — never used by any component.
-   * Retained for API response compatibility (PHP returns masked key string).
-   * Use `hasApiKey` boolean to check if a key is configured.
-   */
-  apiKey: string;
-  useCustomApi: boolean;
-  customApiUrl: string;
-  customModelId: string;
-  autoUpdatePlugin: boolean;
+  // WP.org R14 item 3 (2026-09-07, v2.9.33.54): autoUpdatePlugin removed —
+  // the plugin no longer registers an 'auto_update_plugin' filter, and the
+  // underlying option is retired. WordPress core's own per-plugin
+  // auto-update toggle (Plugins screen) is the only mechanism now.
   emailNotifications: boolean;
-  betaFeatures: boolean;
   loginMaxRetries: number;
-  transferStrategy?: string; // Auto, Chunked, Stream
-  wpscanApiKey?: string; // Optional WPScan API key for vulnerability scanning
-  patchstackApiKey?: string; // Optional Patchstack API key for second CVE source
   coreIntegrityEnabled?: boolean; // WordPress core file integrity check
   abandonedPluginCheckEnabled?: boolean; // Daily abandoned plugin detection
   // F-09 Option A (ARS Round B2, D4-2): off-by-default local pageview
@@ -37,6 +27,12 @@ export interface SwissSettings {
   // is ever stored or transmitted — see api-settings.php get_settings().
   pageviewTrackingEnabled?: boolean;
   alertEmail?: string; // Email address for security alerts and diagnostic notifications
+  // DIAG-EMAIL E-5 (VALIDATOR_DIAG_EMAIL.md §4 D6, v2.9.33.51+): cadence for
+  // the ERROR/WARNING alert digest cron (swisswpsuite_alert_digest). CRITICAL
+  // events still email immediately regardless of this setting — see the PHP
+  // design doc. 'off' disables the digest entirely (immediate CRITICAL mail
+  // still applies). Server default is 'daily' (owner gate G2).
+  alertDigestFrequency?: "off" | "daily" | "twicedaily";
   seoDefaultOgImage?: number; // Attachment ID for default social sharing image
   // P1-03/F-08 fix: real toggle for the /sitemap.xml endpoint (previously
   // seeded 'no' at activation with no UI/REST path to ever turn it on).
@@ -51,59 +47,37 @@ export interface SwissSettings {
   // ARS Round D delta (M6, handoff/DX1_seo-meta-ui-contract.md): opt-in
   // toggle for basic on-page meta injection (title/description/OG/
   // canonical/schema via PHP filters — class-swisswpsuite-frontend.php's
-  // META_INJECTION_OPTION gate). Deliberately distinct from the Pro AI
-  // Workbench's separate `swisswpsuite_seo_rewrite_titles` title-rewrite
-  // toggle — do not conflate the two. Default off.
+  // META_INJECTION_OPTION gate). Default off.
   seoMetaInjectionEnabled?: boolean;
-  // ARS Round E, F-14 (R7 report, 2026-08-24): opt-in gate for
-  // class-swisswpsuite-seo-compat.php's OVERRIDE strategy (unhooking a
-  // host-bundled competing SEO plugin's own wp_head output, e.g. Hostinger
-  // AI Assistant). The option was already manifest-registered but had no
-  // GET/POST field anywhere -- the admin notice's "Turn on the ... setting"
-  // instruction was impossible to follow until this field existed. Default
-  // off, same string ('yes'/'no') convention as the toggles above.
-  seoCompatOverrideEnabled?: boolean;
-  brandVoice?: string; // Optional one-line tone hint injected into content-facing AI prompts (≤200 chars)
-  // Presence indicators — use these instead of reading the masked key strings
-  // hasApiKey gap FIX: Missing from SwissSettings but present in SettingsResponse.
-  hasApiKey?: boolean;
-  hasWpscanApiKey?: boolean;
-  hasPatchstackApiKey?: boolean;
+  // DASH-2/Fix-C.1 (VALIDATOR_DASH.md, v2.9.33.49): read-only mirror of
+  // swisswpsuite_firewall_enabled, additive so it degrades safely against a
+  // PHP build that doesn't send it yet (backend is a separate lane — see
+  // .claude/audit-reports/security-control-2026-09-03/VALIDATOR_DASH.md §5
+  // Fix C). Never written back through updateSettings — the WAF toggle in
+  // SecurityHub.tsx (/security/toggle) is the only writer of the underlying
+  // option.
+  firewallEnabled?: boolean;
   // C-01 partial: Encryption password state — PHP returns these in GET /settings
   hasEncryptionPassword?: boolean;
   encryptionPasswordCorrupted?: boolean;
 }
 
 interface SettingsResponse {
-  apiKey: string;
-  useCustomApi: boolean;
-  customApiUrl: string;
-  customModelId: string;
-  license: any;
-  tokens: any;
-  transferStrategy: string;
   hasEncryptionPassword?: boolean;
   encryptionPasswordCorrupted?: boolean;
-  autoUpdatePlugin: boolean;
   emailNotifications: boolean;
-  betaFeatures: boolean;
+  /** Present only when the site has beta sections to switch on. */
   loginMaxRetries: number;
-  wpscanApiKey: string;
-  patchstackApiKey: string;
   coreIntegrityEnabled: boolean;
   abandonedPluginCheckEnabled: boolean;
   pageviewTrackingEnabled: boolean; // F-09 Option A (D4-2) — off-by-default
   alertEmail?: string;
+  alertDigestFrequency?: "off" | "daily" | "twicedaily"; // DIAG-EMAIL E-5 — see SwissSettings.alertDigestFrequency
   seoDefaultOgImage?: number;
   sitemapEnabled?: boolean; // P1-03/F-08 — see SwissSettings.sitemapEnabled
   llmsTxtEnabled?: boolean; // P1-06/F-11 — see SwissSettings.llmsTxtEnabled
   seoMetaInjectionEnabled?: boolean; // M6 — see SwissSettings.seoMetaInjectionEnabled
-  seoCompatOverrideEnabled?: boolean; // ARS Round E F-14 — see SwissSettings.seoCompatOverrideEnabled
-  brandVoice?: string; // Optional tone hint for content-facing AI prompts
-  // Presence indicators — apiKey/wpscanApiKey/patchstackApiKey are now masked strings, use has*Key to determine if set
-  hasApiKey?: boolean;
-  hasWpscanApiKey?: boolean;
-  hasPatchstackApiKey?: boolean;
+  firewallEnabled?: boolean; // DASH-2/Fix-C.1 — see SwissSettings.firewallEnabled
   // SET-031: Optimistic-concurrency token echoed on POST to detect two-tab conflicts.
   settings_version?: string;
 }
@@ -123,8 +97,8 @@ export function useSettings() {
       return wpApi<SettingsResponse>("/settings");
     },
     staleTime: 60000, // 1 minute
-    // Retain last successful response during error / background-refetch states so
-    // the license UI never drops to "unlicensed" because of a transient VPS blip.
+    // Retain the last successful response during error / background-refetch
+    // states so a panel never flips to an empty shape on a transient blip.
     placeholderData: keepPreviousData,
   });
 
@@ -165,17 +139,6 @@ export function useSettings() {
     },
   });
 
-  const activateLicenseMutation = useMutation({
-    mutationFn: async (licenseKey: string) => {
-      return wpApi<{ success: boolean; message: string }>("/activate-license", {
-        method: "POST",
-        body: JSON.stringify({ licenseKey }), // Matches API expected param
-      });
-    },
-    // IMPORTANT: No onSuccess invalidation here.
-    // We MUST trigger a hard reload in the component to refresh PHP globals.
-  });
-
   return {
     settings,
     isLoading,
@@ -183,7 +146,5 @@ export function useSettings() {
     error,
     updateSettings: updateSettingsMutation.mutateAsync,
     isUpdating: updateSettingsMutation.isPending,
-    activateLicense: activateLicenseMutation.mutateAsync,
-    isActivating: activateLicenseMutation.isPending,
   };
 }

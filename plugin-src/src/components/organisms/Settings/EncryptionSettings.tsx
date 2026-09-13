@@ -22,8 +22,9 @@ import { useState } from "react";
 import { Card } from "../../ui/Card";
 import { Button } from "../../ui/Button";
 import { Badge } from "../../ui/Badge";
-import { toast } from "sonner";
+import { toast } from "../../../lib/toast";
 import { SwissSettings } from "../../../hooks/useSettings";
+import { ENCRYPTION_DESCRIPTION_TAIL } from "./encryptionSettingsCopy";
 import {
   Lock,
   CheckCircle2,
@@ -81,7 +82,7 @@ export function EncryptionSettings({
       toast.success(
         hasPassword
           ? "Encryption password updated"
-          : "Encryption enabled — future backups will be encrypted",
+          : "Encryption enabled — future backups will be encrypted"
       );
       setPassword("");
       setConfirm("");
@@ -95,7 +96,7 @@ export function EncryptionSettings({
   const handleClear = async () => {
     if (
       !window.confirm(
-        "Remove the encryption password? Future backups will be created as plain ZIPs. Existing encrypted backups will still require this password to restore.",
+        "Remove the encryption password? Future backups will be created as plain ZIPs. Existing encrypted backups will still require this password to restore."
       )
     ) {
       return;
@@ -120,13 +121,13 @@ export function EncryptionSettings({
     if (corrupted) {
       return (
         <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+          className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-800 dark:bg-red-900/20"
           role="status"
           aria-label="Encryption key corrupted"
         >
           <AlertTriangle
             size={15}
-            className="text-red-600 dark:text-red-400 shrink-0"
+            className="shrink-0 text-red-600 dark:text-red-400"
             aria-hidden="true"
           />
           <span className="text-sm font-medium text-red-700 dark:text-red-300">
@@ -141,13 +142,13 @@ export function EncryptionSettings({
     if (hasPassword) {
       return (
         <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800"
+          className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-800 dark:bg-emerald-900/20"
           role="status"
           aria-label="Encryption is active"
         >
           <CheckCircle2
             size={15}
-            className="text-emerald-600 dark:text-emerald-400 shrink-0"
+            className="shrink-0 text-emerald-600 dark:text-emerald-400"
             aria-hidden="true"
           />
           <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
@@ -161,16 +162,16 @@ export function EncryptionSettings({
     }
     return (
       <div
-        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800/40 border border-border"
+        className="border-border flex items-center gap-2 rounded-lg border bg-neutral-100 px-3 py-2 dark:bg-neutral-800/40"
         role="status"
         aria-label="Encryption not configured"
       >
         <Lock
           size={15}
-          className="text-neutral-500 shrink-0"
+          className="shrink-0 text-neutral-500"
           aria-hidden="true"
         />
-        <span className="text-sm font-medium text-neutral-700 dark:text-foreground">
+        <span className="dark:text-foreground text-sm font-medium text-neutral-700">
           Not configured
         </span>
         <span className="text-xs text-neutral-500">
@@ -181,17 +182,17 @@ export function EncryptionSettings({
   };
 
   return (
-    <Card className="max-w-3xl p-6 space-y-4">
+    <Card className="max-w-3xl space-y-4 p-6">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-border pb-4">
-        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+      <div className="border-border flex items-center gap-3 border-b pb-4">
+        <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
           <Lock
-            className="w-5 h-5 text-blue-600 dark:text-blue-400"
+            className="h-5 w-5 text-blue-600 dark:text-blue-400"
             aria-hidden="true"
           />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-lg text-neutral-900 dark:text-foreground">
+          <h3 className="dark:text-foreground text-lg font-semibold text-neutral-900">
             Backup Encryption
           </h3>
           <p className="text-xs text-neutral-700">
@@ -207,24 +208,23 @@ export function EncryptionSettings({
           When enabled, every new backup ZIP is encrypted with your password
           using AES-256-CBC (or XChaCha20-Poly1305 when Sodium is available) and
           saved with a <code className="font-mono text-xs">.zip.enc</code>{" "}
-          extension. Cloud uploads send the encrypted file — your provider never
-          sees the plaintext.
+          {ENCRYPTION_DESCRIPTION_TAIL}
         </p>
         <ul className="space-y-1.5 text-sm text-neutral-700">
           <li className="flex items-start gap-2">
-            <span className="mt-1 shrink-0 text-emerald-500 font-black">✓</span>
+            <span className="mt-1 shrink-0 font-black text-emerald-500">✓</span>
             <span>
               Strong key derivation: PBKDF2-SHA256 with 310,000 iterations
             </span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="mt-1 shrink-0 text-emerald-500 font-black">✓</span>
+            <span className="mt-1 shrink-0 font-black text-emerald-500">✓</span>
             <span>
               Password is stored encrypted at rest using your WordPress salts
             </span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="mt-1 shrink-0 text-amber-500 font-black">!</span>
+            <span className="mt-1 shrink-0 font-black text-amber-500">!</span>
             <span>
               <strong>Save your password somewhere safe</strong> — encrypted
               backups <em>cannot</em> be recovered without it
@@ -238,7 +238,7 @@ export function EncryptionSettings({
 
       {/* Set / replace password */}
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-neutral-900 dark:text-foreground">
+        <h4 className="dark:text-foreground text-sm font-medium text-neutral-900">
           {hasPassword ? "Replace password" : "Set password"}
         </h4>
 
@@ -246,7 +246,7 @@ export function EncryptionSettings({
         <div className="space-y-1.5">
           <label
             htmlFor="encryption-password-input"
-            className="text-sm font-medium text-neutral-900 dark:text-foreground"
+            className="dark:text-foreground text-sm font-medium text-neutral-900"
           >
             New password
           </label>
@@ -267,7 +267,7 @@ export function EncryptionSettings({
             <button
               type="button"
               onClick={() => setShowPwd((v) => !v)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md text-neutral-500 hover:text-neutral-700 dark:hover:text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="dark:hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-2 text-neutral-500 hover:text-neutral-700 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
               aria-label={showPwd ? "Hide password" : "Show password"}
             >
               {showPwd ? (
@@ -286,7 +286,7 @@ export function EncryptionSettings({
         <div className="space-y-1.5">
           <label
             htmlFor="encryption-password-confirm-input"
-            className="text-sm font-medium text-neutral-900 dark:text-foreground"
+            className="dark:text-foreground text-sm font-medium text-neutral-900"
           >
             Confirm password
           </label>
@@ -371,7 +371,7 @@ export function EncryptionSettings({
       </div>
 
       {/* Footer note */}
-      <p className="text-xs text-neutral-500 border-t border-border pt-3">
+      <p className="border-border border-t pt-3 text-xs text-neutral-500">
         Existing plain-ZIP backups stay as-is. Only NEW backups created after
         you save a password will be encrypted.
       </p>

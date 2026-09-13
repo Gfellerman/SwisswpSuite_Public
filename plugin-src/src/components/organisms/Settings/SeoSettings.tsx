@@ -16,32 +16,17 @@
  * settings.php, which this lane does not own.
  *
  * M6 fix (ARS Round D delta, 2026-08-24): added a third toggle for
- * `seoMetaInjectionEnabled` — the Free-tier "basic SEO meta/title
+ * `seoMetaInjectionEnabled` — the "basic SEO meta/title
  * injection" gate (class-swisswpsuite-frontend.php's META_INJECTION_OPTION,
  * wp_head/pre_get_document_title/document_title_parts hooks). Backend
- * field contract: handoff/DX1_seo-meta-ui-contract.md. Deliberately a
- * DIFFERENT option from the Pro AI Workbench's separate title-rewrite
- * toggle (`swisswpsuite_seo_rewrite_titles`, SeoAiWorkbench.tsx) — see
- * handoff/L-H_seo-rewrite-titles-ui.md — so the label/description below
- * are worded to avoid implying they are the same setting.
- *
- * F-14 fix (ARS Round E, R7 report, 2026-08-24): added a fourth toggle for
- * `seoCompatOverrideEnabled` — class-swisswpsuite-seo-compat.php's OVERRIDE
- * opt-in (unhooking a host-bundled competing SEO plugin's own wp_head
- * output, e.g. Hostinger AI Assistant). The option already existed and its
- * suppression logic already worked, but no Settings UI control existed
- * anywhere — the admin notice it drives told users to "Turn on the
- * ... setting" for a setting that could never be turned on. Label text
- * below deliberately echoes the notice's own wording ("Override
- * host-bundled SEO plugins") so an admin can find the control the notice is
- * pointing at.
+ * Label and description describe the meta-tag output only.
  */
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "../../ui/Card";
 import { Button } from "../../ui/Button";
-import { toast } from "sonner";
+import { toast } from "../../../lib/toast";
 import { Image, X, Upload, Layout } from "lucide-react";
 import { SwissSettings } from "../../../hooks/useSettings";
 
@@ -85,13 +70,22 @@ type ToggleRowProps = {
   isSaving?: boolean;
 };
 
-function ToggleRow({ label, desc, checked, onChange, isSaving }: ToggleRowProps) {
+function ToggleRow({
+  label,
+  desc,
+  checked,
+  onChange,
+  isSaving,
+}: ToggleRowProps) {
   const labelId = `seo-toggle-label-${label.replace(/\s+/g, "-").toLowerCase()}`;
   const descId = `seo-toggle-desc-${label.replace(/\s+/g, "-").toLowerCase()}`;
   return (
     <div className="border-border dark:border-border flex items-center justify-between border-b py-3 last:border-0">
       <div>
-        <p id={labelId} className="text-sm font-medium text-neutral-900 dark:text-foreground">
+        <p
+          id={labelId}
+          className="dark:text-foreground text-sm font-medium text-neutral-900"
+        >
           {label}
         </p>
         <p id={descId} className="mt-0.5 text-xs text-neutral-700">
@@ -110,12 +104,16 @@ function ToggleRow({ label, desc, checked, onChange, isSaving }: ToggleRowProps)
         } ${checked ? "bg-green-500" : "bg-red-500"}`}
         onClick={() => !isSaving && onChange(!checked)}
         onKeyDown={(e) =>
-          !isSaving && (e.key === "Enter" || e.key === " ") && onChange(!checked)
+          !isSaving &&
+          (e.key === "Enter" || e.key === " ") &&
+          onChange(!checked)
         }
       >
         <div
           className="h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-300"
-          style={{ transform: checked ? "translateX(1.25rem)" : "translateX(0)" }}
+          style={{
+            transform: checked ? "translateX(1.25rem)" : "translateX(0)",
+          }}
         />
       </div>
     </div>
@@ -127,19 +125,11 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
   // P1-03/P1-06: which endpoint toggle (if any) has an in-flight save, so we
   // can disable/aria-busy just that row rather than the whole card.
   const [savingToggle, setSavingToggle] = useState<
-    | "sitemapEnabled"
-    | "llmsTxtEnabled"
-    | "seoMetaInjectionEnabled"
-    | "seoCompatOverrideEnabled"
-    | null
+    "sitemapEnabled" | "llmsTxtEnabled" | "seoMetaInjectionEnabled" | null
   >(null);
 
   const handleToggleSave = async (
-    field:
-      | "sitemapEnabled"
-      | "llmsTxtEnabled"
-      | "seoMetaInjectionEnabled"
-      | "seoCompatOverrideEnabled",
+    field: "sitemapEnabled" | "llmsTxtEnabled" | "seoMetaInjectionEnabled",
     value: boolean
   ) => {
     setSavingToggle(field);
@@ -154,10 +144,6 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
         seoMetaInjectionEnabled: [
           "Basic SEO meta tags enabled",
           "Basic SEO meta tags disabled",
-        ],
-        seoCompatOverrideEnabled: [
-          "Now overriding host-bundled SEO plugins",
-          "No longer overriding host-bundled SEO plugins",
         ],
       };
       const [onMsg, offMsg] = messages[field];
@@ -180,7 +166,7 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
             headers: {
               "X-WP-Nonce": window.swisswpsuiteData.nonce,
             },
-          },
+          }
         );
         if (!res.ok) {
           throw new Error("Failed to fetch attachment");
@@ -223,17 +209,17 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <Card className="p-6 space-y-4">
+      <Card className="space-y-4 p-6">
         {/* Header */}
-        <div className="flex items-center gap-3 border-b border-border pb-4">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+        <div className="border-border flex items-center gap-3 border-b pb-4">
+          <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
             <Image
-              className="w-5 h-5 text-blue-600 dark:text-blue-400"
+              className="h-5 w-5 text-blue-600 dark:text-blue-400"
               aria-hidden="true"
             />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-lg text-neutral-900 dark:text-foreground">
+            <h3 className="dark:text-foreground text-lg font-semibold text-neutral-900">
               SEO Settings
             </h3>
             <p className="text-xs text-neutral-700">
@@ -245,10 +231,10 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
         {/* Default Social Image section */}
         <div className="space-y-3">
           <div>
-            <p className="font-medium text-sm text-neutral-900 dark:text-foreground">
+            <p className="dark:text-foreground text-sm font-medium text-neutral-900">
               Default Social Image
             </p>
-            <p className="text-xs text-neutral-700 mt-0.5">
+            <p className="mt-0.5 text-xs text-neutral-700">
               Shown when sharing pages that have no featured image (homepage,
               blog listing, posts without thumbnails). Recommended size:
               1200&times;630px.
@@ -257,11 +243,11 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
 
           {/* Image preview */}
           {attachmentId > 0 && (
-            <div className="p-4 bg-background dark:bg-card/30 rounded-xl border border-border dark:border-border">
+            <div className="bg-background dark:bg-card/30 border-border dark:border-border rounded-xl border p-4">
               {isLoadingImage ? (
                 <div className="flex items-center gap-2 text-xs text-neutral-700">
                   <span
-                    className="inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"
+                    className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
                     aria-hidden="true"
                   />
                   Loading preview...
@@ -313,16 +299,16 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
       </Card>
 
       {/* P1-03/P1-06: Sitemap & AI Assistant Guide endpoint toggles */}
-      <Card className="p-6 space-y-4">
-        <div className="flex items-center gap-3 border-b border-border pb-4">
-          <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+      <Card className="space-y-4 p-6">
+        <div className="border-border flex items-center gap-3 border-b pb-4">
+          <div className="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-900/30">
             <Layout
-              className="w-5 h-5 text-emerald-600 dark:text-emerald-400"
+              className="h-5 w-5 text-emerald-600 dark:text-emerald-400"
               aria-hidden="true"
             />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-lg text-neutral-900 dark:text-foreground">
+            <h3 className="dark:text-foreground text-lg font-semibold text-neutral-900">
               Discoverability
             </h3>
             <p className="text-xs text-neutral-700">
@@ -351,23 +337,22 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
       </Card>
 
       {/* M6 fix (ARS Round D delta): basic on-page meta injection toggle —
-          NOT the same setting as the Pro AI Workbench's title-rewrite
-          toggle (SeoAiWorkbench.tsx), see this file's header docblock. */}
-      <Card className="p-6 space-y-4">
-        <div className="flex items-center gap-3 border-b border-border pb-4">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+          NOT the same setting as the separate title-rewrite toggle, see this
+          file's header docblock. */}
+      <Card className="space-y-4 p-6">
+        <div className="border-border flex items-center gap-3 border-b pb-4">
+          <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
             <Layout
-              className="w-5 h-5 text-blue-600 dark:text-blue-400"
+              className="h-5 w-5 text-blue-600 dark:text-blue-400"
               aria-hidden="true"
             />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-lg text-neutral-900 dark:text-foreground">
+            <h3 className="dark:text-foreground text-lg font-semibold text-neutral-900">
               Meta Tags
             </h3>
             <p className="text-xs text-neutral-700">
-              Basic on-page SEO tags, generated automatically — off by
-              default
+              Basic on-page SEO tags, generated automatically — off by default
             </p>
           </div>
         </div>
@@ -375,46 +360,10 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
         <div>
           <ToggleRow
             label="Basic SEO Meta Tags"
-            desc="Add title, description, Open Graph, canonical, and schema.org tags to every page using this plugin's built-in templates (opt-in, off by default). This does not use AI and is separate from any AI-generated title rewriting."
+            desc="Add title, description, Open Graph, canonical, and schema.org tags to every page using this plugin's built-in templates (opt-in, off by default). Generated entirely from your existing page content on your own server — no AI, no external calls."
             checked={settings.seoMetaInjectionEnabled ?? false}
             onChange={(v) => handleToggleSave("seoMetaInjectionEnabled", v)}
             isSaving={savingToggle === "seoMetaInjectionEnabled"}
-          />
-        </div>
-      </Card>
-
-      {/* F-14 fix (ARS Round E, R7 report): the missing control the SEO-compat
-          admin notice (class-swisswpsuite-seo-compat.php) points admins to.
-          Only meaningful when a competing host-bundled SEO plugin is detected
-          (e.g. Hostinger AI Assistant) -- shown unconditionally here since
-          this panel has no reliable signal of that detection, mirroring how
-          the other toggles above are always shown regardless of context. */}
-      <Card className="p-6 space-y-4">
-        <div className="flex items-center gap-3 border-b border-border pb-4">
-          <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-            <Layout
-              className="w-5 h-5 text-amber-600 dark:text-amber-400"
-              aria-hidden="true"
-            />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-lg text-neutral-900 dark:text-foreground">
-              Host-Bundled SEO Plugins
-            </h3>
-            <p className="text-xs text-neutral-700">
-              Only relevant if your host pre-installed its own SEO plugin —
-              off by default
-            </p>
-          </div>
-        </div>
-
-        <div>
-          <ToggleRow
-            label="Override Host-Bundled SEO Plugins"
-            desc="If a host-bundled SEO plugin (e.g. Hostinger AI Assistant) is active, take over its SEO meta tags so both plugins' tags don't appear together. Only has an effect when such a plugin is detected — see the notice above the Settings page if one is active on this site."
-            checked={settings.seoCompatOverrideEnabled ?? false}
-            onChange={(v) => handleToggleSave("seoCompatOverrideEnabled", v)}
-            isSaving={savingToggle === "seoCompatOverrideEnabled"}
           />
         </div>
       </Card>

@@ -15,8 +15,8 @@
  * Focus trap pattern mirrors SentinelM5ConsentModal (the established codebase pattern).
  */
 
-import React, { useCallback, useEffect, useRef } from 'react';
-import { X, Mail } from 'lucide-react';
+import React, { useCallback, useEffect, useRef } from "react";
+import { X, Mail } from "lucide-react";
 
 // ── Focusable selector — same as SentinelM5ConsentModal for consistency ──────
 //
@@ -54,7 +54,7 @@ export const ScanReportPreviewModal: React.FC<ScanReportPreviewModalProps> = ({
   onClose,
   previewHtml,
 }) => {
-  const dialogRef  = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   /**
    * WCAG 2.4.3: capture the element that held focus when the modal opened,
    * so we can return focus to it on close. Without this, focus drops to
@@ -82,20 +82,20 @@ export const ScanReportPreviewModal: React.FC<ScanReportPreviewModalProps> = ({
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         handleClose();
         return;
       }
 
-      if (e.key !== 'Tab' || !dialogRef.current) return;
+      if (e.key !== "Tab" || !dialogRef.current) return;
 
       const focusable = Array.from(
-        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
       );
       if (focusable.length === 0) return;
 
-      const first  = focusable[0];
-      const last   = focusable[focusable.length - 1];
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
       const active = document.activeElement;
 
       if (e.shiftKey) {
@@ -111,13 +111,14 @@ export const ScanReportPreviewModal: React.FC<ScanReportPreviewModalProps> = ({
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
 
     // Move initial focus to the first focusable element inside the dialog.
-    const firstFocusable = dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    const firstFocusable =
+      dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
     firstFocusable?.focus();
 
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, handleClose]);
 
   if (!isOpen) return null;
@@ -127,7 +128,7 @@ export const ScanReportPreviewModal: React.FC<ScanReportPreviewModalProps> = ({
     // on any ancestor of an element with role="dialog". The backdrop must be
     // presentational only; ARIA containment is handled by aria-modal="true".
     <div
-      className="fixed inset-0 bg-swiss-navy/50 backdrop-blur-sm flex items-center justify-center z-[99996] animate-in fade-in p-4"
+      className="bg-swiss-navy/50 animate-in fade-in fixed inset-0 z-[99996] flex items-center justify-center p-4 backdrop-blur-sm"
       onClick={(e) => {
         // Close on backdrop click but not on dialog content click
         if (e.target === e.currentTarget) handleClose();
@@ -145,19 +146,23 @@ export const ScanReportPreviewModal: React.FC<ScanReportPreviewModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="scan-preview-modal-title"
-        className="w-full max-w-2xl bg-card rounded-3xl shadow-premium border border-border overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300"
+        className="bg-card border-border animate-in zoom-in-95 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border duration-300"
         // Prevent backdrop click handler from firing when clicking inside the dialog
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-border flex items-center justify-between gap-4 shrink-0">
+        <div className="border-border flex shrink-0 items-center justify-between gap-4 border-b p-6">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-brand-accent/10 rounded-xl shrink-0">
-              <Mail size={18} className="text-brand-accent" aria-hidden="true" />
+            <div className="bg-brand-accent/10 shrink-0 rounded-xl p-2.5">
+              <Mail
+                size={18}
+                className="text-brand-accent"
+                aria-hidden="true"
+              />
             </div>
             <h2
               id="scan-preview-modal-title"
-              className="font-black text-base text-swiss-navy uppercase tracking-tight"
+              className="text-swiss-navy text-base font-black tracking-tight uppercase"
             >
               Email Report Preview
             </h2>
@@ -167,7 +172,7 @@ export const ScanReportPreviewModal: React.FC<ScanReportPreviewModalProps> = ({
             type="button"
             onClick={handleClose}
             aria-label="Close email report preview"
-            className="text-neutral-400 hover:text-swiss-navy hover:bg-background p-2 rounded-xl transition-all border border-transparent shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-swiss-navy"
+            className="hover:text-swiss-navy hover:bg-background focus-visible:ring-swiss-navy shrink-0 rounded-xl border border-transparent p-2 text-neutral-400 transition-all focus-visible:ring-2 focus-visible:outline-none"
           >
             <X size={18} aria-hidden="true" />
           </button>
@@ -192,22 +197,24 @@ export const ScanReportPreviewModal: React.FC<ScanReportPreviewModalProps> = ({
               // iframe as "next" natively but the trap's querySelectorAll would not count it,
               // causing focus to escape the dialog to background content.
               tabIndex={0}
-              className="w-full h-full min-h-[400px] rounded-xl border border-border bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-swiss-navy"
+              className="border-border focus-visible:ring-swiss-navy h-full min-h-[400px] w-full rounded-xl border bg-white focus-visible:ring-2 focus-visible:outline-none"
               aria-label="Email report HTML preview"
             />
           ) : (
-            <div className="flex items-center justify-center h-[400px] bg-secondary rounded-xl border border-border">
-              <p className="text-sm font-medium text-neutral-500">No preview available.</p>
+            <div className="bg-secondary border-border flex h-[400px] items-center justify-center rounded-xl border">
+              <p className="text-sm font-medium text-neutral-500">
+                No preview available.
+              </p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-5 border-t border-border flex items-center justify-end shrink-0 bg-background">
+        <div className="border-border bg-background flex shrink-0 items-center justify-end border-t p-5">
           <button
             type="button"
             onClick={handleClose}
-            className="inline-flex items-center justify-center font-black rounded-full transition-all duration-500 uppercase tracking-[0.15em] px-6 py-3 text-xs bg-transparent text-neutral-700 hover:text-neutral-900 hover:bg-secondary active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-swiss-navy"
+            className="hover:bg-secondary focus-visible:ring-swiss-navy inline-flex items-center justify-center rounded-full bg-transparent px-6 py-3 text-xs font-black tracking-[0.15em] text-neutral-700 uppercase transition-all duration-500 hover:text-neutral-900 focus-visible:ring-2 focus-visible:outline-none active:scale-95"
           >
             Close
           </button>

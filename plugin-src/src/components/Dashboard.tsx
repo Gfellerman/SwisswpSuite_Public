@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { wpApi } from "../services/api";
-import { STATS_TTL } from "../lib/cacheTtl";
+import { STATS_TTL, STATUS_TTL } from "../lib/cacheTtl";
 import {
   AreaChart,
   Area,
@@ -20,7 +20,7 @@ import {
   Globe,
   Terminal,
 } from "lucide-react";
-import { ViewState } from "../types";
+import { ViewState, SecurityStatus } from "../types";
 import OnPageDiagnostics from "./organisms/Seo/OnPageDiagnostics";
 import { useSettings } from "../hooks/useSettings";
 import { DASHBOARD_EMPTY_STATE_DESCRIPTION } from "./dashboardProCopy";
@@ -158,6 +158,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     enabled: !!window.swisswpsuiteData?.apiUrl,
   });
 
+  // DASH-2/Fix-C.2 (VALIDATOR_DASH.md §5/§6, v2.9.33.49): shares the
+  // ["security-status"] cache key with SecurityHub.tsx's own query of the
+  // same endpoint — a second mount within the TTL window serves from cache,
+  // no duplicate network request. Only `last_block_at` is consumed here;
+  // the "WAF off" half of the Blocked-series indicator comes from
+  // settings.firewallEnabled (Fix C.1) since that flag is already fetched
+  // by useSettings() above with no extra round-trip.
+  const { data: securityStatusData } = useQuery<SecurityStatus>({
+    queryKey: ["security-status"],
+    queryFn: () => wpApi<SecurityStatus>("/security/status"),
+    staleTime: STATUS_TTL,
+    enabled: !!window.swisswpsuiteData?.apiUrl,
+  });
+
   useEffect(() => {
     if (statsData) {
       setStats(statsData);
@@ -168,6 +182,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     }
   }, [statsData, statsLoading]);
 
+  // A.1/C.2 (VALIDATOR_DASH.md, v2.9.33.49): get_stats() always emits
+  // exactly 7 traffic_data entries (api-settings.php get_stats()), so
+  // `traffic_data.length === 0` can never be true — the chart itself must
+  // always render (see the removed dead-code gate below). These flags
+  // drive inline legend annotations instead, so a visitor never reads a
+  // bare "0" as "nothing happened" when the underlying feature is simply off.
+  //
+  // F-11 (REAUDIT_DASH_R1.md, v2.9.33.49 round 2): `settings` comes from
+  // useSettings()'s useQuery and is `undefined` until GET /settings
+  // resolves. Both `pageviewTrackingOff` and `firewallOff` used to read
+  // `undefined?.field === false`, which evaluates to `false` — the exact
+  // same falsy value as "the feature is genuinely on" — so a tracking-off
+  // site painted "No visits yet" (traffic_data is already 7 real entries
+  // by the time /stats resolves) for one frame before settings caught up
+  // and flipped it to "Tracking off — enable". Gate every settings-derived
+  // badge on settings actually having loaded, so "unknown yet" never
+  // renders as "on".
+  const pageviewTrackingOff =
+    settings !== undefined && settings.pageviewTrackingEnabled === false;
+  const visitsAllZero =
+    settings !== undefined &&
+    !pageviewTrackingOff &&
+    stats.traffic_data.length > 0 &&
+    stats.traffic_data.every((d) => d.visits === 0);
+  const firewallOff =
+    settings !== undefined && settings.firewallEnabled === false;
+  const lastBlockAt = securityStatusData?.last_block_at ?? null;
+
   return (
     <div className="animate-in fade-in space-y-8 duration-700">
       {/* Welcome Banner - Cyber-Swiss Layout */}
@@ -175,17 +217,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div>
           <div className="mb-4 flex items-center gap-3">
             <div className="bg-swiss-red h-1 w-12 shadow-[0_0_20px_rgba(213,43,30,0.2)]"></div>
-            {/* ARS Round D (D-K-8, WP.org R4 N-05, 2026-08-2x): the "|| "
-                fallback below was 27 versions stale ("2.9.6.4"); the real
-                version always comes from window.swisswpsuiteData
-                (server-injected on every page load) — the fallback is
-                used only in the edge case where that global is missing or
-                malformed, and must be re-bumped on future releases same
-                as this fix bumped it now (a hardcoded fallback version
-                drifts by construction — there is no mechanism keeping it
-                in sync). */}
+            {/* The real version always comes from window.swisswpsuiteData
+                (server-injected on every page load). A hardcoded fallback
+                version drifts by construction — there is no mechanism
+                keeping it in sync with the running plugin — so the fallback
+                stays neutral instead of a version string that goes stale. */}
             <span className="text-swiss-red text-[12px] font-black tracking-[0.5em] uppercase">
-              SwissSuite v{window.swisswpsuiteData?.version || "2.9.33.46"}
+              SwissSuite v{window.swisswpsuiteData?.version || "unknown"}
             </span>
           </div>
           <h2 className="text-foreground dark:text-foreground mb-6 text-7xl leading-none font-black tracking-tighter">
@@ -256,13 +294,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* Upsell redesign (2026-08-04, design point 1): the dashboard-wide
-          "SwissSuite AI Pro" ProUpsellPlaceholder card is removed — the
-          dashboard is a mixed page with no single gated surface to point
-          at, and the reviewers' checklist confines selling to the Settings
-          screen. Full edition/module detail lives in Settings > Editions &
-          AI (EditionsAiInfo.tsx), reachable from the sidebar at any time. */}
-
       {/* Action Grid */}
       <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
         {[
@@ -275,13 +306,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           {
             id: "seo",
             label: "Improve SEO",
-            // ARS Round D (D-K-2, WP.org R4 F-01/F-07, 2026-08-2x): this
-            // tile is unconditional (no edition gate) and used to say
-            // "...with AI" — a promise the SEO page's matching action
-            // cannot keep in Free (its AI-generation controls are Pro-only
-            // and now physically absent there, see D-K-7). Reworded to
-            // describe the genuinely-free SEO Health Check feature this
-            // tile actually links to, in both editions.
+            // Describes the SEO Health Check this tile links to.
             desc: "Check and improve titles, descriptions & alt text",
             icon: Globe,
           },
@@ -325,157 +350,154 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <h3 className="text-swiss-navy text-[12px] font-black tracking-[0.4em] uppercase">
               Traffic This Week
             </h3>
-            <div className="flex gap-6 text-xs font-black tracking-widest">
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs font-black tracking-widest">
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.2)]"></div>{" "}
                 <span className="text-neutral-700">Visits</span>
+                {/* A.1 (VALIDATOR_DASH.md, v2.9.33.49): the old
+                    `traffic_data.length === 0` empty-state this replaced was
+                    dead code — get_stats() always returns 7 entries, so that
+                    branch could never fire (that was the DASH-1 bug: a flat
+                    zero line rendered with no "off" indicator). This inline
+                    badge is the fix — "off" beats "no data yet" beats a bare
+                    0 the visitor could misread as "nothing to report". */}
+                {pageviewTrackingOff ? (
+                  <button
+                    type="button"
+                    onClick={() => onNavigate("settings")}
+                    className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-black tracking-widest text-amber-700 uppercase transition-colors hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                    // WCAG 2.5.3 Label in Name: accessible name must contain
+                    // the visible text ("Tracking off — enable") verbatim so
+                    // speech-input users referencing the visible label match.
+                    aria-label="Tracking off — enable. Visitor tracking is off — go to Settings to turn it on."
+                  >
+                    Tracking off — enable
+                  </button>
+                ) : visitsAllZero ? (
+                  /* WCAG 1.4.3: text-neutral-500 on bg-secondary measures
+                     ~3.1:1 (light) / ~3.4:1 (dark) — fails the 4.5:1 AA
+                     floor for this 12px text. -600/dark:-400 clears both
+                     backgrounds (~5.2:1 light, ~6.3:1 dark). */
+                  <span className="border-border bg-secondary rounded-full border px-2 py-0.5 text-xs font-black tracking-widest text-neutral-600 uppercase dark:text-neutral-400">
+                    No visits yet
+                  </span>
+                ) : null}
               </div>
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)]"></div>{" "}
                 <span className="text-neutral-700">Blocked</span>
+                {/* C.2 (VALIDATOR_DASH.md, v2.9.33.49): same treatment for
+                    the WAF-off case as the Visits badge above — reuses
+                    settings.firewallEnabled (Fix C.1, additive/optional so
+                    this degrades to "no badge" against an older backend
+                    response that doesn't send the field yet). */}
+                {firewallOff ? (
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-black tracking-widest text-amber-700 uppercase dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
+                    WAF off
+                  </span>
+                ) : lastBlockAt ? (
+                  /* WCAG 1.4.3: text-neutral-500 on bg-secondary measures
+                     ~3.1:1 (light) / ~3.4:1 (dark) — fails the 4.5:1 AA
+                     floor for this 12px text. -600/dark:-400 clears both
+                     backgrounds (~5.2:1 light, ~6.3:1 dark). */
+                  <span className="border-border bg-secondary rounded-full border px-2 py-0.5 text-xs font-black tracking-widest text-neutral-600 uppercase dark:text-neutral-400">
+                    Last block {new Date(lastBlockAt).toLocaleDateString()}
+                  </span>
+                ) : null}
               </div>
             </div>
           </div>
           <div className="h-72 w-full">
-            {stats.traffic_data.length === 0 ? (
-              <div
-                className="border-border flex h-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed"
-                role="status"
-                aria-label="No traffic data available"
-              >
-                <Activity size={28} className="text-neutral-300" />
-                <p className="text-xs font-semibold text-neutral-400">
-                  No traffic data yet
-                </p>
-                <p className="max-w-xs text-center text-xs text-neutral-300">
-                  {settings?.pageviewTrackingEnabled === false
-                    ? "Turn on Dashboard Traffic Counter in Settings to start counting visits."
-                    : "Traffic data will appear here once the plugin has been monitoring your site for a few days."}
-                </p>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={stats.traffic_data}>
-                  <defs>
-                    <linearGradient
-                      id="colorVisits"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="var(--color-swiss-cyan)"
-                        stopOpacity={0.2}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="var(--color-swiss-cyan)"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                    <linearGradient
-                      id="colorBlocked"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="var(--color-swiss-red)"
-                        stopOpacity={0.3}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="var(--color-swiss-red)"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="name"
-                    stroke="rgba(13,20,26,0.1)"
-                    fontSize={11}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "rgba(13,20,26,0.4)", fontWeight: 800 }}
-                  />
-                  <YAxis
-                    stroke="rgba(13,20,26,0.1)"
-                    fontSize={11}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "rgba(13,20,26,0.4)", fontWeight: 800 }}
-                  />
-                  <CartesianGrid
-                    stroke="rgba(13,20,26,0.03)"
-                    vertical={false}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid rgba(13,20,26,0.1)",
-                      borderRadius: "20px",
-                      padding: "20px",
-                      color: "#0D141A",
-                      boxShadow: "0 25px 50px rgba(13,20,26,0.1)",
-                    }}
-                    itemStyle={{
-                      fontSize: "11px",
-                      fontWeight: "900",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.2em",
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="visits"
-                    stroke="#06B6D4"
-                    strokeWidth={3}
-                    fill="url(#colorVisits)"
-                    dot={false}
-                    strokeDasharray="3 3"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="blocked"
-                    stroke="#D52B1E"
-                    strokeWidth={3}
-                    fill="url(#colorBlocked)"
-                    dot={{ r: 6, fill: "#D52B1E", strokeWidth: 0 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
+            {/* A.1/C.2: chart is unconditional now — traffic_data.length is
+                never 0 in a real response, and the Blocked series must
+                never be hidden just because the pageview toggle is off (the
+                two are unrelated features). Off/no-data state is
+                communicated by the legend badges above, not by hiding the
+                chart. */}
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={stats.traffic_data}>
+                <defs>
+                  <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="5%"
+                      stopColor="var(--color-swiss-cyan)"
+                      stopOpacity={0.2}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--color-swiss-cyan)"
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                  <linearGradient id="colorBlocked" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="5%"
+                      stopColor="var(--color-swiss-red)"
+                      stopOpacity={0.3}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--color-swiss-red)"
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="name"
+                  stroke="rgba(13,20,26,0.1)"
+                  fontSize={11}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "rgba(13,20,26,0.4)", fontWeight: 800 }}
+                />
+                <YAxis
+                  stroke="rgba(13,20,26,0.1)"
+                  fontSize={11}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "rgba(13,20,26,0.4)", fontWeight: 800 }}
+                />
+                <CartesianGrid stroke="rgba(13,20,26,0.03)" vertical={false} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    border: "1px solid rgba(13,20,26,0.1)",
+                    borderRadius: "20px",
+                    padding: "20px",
+                    color: "#0D141A",
+                    boxShadow: "0 25px 50px rgba(13,20,26,0.1)",
+                  }}
+                  itemStyle={{
+                    fontSize: "11px",
+                    fontWeight: "900",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.2em",
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="visits"
+                  stroke="#06B6D4"
+                  strokeWidth={3}
+                  fill="url(#colorVisits)"
+                  dot={false}
+                  strokeDasharray="3 3"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="blocked"
+                  stroke="#D52B1E"
+                  strokeWidth={3}
+                  fill="url(#colorBlocked)"
+                  dot={{ r: 6, fill: "#D52B1E", strokeWidth: 0 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
         {/* SEO Breakdown — On-Page Diagnostic */}
-        {/* LiveQA §3.9 fix (DSH-07, 2026-08-04): was `tier !== "free"`, a
-            case-sensitive compare against the live tier string "Free"
-            (capital F) — always true, so the lock never rendered for
-            anyone, Free included. This wasn't just a casing bug: the
-            backend's actual gate for /seo/onpage-audit is the `seo_audit`
-            capability, which is unconditionally granted to Free too (see
-            SwissWPSuite_License::get_free_capabilities() and
-            FREEMIUM_DUAL_BUILD_ARCHITECTURE.md §2) — a case-correct
-            `tier.toLowerCase() !== "free"` would have wrongly RE-LOCKED a
-            control the backend already permits for Free. Deriving from the
-            capabilities array instead keeps this control's visible lock
-            state permanently in sync with whatever the backend actually
-            grants, free or paid. `?? true` preserves the prior fallback
-            (unlocked) for the pre-bootstrap render when license data isn't
-            loaded yet. */}
-        <OnPageDiagnostics
-          seoBreakdown={stats.seo_breakdown}
-          isPro={
-            window.swisswpsuiteData?.license?.capabilities?.includes(
-              "seo_audit"
-            ) ?? true
-          }
-        />
+        <OnPageDiagnostics seoBreakdown={stats.seo_breakdown} />
       </div>
     </div>
   );

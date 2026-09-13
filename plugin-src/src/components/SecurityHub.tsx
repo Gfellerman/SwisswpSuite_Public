@@ -9,30 +9,18 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   SecurityLog,
   SentinelReport,
-  SentinelLayer2Report,
   SentinelLayer1Finding,
   ScanHistoryRecord,
   ScanHistoryDetail,
-  SecurityAlert,
   DeepScanStatus,
-  AiFileAnalysis,
-  LogAnalysis,
-  FirewallAnalysis,
-  SentinelAuditResult,
-  SentinelCredits,
   HardeningOption,
   QuarantineFile,
   AbandonedPluginsStatus,
   LatestScanResponse,
+  SecurityStatus,
 } from "../types";
 import { wpApi, ApiError } from "../services/api";
-import {
-  STATUS_TTL,
-  HARDENING_TTL,
-  LOGS_TTL,
-  UPDATE_GUARD_POLL,
-} from "../lib/cacheTtl";
-import { useTokenBalance } from "../hooks/useTokenBalance";
+import { STATUS_TTL, HARDENING_TTL, LOGS_TTL } from "../lib/cacheTtl";
 import { useScanStore } from "../store/useScanStore";
 import {
   Shield,
@@ -56,11 +44,14 @@ import {
 } from "lucide-react";
 import { Card } from "./ui/Card";
 import { Button } from "./ui/Button";
-import { toast } from "sonner";
+import { toast } from "../lib/toast";
 import { Badge } from "./ui/Badge";
 import { SectionHeader } from "./ui/SectionHeader";
 import { SentinelGradeBadge } from "./organisms/Sentinel/SentinelGradeBadge";
-import { SentinelAttackChains } from "./organisms/Sentinel/SentinelAttackChains";
+import {
+  buildScanSummaryTitle,
+  buildScanSummarySubtitle,
+} from "./organisms/Sentinel/scanSummaryCopy";
 // T4 (Package E / G2 dead-path removal, 2026-08-13): SentinelM5ConsentModal
 // import DELETED — its only render site and the state that opened it are
 // both deleted (see the deletion comments further down this file).
@@ -69,266 +60,38 @@ import { HardeningOptionsGrid } from "./organisms/Security/HardeningOptionsGrid"
 import { CloudShieldPanel } from "./organisms/Security/CloudShieldPanel";
 import { SecurityLogsPanel } from "./organisms/Security/SecurityLogsPanel";
 import { QuarantineTab } from "./organisms/Security/QuarantineTab";
-import { GeoLockdownCard } from "./organisms/Security/GeoLockdownCard";
-import { TwoFactorNudgeLink } from "./organisms/Security/TwoFactorNudgeLink";
-import { FREE_HARDENING_KEYS } from "../constants/hardening";
 import ScanCronStatusBanner from "./organisms/Scan/ScanCronStatusBanner";
 import ScanCard from "./organisms/Scan/ScanCard";
 import ScanResultPanel from "./organisms/Scan/ScanResultPanel";
 import ScanReportPreviewModal from "./organisms/Scan/ScanReportPreviewModal";
 import ScanReportSettingsPanel from "./organisms/Scan/ScanReportSettingsPanel";
 import { ScanHistoricalRecord } from "./organisms/Scan/ScanHistoricalRecord";
-// WP.org B12a residual closure (2026-08-13, v2.9.33.17) — see
-// scanConstants.pro.ts's docblock. Aliased away in the Free build (a
-// SEPARATE vite.config.ts entry from the one used inside scanConstants.ts
-// itself — different literal specifier, same target file).
 import {
   DEEP_MALWARE_START_FAILURE_MESSAGE,
   DEEP_MALWARE_PHASE_LABELS,
-} from "./organisms/Scan/scanConstants.pro";
-import UpdateGuardCard from "./organisms/UpdateGuard/UpdateGuardCard";
-import { FeaturePointer } from "./organisms/Upsell/FeaturePointer";
-import { isProEdition } from "../lib/edition";
+} from "./organisms/Scan/scanCopy";
+import { WafTierPanel } from "./organisms/Security/WafTierPanel";
+import { mapScanDetail } from "./organisms/Scan/scanDetailMapper";
+import type { ScanDetailResponse } from "./organisms/Scan/scanDetailMapper";
 import {
-  TWO_FACTOR_GUIDE_CONTENT,
-  GEO_LOCK_ACTION_LABEL,
-} from "../lib/logAdvisorGuideContent";
-// WP.org string census closure (2026-08-13, v2.9.33.18, R2a) — aliased away
-// in the Free build. See each module's own docblock for the mechanism.
-import { WafUpsellCard } from "./organisms/Security/WafUpsellCard";
-import { AiLogAnalysisLockedCard } from "./organisms/Security/AiLogAnalysisLockedCard";
-import {
-  tokenNeededMessage,
-  TOKEN_EXHAUSTED_MESSAGE,
-  LOG_ANALYSIS_FAILED_MESSAGE,
-  FIREWALL_ANALYSIS_FAILED_MESSAGE,
-} from "../lib/securityHubAiProCopy";
+  loginSafeguardRows,
+  securityDashboardCards,
+  securityDashboardLeadSections,
+  securityDataReviewSections,
+} from "./organisms/Security/securityPageSections";
+import type { SecurityDataReviewActions } from "./organisms/Security/securityPageSections";
 import type {
-  AiAuditResult,
+  SecurityAuditResult,
   MalwareScanResult,
   DeepMalwareScanJob,
   ScanReportConfig,
-  UpdateGuardStatus,
-  UpdateSnapshot,
-  UpdateGuardReview,
   HardeningToggleResponse,
 } from "../types";
-
-interface RemediateResponse {
-  success: boolean;
-  message?: string;
-  manual_fix?: { what: string; why: string; how: string[] };
-  auto_fix_available?: boolean;
-}
-
-interface FixNowIssue {
-  id?: string;
-  file?: string;
-  title?: string;
-  description?: string;
-  impact?: string;
-  remediation?: string;
-  [key: string]: unknown;
-}
-
-// Helper Component for "Fix Now" - Defined BEFORE usage to prevent ReferenceError
-const FixNowButton = ({
-  issueId,
-  issue,
-}: {
-  issueId: string;
-  issue?: FixNowIssue;
-}) => {
-  const [loading, setLoading] = useState(false);
-  const [fixed, setFixed] = useState(false);
-  const [showManualGuide, setShowManualGuide] = useState(false);
-  const [manualFix, setManualFix] = useState<{
-    what: string;
-    why: string;
-    how: string[];
-  } | null>(null);
-
-  const handleFix = async () => {
-    setLoading(true);
-    try {
-      const body: Record<string, unknown> = { issue_id: issueId };
-
-      // If AI suggested "delete_malware", use specific action
-      if (
-        issueId === "malicious_file_detected" ||
-        issueId === "delete_malware"
-      ) {
-        body.action = "delete_malware";
-        body.file = issue?.file;
-      }
-
-      const data = await wpApi<RemediateResponse>(
-        "/security/sentinel/remediate",
-        {
-          method: "POST",
-          body: JSON.stringify(body),
-          // U10 (gate report 2026-08-20, FINAL R2 opt-out list): this
-          // endpoint intentionally ships success:false at HTTP 200 as a
-          // non-fatal "auto-fix unavailable, here's the manual guide"
-          // outcome — the code below already branches on data.manual_fix.
-          // Without this, wpApi() would throw and that branch would become
-          // unreachable dead code.
-          allowSuccessFalse: true,
-        }
-      );
-
-      if (data.success) {
-        setFixed(true);
-        toast.success(data.message || "Issue fixed successfully!");
-      } else if (data.manual_fix) {
-        // Auto-fix not available - show manual guide
-        setManualFix(data.manual_fix);
-        setShowManualGuide(true);
-      } else if (data.auto_fix_available === false) {
-        // Explicitly not auto-fixable
-        setManualFix(data.manual_fix ?? null);
-        setShowManualGuide(true);
-      } else {
-        toast.error("Fix Failed: " + (data.message || "Unknown error"));
-      }
-    } catch (e) {
-      console.error(e);
-      // U10 (gate report 2026-08-20, condition b): prefer the real backend
-      // message over a hardcoded generic string — a genuinely thrown error
-      // here (network failure, non-2xx, or an unopted-out 200+success:false
-      // from a future change to this endpoint) now carries real information.
-      toast.error(
-        e instanceof ApiError ? e.message : "Fix Failed: Network Error"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (fixed) {
-    return (
-      <Button disabled variant="success" icon={CheckCircle}>
-        Fixed
-      </Button>
-    );
-  }
-
-  return (
-    <>
-      <Button
-        onClick={handleFix}
-        disabled={loading}
-        loading={loading}
-        variant="primary"
-        icon={Shield}
-        className="shadow-glow-red"
-      >
-        {loading ? "Fixing..." : "Fix Now"}
-      </Button>
-
-      {/* Manual Fix Guide Modal */}
-      {showManualGuide && manualFix && (
-        <div className="bg-card dark:bg-card shadow-premium border-border dark:border-border/20 animate-in zoom-in-95 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-[2.5rem] border backdrop-blur-xl duration-500">
-          <div className="bg-swiss-navy flex shrink-0 items-center justify-between p-8 text-white">
-            <h3 className="flex items-center gap-4 text-xl font-black tracking-[0.1em] uppercase">
-              <AlertTriangle size={24} className="text-brand-accent" /> Manual
-              Fix REQUIRED
-            </h3>
-            <button
-              onClick={() => setShowManualGuide(false)}
-              aria-label="Close manual fix guide"
-              className="bg-secondary dark:bg-card/10 dark:hover:bg-card/20 dark:text-foreground rounded-2xl p-3 text-neutral-900 transition-all hover:bg-slate-200"
-            >
-              <X size={24} />
-            </button>
-          </div>
-
-          <div className="bg-background dark:bg-card/50 flex-1 space-y-10 overflow-y-auto p-10">
-            {/* WHAT */}
-            <div className="bg-card dark:bg-secondary border-border dark:border-border/10 shadow-soft rounded-3xl border p-8">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="bg-secondary dark:bg-secondary rounded-lg px-3 py-1.5 text-xs font-black tracking-widest text-neutral-700 uppercase">
-                  NODE_STATUS
-                </span>
-                <h4 className="dark:text-foreground text-xs font-black tracking-widest text-neutral-900 uppercase">
-                  THE SECURITY BREACH
-                </h4>
-              </div>
-              <p className="text-[14px] leading-relaxed font-bold text-neutral-700">
-                {manualFix.what}
-              </p>
-            </div>
-
-            {/* WHY */}
-            <div className="bg-background border-border rounded-3xl border p-8 shadow-inner">
-              <h4 className="text-swiss-navy mb-5 flex items-center gap-3 text-xs font-black tracking-widest uppercase">
-                <span className="bg-brand-accent/10 text-brand-accent rounded-lg px-3 py-1.5 text-xs font-black tracking-widest uppercase">
-                  RESTRICTION
-                </span>
-                REASON FOR MANUAL INTERVENTION
-              </h4>
-              <p className="text-[14px] leading-relaxed font-bold text-slate-600 italic">
-                {manualFix.why}
-              </p>
-            </div>
-
-            {/* HOW */}
-            <div className="bg-card dark:bg-secondary border-border dark:border-border/10 shadow-premium relative overflow-hidden rounded-[2rem] border p-10">
-              <div className="bg-brand-accent/10 absolute top-0 right-0 -mt-10 -mr-10 h-32 w-32 blur-3xl" />
-              <div className="relative z-10 mb-6 flex items-center justify-between">
-                <h3 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-xl font-bold text-transparent dark:from-white dark:to-slate-400">
-                  Security Core
-                </h3>
-                <span className="bg-secondary dark:bg-card/10 dark:text-foreground rounded-lg px-3 py-1.5 text-xs font-black tracking-widest text-neutral-900 uppercase">
-                  PROTOCOL
-                </span>
-              </div>
-              <h4 className="dark:text-foreground relative z-10 mb-8 flex items-center gap-3 text-xs font-black tracking-widest text-neutral-900 uppercase">
-                REMEDIATION SEQUENCE
-              </h4>
-              <ol className="relative z-10 space-y-6">
-                {manualFix.how.map((step, idx) => (
-                  <li key={idx} className="flex items-start gap-6">
-                    <span className="text-swiss-navy bg-card shadow-glow-white flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl text-[12px] font-black">
-                      {idx + 1}
-                    </span>
-                    <span className="text-[14px] leading-relaxed font-black tracking-tight">
-                      {step.replace(/^\d+\.\s*/, "")}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
-
-          <div className="bg-background dark:bg-secondary border-border dark:border-border/10 flex shrink-0 justify-center border-t p-8">
-            <Button
-              onClick={() => setShowManualGuide(false)}
-              variant="primary"
-              size="lg"
-              className="w-full"
-            >
-              MISSION ACKNOWLEDGED
-            </Button>
-          </div>
-        </div>
-      )}
-    </>
-  );
-};
 
 const calculatePercent = (value: number, total: number): number => {
   if (!total || total === 0) return 0;
   return Math.min(100, Math.round((value / total) * 100));
 };
-
-// Module-scope constants — hoisted here to avoid re-creation on every render
-
-// Log action button base styles (used in getLogActionButton)
-const LOG_BTN_BASE =
-  "bg-secondary text-swiss-navy hover:bg-swiss-navy hover:text-white rounded-xl uppercase font-black text-xs px-4";
-const LOG_BTN_ACCENT =
-  "bg-brand-accent/10 text-brand-accent hover:bg-brand-accent hover:text-foreground border border-brand-accent/30 rounded-xl uppercase font-black text-xs px-4";
 
 /**
  * v2.9.30.x — Persistent "Mark Safe" management sheet.
@@ -348,7 +111,7 @@ const LOG_BTN_ACCENT =
  */
 interface SentinelSafelistSheetProps {
   findingIds: string[];
-  currentScanFindings: AiAuditResult["findings"];
+  currentScanFindings: SecurityAuditResult["findings"];
   onClose: () => void;
   onRemove: (findingId: string) => Promise<void> | void;
 }
@@ -497,83 +260,16 @@ const SecurityHub: React.FC = () => {
   const [blockXss, setBlockXss] = useState(false);
   const [simulationMode, setSimulationMode] = useState(false);
 
-  // Geo-Blocking State
-  const [geoEnabled, setGeoEnabled] = useState(false);
-  const [globalGeoBlock, setGlobalGeoBlock] = useState(false);
-
   const [loginEnabled, setLoginEnabled] = useState(false);
   const [loginMaxRetries, setLoginMaxRetries] = useState(3);
 
   // F-302: scanning / scanResults / basicScanExpanded / handleScan removed —
   // the legacy POST /security/scan basic core-integrity flow was superseded by
-  // the ScanCard + ScanResultPanel architecture (ai-audit / malware / full-ai).
+  // the ScanCard + ScanResultPanel architecture (security-audit / malware /
+  // deep-malware).
   // BasicScanResults lives as an organism in case the flow is revived later.
   const [logs, setLogs] = useState<SecurityLog[]>([]);
   const [lastScan, setLastScan] = useState<string>("Never");
-  const [alerts, setAlerts] = useState<SecurityAlert | null>(null); // Background AI Alerts
-
-  // --- Alert dismiss persistence helpers ---
-  /**
-   * Key: swisswp_dismissed_threats
-   * Shape: Record<fingerprint, dismissedAtMs>
-   * — a map so multiple distinct alert clusters can be dismissed independently.
-   */
-  const ALERT_DISMISS_KEY = "swisswp_dismissed_threats";
-  const ALERT_DISMISS_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-  /**
-   * Stable fingerprint for a SecurityAlert — used as the dismiss identity key.
-   *
-   * Uses verdict + threatLevel + sorted topIps (server-injected, deterministic).
-   * Avoids the AI-generated summary, which changes on every cron run even for
-   * the same attack cluster, causing dismissed alerts to re-appear immediately.
-   * Falls back to summary prefix only when topIps is absent (legacy alerts).
-   */
-  const getAlertFingerprint = (alert: SecurityAlert): string => {
-    // Normalize IPs to /24 subnet so rotating IPs from the same attacker
-    // (e.g. 185.177.72.50, 185.177.72.56, 185.177.72.30) share one dismiss key.
-    const toSubnet = (ip: string) => ip.split(".").slice(0, 3).join(".");
-    const ipPart =
-      alert.topIps && alert.topIps.length > 0
-        ? [...new Set(alert.topIps.map(toSubnet))].sort().join(",")
-        : alert.summary.slice(0, 80);
-    return `${alert.verdict}|${alert.threatLevel}|${ipPart}`;
-  };
-
-  /** Returns true if this alert was dismissed within the last 24 hours. */
-  const isAlertDismissed = (alert: SecurityAlert): boolean => {
-    try {
-      const stored = localStorage.getItem(ALERT_DISMISS_KEY);
-      if (!stored) return false;
-      const map = JSON.parse(stored) as Record<string, number>;
-      const fp = getAlertFingerprint(alert);
-      const dismissedAt = map[fp];
-      if (!dismissedAt) return false;
-      return Date.now() - dismissedAt < ALERT_DISMISS_TTL_MS;
-    } catch {
-      return false;
-    }
-  };
-
-  /** Persists the dismiss in localStorage (map-per-fingerprint) and clears alert state. */
-  const handleDismissAlert = () => {
-    if (alerts) {
-      try {
-        const stored = localStorage.getItem(ALERT_DISMISS_KEY);
-        const map: Record<string, number> = stored ? JSON.parse(stored) : {};
-        // Evict entries older than 24h to keep the map lean
-        const now = Date.now();
-        for (const key of Object.keys(map)) {
-          if (now - map[key] >= ALERT_DISMISS_TTL_MS) delete map[key];
-        }
-        map[getAlertFingerprint(alerts)] = now;
-        localStorage.setItem(ALERT_DISMISS_KEY, JSON.stringify(map));
-      } catch {
-        // localStorage may be unavailable in some strict environments — silently ignore
-      }
-    }
-    setAlerts(null);
-  };
 
   // ── Scan state (v2.9.28.43): sourced from useScanStore Zustand slice ─────
   // Replaces 10 useState hooks that previously lived here. See
@@ -581,28 +277,7 @@ const SecurityHub: React.FC = () => {
   // the dedicated `updateXxxResult` helpers (see store docs).
   const scanReportConfig = useScanStore((s) => s.scanReportConfig);
   const setScanReportConfig = useScanStore((s) => s.setScanReportConfig);
-  const aiAuditResult = useScanStore((s) => s.aiAuditResult);
-  const setAiAuditResult = useScanStore((s) => s.setAiAuditResult);
-  const updateAiAuditResult = useScanStore((s) => s.updateAiAuditResult);
-  const malwareResult = useScanStore((s) => s.malwareResult);
-  const setMalwareResult = useScanStore((s) => s.setMalwareResult);
   const updateMalwareResult = useScanStore((s) => s.updateMalwareResult);
-  // T4 (Package E / G2 dead-path removal, 2026-08-13): fullAiResult/
-  // setFullAiResult/fullAiLoading/setFullAiLoading/fullAiPhaseMessage/
-  // setFullAiPhaseMessage selectors REMOVED — the only writers were the
-  // now-deleted handleTriggerScan "full-ai" branch, pollFullAiJobToCompletion,
-  // and handleFullAiMarkSafe (all deleted below, zero UI callers, verified
-  // via tree-wide grep with a positive control). `updateFullAiResult` is
-  // KEPT: it is still called (as a defensive no-op — fullAiResult can now
-  // never be non-null) inside the shared handleScanPanelBulkAction handler,
-  // which also mutates aiAuditResult/malwareResult for the SAME selection —
-  // splitting it out was judged out of this session's narrowly-scoped T4
-  // deletion targets; flagged in the session report as a residual.
-  const updateFullAiResult = useScanStore((s) => s.updateFullAiResult);
-  const aiAuditLoading = useScanStore((s) => s.aiAuditLoading);
-  const setAiAuditLoading = useScanStore((s) => s.setAiAuditLoading);
-  const malwareLoading = useScanStore((s) => s.malwareLoading);
-  const setMalwareLoading = useScanStore((s) => s.setMalwareLoading);
   // v2.9.29.0 — Deep Malware Scan async pipeline state.
   const deepMalwareJobId = useScanStore((s) => s.deepMalwareJobId);
   const setDeepMalwareJobId = useScanStore((s) => s.setDeepMalwareJobId);
@@ -615,10 +290,6 @@ const SecurityHub: React.FC = () => {
   const updateDeepMalwareResult = useScanStore(
     (s) => s.updateDeepMalwareResult
   );
-  // ── Update Guard State (Sprint 2 — Phase 1) ───────────────────────────────
-  const [updateGuardSnapshots, setUpdateGuardSnapshots] = useState<
-    UpdateSnapshot[]
-  >([]);
   const [previewModalOpen, setPreviewModalOpen] = React.useState(false);
   const [previewHtml, setPreviewHtml] = React.useState<string | null>(null);
 
@@ -649,7 +320,7 @@ const SecurityHub: React.FC = () => {
   const [ignoredPaths, setIgnoredPaths] = useState<string[]>([]);
   // v2.9.30.x — id-based safelist (parallel to ignoredPaths). Returned by the
   // same GET /security/ignore endpoint as `ignored_findings`. Drives the
-  // "Manage safelist" sheet rendered from the AI Audit result panel.
+  // "Manage safelist" sheet rendered from the scan result panel.
   const [ignoredFindings, setIgnoredFindings] = useState<string[]>([]);
   const [safelistSheetOpen, setSafelistSheetOpen] = useState(false);
   const [bannedIps, setBannedIps] = useState<string[]>([]);
@@ -666,60 +337,33 @@ const SecurityHub: React.FC = () => {
   const [allowedIps, setAllowedIps] = useState<string[]>([]);
   const [currentIp, setCurrentIp] = useState("");
   const [manualAllowedIp, setManualAllowedIp] = useState("");
-  const [aiAnalysis, setAiAnalysis] = useState<AiFileAnalysis | null>(null);
   // v2.9.28.43: migrated to useScanStore (scan-related state consolidation)
   const analyzingFile = useScanStore((s) => s.analyzingFile);
-  const setAnalyzingFile = useScanStore((s) => s.setAnalyzingFile);
 
-  // Log Advisor State
+  // Which analysis dialog, if any, is on screen.
   const [showLogAdvisor, setShowLogAdvisor] = useState(false);
-  const [logAnalysis, setLogAnalysis] = useState<LogAnalysis | null>(null);
-  const [analyzingLogs, setAnalyzingLogs] = useState(false);
-
-  // Firewall Analysis State
   const [showFirewallAdvisor, setShowFirewallAdvisor] = useState(false);
-  const [firewallAnalysis, setFirewallAnalysis] =
-    useState<FirewallAnalysis | null>(null);
-  const [analyzingFirewall, setAnalyzingFirewall] = useState(false);
+  // File the result panel asked to have analysed; the stamp changes on every
+  // request so the same file can be requested twice in a row.
+  const [analyzeRequest, setAnalyzeRequest] = useState<{
+    file: string;
+    requestedAt: number;
+  } | null>(null);
+  // Bumped on every successful ban so an open report can refresh itself.
+  const [banRevision, setBanRevision] = useState(0);
+  // Most recent scan response envelope, handed to the analysis section.
+  const [lastScanResponse, setLastScanResponse] = useState<unknown>(null);
 
-  // W4 — Elapsed timer for long AI calls (compound model; 15–60s)
-  const [aiElapsed, setAiElapsed] = React.useState(0);
-  const aiTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  // B.6/DASH-2 (VALIDATOR_DASH.md, v2.9.33.49): WAF self-test tile state.
+  // wafSelfTest is populated from GET /security/status's additive
+  // `waf_self_test` field (Fix B.4, backend lane — see the file header
+  // note) and refreshed after a manual "Run self-test now" call.
+  const [wafSelfTest, setWafSelfTest] = useState<
+    SecurityStatus["waf_self_test"] | null
+  >(null);
+  const [runningWafSelfTest, setRunningWafSelfTest] = useState(false);
 
-  const startAiTimer = React.useCallback(() => {
-    setAiElapsed(0);
-    aiTimerRef.current = setInterval(
-      () => setAiElapsed((prev) => prev + 1),
-      1000
-    );
-  }, []);
-
-  const stopAiTimer = React.useCallback(() => {
-    if (aiTimerRef.current) {
-      clearInterval(aiTimerRef.current);
-      aiTimerRef.current = null;
-    }
-  }, []);
-
-  // Cleanup elapsed timer on unmount
-  React.useEffect(() => () => stopAiTimer(), [stopAiTimer]);
-
-  // W3 — Token balance gate
-  const {
-    canAfford,
-    tokensNeeded,
-    // v32: total spendable = monthly allowance + purchased pack. canAfford() is already
-    // pack-aware; tokenSpendable is shown in the "insufficient tokens" messages so the
-    // number the user sees matches the affordability check when they own a pack.
-    totalSpendable: tokenSpendable,
-    setBalance,
-  } = useTokenBalance();
-
-  const [sentinelCredits, setSentinelCredits] =
-    useState<SentinelCredits | null>(null);
-  const [identityValid, setIdentityValid] = useState(true);
-
-  // Sentinel Full Scan (Layer 1 + optional Layer 2) State
+  // Latest scan report shown on the Dashboard tab.
   const [sentinelReport, setSentinelReport] = useState<SentinelReport | null>(
     null
   );
@@ -746,9 +390,6 @@ const SecurityHub: React.FC = () => {
   // setShowM5Consent(true) had zero call sites anywhere in the tree (only
   // `setShowM5Consent(false)` calls remained, from the modal's own
   // onConsent/onCancel handlers, both deleted alongside the modal below).
-  const [expandedSentinelView, setExpandedSentinelView] = useState<
-    "layer2" | "layer1" | null
-  >(null);
 
   // Hardening State
   const [hardeningOptions, setHardeningOptions] = useState<HardeningOption[]>(
@@ -778,14 +419,6 @@ const SecurityHub: React.FC = () => {
   const [cloudflareConnectingIp, setCloudflareConnectingIp] = useState(false);
   const [cloudflareCountryHeader, setCloudflareCountryHeader] = useState(false);
 
-  // Geo Country Picker State — MOVED to GeoLockdownCard.tsx (2026-08-13,
-  // WP.org B12a regression fix). This was geo-blocking-specific state that
-  // had no reason to live in the shared SecurityHub.tsx monolith once the
-  // JSX itself was already extracted; leaving it here meant its fetch/save
-  // functions (and their compiled strings, e.g. "Geo-Lockdown countries
-  // saved.") still shipped inside the Free edition's JS bundle even though
-  // nothing in Free's render tree could reach them. See GeoLockdownCard.tsx.
-
   // Confirm Dialog State
   const [confirmDialog, setConfirmDialog] = useState<{
     message: string;
@@ -793,63 +426,6 @@ const SecurityHub: React.FC = () => {
   } | null>(null);
   const showConfirm = (message: string, onConfirm: () => void) =>
     setConfirmDialog({ message, onConfirm });
-
-  // Log Action Guide State — shows manual fix guide for non-auto-fixable advisor actions
-  const [logActionGuide, setLogActionGuide] = useState<{
-    what: string;
-    why: string;
-    how: string[];
-  } | null>(null);
-
-  const { homeUrl, hasAdvancedWaf, sentinelIsPro } =
-    window.swisswpsuiteData || {};
-
-  // Primary: REST fetch updates sentinelCredits. Fallback: PHP-injected sentinelIsPro
-  // from window.swisswpsuiteData ensures buttons unlock even if REST fetch fails
-  // (e.g. output buffer corruption by LiteSpeed Cache on plugin-heavy sites).
-  // IMPORTANT: wp_localize_script converts PHP booleans to strings ("1"/""),
-  // so we use !! (truthiness) instead of === true (strict equality).
-  const hasSentinelPro = !!sentinelCredits?.is_pro || !!sentinelIsPro;
-
-  // ── Security-plan gate (WAF, hardening, geo, login, AI log, IP allowlist,
-  //    quarantine/delete, blocked IPs, attack-chain blocking, Update Guard) ──
-  // Gated on the 'waf' capability — present only on Security plan tiers.
-  // Intentionally separate from hasSentinelPro (which gates deep malware scan
-  // and is granted to ALL paid plans including SEO_MONTHLY).
-  const securityCaps = window.swisswpsuiteData?.license?.capabilities;
-  const hasSecurity =
-    Array.isArray(securityCaps) && securityCaps.includes("waf");
-
-  // ── Freemium Dual-Build (Phase 3, 2026-07-17) ──────────────────────────────
-  // Update Guard, Geo-Blocking, and 2FA are entirely Pro-local — physically
-  // absent from the Free zip, not merely capability-gated. This must win
-  // over hasSecurity/hasSentinelPro even if a stale cached capability claims
-  // a paid tier, because in the Free build the code (and its backing REST
-  // routes) simply isn't there. Scanner, basic WAF, basic login protection,
-  // quarantine, and logs are free and unaffected — they already use the
-  // "interactive toggle vs BASIC ACTIVE label" pattern below.
-  //
-  // Hardening is the exception (Owner decision #4, 2026-07-17): it is now
-  // PARTIALLY free — 6 of 13 options are free/functional in BOTH editions,
-  // the other 7 are Pro-locked. Its REST routes are present in the Free zip,
-  // so isProEditionBuild is NOT used to gate the Hardening panel or its data
-  // query below; the free/locked split is enforced per-option inside
-  // HardeningOptionsGrid.tsx via FREE_HARDENING_KEYS (constants/hardening.ts).
-  const isProEditionBuild = isProEdition();
-
-  // ── Scan Consolidation: derive current tier from hasSentinelPro ───────────
-  // 'pro'  — active Pro license detected (sentinelCredits.is_pro or sentinelIsPro)
-  // 'free' — license present but not Pro (sentinelCredits exists, is_pro false)
-  // 'none' — no license / credentials not yet fetched
-  const currentTier: "none" | "free" | "pro" = hasSentinelPro
-    ? "pro"
-    : sentinelCredits
-      ? "free"
-      : "none";
-
-  // Free tier hardening options — always accessible, no Pro required.
-  // Canonical list lives in plugin/src/constants/hardening.ts — imported above.
-  // PHP equivalent: api.php get_free_hardening_options()
 
   // ── v2.9.30.117: TanStack Query cache layer ──────────────────────────────
   // These useQuery calls replace the raw wpApi() useEffect fetches that fired
@@ -866,38 +442,40 @@ const SecurityHub: React.FC = () => {
   // so admin actions always reflect immediately. See invalidation map below.
   const queryClient = useQueryClient();
 
-  // /security/status — WAF, spam, geo, login, last_scan, alerts
-  const { data: _securityStatusData, isLoading: _securityStatusLoading } =
-    useQuery<{
-      firewall_enabled: boolean;
-      spam_enabled: boolean;
-      block_sqli: boolean;
-      block_xss: boolean;
-      simulation_mode: boolean;
-      geo_enabled: boolean;
-      global_geo_block: boolean;
-      login_enabled: boolean;
-      login_max_retries?: number;
-      last_scan: string;
-      alerts?: SecurityAlert;
-    }>({
-      queryKey: ["security-status"],
-      queryFn: () =>
-        wpApi<{
-          firewall_enabled: boolean;
-          spam_enabled: boolean;
-          block_sqli: boolean;
-          block_xss: boolean;
-          simulation_mode: boolean;
-          geo_enabled: boolean;
-          global_geo_block: boolean;
-          login_enabled: boolean;
-          login_max_retries?: number;
-          last_scan: string;
-          alerts?: SecurityAlert;
-        }>("/security/status"),
-      staleTime: STATUS_TTL,
-    });
+  // /security/status — WAF, spam, login, last_scan
+  const {
+    data: _securityStatusData,
+    isLoading: _securityStatusLoading,
+    isError: securityStatusError,
+  } = useQuery<{
+    firewall_enabled: boolean;
+    spam_enabled: boolean;
+    block_sqli: boolean;
+    block_xss: boolean;
+    simulation_mode: boolean;
+    login_enabled: boolean;
+    login_max_retries?: number;
+    last_scan: string;
+    // B.6/DASH-2 (VALIDATOR_DASH.md, v2.9.33.49): additive, optional so
+    // an older backend response (pre-self-test) still satisfies this
+    // shape — see SecurityStatus in types.ts for the field definition.
+    waf_self_test?: SecurityStatus["waf_self_test"];
+  }>({
+    queryKey: ["security-status"],
+    queryFn: () =>
+      wpApi<{
+        firewall_enabled: boolean;
+        spam_enabled: boolean;
+        block_sqli: boolean;
+        block_xss: boolean;
+        simulation_mode: boolean;
+        login_enabled: boolean;
+        login_max_retries?: number;
+        last_scan: string;
+        waf_self_test?: SecurityStatus["waf_self_test"];
+      }>("/security/status"),
+    staleTime: STATUS_TTL,
+  });
 
   useEffect(() => {
     const data = _securityStatusData;
@@ -907,15 +485,20 @@ const SecurityHub: React.FC = () => {
     setBlockSqli(data.block_sqli ?? false);
     setBlockXss(data.block_xss ?? false);
     setSimulationMode(data.simulation_mode ?? false);
-    setGeoEnabled(data.geo_enabled ?? false);
-    setGlobalGeoBlock(data.global_geo_block ?? false);
     setLoginEnabled(data.login_enabled ?? false);
     setLoginMaxRetries(data.login_max_retries ?? 3);
     setLastScan(data.last_scan);
-    if (data.alerts && !isAlertDismissed(data.alerts)) {
-      setAlerts(data.alerts);
-    }
+    setWafSelfTest(data.waf_self_test ?? null);
   }, [_securityStatusData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // R2-4 (REAUDIT_DASH_R2.md, v2.9.33.49 round 3): `firewallEnabled` never
+  // leaves its `useState(false)` default while /security/status has not yet
+  // returned real data, so `!firewallEnabled` alone cannot tell "confirmed
+  // off" apart from "unknown because the query errored". Only treat the
+  // firewall as known-disabled when a real response has actually landed.
+  const wafSelfTestBlockedByFirewallOff = securityStatusError
+    ? _securityStatusData !== undefined && !firewallEnabled
+    : !firewallEnabled;
 
   // /security/logs
   const { data: _logsData } = useQuery<SecurityLog[]>({
@@ -937,35 +520,7 @@ const SecurityHub: React.FC = () => {
     if (_logsData !== undefined) setLogs(_logsData);
   }, [_logsData]);
 
-  // /security/sentinel/status — credits, identity
-  const { data: _sentinelStatusData } = useQuery<{
-    has_audit: boolean;
-    audit?: SentinelAuditResult;
-    credits?: SentinelCredits;
-    identity_valid?: boolean;
-  }>({
-    queryKey: ["sentinel-status"],
-    queryFn: () =>
-      wpApi<{
-        has_audit: boolean;
-        audit?: SentinelAuditResult;
-        credits?: SentinelCredits;
-        identity_valid?: boolean;
-      }>("/security/sentinel/status"),
-    staleTime: STATUS_TTL,
-  });
-
-  useEffect(() => {
-    const data = _sentinelStatusData;
-    if (!data) return;
-    if (data.credits) setSentinelCredits(data.credits);
-    if (data.identity_valid === false) setIdentityValid(false);
-  }, [_sentinelStatusData]);
-
   // /hardening/status — hardening options list
-  // Owner decision #4 (2026-07-17): Hardening is now PARTIALLY free (6 of 13
-  // options), so its route is present and this query is enabled in BOTH
-  // editions — unlike Update Guard/Geo/2FA above, which stay Pro-only.
   const { data: _hardeningData } = useQuery<{
     success: boolean;
     options: Record<string, HardeningOption>;
@@ -1055,30 +610,12 @@ const SecurityHub: React.FC = () => {
     const detail = _latestScanData;
     if (!detail || !detail.success || !detail.record) return;
 
-    // SEC-4: Filter out findings with status === 'fixed'.
-    const openFindings = (detail.layer1_findings ?? []).filter(
-      (f) => f.status !== "fixed"
-    );
+    // SEC-4: findings already fixed via the fix-it pipeline are removed
+    // server-side (build_scan_detail() filters swisswpsuite_security_fixed_findings
+    // before the response is built), so every finding here is still open.
+    const openFindings = detail.layer1_findings ?? [];
 
-    if (detail.layer2_report) {
-      const l2 = detail.layer2_report;
-      setSentinelReport({
-        ...l2,
-        individual_findings: openFindings,
-        attack_chains: l2.attack_chains ?? [],
-        remediation_plan: l2.remediation_plan ?? [],
-        positive_findings: l2.positive_findings ?? [],
-        scan_metadata: l2.scan_metadata ?? {
-          sentinel_version: "2.1",
-          analysis_date: new Date().toISOString(),
-          model_used: "unknown",
-          findings_count: openFindings.length,
-          critical_count: openFindings.filter((f) => f.severity === "critical")
-            .length,
-          chains_count: (l2.attack_chains ?? []).length,
-        },
-      });
-    } else if (openFindings.length > 0) {
+    if (openFindings.length > 0) {
       setSentinelReport({ layer: 1, findings: openFindings });
     }
   }, [_latestScanData]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1123,16 +660,11 @@ const SecurityHub: React.FC = () => {
   // environment) are now driven by the useQuery hooks above — they fire
   // automatically and deduplicate on tab re-mount.
   // The mount useEffect now only handles fetches that cannot be cleanly
-  // expressed as read-only queries: deepScanStatus, geoSettings, abandoned-plugins.
+  // expressed as read-only queries: deepScanStatus, abandoned-plugins.
   useEffect(() => {
     // Deferred non-critical fetches — fire after the initial paint completes.
     const deferredId = setTimeout(() => {
       void fetchDeepScanStatus();
-      // Geo-Blocking settings fetch MOVED to GeoLockdownCard.tsx's own
-      // mount effect (2026-08-13, WP.org B12a regression fix) — it now
-      // owns its geo state entirely, so it fetches on its own mount
-      // rather than the parent driving it (the parent only ever mounts
-      // that card when isProEditionBuild is already true).
       // Abandoned plugin detection — non-critical, silent fail
       wpApi<AbandonedPluginsStatus>("/security/abandoned-plugins")
         .then((data) => setAbandonedPlugins(data))
@@ -1185,199 +717,34 @@ const SecurityHub: React.FC = () => {
       });
   }, []);
 
-  // ── Update Guard: status + snapshots + reviews (Phase 2) ─────────────────
-  const [updateGuardStatus, setUpdateGuardStatus] =
-    useState<UpdateGuardStatus | null>(null);
-  const [updateGuardLoading, setUpdateGuardLoading] = useState(true);
-  const [updateGuardReviews, setUpdateGuardReviews] = useState<
-    UpdateGuardReview[]
-  >([]);
-
-  const fetchUpdateGuard = useCallback(async () => {
-    try {
-      const [statusData, snapshotsData, reviewsData] = await Promise.all([
-        wpApi<UpdateGuardStatus>("/update-guard/status"),
-        wpApi<UpdateSnapshot[]>("/update-guard/snapshots"),
-        wpApi<UpdateGuardReview[]>("/update-guard/reviews"),
-      ]);
-      setUpdateGuardStatus(statusData);
-      setUpdateGuardSnapshots(snapshotsData ?? []);
-      setUpdateGuardReviews(reviewsData ?? []);
-    } catch {
-      // Non-critical — card degrades gracefully when backend not yet available
-      setUpdateGuardStatus(null);
-      setUpdateGuardSnapshots([]);
-      setUpdateGuardReviews([]);
-    } finally {
-      setUpdateGuardLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    // Freemium Dual-Build: Update Guard is Pro-local — physically absent
-    // from the Free zip, so status/snapshots/reviews must never fire there
-    // (the routes don't exist — this was the source of 404 console spam,
-    // repeated on every mount plus the 5-min poll below).
-    if (!isProEditionBuild) {
-      setUpdateGuardLoading(false);
-      return;
-    }
-    let cancelled = false;
-    const doFetch = async () => {
-      if (!cancelled) await fetchUpdateGuard();
-    };
-    doFetch();
-    // v2.9.30.117: reduced from 30 s to 5 min (UPDATE_GUARD_POLL = 300_000).
-    // Snapshots and reviews change only on user action (approve/reject/restore/delete)
-    // which triggers a refetch directly. Background polling exists as a safety net.
-    const interval = setInterval(() => {
-      if (!cancelled) fetchUpdateGuard();
-    }, UPDATE_GUARD_POLL);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [fetchUpdateGuard, isProEditionBuild]);
-
   // ── Scan Consolidation: trigger handlers ─────────────────────────────────
 
-  const handleTriggerScan = async (
-    scanType: "ai-audit" | "malware" | "deep-malware"
-  ) => {
-    // v2.9.30.x — Mode arg removed. The malware card no longer offers a
-    // Quick/Deep toggle (that moved to the dedicated deep-malware card in
-    // v2.9.29.0). The legacy /scan/malware?mode=deep endpoint returns 410
-    // Gone, so the request body now always sends {mode: "quick"} below.
-
-    // WP.org round-3 (Sprint W2/T7, 2026-07-26): the "!hasSecurity blocks
-    // deep-malware" guard that used to sit here was REMOVED, on the
-    // reasoning that Sprint W1 had de-gated deep-malware's local phases
-    // (enumerate, hash, local scan) in the PHP so they ran free in every
-    // edition, leaving only the service phases (vps_lookup/wpscan/
-    // patchstack/ai_analysis) needing Pro.
-    // SUPERSEDED (LiveQA Fix Sprint, 2026-08-04, owner scan-edition
-    // ruling): "Deep scan" is Pro-only again at the whole-scan level, so
-    // this function's deep-malware branch is now unreachable in Free by
-    // construction — the ScanCard that calls it is edition-gated at the
-    // SecurityHub.tsx call site (see the block below), not via a `locked`
-    // prop. No client-side hasSecurity re-guard was added back here
-    // deliberately: the render-level gate already makes this branch
-    // dead code on Free, and a second guard here would just be an
-    // unreachable duplicate of it.
-
-    // H-3: Token balance gate for token-consuming scan types.
-    // v2.9.29.0 — deep-malware is also token-consuming (AI analysis phase).
-    // v2.9.31.2 — ai-audit REMOVED from this gate. The "Security Audit" (ai-audit)
-    // runs Layer 1 ONLY: a deterministic, local, zero-AI, zero-token posture audit.
-    // Backend proof: SwissWPSuite_Scan_Orchestrator::run_ai_audit() calls
-    // run_full_scan(false) (L2/Groq path skipped) on licensed sites and
-    // run_free_l1_audit() (no Groq, no token read/write) on the Free edition — no AI
-    // call and no token deduction exists anywhere on that path. It is a FREE feature
-    // that MUST run while unlicensed with a 0 token balance. Including ai-audit here
-    // made the button silently no-op in the Free/no-license state (canAfford returned
-    // false at balance 0, so we returned before firing the request) — a bug, not a
-    // gate. Only genuinely AI/token-consuming scans belong here: deep-malware
-    // (full-ai's branch was DELETED here — T4, Package E, 2026-08-13: zero UI
-    // callers, see the "malware" card-removal comment in the scan-tab render
-    // region for the two-proof verification).
-    // deep-malware deliberately STAYS in this list (Sprint W2/T7, 2026-07-26):
-    // in Pro, its ai_analysis phase is real Groq spend and this remains the
-    // correct pre-flight gate. In Free, useTokenBalance() is aliased to a stub
-    // whose canAfford() always returns true (Task B/A9) — so this condition is
-    // a permanent no-op there and never blocks the free local phases; the real
-    // edition-based unlock lives in the removed guard above and the ScanCard's
-    // locked prop, not here.
-    const isTokenGated = scanType === "deep-malware";
-    if (isTokenGated && !canAfford("sentinel_security")) {
-      toast.error(
-        tokenNeededMessage(
-          tokensNeeded("sentinel_security").toLocaleString(),
-          tokenSpendable.toLocaleString(),
-          "to run this scan"
-        )
-      );
-      return;
-    }
-
-    if (scanType === "ai-audit") setAiAuditLoading(true);
-    if (scanType === "malware") setMalwareLoading(true);
-    if (scanType === "deep-malware") {
-      // Reset prior result + advance to running. The poller below clears
-      // these on completion. Setting jobId after the start call lets the
-      // useEffect-based poller pick up the new job.
-      setDeepMalwareResult(null);
-      setDeepMalwarePhase("pending");
-      setDeepMalwareStatus("running");
-    }
+  const handleTriggerScan = async (scanType: "deep-malware") => {
+    // Reset prior result + advance to running. The poller below clears
+    // these on completion. Setting jobId after the start call lets the
+    // useEffect-based poller pick up the new job.
+    setDeepMalwareResult(null);
+    setDeepMalwarePhase("pending");
+    setDeepMalwareStatus("running");
 
     try {
       // ── v2.9.29.0 Async Deep Malware Scan (start + poll) ────────────────
-      // Pipeline: enumerate → hashing → vps_lookup → local_scan → wpscan
-      //         → patchstack → ai_analysis → complete. Each /status poll
+      // Pipeline: enumerate → local_scan → complete. Each /status poll
       // advances one phase. ~2-5 min total on typical sites.
-      if (scanType === "deep-malware") {
-        const startEnvelope = await wpApi<{
-          success: boolean;
-          job_id?: string;
-          status?: string;
-          message?: string;
-        }>("/security/scan/malware/start", { method: "POST" });
-        if (!startEnvelope.success || !startEnvelope.job_id) {
-          throw new Error(
-            startEnvelope.message ?? DEEP_MALWARE_START_FAILURE_MESSAGE
-          );
-        }
-        // Hand the job_id to the poller useEffect below — the polling loop
-        // owns the network back-pressure, retries, and result delivery.
-        setDeepMalwareJobId(startEnvelope.job_id);
-        return;
-      }
-
-      // T4 (Package E, 2026-08-13): the async Full AI Scan (start + poll)
-      // branch that used to sit here was DELETED — zero UI callers (no
-      // ScanCard ever rendered scanType="full-ai", confirmed by tree-wide
-      // grep with a positive control). pollFullAiJobToCompletion() (its
-      // only caller) was deleted alongside it. Backend routes
-      // (/security/scan/full-ai/start + /status) stay registered per rule
-      // 0.4 — flagged as dead-route candidates in this session's report,
-      // not deleted.
-
-      const body =
-        scanType === "malware" ? JSON.stringify({ mode: "quick" }) : undefined;
-      const envelope = await wpApi<{
+      const startEnvelope = await wpApi<{
         success: boolean;
-        result: AiAuditResult | MalwareScanResult;
+        job_id?: string;
+        status?: string;
         message?: string;
-        balance_remaining?: number;
-      }>(`/security/scan/${scanType}`, { method: "POST", body });
-
-      // F-2: PHP returns { success: false, code: 'scan_failed', message: ... } for
-      // generic orchestrator errors (e.g. 'Sentinel not available'). Without this
-      // guard the next branches would destructure envelope.result (undefined) into
-      // state and later crash on result.summary.length. Throwing hands control to
-      // the existing catch block which shows a user-visible toast.
-      if (!envelope.success) {
-        throw new Error(envelope.message ?? "Scan failed. Please try again.");
+      }>("/security/scan/malware/start", { method: "POST" });
+      if (!startEnvelope.success || !startEnvelope.job_id) {
+        throw new Error(
+          startEnvelope.message ?? DEEP_MALWARE_START_FAILURE_MESSAGE
+        );
       }
-
-      // H-2C: Update local token balance from the authoritative server-side value.
-      if (typeof envelope.balance_remaining === "number") {
-        setBalance(envelope.balance_remaining);
-      }
-
-      if (scanType === "ai-audit") {
-        setAiAuditResult((envelope.result as AiAuditResult) ?? null);
-        // v2.9.30.117: scan complete → invalidate so next tab visit shows fresh data
-        queryClient.invalidateQueries({ queryKey: ["sentinel-latest-scan"] });
-        queryClient.invalidateQueries({ queryKey: ["security-status"] });
-      } else if (scanType === "malware") {
-        // Quick-mode malware result is fully eager — no polling, no queue.
-        setMalwareResult((envelope.result as MalwareScanResult) ?? null);
-        // v2.9.30.117: scan complete → invalidate so next tab visit shows fresh data
-        queryClient.invalidateQueries({ queryKey: ["sentinel-latest-scan"] });
-        queryClient.invalidateQueries({ queryKey: ["security-status"] });
-      }
+      // Hand the job_id to the poller useEffect below — the polling loop
+      // owns the network back-pressure, retries, and result delivery.
+      setDeepMalwareJobId(startEnvelope.job_id);
     } catch (e) {
       console.error(`Scan ${scanType} failed`, e);
       const msg = e instanceof Error ? e.message : "";
@@ -1386,38 +753,16 @@ const SecurityHub: React.FC = () => {
           ? msg
           : "Scan failed. Please try again."
       );
-      if (scanType === "deep-malware") {
-        setDeepMalwareStatus("error");
-        setDeepMalwareJobId(null);
-        setDeepMalwarePhase(null);
-      }
-    } finally {
-      if (scanType === "ai-audit") setAiAuditLoading(false);
-      if (scanType === "malware") setMalwareLoading(false);
-      // deep-malware: don't clear loading here — the poller useEffect owns
-      // the lifecycle and clears state on terminal phase.
+      setDeepMalwareStatus("error");
+      setDeepMalwareJobId(null);
+      setDeepMalwarePhase(null);
     }
   };
 
-  // T4 (Package E / G2 dead-path removal, 2026-08-13): pollFullAiJobToCompletion()
-  // DELETED — its only caller (the full-ai branch of handleTriggerScan above)
-  // was deleted in the same change. Proof: (1) tree-wide grep for
-  // `pollFullAiJobToCompletion(` after this deletion returns exactly one hit
-  // (its own removed declaration, gone) with a positive-control grep for a
-  // known-live function proving the search methodology works; (2) no
-  // template-literal/computed-key dispatch exists anywhere in this file that
-  // could reach it dynamically (handleTriggerScan's scanType union is a
-  // plain string literal type, not user input). Backend routes
-  // (/security/scan/full-ai/start + /status) stay registered per rule 0.4.
-
   // v2.9.29.0 — Deep Malware Scan phase-label dictionary. Each pipeline
   // phase maps to a user-facing message shown on the ScanCard's loading
-  // button. WP.org B12a residual closure (2026-08-13, v2.9.33.17): moved
-  // to scanConstants.pro.ts (imported above as
-  // DEEP_MALWARE_PHASE_LABELS) — two entries named bare third-party
-  // service names ("WPScan"/"Patchstack"), which compiled into the Free
-  // bundle regardless of the isProEditionBuild gate on the card that
-  // consumes it (this component function itself is not gated).
+  // button. The labels themselves live in scanCopy.ts (imported
+  // above as DEEP_MALWARE_PHASE_LABELS).
 
   /**
    * v2.9.29.0 — Deep Malware Scan poller.
@@ -1543,92 +888,6 @@ const SecurityHub: React.FC = () => {
   // Deep Malware Scan flow is driven by the React.useEffect poller above
   // (see DEEP_MALWARE_PHASE_LABELS + the deepMalwareJobId effect).
 
-  /**
-   * v2.9.28.04 (Issue 4) — Mark a malware finding as safe.
-   *
-   * POSTs to /security/ignore (existing endpoint, no new storage needed). Both
-   * SwissWPSuite_Security::perform_core_scan() (Quick mode) and
-   * SwissWPSuite_Security_Scanner::is_safe_folder() (Deep mode) consult
-   * swisswpsuite_security_ignored_paths, so whitelisted files are skipped by
-   * every future scan automatically.
-   *
-   * After a successful POST we remove the entry from the in-memory
-   * malwareResult.threats array so the UI reflects the change immediately
-   * without requiring a page reload.
-   */
-  const handleAuditMarkSafe = async (evidence: string) => {
-    if (!evidence) return;
-    try {
-      const res = await wpApi<{ success: boolean; message?: string }>(
-        "/security/ignore",
-        { method: "POST", body: JSON.stringify({ path: evidence }) }
-      );
-      if (!res.success) {
-        toast.error(res.message || "Failed to mark file as safe.");
-        return;
-      }
-      updateAiAuditResult((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          findings: prev.findings.filter((f) => f.evidence !== evidence),
-        };
-      });
-      fetchIgnored();
-      toast.success("Marked as safe. Future scans will skip this file.");
-    } catch (e) {
-      console.error("Failed to mark audit finding as safe", e);
-      toast.error("Network error marking file as safe.");
-    }
-  };
-
-  /**
-   * v2.9.30.x — Persistent "Mark Safe" by finding id (no file path).
-   *
-   * Used for AI Audit findings that have no `evidence` field — e.g.
-   * "WordPress Version Detected", "PHP Version: 8.3.30", "Bundled Plugin File
-   * Missing". These cannot be added to the path-based ignore list, so they go
-   * into the id-based safelist (wp_options key
-   * `swisswpsuite_sentinel_ignored_findings`). The same /security/ignore
-   * endpoint accepts a `finding_id` body — the backend keeps the two stores
-   * separate so paths and ids never collide.
-   *
-   * After the POST we strip the finding from the live AiAudit result so the
-   * row disappears immediately. The next scan will not re-emit the finding
-   * because transform_l1_to_ai_audit_result() filters by the safelist before
-   * returning.
-   */
-  const handleAuditMarkSafeById = async (findingId: string) => {
-    if (!findingId) return;
-    try {
-      const res = await wpApi<{ success: boolean; message?: string }>(
-        "/security/ignore",
-        { method: "POST", body: JSON.stringify({ finding_id: findingId }) }
-      );
-      if (!res.success) {
-        toast.error(res.message || "Failed to mark finding as safe.");
-        return;
-      }
-      updateAiAuditResult((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          findings: prev.findings.filter((f) => f.id !== findingId),
-          hidden_safelist_count: (prev.hidden_safelist_count ?? 0) + 1,
-        };
-      });
-      toast.success("Marked as safe. Future scans will hide this finding.");
-    } catch (e) {
-      console.error("Failed to mark audit finding (by id) as safe", e);
-      toast.error("Network error marking finding as safe.");
-    }
-  };
-
-  // T4 (Package E / G2 dead-path removal, 2026-08-13): handleFullAiMarkSafe()
-  // DELETED — zero call sites anywhere in this file (confirmed by tree-wide
-  // grep before this edit; it was only ever wired to the never-rendered
-  // full-ai ScanResultPanel's onMarkSafe prop, which no longer exists).
-
   const handleMarkMalwareSafe = async (relativePath: string) => {
     if (!relativePath) return;
     try {
@@ -1724,26 +983,18 @@ const SecurityHub: React.FC = () => {
         block_sqli: boolean;
         block_xss: boolean;
         simulation_mode: boolean;
-        geo_enabled: boolean;
-        global_geo_block: boolean;
         login_enabled: boolean;
         login_max_retries?: number;
         last_scan: string;
-        alerts?: SecurityAlert;
       }>("/security/status");
       setFirewallEnabled(data.firewall_enabled ?? false);
       setSpamProtection(data.spam_enabled ?? false);
       setBlockSqli(data.block_sqli ?? false);
       setBlockXss(data.block_xss ?? false);
       setSimulationMode(data.simulation_mode ?? false);
-      setGeoEnabled(data.geo_enabled ?? false);
-      setGlobalGeoBlock(data.global_geo_block ?? false);
       setLoginEnabled(data.login_enabled ?? false);
       setLoginMaxRetries(data.login_max_retries ?? 3);
       setLastScan(data.last_scan);
-      if (data.alerts && !isAlertDismissed(data.alerts)) {
-        setAlerts(data.alerts);
-      }
     } catch (e) {
       console.error("Failed to fetch security status", e);
     }
@@ -2042,10 +1293,8 @@ const SecurityHub: React.FC = () => {
         return;
       }
       setIgnoredFindings((prev) => prev.filter((id) => id !== findingId));
-      // The next scan will re-emit the finding. We do NOT mutate aiAuditResult
-      // here because the finding's title/severity are not stored alongside the
-      // id — the user must re-scan to see it return, which is the expected
-      // and least-surprising behavior.
+      // The next scan will re-emit the finding — the user must re-scan to
+      // see it return, which is the expected and least-surprising behavior.
       toast.success(
         "Removed from safelist. Next scan will re-check this item."
       );
@@ -2054,9 +1303,6 @@ const SecurityHub: React.FC = () => {
       toast.error("Network error removing safelist entry.");
     }
   };
-
-  // fetchGeoSettings/saveGeoCountries MOVED to GeoLockdownCard.tsx
-  // (2026-08-13, WP.org B12a regression fix — see that file's docblock).
 
   // @deprecated v2.9.30.117 — replaced by useQuery(["hardening-status"]) above.
   const fetchHardeningStatus = async () => {
@@ -2080,8 +1326,6 @@ const SecurityHub: React.FC = () => {
     if (option === "block_sqli") setBlockSqli(value);
     if (option === "block_xss") setBlockXss(value);
     if (option === "simulation_mode") setSimulationMode(value);
-    if (option === "geo") setGeoEnabled(value);
-    if (option === "global_geo_block") setGlobalGeoBlock(value);
     if (option === "login") setLoginEnabled(value);
 
     try {
@@ -2129,29 +1373,9 @@ const SecurityHub: React.FC = () => {
   // wired to the UI is handleTriggerScan("deep-malware") below, a
   // completely separate code path hitting a different route
   // (/security/malware/start vs. these two's /security/deep-scan/start,
-  // /backup/environment-status). (2) built-bundle — fresh Free AND Pro
-  // `vite build`, `command grep -rl "environment-status\|proceedDeepScan"
-  // assets/` → 0 hits in both, confirmed before and after this deletion.
-
-  // @deprecated v2.9.30.117 — replaced by useQuery(["sentinel-status"]) above.
-  const fetchSentinelStatus = async () => {
-    try {
-      const data = await wpApi<{
-        has_audit: boolean;
-        audit?: SentinelAuditResult;
-        credits?: SentinelCredits;
-        identity_valid?: boolean;
-      }>("/security/sentinel/status");
-      if (data.credits) {
-        setSentinelCredits(data.credits);
-      }
-      if (data.identity_valid === false) {
-        setIdentityValid(false);
-      }
-    } catch (e) {
-      console.error("[SwissSuite] fetchSentinelStatus failed:", e);
-    }
-  };
+  // /backup/environment-status). (2) built-bundle — a fresh `vite build`
+  // then `command grep -rl "environment-status\|proceedDeepScan" assets/`
+  // → 0 hits.
 
   // T4 (Package E / G2 dead-path removal, 2026-08-13): runSentinelFullScan()
   // DELETED. Two-proof verification per the owner's dead-code deletion rule:
@@ -2198,36 +1422,12 @@ const SecurityHub: React.FC = () => {
       );
       if (!detail.success) return;
 
-      // SEC-4: Filter out findings with status === 'fixed' (set in current session).
-      // Cross-session persistence is handled server-side: get_sentinel_scan_record()
-      // filters against swisswpsuite_security_fixed_findings before returning results.
-      const openFindings = (detail.layer1_findings ?? []).filter(
-        (f) => f.status !== "fixed"
-      );
+      // SEC-4: findings fixed via the fix-it pipeline are already removed
+      // server-side: get_sentinel_scan_record() filters against
+      // swisswpsuite_security_fixed_findings before returning results.
+      const openFindings = detail.layer1_findings ?? [];
 
-      if (detail.layer2_report) {
-        // detail.layer2_report is already typed as SentinelLayer2Report — use it directly,
-        // but override individual_findings with the filtered (non-fixed) subset.
-        // Defensive defaults: stored report may have incomplete AI-generated fields.
-        const l2 = detail.layer2_report;
-        setSentinelReport({
-          ...l2,
-          individual_findings: openFindings,
-          attack_chains: l2.attack_chains ?? [],
-          remediation_plan: l2.remediation_plan ?? [],
-          positive_findings: l2.positive_findings ?? [],
-          scan_metadata: l2.scan_metadata ?? {
-            sentinel_version: "2.1",
-            analysis_date: new Date().toISOString(),
-            model_used: "unknown",
-            findings_count: openFindings.length,
-            critical_count: openFindings.filter(
-              (f) => f.severity === "critical"
-            ).length,
-            chains_count: (l2.attack_chains ?? []).length,
-          },
-        });
-      } else if (openFindings.length > 0) {
+      if (openFindings.length > 0) {
         setSentinelReport({ layer: 1, findings: openFindings });
       }
     } catch (e) {
@@ -2253,15 +1453,11 @@ const SecurityHub: React.FC = () => {
     setLoadingHistoricalScanId(recordId);
     setHistoricalScanDetail(null);
     try {
-      const data = await wpApi<ScanHistoryDetail & { success: boolean }>(
+      const data = await wpApi<ScanDetailResponse & { success: boolean }>(
         `/security/sentinel/scan-history/${recordId}`
       );
       if (data.success) {
-        setHistoricalScanDetail({
-          record: data.record,
-          layer1_findings: data.layer1_findings,
-          layer2_report: data.layer2_report,
-        });
+        setHistoricalScanDetail(mapScanDetail(data));
         setActiveTab("scan");
       } else {
         toast.error("Failed to load scan record.");
@@ -2372,7 +1568,7 @@ const SecurityHub: React.FC = () => {
           setManualIp("");
           // v2.9.30.117: invalidate so the banned-IPs list reflects immediately
           queryClient.invalidateQueries({ queryKey: ["security-banned-ips"] });
-          if (showFirewallAdvisor) handleAnalyzeFirewall();
+          setBanRevision((n) => n + 1);
         } else {
           toast.error("Failed to ban IP: " + (data.message || "Unknown error"));
         }
@@ -2396,8 +1592,7 @@ const SecurityHub: React.FC = () => {
       } catch (e) {
         // v2.9.30.85: surface backend error message rather than generic
         // "Network error." string. The previous catch swallowed legitimate
-        // 4xx responses (e.g., "IP not found in ban list" from a stale row,
-        // or "IP management requires a Pro license." for free-tier users)
+        // 4xx responses (e.g., "IP not found in ban list" from a stale row)
         // and displayed them as transport failures, which prevented users
         // from understanding what actually went wrong.
         const msg =
@@ -2464,21 +1659,14 @@ const SecurityHub: React.FC = () => {
         body: JSON.stringify({ path: finding.evidence }),
       });
       // Remove from local state
-      setSentinelReport((prev) => {
-        if (!prev) return prev;
-        if (prev.layer === 1) {
-          return {
-            ...prev,
-            findings: prev.findings.filter((f) => f.id !== finding.id),
-          };
-        }
-        return {
-          ...prev,
-          individual_findings: (
-            prev as SentinelLayer2Report
-          ).individual_findings.filter((f) => f.id !== finding.id),
-        };
-      });
+      setSentinelReport((prev) =>
+        prev
+          ? {
+              ...prev,
+              findings: prev.findings.filter((f) => f.id !== finding.id),
+            }
+          : prev
+      );
       toast.success(
         "Marked as safe. This file will not appear on future scans."
       );
@@ -2501,21 +1689,14 @@ const SecurityHub: React.FC = () => {
             }
           );
           if (data.success) {
-            setSentinelReport((prev) => {
-              if (!prev) return prev;
-              if (prev.layer === 1) {
-                return {
-                  ...prev,
-                  findings: prev.findings.filter((f) => f.id !== finding.id),
-                };
-              }
-              return {
-                ...prev,
-                individual_findings: (
-                  prev as SentinelLayer2Report
-                ).individual_findings.filter((f) => f.id !== finding.id),
-              };
-            });
+            setSentinelReport((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    findings: prev.findings.filter((f) => f.id !== finding.id),
+                  }
+                : prev
+            );
             fetchQuarantine();
             toast.success("File quarantined successfully.");
           } else {
@@ -2549,21 +1730,14 @@ const SecurityHub: React.FC = () => {
             }),
           });
           if (data.success) {
-            setSentinelReport((prev) => {
-              if (!prev) return prev;
-              if (prev.layer === 1) {
-                return {
-                  ...prev,
-                  findings: prev.findings.filter((f) => f.id !== finding.id),
-                };
-              }
-              return {
-                ...prev,
-                individual_findings: (
-                  prev as SentinelLayer2Report
-                ).individual_findings.filter((f) => f.id !== finding.id),
-              };
-            });
+            setSentinelReport((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    findings: prev.findings.filter((f) => f.id !== finding.id),
+                  }
+                : prev
+            );
             toast.success("File deleted successfully.");
             if (data.failed?.length) {
               toast.error(
@@ -2607,21 +1781,14 @@ const SecurityHub: React.FC = () => {
             });
             if (data.success) {
               const ids = new Set(targetFindings.map((f) => f.id));
-              setSentinelReport((prev) => {
-                if (!prev) return prev;
-                if (prev.layer === 1) {
-                  return {
-                    ...prev,
-                    findings: prev.findings.filter((f) => !ids.has(f.id)),
-                  };
-                }
-                return {
-                  ...prev,
-                  individual_findings: (
-                    prev as SentinelLayer2Report
-                  ).individual_findings.filter((f) => !ids.has(f.id)),
-                };
-              });
+              setSentinelReport((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      findings: prev.findings.filter((f) => !ids.has(f.id)),
+                    }
+                  : prev
+              );
               if (action === "quarantine") fetchQuarantine();
               toast.success(`${items.length} file(s) ${label}d.`);
               if (data.failed?.length) {
@@ -2653,21 +1820,14 @@ const SecurityHub: React.FC = () => {
         });
         if (data.success) {
           const ids = new Set(targetFindings.map((f) => f.id));
-          setSentinelReport((prev) => {
-            if (!prev) return prev;
-            if (prev.layer === 1) {
-              return {
-                ...prev,
-                findings: prev.findings.filter((f) => !ids.has(f.id)),
-              };
-            }
-            return {
-              ...prev,
-              individual_findings: (
-                prev as SentinelLayer2Report
-              ).individual_findings.filter((f) => !ids.has(f.id)),
-            };
-          });
+          setSentinelReport((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  findings: prev.findings.filter((f) => !ids.has(f.id)),
+                }
+              : prev
+          );
           fetchIgnored();
           toast.success(`${items.length} file(s) marked as safe.`);
           if (data.failed?.length) {
@@ -2691,8 +1851,8 @@ const SecurityHub: React.FC = () => {
   // frontend caller of the now-deleted POST /security/findings/fix route —
   // were removed here as dead code. Two-proof (validator, VALIDATOR_E.md
   // §3.4/§0): `grep -rn "handleL1Fix" plugin/src` had exactly one hit (this
-  // definition, zero callers) both before and after checking the built Free
-  // and Pro zips for any remaining reference to the route string; the
+  // definition, zero callers) both before and after checking the built zip
+  // for any remaining reference to the route string; the
   // backend route + handler were deleted in the same round (LE-B, see
   // RoundELaneB_F08_DeadRouteDeletionTest.php). `SentinelLayer1Finding`'s
   // `fix_type` field is unaffected and still used elsewhere (the "N issues
@@ -2812,18 +1972,13 @@ const SecurityHub: React.FC = () => {
   };
 
   /**
-   * v2.9.28.11 — Batch-action handler for the restored ScanResultPanel selection UI.
+   * v2.9.28.11 — Batch-action handler for the ScanResultPanel selection UI.
    *
-   * Receives an action verb and a list of file paths (from either AuditResultView's
-   * `finding.evidence` or MalwareResultView's `threat.file`). Calls the shared
-   * `performBulkOperation` (unchanged backend: POST /security/bulk) and, on success,
-   * removes the acted-upon findings from BOTH `aiAuditResult` and `fullAiResult`
-   * state slices — because `AuditResultView` is rendered by both scan types and
-   * the user may be acting from either panel. Malware scan panel clears its own
+   * Receives an action verb and a list of file paths (from
+   * MalwareResultView's `threat.file`). Calls the shared
+   * `performBulkOperation` (unchanged backend: POST /security/bulk) and, on
+   * success, removes the acted-upon threats from the deep-malware panel's
    * `malwareResult.threats` optimistically.
-   *
-   * Regression guard: Frontend memory v2.9.28.10 entry — always update BOTH
-   * ai-audit and full-ai state when a shared component triggers a mutation.
    */
   const handleScanPanelBulkAction = useCallback(
     async (
@@ -2848,29 +2003,9 @@ const SecurityHub: React.FC = () => {
         const failedPaths = new Set(result.failed.map((f) => f.path));
         const succeededList = fileList.filter((f) => !failedPaths.has(f));
 
-        // Remove the acted-upon findings from AI audit result panels.
-        updateAiAuditResult((prev) =>
-          prev
-            ? {
-                ...prev,
-                findings: prev.findings.filter(
-                  (f) => !succeededList.includes(f.evidence ?? "")
-                ),
-              }
-            : prev
-        );
-        updateFullAiResult((prev) =>
-          prev
-            ? {
-                ...prev,
-                findings: prev.findings.filter(
-                  (f) => !succeededList.includes(f.evidence ?? "")
-                ),
-              }
-            : prev
-        );
-        // Also remove from malware threat list so the same selection cleared from
-        // the malware panel reflects immediately without waiting for a re-scan.
+        // Remove from the malware threat list so the same selection cleared
+        // from the deep-malware panel reflects immediately without waiting
+        // for a re-scan.
         updateMalwareResult((prev) =>
           prev
             ? {
@@ -2906,462 +2041,108 @@ const SecurityHub: React.FC = () => {
     []
   );
 
-  const handleAiAnalyze = async (
-    filepath: string,
-    options?: { bulk?: boolean }
-  ) => {
-    // v2.9.28.23 — Defensive guard against unintended auto-fire.
-    // Chrome DevTools browser testing showed ~9 analyze-file requests firing ~20s
-    // after Full AI Scan completion with no user click between. A full code audit
-    // (v2.9.28.23) found ZERO auto-trigger useEffects that call this function or
-    // runAiAnalyzeChain — every call path is wired to an explicit onClick. The
-    // most plausible remaining cause is a stale effect / re-entrancy race during
-    // an active scan poll. This guard blocks any analyze-file request while a
-    // scan that owns file findings is still in-flight (aiAudit / malware
-    // loading or deep-scan polling). AI analysis is always USER-INITIATED — it is
-    // safe to short-circuit here because every legitimate path is a direct click.
-    // T4 (Package E, 2026-08-13): `fullAiLoading` removed from this guard —
-    // its state was deleted alongside the dead full-ai dispatch branch (see
-    // handleTriggerScan above); it could never be true again.
-    // W3 — Token balance gate: block the call early if insufficient tokens
-    if (!canAfford("sentinel_security")) {
-      toast.error(
-        tokenNeededMessage(
-          tokensNeeded("sentinel_security").toLocaleString(),
-          tokenSpendable.toLocaleString(),
-          "to analyze a file"
-        )
-      );
-      return;
-    }
-    if (
-      aiAuditLoading ||
-      malwareLoading ||
-      deepScanStatus?.status === "running"
-    ) {
-      // Silently drop — no toast (the user didn't ask for this, so no error UX needed).
-      // The click-surface buttons are already disabled via aiProgress/analyzingFile state.
-      return;
-    }
-    // Guard against re-entrant calls for the same file while one is in flight.
-    if (analyzingFile === filepath) return;
-    setAnalyzingFile(filepath);
-    setAiAnalysis(null);
-    // W4 — persistent toast + elapsed timer for single-file (non-bulk) calls
-    const toastId = !options?.bulk
-      ? toast.info("AI is analyzing — this may take up to 60 seconds…", {
-          duration: Infinity,
-        })
-      : null;
-    if (!options?.bulk) startAiTimer();
+  // B.6/DASH-2 (VALIDATOR_DASH.md, v2.9.33.49): one-click "Run self-test
+  // now" — POSTs to the backend self-test endpoint (Fix B lane, HMAC-marked
+  // probe that cannot accumulate WAF strikes on the shared proxy address —
+  // see VALIDATOR_DASH.md §1 Fix B), then invalidates ["security-status"]
+  // so GET /security/status is re-fetched with the fresh waf_self_test
+  // result. success:false at HTTP 200 is deliberately NOT opted out via
+  // allowSuccessFalse — a self-test call that itself failed to run (as
+  // opposed to a self-test that ran and found the WAF not blocking) should
+  // surface as a request error, not a silent no-op.
+  //
+  // Contract note (verified against the built backend, class-swisswpsuite-
+  // api-security.php::run_waf_self_test_now(), 2026-09-03): the POST
+  // response nests the fresh result under `result`, NOT `waf_self_test` —
+  // a deliberately different shape from GET /security/status's own
+  // `waf_self_test` field. The two also use different key names for the
+  // timestamp: the POST's raw stored-option shape carries `time`
+  // (SwissWPSuite_Security::store_self_test_result()'s row shape), while
+  // GET /security/status remaps that same value to `last_run` when
+  // building its response. This block re-shapes the POST payload into the
+  // GET shape before calling setWafSelfTest() so the rest of this
+  // component only ever deals with one shape.
+  const runWafSelfTest = async () => {
+    setRunningWafSelfTest(true);
     try {
       const data = await wpApi<{
         success: boolean;
-        analysis?: Omit<AiFileAnalysis, "file">;
-        auto_whitelisted?: boolean;
         message?: string;
-        balance_remaining?: number;
-      }>("/security/analyze-file", {
-        method: "POST",
-        body: JSON.stringify({ file: filepath }),
-      });
-      // H-2C: Update local token balance from the authoritative server-side value.
-      if (typeof data.balance_remaining === "number") {
-        setBalance(data.balance_remaining);
-      }
-      if (data.success && data.analysis) {
-        setAiAnalysis({ file: filepath, ...data.analysis });
-        // Auto-remove files that were whitelisted by the backend (AI verdict: safe)
-        if (data.auto_whitelisted) {
-          setDeepScanStatus((prev) => ({
-            ...prev,
-            results: prev.results?.filter((r) => r.file !== filepath),
-          }));
-          setSelectedThreats((prev) => prev.filter((f) => f !== filepath));
-        }
-      } else {
-        if (!options?.bulk) {
-          toast.error(data.message || "AI file analysis failed.");
-        }
-        throw new Error(data.message || "AI file analysis failed");
-      }
-    } catch (e: any) {
-      console.error(e);
-      // W3 — 402 token exhausted
-      if (e instanceof ApiError && e.status === 402) {
-        toast.error(TOKEN_EXHAUSTED_MESSAGE);
-        throw e; // still let the chain count this as a failure
-      }
-      if (!options?.bulk) {
-        toast.error("Analysis request failed — check your connection.");
-      }
-      throw e; // Let the chain count this as a failure
-    } finally {
-      if (toastId) toast.dismiss(toastId);
-      if (!options?.bulk) stopAiTimer();
-      setAnalyzingFile(null);
-    }
-  };
+        result?: {
+          time: string;
+          result: NonNullable<SecurityStatus["waf_self_test"]>["result"];
+          http_code: number | null;
+          blocked_row_seen: boolean | null;
+          detail: string;
+        };
+      }>("/security/waf-self-test", { method: "POST" });
 
-  const handleAnalyzeLogs = async () => {
-    // N-4: Token balance gate — block early if insufficient tokens.
-    if (!canAfford("sentinel_security")) {
-      toast.error(
-        tokenNeededMessage(
-          tokensNeeded("sentinel_security").toLocaleString(),
-          tokenSpendable.toLocaleString()
-        )
-      );
-      return;
-    }
-    setAnalyzingLogs(true);
-    setLogAnalysis(null);
-    // W4 — persistent toast + elapsed timer for compound model calls
-    const toastId = toast.info(
-      "AI is analyzing — this may take up to 60 seconds…",
-      { duration: Infinity }
-    );
-    startAiTimer();
-    try {
-      const data = await wpApi<{
-        success: boolean;
-        analysis?: LogAnalysis;
-        message?: string;
-      }>("/security/analyze-logs", {
-        method: "POST",
-      });
-      if (data.success && data.analysis) {
-        setLogAnalysis(data.analysis);
-      } else {
-        toast.error(data.message || LOG_ANALYSIS_FAILED_MESSAGE);
+      if (data.result) {
+        setWafSelfTest({
+          last_run: data.result.time,
+          result: data.result.result,
+          http_code: data.result.http_code,
+          blocked_row_seen: data.result.blocked_row_seen,
+          detail: data.result.detail,
+        });
       }
-    } catch (e: any) {
-      console.error(e);
-      // W3 — 402 token exhausted
-      if (e instanceof ApiError && e.status === 402) {
-        toast.error(TOKEN_EXHAUSTED_MESSAGE);
-        return;
+      queryClient.invalidateQueries({ queryKey: ["security-status"] });
+
+      switch (data.result?.result) {
+        case "ok":
+          toast.success(
+            data.result?.detail
+              ? `WAF self-test passed — ${data.result.detail}`
+              : "WAF self-test passed — the firewall blocked the test attack."
+          );
+          break;
+        case "failed":
+          toast.error(
+            data.result?.detail
+              ? `WAF self-test FAILED — ${data.result.detail}`
+              : "WAF self-test FAILED — the firewall did not block the test attack. Check your WAF settings."
+          );
+          break;
+        case "unknown":
+          toast.warning(
+            data.result?.detail
+              ? `WAF self-test inconclusive — ${data.result.detail}`
+              : "WAF self-test inconclusive — this run proves nothing either way. Try again shortly."
+          );
+          break;
+        case "off":
+          toast.info("Self-test skipped — the firewall is currently off.");
+          break;
+        default:
+          toast.success(data.message || "Self-test completed.");
       }
+    } catch (e: unknown) {
+      console.error("WAF self-test failed", e);
       toast.error(
-        e?.message || "Analysis request failed — check your connection."
+        e instanceof Error
+          ? e.message
+          : "Self-test request failed — check your connection."
       );
     } finally {
-      toast.dismiss(toastId);
-      stopAiTimer();
-      setAnalyzingLogs(false);
+      setRunningWafSelfTest(false);
     }
   };
 
-  const handleAnalyzeFirewall = async () => {
-    // N-4: Token balance gate — block early if insufficient tokens.
-    if (!canAfford("sentinel_security")) {
-      toast.error(
-        tokenNeededMessage(
-          tokensNeeded("sentinel_security").toLocaleString(),
-          tokenSpendable.toLocaleString()
-        )
-      );
-      return;
-    }
-    setAnalyzingFirewall(true);
-    setFirewallAnalysis(null);
-    // W4 — persistent toast + elapsed timer for compound model calls
-    const toastId = toast.info(
-      "AI is analyzing — this may take up to 60 seconds…",
-      { duration: Infinity }
-    );
-    startAiTimer();
-    try {
-      const data = await wpApi<{
-        success: boolean;
-        analysis?: FirewallAnalysis;
-        message?: string;
-      }>("/security/analyze-firewall", {
-        method: "POST",
-      });
-      if (data.success && data.analysis) {
-        setFirewallAnalysis(data.analysis);
-      } else {
-        toast.error(data.message || FIREWALL_ANALYSIS_FAILED_MESSAGE);
-      }
-    } catch (e: any) {
-      console.error(e);
-      // W3 — 402 token exhausted
-      if (e instanceof ApiError && e.status === 402) {
-        toast.error(TOKEN_EXHAUSTED_MESSAGE);
-        return;
-      }
-      toast.error("Analysis request failed — check your connection.");
-    } finally {
-      toast.dismiss(toastId);
-      stopAiTimer();
-      setAnalyzingFirewall(false);
-    }
-  };
-
-  // Show a manual 2FA setup guide (hardcoded — matches what the API returns
-  // for two_factor_authentication). Content lives in lib/logAdvisorGuideContent.ts
-  // (extracted 2026-08-12, WP.org frontend physical-exclusion sweep) so the
-  // real "Scan the QR code"/"backup recovery codes" strings have a file
-  // boundary that vite.config.ts can alias away in the Free build — see
-  // that file's docblock for why (this button is already unreachable in
-  // Free at runtime via the isProEditionBuild && hasSecurity gate on its
-  // "Analyze Logs with AI" entry point, but the strings were still being
-  // compiled into the Free bundle as inline object literals before this).
-  const handleLogAction2FA = () => {
-    setShowLogAdvisor(false);
-    setLogActionGuide(TWO_FACTOR_GUIDE_CONTENT);
-  };
-
-  // Call the sentinel remediate endpoint for a known issue_id.
-  // If auto-fixable → toast success. If manual only → show guide modal.
-  const handleLogActionFix = async (issueId: string) => {
-    setShowLogAdvisor(false);
-    const runFix = async () => {
-      try {
-        const data = await wpApi<RemediateResponse>(
-          "/security/sentinel/remediate",
-          {
-            method: "POST",
-            body: JSON.stringify(
-              // WP.org round-3 (Sprint W3): debug_mode_enabled now requires
-              // explicit confirmation server-side — this rewrites wp-config.php.
-              issueId === "debug_mode_enabled"
-                ? { issue_id: issueId, confirm: true }
-                : { issue_id: issueId }
-            ),
-            // U10 (gate report 2026-08-20, FINAL R2 opt-out list): same
-            // opt-out as FixNowButton's handleFix() above — this endpoint's
-            // manual_fix branch below needs the resolved value, not a throw.
-            allowSuccessFalse: true,
-          }
-        );
-        if (data.success) {
-          toast.success(data.message || "Issue fixed successfully!");
-        } else if (data.manual_fix) {
-          setLogActionGuide(data.manual_fix);
-        } else {
-          toast.error(data.message || "Fix failed. Please try manually.");
-        }
-      } catch (e) {
-        console.error(e);
-        toast.error("Network error — could not contact fix endpoint.");
-      }
-    };
-    if (issueId === "debug_mode_enabled") {
-      showConfirm(
-        "Disable WP_DEBUG mode? This rewrites your wp-config.php file.",
-        runFix
-      );
-      return;
-    }
-    await runFix();
-  };
-
-  // Returns ONE action button for a given AI-generated action string (priority-ordered)
-  const getLogActionButton = (action: string): React.ReactNode => {
-    const a = action.toLowerCase();
-    const ipMatch = action.match(/\b(\d{1,3}\.){3}\d{1,3}\b/);
-    // Badge shown when the recommended action is already done
-    const doneBadge = (label: string) => (
-      <span className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black tracking-widest text-emerald-600 uppercase dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
-        <CheckCircle size={10} /> {label}
-      </span>
-    );
-
-    // P1: Direct IP ban — highest priority. Check if already banned first.
-    if (ipMatch) {
-      const ip = ipMatch[0];
-      if (bannedIps.includes(ip)) return doneBadge("Already Banned");
-      return (
-        <Button
-          size="sm"
-          className={LOG_BTN_ACCENT}
-          onClick={() => handleBanIp(ip)}
-        >
-          Ban IP
-        </Button>
-      );
-    }
-    // P2: Firewall / WAF — our BUILT-IN firewall. If already on, say so; if off, enable it.
-    if (a.includes("firewall") || a.includes("waf")) {
-      if (firewallEnabled) return doneBadge("WAF Active");
-      return (
-        <Button
-          size="sm"
-          className={LOG_BTN_BASE}
-          onClick={() => {
-            setShowLogAdvisor(false);
-            handleToggle("firewall", true);
-            toast.success("SwissSuite built-in firewall enabled!");
-          }}
-        >
-          Enable WAF
-        </Button>
-      );
-    }
-    // P3: Login / brute-force protection
-    if (a.includes("login") || a.includes("brute")) {
-      if (loginEnabled) return doneBadge("Login Prot. Active");
-      return (
-        <Button
-          size="sm"
-          className={LOG_BTN_BASE}
-          onClick={() => {
-            setShowLogAdvisor(false);
-            handleToggle("login", true);
-          }}
-        >
-          Enable Login Prot.
-        </Button>
-      );
-    }
-    // P4: Geo-blocking
-    if (
-      a.includes("geo") ||
-      a.includes("country") ||
-      a.includes("geographic") ||
-      a.includes("region")
-    ) {
-      if (geoEnabled) return doneBadge("Geo-Lock Active");
-      return (
-        <Button
-          size="sm"
-          className={LOG_BTN_BASE}
-          onClick={() => {
-            setShowLogAdvisor(false);
-            handleToggle("geo", true);
-          }}
-        >
-          {GEO_LOCK_ACTION_LABEL}
-        </Button>
-      );
-    }
-    // P5: Two-Factor Authentication — can't auto-enable; show setup guide
-    if (
-      a.includes("2fa") ||
-      a.includes("two-factor") ||
-      a.includes("two factor") ||
-      a.includes("authenticat")
-    ) {
-      return (
-        <Button size="sm" className={LOG_BTN_BASE} onClick={handleLogAction2FA}>
-          2FA Guide
-        </Button>
-      );
-    }
-    // P6: Spam / bot protection
-    if (a.includes("spam") || a.includes("bot protec")) {
-      if (spamProtection) return doneBadge("Spam Prot. Active");
-      return (
-        <Button
-          size="sm"
-          className={LOG_BTN_BASE}
-          onClick={() => {
-            setShowLogAdvisor(false);
-            handleToggle("spam", true);
-          }}
-        >
-          Enable Spam Prot.
-        </Button>
-      );
-    }
-    // P7: SQL injection blocking
-    if (a.includes("sql") || a.includes("injection")) {
-      if (blockSqli) return doneBadge("SQLi Blocked");
-      return (
-        <Button
-          size="sm"
-          className={LOG_BTN_BASE}
-          onClick={() => {
-            setShowLogAdvisor(false);
-            handleToggle("block_sqli", true);
-          }}
-        >
-          Block SQLi
-        </Button>
-      );
-    }
-    // P8: XSS blocking
-    if (a.includes("xss") || a.includes("cross-site")) {
-      if (blockXss) return doneBadge("XSS Blocked");
-      return (
-        <Button
-          size="sm"
-          className={LOG_BTN_BASE}
-          onClick={() => {
-            setShowLogAdvisor(false);
-            handleToggle("block_xss", true);
-          }}
-        >
-          Block XSS
-        </Button>
-      );
-    }
-    // P9a: Debug mode — auto-fixable via sentinel remediate
-    if (a.includes("debug")) {
-      return (
-        <Button
-          size="sm"
-          className={LOG_BTN_BASE}
-          onClick={() => handleLogActionFix("debug_mode_enabled")}
-        >
-          Fix Debug
-        </Button>
-      );
-    }
-    // P9b: File permissions / htaccess — auto-fixable via sentinel remediate
-    if (a.includes("permission") || a.includes("htaccess")) {
-      return (
-        <Button
-          size="sm"
-          className={LOG_BTN_BASE}
-          onClick={() => handleLogActionFix("htaccess_permissions")}
-        >
-          Fix Perms
-        </Button>
-      );
-    }
-    // P9c: Generic hardening / security headers
-    if (a.includes("harden") || a.includes("header")) {
-      return (
-        <Button
-          size="sm"
-          className={LOG_BTN_BASE}
-          onClick={() => {
-            setShowLogAdvisor(false);
-            setActiveTab("hardening");
-          }}
-        >
-          Harden
-        </Button>
-      );
-    }
-    // P10: WordPress core / plugin / theme updates — link to WP Updates page
-    if (
-      a.includes("update") &&
-      (a.includes("patch") ||
-        a.includes("core") ||
-        a.includes("plugin") ||
-        a.includes("theme") ||
-        a.includes("exploit") ||
-        a.includes("vulnerabilit"))
-    ) {
-      return (
-        <Button
-          size="sm"
-          className={LOG_BTN_BASE}
-          onClick={() => {
-            setShowLogAdvisor(false);
-            window.location.href =
-              (homeUrl || "") + "/wp-admin/update-core.php";
-          }}
-        >
-          WP Updates
-        </Button>
-      );
-    }
-    return null;
+  // Everything the analysis dialogs delegate back to this page.
+  const reviewActions: SecurityDataReviewActions = {
+    banIp: handleBanIp,
+    ignoreFile: handleIgnore,
+    quarantineFile: handleQuarantine,
+    fileCleared: (file) => {
+      setDeepScanStatus((prev) => ({
+        ...prev,
+        results: prev.results?.filter((r) => r.file !== file),
+      }));
+      setSelectedThreats((prev) => prev.filter((f) => f !== file));
+    },
+    goToLogs: () => setActiveTab("logs"),
+    goToHardening: () => setActiveTab("hardening"),
+    confirmAction: showConfirm,
   };
 
   // HIGH-32: Show skeleton while initial data loads to prevent stale-data flash
@@ -3385,65 +2166,6 @@ const SecurityHub: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Security Alerts Banner (Background AI Monitor) */}
-      {alerts &&
-        (() => {
-          // Evaluate real-time protection state so the banner never shows a false
-          // "no protection active" warning when defences are already in place.
-          const attackingIpAlreadyBanned =
-            Array.isArray(alerts.topIps) &&
-            alerts.topIps.some((ip) => bannedIps.includes(ip));
-          const isProtectionActive = loginEnabled || attackingIpAlreadyBanned;
-
-          return isProtectionActive ? (
-            // Protected state — amber/info tone (WCAG AA: amber-800 on amber-50 ≥ 4.5:1)
-            <div
-              role="status"
-              aria-live="polite"
-              className="animate-in fade-in slide-in-from-top-2 flex items-start justify-between rounded-r-lg border-l-4 border-amber-500 bg-amber-50 p-4"
-            >
-              <div>
-                <h3 className="flex items-center gap-2 font-bold text-amber-800">
-                  <ShieldAlert size={20} /> Security Alert: {alerts.verdict}
-                </h3>
-                <p className="mt-1 text-sm text-amber-800">
-                  Login protection is active. Monitoring for further attempts.
-                </p>
-                <div className="mt-2 text-xs font-semibold text-amber-700 uppercase">
-                  Threat Level: {alerts.threatLevel}
-                </div>
-              </div>
-              <button
-                onClick={handleDismissAlert}
-                className="text-amber-600 hover:text-amber-800"
-                aria-label="Dismiss security alert"
-              >
-                <X size={18} />
-              </button>
-            </div>
-          ) : (
-            // Unprotected state — red alert (original styling preserved)
-            <div className="bg-muted animate-in fade-in slide-in-from-top-2 flex items-start justify-between rounded-r-lg border-l-4 border-red-500 p-4">
-              <div>
-                <h3 className="flex items-center gap-2 font-bold text-red-600">
-                  <ShieldAlert size={20} /> Security Alert: {alerts.verdict}
-                </h3>
-                <p className="mt-1 text-sm text-red-700">{alerts.summary}</p>
-                <div className="mt-2 text-xs font-semibold text-red-600 uppercase">
-                  Threat Level: {alerts.threatLevel}
-                </div>
-              </div>
-              <button
-                onClick={handleDismissAlert}
-                className="text-red-400 hover:text-red-600"
-                aria-label="Dismiss security alert"
-              >
-                <X size={18} />
-              </button>
-            </div>
-          );
-        })()}
-
       <SectionHeader
         title="Security Hub"
         description="Monitor and protect your site from malware and vulnerabilities."
@@ -3500,35 +2222,14 @@ const SecurityHub: React.FC = () => {
 
       {activeTab === "dashboard" && (
         <>
-          {/* Firewall Advisor modal moved to global scope — see end of component */}
-
-          {/* Bulk Analysis Modal moved to global scope — see end of component */}
-
-          {/* AI Security Analysis Modal moved to global scope — see below */}
-
-          {/* Deep Scan Modal moved to global scope — see below */}
-
-          {/* Update Guard Card (Sprint 2 — Phase 1 Observe) */}
-          {isProEditionBuild && (
-            <UpdateGuardCard
-              status={updateGuardStatus}
-              snapshots={updateGuardSnapshots}
-              reviews={updateGuardReviews}
-              isLoading={updateGuardLoading}
-              hasSentinelPro={hasSecurity}
-              onSettingsChange={fetchUpdateGuard}
-            />
-          )}
-          {/* Upsell redesign (2026-08-04, design point 1/2): Update Guard's
-              compact ProUpsellPlaceholder is removed — its absence, plus
-              Geo-Blocking's and the 2FA link's below, is covered by this
-              single page-level pointer rather than one CTA per card. */}
-          {!isProEditionBuild && <FeaturePointer variant="edition" />}
+          {securityDashboardLeadSections.map((Section, i) => (
+            <Section key={i} />
+          ))}
 
           {/* Dashboard Grid - Swiss Precision Style */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {/* WAF Card */}
-            <div className="glass-panel premium-card relative overflow-hidden p-6 transition-all">
+            <div className="glass-panel relative overflow-hidden p-6 transition-all">
               <div className="bg-swiss-navy absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full" />
               <div className="relative z-10 mb-6 flex items-start justify-between">
                 <div
@@ -3537,12 +2238,8 @@ const SecurityHub: React.FC = () => {
                   <Shield size={24} />
                 </div>
                 {/* Basic WAF on/off is free in both editions (Freemium Dual-Build
-                     Option A, see the hasSecurity comment above) — this switch must
-                     render unconditionally, matching the Detection Only Mode
-                     checkbox below. It was previously gated on hasSecurity (the
-                     paid 'waf' capability), which hid it entirely for Free/non-
-                     Security-plan users behind a read-only label — live-QA-found
-                     and fixed 2026-08-02. */}
+                     this switch renders unconditionally, matching the
+                     Detection Only Mode checkbox below. */}
                 <div
                   role="switch"
                   aria-checked={firewallEnabled}
@@ -3574,12 +2271,8 @@ const SecurityHub: React.FC = () => {
                 cross-site scripting attacks.
               </p>
 
-              {/* Freemium Dual-Build (2026-07-17): Detection Only Mode is
-                  basic-WAF behavior, not a Security-plan feature — un-gated
-                  from hasSecurity so Free admins can switch the WAF from
-                  log-only to actively blocking (owner decision, Option A).
-                  The API now accepts this toggle for any manage_options
-                  admin, not just Security-plan tiers. */}
+              {/* Detection Only Mode switches the firewall between
+                  log-only and actively blocking. */}
               <div className="border-border relative z-10 border-t pt-4">
                 <div className="flex items-start gap-3">
                   <input
@@ -3606,97 +2299,197 @@ const SecurityHub: React.FC = () => {
                 </div>
               </div>
 
-              {/* WAF Protection Tier Section */}
-              {hasAdvancedWaf ? (
-                <div className="relative z-10 mt-4 border-t border-emerald-200 pt-4 dark:border-emerald-800">
-                  <p className="mb-2 flex items-center gap-1 text-xs font-black tracking-widest text-emerald-600 uppercase dark:text-emerald-400">
-                    <CheckCircle size={11} /> Advanced WAF Active
+              {/* WAF rule-set summary — WafTierPanel.tsx owns its own
+                  reads; see that file's docblock. */}
+              <WafTierPanel />
+
+              {/* WAF Self-Test — B.6/DASH-2 (VALIDATOR_DASH.md, v2.9.33.49).
+                  One-click, no-reload probe that fires a real (HMAC-marked,
+                  strike-exempt) attack pattern at a non-own-namespace URL and
+                  reports whether the firewall actually blocked it. Five
+                  states, matching the backend's `waf_self_test.result` enum
+                  (Fix B lane): off (firewall disabled — nothing to test),
+                  never (no self-test has ever run), ok/failed (a real
+                  pass/fail verdict), unknown (inconclusive — six distinct
+                  causes, see unknownCause(); proves nothing either way and
+                  must never be shown as OK). */}
+              <div className="border-border relative z-10 mt-4 border-t pt-4">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="text-xs font-black tracking-widest text-neutral-700 uppercase">
+                    WAF Self-Test
                   </p>
-                  <ul className="space-y-1">
-                    {[
-                      "28+ SQLi patterns + comment injection",
-                      "40+ XSS patterns + all event handlers",
-                      "3-layer recursive URL decoding",
-                      "Double/triple-encoded payload detection",
-                    ].map((f) => (
-                      <li
-                        key={f}
-                        className="flex items-start gap-1.5 text-xs text-neutral-600 dark:text-neutral-400"
-                      >
-                        <CheckCircle
-                          size={10}
-                          className="mt-0.5 shrink-0 text-emerald-500"
-                        />{" "}
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl text-xs font-black tracking-widest uppercase"
+                    onClick={runWafSelfTest}
+                    disabled={
+                      runningWafSelfTest || wafSelfTestBlockedByFirewallOff
+                    }
+                    loading={runningWafSelfTest}
+                    aria-busy={runningWafSelfTest}
+                    title={
+                      wafSelfTestBlockedByFirewallOff
+                        ? "Turn on the Smart Firewall to run a self-test"
+                        : undefined
+                    }
+                  >
+                    {runningWafSelfTest ? "Running…" : "Run self-test now"}
+                  </Button>
                 </div>
-              ) : (
-                <div className="border-border relative z-10 mt-4 border-t pt-4">
-                  <p className="text-swiss-navy mb-2 text-xs font-black tracking-widest uppercase">
-                    Basic WAF Running
-                  </p>
-                  <ul className="mb-3 space-y-1">
-                    {[
-                      "5 SQLi patterns (UNION, DROP, etc.)",
-                      "4 XSS patterns (script, onload, etc.)",
-                      "Path traversal protection",
-                    ].map((f) => (
-                      <li
-                        key={f}
-                        className="flex items-start gap-1.5 text-xs text-neutral-600 dark:text-neutral-400"
+                {(() => {
+                  const when = wafSelfTest?.last_run
+                    ? new Date(wafSelfTest.last_run).toLocaleString()
+                    : null;
+                  // F-9 (REAUDIT_DASH_R1.md, v2.9.33.49 round 2): before
+                  // GET /security/status resolves, firewallEnabled still
+                  // holds its useState(false) default, which used to fall
+                  // straight into the "Off — disabled" branch below on
+                  // every first paint regardless of the real setting. Hold
+                  // a neutral loading branch until the query has data.
+                  // R2-4 (REAUDIT_DASH_R2.md, v2.9.33.49 round 3): a failed
+                  // /security/status request also leaves data === undefined,
+                  // which used to fall through to the neutral loading
+                  // branch forever. Branch on the error first so a 403/500/
+                  // offline admin sees a truthful, recoverable state instead
+                  // of a permanent stall.
+                  if (securityStatusError) {
+                    return (
+                      <p
+                        className="text-xs font-semibold text-red-700 dark:text-red-400"
+                        role="status"
                       >
-                        <CheckCircle
-                          size={10}
-                          className="mt-0.5 shrink-0 text-emerald-500"
-                        />{" "}
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  {/* Upsell redesign (2026-08-04, T1): this box is a
-                      plan-upsell to an EXISTING customer (Pro build, WAF
-                      capability not on their tier) — permitted per the
-                      design doc since WP.org never reviews the Pro build.
-                      Gated on isProEditionBuild (not just hasAdvancedWaf)
-                      so it structurally cannot render in the Free build even
-                      under a stale/corrupted capability cache. The page
-                      already carries one neutral FeaturePointer (above, near
-                      Update Guard) for the Free case — no second pointer
-                      added here per the "one pointer per view" rule. */}
-                  {isProEditionBuild && <WafUpsellCard />}
-                </div>
-              )}
+                        Status unavailable — try again.
+                      </p>
+                    );
+                  }
+                  if (_securityStatusLoading) {
+                    return (
+                      <p
+                        className="text-xs font-semibold text-neutral-600 dark:text-neutral-400"
+                        role="status"
+                      >
+                        Checking…
+                      </p>
+                    );
+                  }
+                  if (!firewallEnabled) {
+                    return (
+                      <p
+                        className="text-xs font-semibold text-neutral-600 dark:text-neutral-400"
+                        role="status"
+                      >
+                        Off — the firewall is currently disabled.
+                      </p>
+                    );
+                  }
+                  if (!wafSelfTest || wafSelfTest.result === "never") {
+                    return (
+                      <p
+                        className="text-xs font-semibold text-neutral-600 dark:text-neutral-400"
+                        role="status"
+                      >
+                        Never run — click "Run self-test now" to verify the
+                        firewall is actually blocking attacks.
+                      </p>
+                    );
+                  }
+                  if (wafSelfTest.result === "ok") {
+                    return (
+                      <>
+                        <p
+                          className="flex items-center gap-1 text-xs font-black tracking-widest text-emerald-800 uppercase dark:text-emerald-400"
+                          role="status"
+                        >
+                          <CheckCircle size={12} /> OK
+                          {when ? ` — ${when}` : ""}
+                        </p>
+                        {wafSelfTest.detail ? (
+                          <p className="text-muted-foreground mt-1 text-xs font-normal normal-case">
+                            {wafSelfTest.detail}
+                          </p>
+                        ) : null}
+                      </>
+                    );
+                  }
+                  if (wafSelfTest.result === "failed") {
+                    return (
+                      <>
+                        <p
+                          className="flex items-center gap-1 text-xs font-black tracking-widest text-red-700 uppercase dark:text-red-400"
+                          role="status"
+                        >
+                          <ShieldAlert size={12} /> FAILED
+                          {when ? ` — ${when}` : ""}
+                        </p>
+                        {wafSelfTest.detail ? (
+                          <p className="text-muted-foreground mt-1 text-xs font-normal normal-case">
+                            {wafSelfTest.detail}
+                          </p>
+                        ) : null}
+                      </>
+                    );
+                  }
+                  if (wafSelfTest.result === "unknown") {
+                    // F-R3-1 (REAUDIT_DASH_R3): `unknown` has SIX distinct
+                    // causes, not one. R2-1 + V-2 widened it from 2 causes
+                    // to 9 cells; the old fixed single-cause label below
+                    // was false for 7 of them — including the cache-hit /
+                    // redirect case, the likeliest outcome on a
+                    // cache-fronted host. For result === "unknown",
+                    // http_code is a TOTAL function onto the cause class —
+                    // see SwissWPSuite_Security::run_waf_self_test()'s
+                    // ladder and VALIDATOR_DASH_R3.md §2.2 rows 2–11. Keep
+                    // the two in sync; the authoritative sentence is always
+                    // wafSelfTest.detail, rendered below.
+                    const unknownCause = (code: number | null): string => {
+                      if (code === null) return "loopback request failed";
+                      if (code === 0) return "loopback unreachable";
+                      if (code >= 500 || code === 429)
+                        return "site did not respond normally";
+                      if (code === 403)
+                        return "blocked before the firewall ran";
+                      if (code === 200)
+                        return "probe never reached the firewall";
+                      return `unexpected response (HTTP ${code})`;
+                    };
+                    return (
+                      <>
+                        <p
+                          className="flex items-center gap-1 text-xs font-black tracking-widest text-amber-800 uppercase dark:text-amber-400"
+                          role="status"
+                        >
+                          <AlertTriangle size={12} /> Unknown (
+                          {unknownCause(wafSelfTest.http_code)})
+                          {when ? ` — ${when}` : ""}
+                        </p>
+                        {wafSelfTest.detail ? (
+                          <p className="text-muted-foreground mt-1 text-xs font-normal normal-case">
+                            {wafSelfTest.detail}
+                          </p>
+                        ) : null}
+                      </>
+                    );
+                  }
+                  // result === "off" reported by the backend itself (e.g. a
+                  // stale run() from before the firewall was disabled).
+                  return (
+                    <p
+                      className="text-xs font-semibold text-neutral-600 dark:text-neutral-400"
+                      role="status"
+                    >
+                      Off{when ? ` — last attempted ${when}` : ""}
+                    </p>
+                  );
+                })()}
+              </div>
             </div>
 
-            {/* Geo-Blocking Card — extracted to GeoLockdownCard.tsx
-                (2026-08-12, WP.org frontend physical-exclusion sweep) so it
-                has a real file boundary to alias away in the Free build.
-                REVISED 2026-08-13 (B12a regression fix): the card now owns
-                its geo-settings state/effects/API-calls internally — only
-                geoEnabled/hasSecurity/globalGeoBlock (shared with the rest
-                of SecurityHub.tsx via handleToggle) are still passed down.
-                See GeoLockdownCard.tsx's own docblock for the full story. */}
-            {isProEditionBuild && (
-              <GeoLockdownCard
-                geoEnabled={geoEnabled}
-                hasSecurity={hasSecurity}
-                globalGeoBlock={globalGeoBlock}
-                onToggleGeo={() => handleToggle("geo", !geoEnabled)}
-                onToggleGlobalBlock={(checked) =>
-                  handleToggle("global_geo_block", checked)
-                }
-              />
-            )}
-            {/* Upsell redesign (2026-08-04, design point 1/2): Geo-Blocking's
-                compact ProUpsellPlaceholder is removed — see the single
-                page-level FeaturePointer rendered further down this
-                sub-tab (near Login Safeguard) for the neutral pointer that
-                covers both this card and Update Guard above. */}
-
+            {securityDashboardCards.map((Card, i) => (
+              <Card key={i} />
+            ))}
             {/* Login Security Card */}
-            <div className="glass-panel premium-card relative overflow-hidden p-6 transition-all">
+            <div className="glass-panel relative overflow-hidden p-6 transition-all">
               <div className="bg-card/5 absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full" />
               <div className="relative z-10 mb-6 flex items-start justify-between">
                 <div
@@ -3704,13 +2497,8 @@ const SecurityHub: React.FC = () => {
                 >
                   <KeyRound size={24} />
                 </div>
-                {/* Basic login-lockout protection is free in both editions
-                     (same Freemium Dual-Build Option A as the WAF card above) —
-                     this switch must render unconditionally. It was previously
-                     gated on hasSecurity, which left Free/non-Security-plan
-                     users with NO interactive control at all (only a read-only
-                     "ACTIVE — N ATTEMPTS" label) — live-QA-found and fixed
-                     2026-08-02. */}
+                {/* Login-lockout protection — this switch renders
+                     unconditionally. */}
                 <div
                   role="switch"
                   aria-checked={loginEnabled}
@@ -3741,17 +2529,12 @@ const SecurityHub: React.FC = () => {
                 Protect your admin area from brute-force login attempts with
                 automated locking.
               </p>
-              {isProEditionBuild && <TwoFactorNudgeLink />}
-              {/* Upsell redesign (2026-08-04, design point 1/2): the Free
-                  branch's "Two-Factor Authentication (2FA) — Pro Feature"
-                  link is removed — covered by the page-level FeaturePointer
-                  below, not a second per-card CTA. */}
+              {loginSafeguardRows.map((Row, i) => (
+                <Row key={i} />
+              ))}
 
-              {/* Max-login-attempts is part of the same free basic
-                   login-lockout protection as the switch above — must render
-                   unconditionally for the same reason. Previously gated on
-                   hasSecurity, hiding this control entirely for Free/non-
-                   Security-plan users — live-QA-found and fixed 2026-08-02. */}
+              {/* Max-login-attempts is part of the same login-lockout
+                   protection as the switch above. */}
               <div className="border-border relative z-10 border-t pt-4">
                 <div className="mb-1 flex items-center justify-between">
                   <label
@@ -3776,14 +2559,14 @@ const SecurityHub: React.FC = () => {
                   </select>
                 </div>
                 <p className="text-xs leading-relaxed font-medium text-neutral-500">
-                  After this many failed logins, the IP is temporarily locked
-                  out for 30 minutes.
+                  After this many failed logins, the IP is blocked for 15
+                  minutes.
                 </p>
               </div>
             </div>
 
             {/* Integrity Card */}
-            <div className="glass-panel premium-card relative overflow-hidden p-6 transition-all">
+            <div className="glass-panel relative overflow-hidden p-6 transition-all">
               <div className="absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full bg-emerald-500/5" />
               <div className="relative z-10 mb-6 flex items-start justify-between">
                 <div className="text-foreground dark:text-foreground rounded-2xl bg-emerald-500 p-3 shadow-lg shadow-emerald-500/20">
@@ -3817,7 +2600,7 @@ const SecurityHub: React.FC = () => {
 
           {/* Abandoned Plugins Panel */}
           {abandonedPlugins !== null && (
-            <div className="glass-panel premium-card relative mt-4 overflow-hidden p-6 transition-all">
+            <div className="glass-panel relative mt-4 overflow-hidden p-6 transition-all">
               <div className="absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full bg-orange-500/5" />
               <div className="relative z-10 mb-4 flex items-start justify-between">
                 <div>
@@ -3956,55 +2739,6 @@ const SecurityHub: React.FC = () => {
             </div>
           )}
 
-          {/* AI Log Advisors — moved here from Logs tab (H-7).
-              Upsell redesign (2026-08-04, T2): both branches below are now
-              gated on isProEditionBuild, not just hasSecurity. Their buttons
-              call /security/analyze-firewall and /security/analyze-logs,
-              which are registered ONLY when SWISSWPSUITE_EDITION === 'pro'
-              (class-swisswpsuite-api-security.php ~:251-290, F2) — physically
-              absent in the Free build. hasSecurity alone (a license
-              capability) is not a safe gate here: per lib/edition.ts's own
-              documented fail-safe contract, a stale/cached capability must
-              never be trusted over which code is actually present, or a
-              Free session with a corrupted capability cache could render
-              live buttons that hit a dead route. The former Free-reachable
-              "PRO" card ("Upgrade to Pro to unlock") is removed outright,
-              not replaced with a second pointer — the page already carries
-              one FeaturePointer (near Update Guard, above) covering this
-              view, and design's "sparingly"/one-pointer-per-view rule
-              favors not duplicating it here. */}
-          {isProEditionBuild && hasSecurity && (
-            <div className="glass-panel premium-card mt-4 p-6 transition-all">
-              <div className="mb-4">
-                <h3 className="text-swiss-navy mb-1 text-xs font-black tracking-widest uppercase">
-                  AI Log Analysis
-                </h3>
-                <p className="text-sm font-medium text-neutral-500">
-                  Analyzes your existing log data with AI — no new scan
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowFirewallAdvisor(true)}
-                  icon={Shield}
-                  className="rounded-xl border border-gray-200 text-sm font-black tracking-widest uppercase hover:bg-gray-100"
-                >
-                  Analyze Firewall Logs (Log Analysis)
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowLogAdvisor(true)}
-                  icon={Sparkles}
-                  className="rounded-xl border border-gray-200 text-sm font-black tracking-widest uppercase hover:bg-gray-100"
-                >
-                  Analyze Logs with AI
-                </Button>
-              </div>
-            </div>
-          )}
-          {isProEditionBuild && !hasSecurity && <AiLogAnalysisLockedCard />}
-
           {/* Scan summary card — shown after any scan completes, on Dashboard tab */}
           {sentinelReport && (
             <div
@@ -4016,28 +2750,10 @@ const SecurityHub: React.FC = () => {
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="font-semibold text-neutral-800">
-                    {sentinelReport.layer === 2
-                      ? `Security Grade: ${(sentinelReport as SentinelLayer2Report).security_grade ?? "—"}`
-                      : "Quick Scan Complete"}
+                    {buildScanSummaryTitle(_latestScanData?.record)}
                   </p>
                   <p className="mt-0.5 text-sm text-neutral-500">
-                    {(() => {
-                      const findings =
-                        sentinelReport.layer === 1
-                          ? sentinelReport.findings
-                          : ((sentinelReport as SentinelLayer2Report)
-                              .individual_findings ?? []);
-                      const fixable = findings.filter(
-                        (f) =>
-                          f.fix_type &&
-                          f.fix_type !== "manual" &&
-                          f.fix_type !== "navigate_hardening" &&
-                          f.fix_type !== ""
-                      ).length;
-                      return fixable > 0
-                        ? `${fixable} issue${fixable > 1 ? "s" : ""} can be fixed with one click`
-                        : "Review findings on the Scan tab";
-                    })()}
+                    {buildScanSummarySubtitle(sentinelReport.findings)}
                   </p>
                 </div>
                 <Button
@@ -4067,139 +2783,13 @@ const SecurityHub: React.FC = () => {
           {/* ── Scan Consolidation UI (v2.9.28.0) ─────────────────────────── */}
           <ScanCronStatusBanner
             config={scanReportConfig}
-            currentTier={currentTier}
             onPreviewEmail={handleOpenPreview}
           />
 
-          {/* ── Package E / G2 Scan UI Consolidation (2026-08-13) ──────────
-              Layer 1 — merged card. D1 (owner-locked design,
-              OWNER_BACKLOG_2026-08-09_SOCRATIC_QUEUE.md §G): the former
-              separate "Security Audit" and "Malware Scan" cards are merged
-              into this ONE card. On Free, both old cards called the
-              LITERAL SAME subroutine (quick_signature_scan(100)) — the
-              merge is a UI consolidation of a pre-existing backend overlap,
-              not a behavior change. ai-audit's Free path already ALSO runs
-              the posture check (calculate_compatibility()) that the old
-              standalone Malware Scan card never did — so nothing is lost by
-              dropping that separate card. On Pro this card auto-runs the
-              richer Sentinel L1-L4 path it already used (unchanged).
-              scanType stays "ai-audit" — same route
-              (POST /security/scan/ai-audit), same result shape, same
-              history/consumer wiring (ScanHistoryTable, safelist sheet,
-              quarantine) as before the merge; only the label/copy and the
-              disappearance of the separate malware card changed. */}
-          <ScanCard
-            scanType="ai-audit"
-            tier={currentTier}
-            onTrigger={() => handleTriggerScan("ai-audit")}
-            isLoading={aiAuditLoading}
-            result={aiAuditResult}
-            config={scanReportConfig}
-          />
-          {/* Upsell redesign (2026-08-04, T2/T5), re-verified unchanged by
-              Package E / T2 (2026-08-13): hasSentinelPro gates the
-              "Check with AI" / Analyze action, which calls
-              /security/analyze-file — registered ONLY in the Pro build
-              (F2, api-security.php ~:251-263) on the 'waf' capability
-              (Security plan + Full Suite only — D2). Combined with
-              isProEditionBuild so a stale/cached Free-session capability can
-              never enable a control whose backing route is physically
-              absent. On Free, isProEditionBuild is always false by
-              construction (the Free zip has no Pro code), so this renders a
-              plain disabled Lock-icon button with NO Pro-only copy — no
-              inline `isProEditionBuild && (<Pro copy>)` JSX shape exists
-              here (the exact regression class B12b checks for), and the
-              actual "some options require AI" explanation lives on the
-              neutral FeaturePointer below (settings-screen upsell surface,
-              2026-08-03 ruling compliant) — not scattered inline. Verified
-              end-to-end against the backend: /security/analyze-file's own
-              permission callback checks `check_capability('waf')` in
-              api-security.php (unchanged by this session). canRemediate is
-              unconditionally true: quarantine/delete are a FREE-tier
-              capability (class-swisswpsuite-api-security.php:1814-1817,
-              class-swisswpsuite-security-quarantine.php:48-58) — the backend
-              already accepts these calls on Free. */}
-          <ScanResultPanel
-            scanType="ai-audit"
-            result={aiAuditResult}
-            isLoading={aiAuditLoading}
-            onViewHistory={handleViewScanInHistory}
-            onMarkSafe={handleAuditMarkSafe}
-            onMarkSafeById={handleAuditMarkSafeById}
-            onManageSafelist={() => {
-              void fetchIgnored();
-              setSafelistSheetOpen(true);
-            }}
-            onQuarantine={handleQuarantine}
-            onBulkAction={handleScanPanelBulkAction}
-            onAnalyze={handleAiAnalyze}
-            hasSentinelPro={isProEditionBuild && hasSecurity}
-            canRemediate={true}
-          />
-          {safelistSheetOpen && (
-            <SentinelSafelistSheet
-              findingIds={ignoredFindings}
-              currentScanFindings={aiAuditResult?.findings ?? []}
-              onClose={() => setSafelistSheetOpen(false)}
-              onRemove={handleRemoveSafelistFinding}
-            />
-          )}
-
-          {/* The standalone "Malware Scan" ScanCard + ScanResultPanel
-              (scanType="malware") were REMOVED here by the Layer 1 merge
-              above (D1). The `/security/scan/malware` route stays
-              registered per rule 0.4 (no backend route removal) —
-              `handleTriggerScan`'s "malware" branch, `malwareResult`,
-              `malwareLoading`, and `handleMarkMalwareSafe` are all left
-              in place because `handleMarkMalwareSafe` and `malwareResult`
-              are still consumed by the Layer 2 (deep-malware) ScanResultPanel
-              below, which returns the same MalwareScanResult shape. The
-              "malware" scanType dispatch branch itself has no remaining UI
-              caller after this merge — flagged in this session's FLAGS
-              section as a new dead-code candidate for a future owner-signed
-              cleanup pass (not deleted here — CLAUDE.md's two-proof dead-
-              code rule applies to REMOVALS, and this session already
-              removed the only reachable trigger deliberately as part of
-              the owner-locked D1 merge, which is a different action than
-              declaring pre-existing code dead). */}
-
-          {/* v2.9.29.0 — Deep Malware Scan (Layer 2) replaces the Full AI
-              Scan card. The async pipeline subsumes Full AI's L1+L2 with
-              the addition of VPS hash, WPScan, and Patchstack phases.
-              WP.org round-3 (Sprint W2/T7, 2026-07-26): the `locked`
-              override (previously `!hasSecurity`) and its "Requires
-              Security Plan" copy were REMOVED — Sprint W1 de-gated
-              deep-malware's local phases (enumerate, hash, local scan) in
-              the PHP, so at the time they ran free in every edition.
-              SUPERSEDED then SUPERSEDED AGAIN (owner ruling OD-3, WP.org R4,
-              2026-08-22 — docs/reports/WPORG_REJECTION_R4_ANALYSIS_2026-08-22.md):
-              the 2026-08-04 scan-edition ruling had drawn the Free/Pro line
-              at the whole-scan level and gated this card on
-              isProEditionBuild to match the (now-removed)
-              SWISSWPSUITE_EDITION registration gate on the backend routes.
-              The WP.org reviewer explicitly rejected that
-              registered-but-gated shape as trialware regardless of the
-              gate's location, so BOTH the backend route gate (see
-              api-security.php's route-registration comment) and this
-              render-level gate are removed together — a route enabled in
-              Free but hidden behind a render-level isProEditionBuild check
-              would be the exact same violation moved one layer up. The
-              card now renders unconditionally, same as the ai-audit card
-              above. Its AI-specific sub-elements (grade badge, AI status
-              pill) are physically excluded from the Free bundle instead —
-              see DeepScanAiResults.tsx's docblock — because the pipeline's
-              ai_analysis phase still runs (and still degrades) for a
-              Free/no-license caller exactly as it always has; only the
-              *result of that phase* needs to stay invisible in Free, not
-              the scan itself. The FeaturePointer below is UNCHANGED (not
-              removed) — it is still accurate: the per-finding "Analyze
-              with AI" action inside this card's result panel, and the one
-              on the ai-audit card above, both stay genuinely Pro-gated
-              (hasSentinelPro), so Free users on this sub-tab do still have
-              AI-backed options that require a connection. */}
+          {/* One card covers both the signature scan and the posture
+              check, so there is no separate malware card. */}
           <ScanCard
             scanType="deep-malware"
-            tier={currentTier}
             onTrigger={() => handleTriggerScan("deep-malware")}
             isLoading={deepMalwareStatus === "running"}
             result={deepMalwareResult}
@@ -4215,14 +2805,12 @@ const SecurityHub: React.FC = () => {
             isLoading={deepMalwareStatus === "running"}
             onViewHistory={handleViewScanInHistory}
             onMarkSafe={handleMarkMalwareSafe}
-            onQuarantine={handleQuarantine}
             onBulkAction={handleScanPanelBulkAction}
-            onAnalyze={handleAiAnalyze}
+            onAnalyze={(file) =>
+              setAnalyzeRequest({ file, requestedAt: Date.now() })
+            }
             analyzingFile={analyzingFile}
-            hasSentinelPro={isProEditionBuild && hasSecurity}
-            canRemediate={true}
           />
-          {!isProEditionBuild && <FeaturePointer variant="ai" />}
 
           <ScanReportSettingsPanel
             config={scanReportConfig}
@@ -4241,17 +2829,8 @@ const SecurityHub: React.FC = () => {
       )}
 
       {activeTab === "hardening" && (
-        // WP.org round-3 (Sprint W2/T7, 2026-07-26): all 13 hardening options
-        // are now free/functional in every edition (opt.pro is uniformly
-        // false server-side since Sprint W1) — the panel always renders, and
-        // HardeningOptionsGrid's per-card gating auto-unlocks everything.
-        // hasSentinelPro is threaded (not hasSecurity, which is
-        // Security-plan-specific and always false for non-Security Pro
-        // users) purely as that component's own defensive fallback for the
-        // rare case a card's opt.pro isn't populated as a boolean.
         <HardeningOptionsGrid
           options={hardeningOptions}
-          hasSentinelPro={hasSentinelPro}
           isLoading={loadingHardening}
           onToggle={toggleHardening}
           onApplyAll={applyAllHardening}
@@ -4318,518 +2897,28 @@ const SecurityHub: React.FC = () => {
         />
       )}
 
-      {/* Log Advisor Modal — global scope so it renders from any tab */}
-      {showLogAdvisor && (
-        <div className="bg-swiss-navy/40 animate-in fade-in fixed inset-0 z-[99991] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-card shadow-premium border-border/40 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border">
-            <div className="custom-scrollbar flex-1 overflow-y-auto p-8">
-              <div className="border-border mb-10 flex items-start justify-between border-b pb-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-brand-accent/10 rounded-2xl p-3">
-                    <Sparkles className="text-brand-accent" size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-swiss-navy text-2xl font-black tracking-tight uppercase">
-                      Analyze Logs with AI
-                    </h3>
-                    <p className="mt-1 text-sm font-black tracking-widest text-neutral-700 uppercase">
-                      Analyzes your existing log data with AI — no new scan
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowLogAdvisor(false)}
-                  aria-label="Close log advisor"
-                  className="hover:bg-background hover:text-swiss-navy rounded-xl border border-transparent p-2 text-neutral-700 transition-all"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              {!logAnalysis ? (
-                <div className="py-20 text-center">
-                  {analyzingLogs ? (
-                    <div className="flex flex-col items-center gap-8">
-                      <div className="relative">
-                        <Loader
-                          className="text-swiss-navy animate-spin"
-                          size={48}
-                        />
-                        <Sparkles
-                          className="text-brand-accent absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse"
-                          size={16}
-                        />
-                      </div>
-                      <p className="text-swiss-navy text-sm font-black tracking-widest uppercase">
-                        {aiElapsed > 5
-                          ? `Synthesizing... (${aiElapsed}s)`
-                          : "Synthesizing security audit..."}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-10">
-                      <p className="mx-auto max-w-md text-sm leading-relaxed font-medium text-neutral-700">
-                        Generate a comprehensive forensic report by
-                        cross-referencing firewall logs, brute-force patterns,
-                        and threat signatures.
-                      </p>
-                      <Button
-                        onClick={handleAnalyzeLogs}
-                        disabled={!canAfford("sentinel_security")}
-                        title={
-                          !canAfford("sentinel_security")
-                            ? `Need ~${tokensNeeded("sentinel_security").toLocaleString()} tokens (balance: ${tokenSpendable.toLocaleString()})`
-                            : undefined
-                        }
-                        className="bg-swiss-navy hover:bg-brand-accent shadow-swiss-navy/20 rounded-2xl border-none px-12 py-5 text-xs font-black tracking-widest text-white uppercase shadow-xl transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Run AI Diagnostics
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-10">
-                  <div
-                    className={`rounded-3xl border p-8 ${
-                      logAnalysis.threatLevel === "Critical"
-                        ? "text-brand-accent border-red-100 bg-red-50"
-                        : logAnalysis.threatLevel === "Medium"
-                          ? "bg-card border-border text-foreground dark:text-foreground"
-                          : "bg-background border-border text-swiss-navy"
-                    }`}
-                  >
-                    <div className="mb-6 flex items-center justify-between">
-                      <span className="text-2xl font-black tracking-tight uppercase">
-                        {logAnalysis.verdict}
-                      </span>
-                      <span
-                        className={`rounded-full border border-current/20 px-3 py-1 text-sm font-black tracking-widest uppercase ${logAnalysis.threatLevel === "Critical" ? "dark:bg-card/10 border-red-200 bg-red-50 text-red-600" : "bg-secondary dark:bg-background/20 dark:text-foreground text-slate-700"}`}
-                      >
-                        Threat: {logAnalysis.threatLevel}
-                      </span>
-                    </div>
-                    <p className="text-sm leading-relaxed font-medium opacity-90">
-                      {logAnalysis.summary}
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="mb-6 flex items-center gap-2 text-sm font-black tracking-widest text-neutral-700 uppercase">
-                      <Shield size={14} /> Tactical Countermeasures
-                    </h4>
-                    <ul className="grid gap-4">
-                      {logAnalysis.actions &&
-                        Array.isArray(logAnalysis.actions) &&
-                        logAnalysis.actions.map((action: string, i: number) => (
-                          <li
-                            key={i}
-                            className="text-swiss-navy bg-card border-border hover:bg-background hover:shadow-soft group flex items-center justify-between gap-6 rounded-2xl border p-5 text-sm transition-all"
-                          >
-                            <div className="flex items-start gap-4">
-                              <div className="bg-swiss-navy text-swiss-navy group-hover:bg-swiss-navy rounded-xl p-2 transition-all group-hover:text-white">
-                                <CheckCircle size={16} />
-                              </div>
-                              <span className="mt-1.5 text-xs font-bold tracking-wide uppercase">
-                                {action}
-                              </span>
-                            </div>
-                            <div className="shrink-0">
-                              {getLogActionButton(action)}
-                            </div>
-                          </li>
-                        ))}
-                    </ul>
-                    {/* Footer: explain what Active badges mean + link to Logs for verification */}
-                    <p className="pt-4 text-center text-xs leading-relaxed text-neutral-500">
-                      <CheckCircle
-                        size={10}
-                        className="mr-1 mb-0.5 inline text-emerald-500"
-                      />
-                      <strong className="text-emerald-600 dark:text-emerald-400">
-                        Active
-                      </strong>{" "}
-                      = SwissSuite is already protecting your site.{" "}
-                      <button
-                        onClick={() => {
-                          setShowLogAdvisor(false);
-                          setActiveTab("logs");
-                        }}
-                        className="hover:text-swiss-navy font-semibold underline underline-offset-2 transition-colors"
-                      >
-                        Verify in Security Logs →
-                      </button>
-                    </p>
-                  </div>
-
-                  <div className="border-border flex justify-end border-t pt-6">
-                    <Button
-                      variant="ghost"
-                      className="hover:text-brand-accent rounded-xl text-xs font-black text-neutral-700 uppercase"
-                      onClick={() => {
-                        setLogAnalysis(null);
-                        setShowLogAdvisor(false);
-                      }}
-                    >
-                      Dismiss
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Firewall (WAF) Advisor Modal — global scope so it renders from any tab */}
-      {showFirewallAdvisor && (
-        <div className="bg-swiss-navy/40 animate-in fade-in fixed inset-0 z-[99992] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-card shadow-premium border-border/40 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2.5rem] border">
-            <div className="custom-scrollbar flex-1 overflow-y-auto p-10">
-              <div className="border-border mb-10 flex items-start justify-between border-b pb-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-brand-accent/10 rounded-2xl p-3">
-                    <Shield className="text-brand-accent" size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-swiss-navy text-2xl font-black tracking-tight uppercase">
-                      Analyze Firewall Logs (Log Analysis)
-                    </h3>
-                    <p className="mt-1 text-sm font-black tracking-widest text-neutral-700 uppercase">
-                      Analyzes your existing log data with AI — no new scan
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowFirewallAdvisor(false)}
-                  aria-label="Close WAF Advisor"
-                  className="hover:bg-background hover:text-swiss-navy rounded-xl border border-transparent p-2 text-neutral-700 transition-all"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              {!firewallAnalysis ? (
-                <div className="py-20 text-center">
-                  {analyzingFirewall ? (
-                    <div className="flex flex-col items-center gap-8">
-                      <div className="relative">
-                        <Loader
-                          className="text-swiss-navy animate-spin"
-                          size={48}
-                        />
-                        <Shield
-                          className="text-brand-accent absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse"
-                          size={16}
-                        />
-                      </div>
-                      <p className="text-swiss-navy text-sm font-black tracking-widest uppercase">
-                        {aiElapsed > 5
-                          ? `Analyzing... (${aiElapsed}s)`
-                          : "Analyzing firewall telemetry..."}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-10">
-                      <p className="mx-auto max-w-md text-center text-sm leading-relaxed font-medium text-neutral-700">
-                        Generate an AI report identifying persistent attackers
-                        and recommended IP bans based on your firewall's blocked
-                        request history.
-                      </p>
-                      <div className="flex justify-center">
-                        <Button
-                          onClick={handleAnalyzeFirewall}
-                          disabled={!canAfford("sentinel_security")}
-                          title={
-                            !canAfford("sentinel_security")
-                              ? `Need ~${tokensNeeded("sentinel_security").toLocaleString()} tokens (balance: ${tokenSpendable.toLocaleString()})`
-                              : undefined
-                          }
-                          variant="primary"
-                          size="lg"
-                          className="px-12 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          CALIBRATE SHIELD
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-8">
-                  {firewallAnalysis.analysis && (
-                    <div className="border-border bg-background rounded-2xl border p-6">
-                      <h4 className="mb-3 text-xs font-black tracking-widest text-neutral-700 uppercase">
-                        Attack Pattern Analysis
-                      </h4>
-                      <p className="text-sm leading-relaxed font-medium">
-                        {firewallAnalysis.analysis}
-                      </p>
-                    </div>
-                  )}
-
-                  {firewallAnalysis.suggestedBans &&
-                  firewallAnalysis.suggestedBans.length > 0 ? (
-                    <div>
-                      <h4 className="text-swiss-navy mb-4 flex items-center gap-2 text-xs font-black tracking-widest uppercase">
-                        <ShieldAlert size={14} /> Recommended IP Bans (
-                        {firewallAnalysis.suggestedBans.length})
-                      </h4>
-                      <ul className="space-y-3">
-                        {firewallAnalysis.suggestedBans.map((ban, i) => (
-                          <li
-                            key={i}
-                            className="bg-card border-border hover:bg-background flex items-center justify-between gap-4 rounded-2xl border p-4 text-sm transition-all"
-                          >
-                            <div className="flex min-w-0 items-center gap-3">
-                              <code className="bg-secondary shrink-0 rounded-lg px-2 py-1 font-mono text-xs font-black">
-                                {ban.ip}
-                              </code>
-                              <span className="truncate text-xs font-bold text-neutral-700">
-                                {ban.reason}
-                              </span>
-                              <span
-                                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-black uppercase ${ban.confidence === "High" ? "border border-red-200 bg-red-50 text-red-600" : ban.confidence === "Medium" ? "border border-amber-200 bg-amber-50 text-amber-600" : "bg-secondary border-border border text-neutral-700"}`}
-                              >
-                                {ban.confidence}
-                              </span>
-                            </div>
-                            {bannedIps.includes(ban.ip) ? (
-                              <span className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black tracking-widest text-emerald-600 uppercase dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
-                                <CheckCircle size={10} /> Already Banned
-                              </span>
-                            ) : (
-                              <Button
-                                size="sm"
-                                className="bg-brand-accent/10 text-brand-accent hover:bg-brand-accent hover:text-foreground border-brand-accent/30 shrink-0 rounded-xl border px-4 text-xs font-black uppercase"
-                                onClick={() => handleBanIp(ban.ip)}
-                              >
-                                Ban IP
-                              </Button>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : (
-                    <div className="py-10 text-center text-xs font-black tracking-widest text-neutral-700 uppercase">
-                      No immediate IP bans recommended — system appears clean.
-                    </div>
-                  )}
-
-                  <div className="border-border flex justify-end border-t pt-4">
-                    <Button
-                      variant="ghost"
-                      className="hover:text-brand-accent rounded-xl text-xs font-black text-neutral-700 uppercase"
-                      onClick={() => {
-                        setFirewallAnalysis(null);
-                        setShowFirewallAdvisor(false);
-                      }}
-                    >
-                      Close Report
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Log Action Manual Guide Modal — shown for 2FA, debug, htaccess when auto-fix is not available */}
-      {logActionGuide && (
-        <div className="bg-swiss-navy/40 animate-in fade-in fixed inset-0 z-[99993] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-card dark:bg-card shadow-premium border-border dark:border-border/20 animate-in zoom-in-95 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-[2.5rem] border backdrop-blur-xl duration-500">
-            <div className="bg-swiss-navy flex shrink-0 items-center justify-between p-8 text-white">
-              <h3 className="flex items-center gap-4 text-xl font-black tracking-[0.1em] uppercase">
-                <AlertTriangle size={24} className="text-brand-accent" /> Manual
-                Setup Required
-              </h3>
-              <button
-                onClick={() => setLogActionGuide(null)}
-                aria-label="Close guide"
-                className="bg-secondary dark:bg-card/10 dark:hover:bg-card/20 dark:text-foreground rounded-2xl p-3 text-neutral-900 transition-all hover:bg-slate-200"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="bg-background dark:bg-card/50 flex-1 space-y-10 overflow-y-auto p-10">
-              <div className="bg-card dark:bg-secondary border-border dark:border-border/10 shadow-soft rounded-3xl border p-8">
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="bg-secondary dark:bg-secondary rounded-lg px-3 py-1.5 text-xs font-black tracking-widest text-neutral-700 uppercase">
-                    ISSUE
-                  </span>
-                  <h4 className="dark:text-foreground text-xs font-black tracking-widest text-neutral-900 uppercase">
-                    WHAT'S THE PROBLEM
-                  </h4>
-                </div>
-                <p className="text-[14px] leading-relaxed font-bold text-neutral-700">
-                  {logActionGuide.what}
-                </p>
-              </div>
-
-              <div className="bg-background border-border rounded-3xl border p-8 shadow-inner">
-                <h4 className="text-swiss-navy mb-5 flex items-center gap-3 text-xs font-black tracking-widest uppercase">
-                  <span className="bg-brand-accent/10 text-brand-accent rounded-lg px-3 py-1.5 text-xs font-black tracking-widest uppercase">
-                    WHY MANUAL
-                  </span>
-                  REASON FOR MANUAL INTERVENTION
-                </h4>
-                <p className="text-[14px] leading-relaxed font-bold text-slate-600 italic">
-                  {logActionGuide.why}
-                </p>
-              </div>
-
-              <div className="bg-card dark:bg-secondary border-border dark:border-border/10 shadow-premium relative overflow-hidden rounded-[2rem] border p-10">
-                <div className="bg-brand-accent/10 absolute top-0 right-0 -mt-10 -mr-10 h-32 w-32 blur-3xl" />
-                <h4 className="dark:text-foreground relative z-10 mb-8 flex items-center gap-3 text-xs font-black tracking-widest text-neutral-900 uppercase">
-                  REMEDIATION STEPS
-                </h4>
-                <ol className="relative z-10 space-y-6">
-                  {logActionGuide.how.map((step: string, idx: number) => (
-                    <li key={idx} className="flex items-start gap-6">
-                      <span className="text-swiss-navy bg-card shadow-glow-white flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl text-[12px] font-black">
-                        {idx + 1}
-                      </span>
-                      <span className="text-[14px] leading-relaxed font-black tracking-tight">
-                        {step.replace(/^\d+\.\s*/, "")}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-
-            <div className="bg-background dark:bg-secondary border-border dark:border-border/10 flex shrink-0 justify-center border-t p-8">
-              <Button
-                onClick={() => setLogActionGuide(null)}
-                variant="primary"
-                size="lg"
-                className="w-full"
-              >
-                UNDERSTOOD
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* AI Security Analysis Modal — global scope so it renders from any tab */}
-      {aiAnalysis && (
-        <div className="bg-background/80 animate-in fade-in fixed inset-0 z-[99994] flex items-center justify-center p-4">
-          <div className="bg-card flex max-h-[90vh] w-full max-w-lg flex-col border-2 border-black">
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="mb-6 flex items-start justify-between border-b-2 border-black pb-4">
-                <h3 className="flex items-center gap-2 text-xl font-black tracking-widest text-black uppercase">
-                  <Sparkles className="text-black" /> AI Security Analysis
-                </h3>
-                <button
-                  onClick={() => setAiAnalysis(null)}
-                  aria-label="Close AI analysis"
-                  className="border border-transparent p-1 text-black transition-colors hover:border-black hover:bg-red-600 hover:text-white"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="mb-6">
-                <p className="bg-secondary mb-3 border border-black p-2 font-mono text-xs break-all text-black">
-                  {aiAnalysis.file}
-                </p>
-                <div
-                  className={`border border-black p-5 ${
-                    aiAnalysis.verdict?.toLowerCase().includes("safe")
-                      ? "bg-card text-black"
-                      : aiAnalysis.verdict?.toLowerCase().includes("malicious")
-                        ? "bg-red-600 text-white"
-                        : "bg-background text-foreground"
-                  }`}
-                >
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xl font-black tracking-widest uppercase">
-                      {aiAnalysis.verdict}
-                    </span>
-                    <span
-                      className={`border px-2 py-1 text-sm font-black tracking-widest uppercase ${
-                        aiAnalysis.verdict?.toLowerCase().includes("safe")
-                          ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                          : aiAnalysis.verdict
-                                ?.toLowerCase()
-                                .includes("suspicious")
-                            ? "border-amber-600 bg-amber-50 text-amber-700"
-                            : "border-red-400 bg-red-700 text-white"
-                      }`}
-                    >
-                      {aiAnalysis.verdict?.toLowerCase().includes("safe")
-                        ? "SAFE"
-                        : aiAnalysis.verdict
-                              ?.toLowerCase()
-                              .includes("suspicious")
-                          ? "SUSPICIOUS"
-                          : "DANGER"}
-                    </span>
-                  </div>
-                  <p className="mb-1 text-xs font-bold tracking-widest uppercase opacity-70">
-                    Analysis
-                  </p>
-                  <p className="text-sm leading-relaxed font-medium">
-                    {aiAnalysis.explanation}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 border-t border-black pt-4">
-                <Button
-                  variant="ghost"
-                  className="rounded-none text-xs font-black uppercase"
-                  onClick={() => setAiAnalysis(null)}
-                >
-                  Close
-                </Button>
-                {aiAnalysis.verdict?.toLowerCase().includes("safe") &&
-                  (aiAnalysis.auto_whitelisted ? (
-                    <span className="flex items-center gap-1 text-xs font-black tracking-widest text-green-700 uppercase">
-                      <CheckCircle2 size={14} /> Auto-Whitelisted
-                    </span>
-                  ) : (
-                    <Button
-                      className="bg-card text-foreground hover:bg-background rounded-none border border-black text-xs font-black uppercase"
-                      onClick={() => {
-                        handleIgnore(aiAnalysis.file);
-                        setAiAnalysis(null);
-                      }}
-                    >
-                      Mark as Safe
-                    </Button>
-                  ))}
-                {aiAnalysis.verdict?.toLowerCase().includes("suspicious") && (
-                  <Button
-                    className="bg-background text-foreground dark:text-foreground rounded-none border border-black text-xs font-black uppercase hover:bg-amber-500"
-                    onClick={() => {
-                      handleQuarantine(aiAnalysis.file);
-                      setAiAnalysis(null);
-                    }}
-                  >
-                    Quarantine File
-                  </Button>
-                )}
-                {aiAnalysis.verdict?.toLowerCase().includes("malicious") && (
-                  <Button
-                    className="rounded-none border border-black bg-red-600 text-xs font-black text-white uppercase hover:bg-red-700"
-                    onClick={() => {
-                      handleQuarantine(aiAnalysis.file);
-                      setAiAnalysis(null);
-                    }}
-                  >
-                    Quarantine File
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {securityDataReviewSections.map((Section, i) => (
+        <Section
+          key={i}
+          reportOpen={{ logs: showLogAdvisor, firewall: showFirewallAdvisor }}
+          onOpenReport={(report) =>
+            report === "logs"
+              ? setShowLogAdvisor(true)
+              : setShowFirewallAdvisor(true)
+          }
+          onCloseReport={(report) =>
+            report === "logs"
+              ? setShowLogAdvisor(false)
+              : setShowFirewallAdvisor(false)
+          }
+          inspectRequest={analyzeRequest}
+          bannedIps={bannedIps}
+          banRevision={banRevision}
+          scanInFlight={deepScanStatus?.status === "running"}
+          lastScanResponse={lastScanResponse}
+          actions={reviewActions}
+        />
+      ))}
 
       {/* Scan Report Preview Modal (v2.9.28.0) */}
       <ScanReportPreviewModal
@@ -4853,7 +2942,7 @@ const SecurityHub: React.FC = () => {
           aria-modal="true"
           aria-labelledby="confirm-dialog-msg"
         >
-          <div className="bg-card shadow-premium border-border animate-in zoom-in-95 mx-4 w-full max-w-md rounded-3xl border p-8 duration-200">
+          <div className="bg-card border-border animate-in zoom-in-95 mx-4 w-full max-w-md rounded-3xl border p-8 duration-200">
             <p
               id="confirm-dialog-msg"
               className="text-foreground mb-6 text-sm leading-relaxed font-bold whitespace-pre-line"
@@ -4881,7 +2970,7 @@ const SecurityHub: React.FC = () => {
       {/* L1 Manual Fix Guide Modal (chmod failures on Hostinger/CloudLinux) */}
       {l1ManualFix && (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm duration-300">
-          <div className="bg-card dark:bg-card shadow-premium border-border dark:border-border/20 animate-in zoom-in-95 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-[2.5rem] border backdrop-blur-xl duration-500">
+          <div className="bg-card dark:bg-card border-border dark:border-border/20 animate-in zoom-in-95 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-[2.5rem] border backdrop-blur-xl duration-500">
             <div className="bg-swiss-navy flex shrink-0 items-center justify-between p-8 text-white">
               <h3 className="flex items-center gap-4 text-xl font-black tracking-[0.1em] uppercase">
                 <AlertTriangle size={24} className="text-brand-accent" /> Manual
@@ -4926,7 +3015,7 @@ const SecurityHub: React.FC = () => {
               </div>
 
               {/* HOW */}
-              <div className="bg-card dark:bg-secondary border-border dark:border-border/10 shadow-premium relative overflow-hidden rounded-[2rem] border p-10">
+              <div className="bg-card dark:bg-secondary border-border dark:border-border/10 relative overflow-hidden rounded-[2rem] border p-10">
                 <div className="bg-brand-accent/10 absolute top-0 right-0 -mt-10 -mr-10 h-32 w-32 blur-3xl" />
                 <div className="relative z-10 mb-6 flex items-center justify-between">
                   <h3 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-xl font-bold text-transparent dark:from-white dark:to-slate-400">

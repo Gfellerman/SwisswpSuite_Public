@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Lock,
   ChevronDown,
   ChevronUp,
   ExternalLink,
@@ -16,7 +15,6 @@ import type {
   OnPageFactor,
   OnPageIssue,
 } from "../../../types";
-import { FULL_SCAN_LOCKED_LABEL } from "./onPageProCopy";
 
 interface OnPageDiagnosticsProps {
   seoBreakdown: {
@@ -24,7 +22,6 @@ interface OnPageDiagnosticsProps {
     technical: number;
     content: number;
   };
-  isPro: boolean;
 }
 
 /** Label mapping for score cards. */
@@ -86,15 +83,15 @@ const FactorRow: React.FC<{ factorKey: string; factor: OnPageFactor }> = ({
   const displayIssues = factor.issues.slice(0, 10);
 
   return (
-    <div className="border border-border rounded-2xl overflow-hidden">
+    <div className="border-border overflow-hidden rounded-2xl border">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 hover:bg-background/50 transition-colors text-left"
+        className="hover:bg-background/50 flex w-full items-center justify-between p-4 text-left transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full ${scoreColor(factor.score)}`} />
-          <span className="text-[11px] font-black uppercase tracking-widest text-neutral-700">
+          <div className={`h-3 w-3 rounded-full ${scoreColor(factor.score)}`} />
+          <span className="text-[11px] font-black tracking-widest text-neutral-700 uppercase">
             {factor.label}
           </span>
         </div>
@@ -105,7 +102,7 @@ const FactorRow: React.FC<{ factorKey: string; factor: OnPageFactor }> = ({
             {factor.score}%
           </span>
           {issueCount > 0 && (
-            <span className="text-[10px] font-bold bg-red-50 text-red-600 px-2 py-0.5 rounded-full border border-red-100">
+            <span className="rounded-full border border-red-100 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600">
               {issueCount} {issueCount === 1 ? "issue" : "issues"}
             </span>
           )}
@@ -117,34 +114,34 @@ const FactorRow: React.FC<{ factorKey: string; factor: OnPageFactor }> = ({
         </div>
       </button>
       {expanded && displayIssues.length > 0 && (
-        <div className="border-t border-border bg-background/30 divide-y divide-border">
+        <div className="border-border bg-background/30 divide-border divide-y border-t">
           {displayIssues.map((issue: OnPageIssue, idx: number) => (
             <div
               key={`${issue.post_id}-${idx}`}
-              className="p-4 flex flex-col gap-1.5"
+              className="flex flex-col gap-1.5 p-4"
             >
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-1.5 h-1.5 rounded-full ${severityDot(issue.severity)}`}
+                  className={`h-1.5 w-1.5 rounded-full ${severityDot(issue.severity)}`}
                 />
                 <a
                   href={issue.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs font-bold text-swiss-navy hover:underline flex items-center gap-1 truncate max-w-[280px]"
+                  className="text-swiss-navy flex max-w-[280px] items-center gap-1 truncate text-xs font-bold hover:underline"
                 >
                   {issue.title}
                   <ExternalLink size={10} className="flex-shrink-0" />
                 </a>
               </div>
-              <p className="text-[11px] text-neutral-600 ml-3.5">{issue.gap}</p>
-              <p className="text-[10px] text-neutral-400 ml-3.5 italic">
+              <p className="ml-3.5 text-[11px] text-neutral-600">{issue.gap}</p>
+              <p className="ml-3.5 text-[10px] text-neutral-400 italic">
                 {issue.fix_hint}
               </p>
             </div>
           ))}
           {issueCount > 10 && (
-            <div className="p-3 text-center text-[10px] text-neutral-400 font-bold uppercase tracking-widest">
+            <div className="p-3 text-center text-[10px] font-bold tracking-widest text-neutral-400 uppercase">
               + {issueCount - 10} more issues
             </div>
           )}
@@ -156,7 +153,6 @@ const FactorRow: React.FC<{ factorKey: string; factor: OnPageFactor }> = ({
 
 const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
   seoBreakdown,
-  isPro,
 }) => {
   const [hasTriggeredScan, setHasTriggeredScan] = useState(false);
 
@@ -175,38 +171,37 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
   });
 
   const handleRunScan = useCallback(() => {
-    if (!isPro) return;
     setHasTriggeredScan(true);
     refetch();
-  }, [isPro, refetch]);
+  }, [refetch]);
 
   // A2: PHP always returns status: "complete" — scanning state is derived from isFetching only.
   const isScanning = isFetching;
 
   return (
-    <div className="glass-panel rounded-[32px] p-10 border border-border">
+    <div className="glass-panel border-border rounded-[32px] border p-10">
       <h3
-        className="text-[12px] font-black text-swiss-navy uppercase tracking-[0.3em] mb-2 border-b border-border pb-6 text-center"
+        className="text-swiss-navy border-border mb-2 border-b pb-6 text-center text-[12px] font-black tracking-[0.3em] uppercase"
         title="Composite of metadata coverage, technical health, and image alt text quality"
       >
         SEO Health Breakdown
       </h3>
-      <p className="text-[10px] text-neutral-500 text-center mb-8 italic">
+      <p className="mb-8 text-center text-[10px] text-neutral-500 italic">
         Composite of metadata coverage, technical health, and image alt text
         quality
       </p>
 
       {/* Score Cards — always visible from stats */}
-      <div className="space-y-8 mb-8">
+      <div className="mb-8 space-y-8">
         {Object.entries(seoBreakdown).map(([key, value]) => (
           <div key={key} className="group">
-            <div className="flex justify-between text-[11px] mb-3 font-black uppercase tracking-widest text-neutral-700">
+            <div className="mb-3 flex justify-between text-[11px] font-black tracking-widest text-neutral-700 uppercase">
               <span className="group-hover:text-swiss-navy transition-colors">
                 {DIMENSION_LABELS[key] || key.replace("_", " ")}
               </span>
               <span className="text-swiss-navy">{value}%</span>
             </div>
-            <div className="h-3 bg-background rounded-full w-full overflow-hidden p-0.5 border border-border">
+            <div className="bg-background border-border h-3 w-full overflow-hidden rounded-full border p-0.5">
               <div
                 className={`h-full rounded-full transition-all duration-1000 ${
                   value > 80
@@ -221,7 +216,7 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
       </div>
 
       {/* Explanation text — always visible */}
-      <p className="text-[10px] text-neutral-500 leading-relaxed mb-6 px-1">
+      <p className="mb-6 px-1 text-[10px] leading-relaxed text-neutral-500">
         Technical score reflects server and WordPress configuration — the plugin
         monitors and can help fix these. Meta Coverage and Image Alt Text scores
         reflect your content decisions — the plugin identifies what is missing;
@@ -229,43 +224,34 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
       </p>
 
       {/* Run Full Scan button */}
-      {!isPro ? (
-        <div className="flex items-center justify-center gap-2 p-4 bg-neutral-50 rounded-2xl border border-neutral-200">
-          <Lock size={14} className="text-neutral-400" />
-          <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest">
-            {FULL_SCAN_LOCKED_LABEL}
-          </span>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={handleRunScan}
-          disabled={isScanning}
-          className="swps-cta-dark w-full flex items-center justify-center gap-2 p-4 rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isScanning ? (
-            <>
-              <Loader2 size={14} className="animate-spin" />
-              <span className="text-xs font-black uppercase tracking-widest">
-                Scanning your site...
-              </span>
-            </>
-          ) : (
-            <>
-              <Search size={14} />
-              <span className="text-xs font-black uppercase tracking-widest">
-                Run Full Scan
-              </span>
-            </>
-          )}
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={handleRunScan}
+        disabled={isScanning}
+        className="swps-cta-dark flex w-full items-center justify-center gap-2 rounded-2xl p-4 transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {isScanning ? (
+          <>
+            <Loader2 size={14} className="animate-spin" />
+            <span className="text-xs font-black tracking-widest uppercase">
+              Scanning your site...
+            </span>
+          </>
+        ) : (
+          <>
+            <Search size={14} />
+            <span className="text-xs font-black tracking-widest uppercase">
+              Run Full Scan
+            </span>
+          </>
+        )}
+      </button>
 
       {/* Audit Results — shown after scan completes */}
       {auditData && auditData.status === "complete" && (
         <div className="mt-8 space-y-6">
           {/* Overall score badge */}
-          <div className="flex items-center justify-between p-4 bg-background/50 rounded-2xl border border-border">
+          <div className="bg-background/50 border-border flex items-center justify-between rounded-2xl border p-4">
             <div className="flex items-center gap-3">
               {auditData.score >= 80 ? (
                 <CheckCircle size={18} className="text-emerald-500" />
@@ -274,7 +260,7 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
               ) : (
                 <AlertTriangle size={18} className="text-red-500" />
               )}
-              <span className="text-[11px] font-black uppercase tracking-widest text-neutral-700">
+              <span className="text-[11px] font-black tracking-widest text-neutral-700 uppercase">
                 Overall SEO Health
               </span>
             </div>
@@ -286,7 +272,7 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
           </div>
 
           {/* Metadata */}
-          <div className="flex justify-between text-[10px] text-neutral-400 px-1">
+          <div className="flex justify-between px-1 text-[10px] text-neutral-400">
             <span>
               {auditData.post_count} pages scanned
               {auditData.is_sample ? " (sample)" : ""}
@@ -306,7 +292,7 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
           {/* Quick Wins */}
           {auditData.quick_wins.length > 0 && (
             <div className="mt-6">
-              <h4 className="text-[11px] font-black text-swiss-navy uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <h4 className="text-swiss-navy mb-4 flex items-center gap-2 text-[11px] font-black tracking-[0.2em] uppercase">
                 <Zap size={12} />
                 Quick Wins
               </h4>
@@ -314,16 +300,16 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
                 {auditData.quick_wins.map((win, idx) => (
                   <div
                     key={idx}
-                    className="flex items-start gap-3 p-3 bg-background/30 rounded-xl border border-border"
+                    className="bg-background/30 border-border flex items-start gap-3 rounded-xl border p-3"
                   >
-                    <span className="text-[10px] font-black text-swiss-navy bg-swiss-navy/5 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-swiss-navy bg-swiss-navy/5 mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-black">
                       {idx + 1}
                     </span>
                     <div>
                       <p className="text-[11px] font-bold text-neutral-700">
                         {win.action}
                       </p>
-                      <p className="text-[10px] text-emerald-600 font-bold">
+                      <p className="text-[10px] font-bold text-emerald-600">
                         {win.impact}
                       </p>
                     </div>

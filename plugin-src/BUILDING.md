@@ -50,17 +50,18 @@ provenance" below for why that matters here).
 `npm run build` runs `vite build` and emits the compiled bundle to
 `assets/` (gitignored in this directory — this is build *output*, not
 source). In the actual plugin, that `assets/` folder is what ships inside
-the plugin zip alongside the PHP: Vite writes `entry-app-[hash].js`,
-`chunks/[name]-[hash].js`, `assets/[name]-[hash][ext]` (CSS and static
-assets), and `.vite/manifest.json` (a manifest the plugin's PHP layer reads
-to enqueue the correct hashed filenames). `vite.config.ts`'s `build.outDir`
+the plugin zip alongside the PHP: Vite writes a single `entry-app-[hash].js`
+(every route is bundled into it; there is no code splitting and no runtime
+chunk loader), `assets/[name]-[hash].css`, and `manifest.json` (a manifest
+the plugin's PHP layer reads to enqueue the two hashed filenames through
+`wp_enqueue_script()` / `wp_enqueue_style()`). `vite.config.ts`'s `build.outDir`
 and `build.rollupOptions` govern all of this — read it for the exact output
 naming scheme.
 
 Both `npm ci` and `npm run build` were run end-to-end against this exact
 tree as part of preparing this publication and completed successfully
-(exit code 0), including a full production bundle (`entry-app-*.js`,
-per-route `chunks/*.js`, `assets/app-*.css`, `.vite/manifest.json`).
+(exit code 0), including a full production bundle (one `entry-app-*.js`,
+one `assets/app-*.css`, `manifest.json`).
 
 ## The `EDITION` build flag
 

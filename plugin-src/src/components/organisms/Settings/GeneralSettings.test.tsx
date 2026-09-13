@@ -43,13 +43,7 @@ function baseSettings(
   overrides: Partial<import("../../../hooks/useSettings").SwissSettings> = {}
 ): import("../../../hooks/useSettings").SwissSettings {
   return {
-    apiKey: "",
-    useCustomApi: false,
-    customApiUrl: "",
-    customModelId: "",
-    autoUpdatePlugin: true,
     emailNotifications: true,
-    betaFeatures: false,
     loginMaxRetries: 5,
     ...overrides,
   };
@@ -180,56 +174,106 @@ describe("GeneralSettings — Email Notifications off-by-default fallback (A-2, 
   });
 });
 
-describe("GeneralSettings — Beta Features toggle (D-K-4 follow-up fix, lane-K verifier, 2026-08-24)", () => {
+describe("GeneralSettings — Beta Features toggle", () => {
   afterEach(() => {
     cleanup();
     delete (window as any).swisswpsuiteData;
   });
 
-  it("renders the Beta Features toggle on a Pro-edition build — restores its ONLY UI writer for swisswpsuite_beta_features (BackupsPage.tsx Sync/Migration gate)", () => {
-    (window as any).swisswpsuiteData = { edition: "pro" };
+  it("renders no Beta Features toggle — this build has no beta section for it to unlock", () => {
     render(
       React.createElement(GeneralSettings, {
-        settings: baseSettings({ betaFeatures: false }),
+        settings: baseSettings({ }),
         onSave: async () => ({ success: true }),
         isSaving: false,
       })
     );
 
+    // Positive control: the panel really rendered.
     expect(
-      screen.getByRole("switch", { name: /beta features/i })
+      screen.getByRole("switch", { name: /email notifications/i })
     ).toBeInTheDocument();
-  });
-
-  it("does NOT render the Beta Features toggle on a Free-edition build — Sync/Migration are physically absent in Free, nothing for it to unlock", () => {
-    (window as any).swisswpsuiteData = { edition: "free" };
-    render(
-      React.createElement(GeneralSettings, {
-        settings: baseSettings({ betaFeatures: false }),
-        onSave: async () => ({ success: true }),
-        isSaving: false,
-      })
-    );
-
     expect(
       screen.queryByRole("switch", { name: /beta features/i })
     ).not.toBeInTheDocument();
   });
+});
 
-  it("clicking the Pro-edition toggle calls onSave with { betaFeatures: true } — one-click AJAX save, no Save button", () => {
-    (window as any).swisswpsuiteData = { edition: "pro" };
+describe("GeneralSettings — Alert Digest Frequency select (A-21, DIAG-EMAIL E-5, VALIDATOR_DIAG_EMAIL.md §4 D6)", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("renders the stored frequency value in the select", () => {
+    render(
+      React.createElement(GeneralSettings, {
+        settings: baseSettings({ alertDigestFrequency: "twicedaily" }),
+        onSave: async () => ({ success: true }),
+        isSaving: false,
+      })
+    );
+
+    const select = screen.getByLabelText(
+      /alert digest frequency/i
+    ) as HTMLSelectElement;
+    expect(select).toBeInTheDocument();
+    expect(select.value).toBe("twicedaily");
+  });
+
+  it("falls back to the 'daily' default (owner gate G2) when the field is absent from settings", () => {
+    render(
+      React.createElement(GeneralSettings, {
+        settings: baseSettings(),
+        onSave: async () => ({ success: true }),
+        isSaving: false,
+      })
+    );
+
+    const select = screen.getByLabelText(
+      /alert digest frequency/i
+    ) as HTMLSelectElement;
+    expect(select.value).toBe("daily");
+  });
+
+  it("changing the select calls onSave with { alertDigestFrequency } exactly once — no Save button present", () => {
     const onSave = vi.fn(async () => ({ success: true }));
     render(
       React.createElement(GeneralSettings, {
-        settings: baseSettings({ betaFeatures: false }),
+        settings: baseSettings({ alertDigestFrequency: "daily" }),
         onSave,
         isSaving: false,
       })
     );
 
-    const toggle = screen.getByRole("switch", { name: /beta features/i });
-    toggle.click();
+    const select = screen.getByLabelText(
+      /alert digest frequency/i
+    ) as HTMLSelectElement;
+    // jsdom <select> onChange fires via a native change event.
+    select.value = "twicedaily";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
 
-    expect(onSave).toHaveBeenCalledWith({ betaFeatures: true });
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith({
+      alertDigestFrequency: "twicedaily",
+    });
+    expect(
+      screen.queryByRole("button", { name: /^save$/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("helper text states the immediate-send condition and the 'off' data-loss consequence truthfully (R2-06, VALIDATOR_V51_ROUND3_FIXES.md Lane U)", () => {
+    render(
+      React.createElement(GeneralSettings, {
+        settings: baseSettings(),
+        onSave: async () => ({ success: true }),
+        isSaving: false,
+      })
+    );
+
+    expect(
+      screen.getByText(
+        /critical alerts are sent immediately when alert e-mails are switched on \(at most 5 per day\)\. everything else is bundled into this summary — turning the summary off also discards any events still waiting to be summarised\./i
+      )
+    ).toBeInTheDocument();
   });
 });

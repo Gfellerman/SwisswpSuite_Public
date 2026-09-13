@@ -60,7 +60,7 @@ function getWpContext(): { nonce: string; baseUrl: string } {
  */
 export interface WpApiOptions extends RequestInit {
   /**
-   * U10 (UI-truth gate report, 2026-08-20): wpApi() throws an ApiError when
+   * wpApi() throws an ApiError when
    * a 2xx response body carries `success: false` (mirroring the non-2xx
    * path it already has — see UI_TRUTH_AUDIT_2026-08-20.md finding R3 / the
    * "35 of 75 mutation call sites never check .success" structural
@@ -69,9 +69,8 @@ export interface WpApiOptions extends RequestInit {
    *
    * A small, explicitly enumerated set of endpoints intentionally ship
    * `success:false` at HTTP 200 as a non-fatal "didn't auto-fix, here's why
-   * and how to do it manually" outcome (the `manual_fix` guide pattern —
-   * `fix_security_finding` and `run_sentinel_remediation`, confirmed by the
-   * gate report's FINAL R2 opt-out list). Callers of those specific
+   * and how to do it manually" outcome (the `manual_fix` guide pattern used
+   * by the fix-finding endpoints). Callers of those specific
    * endpoints must pass `allowSuccessFalse: true` to keep resolving instead
    * of throwing — this is the typed discriminant R2 requires the caller
    * "cannot destructure around": it must be passed explicitly per call,
@@ -85,7 +84,7 @@ export interface WpApiOptions extends RequestInit {
  * Automatically injects X-WP-Nonce header
  *
  * @template T - The expected response type
- * @param endpoint - The API endpoint path (e.g., '/security/scan')
+ * @param endpoint - The API endpoint path (e.g., '/security/status')
  * @param options - Standard fetch options, plus wpApi()-specific options (see WpApiOptions)
  * @returns Promise resolving to the typed response data
  */
@@ -143,14 +142,10 @@ export async function wpApi<T>(
 
       // Handle specific status codes (api-patterns).
       //
-      // v2.9.28.21 — 403 no longer unconditionally maps to "Authentication
-      // failed. Please refresh the page." That string is correct for a
-      // real nonce expiry but useless when the 403 carries a legitimate
-      // body like "AI analysis requires a Pro license." or "Pro licence
-      // required." — the user was left with no indication of why the
-      // action failed. We now prefer the backend's explicit message and
-      // only fall back to the generic auth string when the 403 body is
-      // empty (which is what a genuine nonce-rejected request looks like).
+      // A 403 carrying its own message says why the request was refused,
+      // so that message is preferred. The generic authentication string is
+      // the fallback for an empty body, which is what a nonce rejection
+      // looks like.
       if (response.status === 401) {
         throw new ApiError(
           "Authentication failed. Please refresh the page.",
@@ -164,20 +159,6 @@ export async function wpApi<T>(
         throw new ApiError(
           msg || "Authentication failed. Please refresh the page.",
           response.status,
-          errorData
-        );
-      }
-
-      if (response.status === 402) {
-        // WP.org string census closure (2026-08-13, v2.9.33.18, R2b):
-        // neutral fallback — no "Pro"/"upgrade"/"plan"/"purchase"
-        // wording. This client-side default is only used when the
-        // backend's own error body carries no message; shared code
-        // path, reachable in both editions.
-        throw new ApiError(
-          (errorData as any)?.message ||
-            "Not enough AI tokens for this action.",
-          402,
           errorData
         );
       }
@@ -221,7 +202,7 @@ export async function wpApi<T>(
 
     const body = await response.json();
 
-    // U10 (UI-truth gate report, 2026-08-20): a 2xx HTTP status only
+    // A 2xx HTTP status only
     // proves the request was accepted, not that the claimed effect
     // actually happened — the exact defect class UI_TRUTH_AUDIT_2026-08-20.md
     // documents across ~half the mutation call sites in this SPA (finding

@@ -4,6 +4,96 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.58] - 2026-09-12
+
+WordPress.org resubmission release.
+
+### Fixed
+- The deep malware scan now scans the files it enumerated (a scan could complete having examined nothing).
+- Settings and Self-Check readouts (last scan time, login lockout state, scan report preview) now read the values the plugin actually stores; readme wording matches the 15-minute lockout and the 90-day log retention.
+
+### Changed
+- The deep scan's status response lists only the phases this package performs (file enumeration, then a local signature scan).
+- "Hide WordPress Fingerprints" limits itself to the WordPress version: it removes it from the generator tag and from asset URLs that carry it, and leaves other plugins' asset version strings and page output untouched.
+- Scan history records now use the internal type name `security_audit`; existing records are relabelled automatically the first time this update runs, no action needed.
+- Internal housekeeping: unused option keys, a database table name and a log-message filter that nothing in this package reads were removed; deactivation now clears every scheduled event this plugin owns; the REST route for the security audit is `/security/scan/security-audit`.
+
+## [2.9.33.53] - 2026-09-07
+
+### Added
+- **Self-Check (Settings > Diagnostics):** one click runs a set of local checks — PHP version and extensions, disk headroom, backup-folder writability, scheduler health, hardening state, caching/proxy detection, known plugin conflicts, backup engine health — and shows plain-English results. Results also appear in WordPress Site Health (read from the cached result; nothing runs on page load).
+- **Export diagnostics:** downloads one redacted file (secrets and absolute paths removed, no IP addresses, no admin email) to attach to a support request. Nothing is ever sent automatically.
+- **Send test email:** an explicit one-click action; the full Self-Check run sends no mail.
+
+### Changed
+- Finished backup records are now also swept once a day on idle sites (previously only while a backup was running).
+- The backup engine's state writes all go through one compare-and-set path with explicit outcomes; a terminal write that loses a race is retried once and never re-creates a record another process removed.
+- Deactivation now also removes the per-job lock records.
+- The scheduler-health notice no longer hides overdue tasks on sites where backups are driven from the command line; only the two engine hooks are exempt.
+
+### Fixed
+- Cache-plugin detection in Self-Check reported "none detected" on every site (wrong key).
+- Accessibility: warning notices no longer override their spoken content; Badge text in dark mode was below the WCAG contrast minimum; test-email results announce their real outcome.
+- Timestamps in Self-Check were shown as raw numbers.
+
+## [2.9.33.52] - 2026-09-05
+
+### Fixed
+- Backup engine: finished backup jobs are now cleaned up. The record a completed job leaves behind lacked the timestamp the daily sweeper reads, so no finished job was ever removed (18 stale records were found in testing); the sweeper now recognises finished records by their completion time and clears them after the retention window, and it runs before the health check's early return.
+- Backup engine: the engine writes to its own log so a busy backup no longer pushes other messages out of the dashboard error list; the System Logs view shows both logs merged in time order.
+- Firewall self-test: the loopback probe now gets a longer time budget when started by the daily schedule than when started from the Security Hub button, so slow shared hosts no longer report "could not be verified" for the scheduled run; when the probe is blocked before the firewall sees it, the message now asks you to check whether your site's own outbound address is on the manual ban list.
+- Alert e-mails: absolute server paths under wp-content are redacted for every sender, not only the quarantine messages.
+
+### Added
+- Scheduled-task health: the plugin records when WordPress cron last actually ran on the site and shows a notice when one of its own scheduled tasks is overdue by more than an hour, which is what happens on a site with no visitors. Only this plugin's own scheduled tasks are considered, never another plugin's. No notice is shown while an external driver keeps tasks running.
+
+### Changed
+- Internal: the backup guard's baseline field carries a truthful name, test assertions and docblocks corrected, in-code line citations replaced by symbol names, and the documentation feature map now claims every governed file.
+
+## [2.9.33.51] - 2026-09-04
+
+### Fixed
+- Backup sets: the shared lock is now released only by the process that acquired it (compare-and-delete on the acquisition stamp); a writer that failed to acquire the lock no longer deletes another writer's lock. The deliberate fail-open write after the retry budget is unchanged.
+- Backup engine: the four stale-lock consumers read the engine's adaptive threshold instead of a fixed 300 s; the orphan temp-dir sweeper re-checks the live tick lock before deleting a job's working directory ("Manifest file not found" trigger); a tick's bookkeeping is persisted before the phase runs, so a tick killed by the host no longer restarts the job from tick 1, the kill detector receives its input, and a phase that makes no progress is failed after a bounded number of attempts instead of looping; a backup that makes no measurable progress for 12 hours is stopped and its working files removed (a backup that keeps progressing is never stopped by this).
+- Backup chaining: a skipped tick no longer emits a continuation; the chain is paced by a short per-job gate; the health check is re-armed on the rate-limited path.
+- Backup watchdog: the watchdog now resolves the exact engine run a job belongs to (run identity threaded through the job registry), so a new healthy run is never judged against a previous run's progress or strikes.
+- Firewall self-test: the single-use probe marker is now a fixed-key database compare-and-swap instead of a per-run transient. This closes the race between overlapping self-test runs, prevents a persistent object-cache flush from silently degrading the result to "could not be verified", and binds the blocked-row detection to the run's own probe. A second self-test started while one is armed returns "already running" instead of racing it; a failed arm never sends a probe, so the site's own address can never collect a strike.
+- Diagnostics e-mail: once the "Email Notifications" switch under Settings > General Preferences is on (off by default), CRITICAL events reach the alert e-mail immediately (they never did), de-duplicated per hour and capped per day; ERROR and WARNING events are bundled into a daily or twice-daily digest (new setting under Notifications); routine self-healing notices are counted, not itemised. Log levels are normalised (WARN and WARNING are one level).
+
+### Changed
+- Test harness: the fake database emulates option-name prefix scans, so tests that read all engine states can no longer pass vacuously.
+
+## [2.9.33.49] - 2026-09-04
+
+### Added
+- Firewall self-test: daily (and on-demand) loopback probe through the site's own firewall, graded ok / failed / unknown / off with the probed rule and the reason; result exposed on `GET /security/status` (`waf_self_test`, `last_block_at`) and via `POST /security/waf-self-test`; the probe carries a signed marker so it is blocked and logged but never counted as a strike against the site's own address, and its rows are excluded from every Threats Blocked count.
+- Dashboard tiles: Visits shows "tracking off" / "no visits yet" instead of a bare 0; Blocked shows "off" and the last real block; a one-time upgrade notice offers (never enables) the visitor counter on upgraded sites where it is off.
+- Core integrity: `informational_found` (removed bundled themes/plugins) reported separately from `issues_found`.
+- Manifest: `RETIRED_OPTIONS` registry; OptionHealth treats retired keys as known.
+
+### Fixed
+- Dashboard "tracking off" branch was unreachable since 2.9.33.33 (the stats endpoint always emits 7 days of data).
+- Hardening header rules used `Header setifnotset`, which is not a valid directive and produced a literal `setifnotset:` response header on LiteSpeed; now `Header set`. Existing installs keep the previously written block until the option is re-toggled — nothing rewrites it on upgrade (deliberate).
+- Retired option `swisswpsuite_server_profile_override` deleted once on upgrade.
+- Abandoned-plugin cursor option registered in the manifest.
+
+### Changed
+- Self-test result timestamps are emitted as ISO-8601 UTC at the REST boundary; the look-back floor is captured before the probe so slow page renders cannot hide a genuine block.
+
+## [2.9.33.48] - 2026-09-02
+
+### Fixed
+- Backup engine (in progress, not yet released): tick endpoint rate limit keyed per job instead of per source address (reverse-proxied hosts were throttling their own self-ticks); tick-chain accounting and lock lifecycle hardening per the 2026-09-02 live audit.
+
+## [2.9.33.47] - 2026-09-02
+
+### Fixed
+- Backup engine: guarded the tick counter so a stray tick after a finished job no longer emits an "undefined array key" warning.
+- Backup watchdog and in-process tick scheduler purge the `cron` option cache before (un)scheduling — removes the repeated "cron event list could not be saved" errors on persistent-object-cache hosts.
+- Security log table is re-created on read and during import recovery when missing.
+- Recurring maintenance cron hooks that were only scheduled at activation are re-armed on upgraded installs (idempotent, per edition).
+- Pro edition: a rate-limited (HTTP 429) license activation no longer reports success; self-service cancel clears the per-feature subscription cache; purchased token-pack balance is included in the REST token status; all license-server proxy handlers detect rate limiting consistently; connection failures stamp the last-check time.
+
 ## [2.9.33.46] - 2026-09-01
 
 ### Changed
@@ -217,7 +307,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.33.28] - 2026-08-20
 
 ### Added
-- Scheduled backups: start-time picker — choose the exact time of day a scheduled backup runs (site-local timezone; weekly schedules also gain a day-of-week choice). Absent a chosen start time, existing schedules keep their current timing unchanged.
 - Backup scheduling panel: a plain-language note explaining that WordPress scheduled tasks are triggered by site traffic, so start times can vary by a few minutes depending on the host.
 
 ### Fixed
@@ -225,7 +314,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 - Backup scheduling: editing only a schedule's start time (or weekly day) now correctly re-arms the cron event — previously the new value was saved and displayed but the live schedule never changed. Re-saving an unchanged schedule now also forces re-registration, making "just re-save it" a valid repair.
 - Backup retention: "keep only X" now keeps exactly X backup sets including the newest one (previously retention=1 permanently kept 2 full sets on disk), and pruning now runs after the new backup set is safely recorded — an old backup is never deleted before its replacement verifiably exists. Applies to local and cloud destinations.
 - Backup engine: completed jobs now persist a terminal phase (previously the last working phase leaked into the terminal record, causing confusing warnings); the manual-backup retention path now always logs its decision; an impossible-state detector warns (once per job) if an automation-triggered job ever loses its automation identity.
-- Backup automations: a stale "running" status left behind by a pre-update interruption is now reconciled automatically on plugin upgrade and after any site import/restore.
 - Hardening against object-cache staleness: the plugin now forces a fresh database read of the WordPress cron storage immediately before modifying its own backup schedules.
 
 ## [2.9.33.27] - 2026-08-19
@@ -686,7 +774,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.30.128] - 2026-06-22
 
 ### Fixed
-- Cloud backup OAuth: connecting Google Drive or Dropbox failed with "Sorry, you are not allowed to access this page" after the user authorized access. The VPS OAuth proxy redirected back to the old admin menu slug (`swisswpsuite-ai`), which no longer exists after the v2.9.30.125 WordPress.org rename to `swisssuite-ai`; WordPress core denied access before the plugin's callback could run. The redirect (VPS-side) now uses the correct slug.
 
 ### Changed
 - Extended the cloud-OAuth nonce transient lifetime from 30 to 60 minutes (Google Drive + Dropbox) so slower consent flows no longer expire mid-authorization.
@@ -946,13 +1033,10 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.30.102] - 2026-05-30
 
 ### Fixed
-- **Duplicate concurrent SCHEDULED backup jobs eliminated (TOCTOU race).** On a loaded host (Hostinger LOAD 30–55, throttled WP-Cron), two concurrent WP-Cron firings of `run_automation_backup()` could BOTH pass the v2.9.30.101 REATTACH guard — `SwissWPSuite_Backup_Engine::load_all_states()` showed no running job yet — BEFORE EITHER wrote its `'running'` engine state, minting duplicate engine jobs for one automation (the production "7 jobs in ~2h: a227 + c0543 + 5 cancelled" pattern). The existing `flock()` only serialized the legacy `execute_automation_backup()` worker, not this synchronous cron path. The REATTACH-guard → `engine->start()` critical section is now wrapped in an atomic WP-native start-lock (`add_option('swisswpsuite_bklock_{automation_id}', …)` — a single INSERT against the `option_name` UNIQUE index, so it serializes across PHP processes). Only the first caller proceeds; a concurrent caller logs and bails; a stale lock from a died holder is reclaimed after 120s. The lock is released the instant durable engine state exists (closing the TOCTOU window), so the long synchronous first tick never holds it. No `exec`/external HTTP — fully WordPress.org compliant.
-- **Cancel button now appears for scheduled (cron-fired) backups, not only manual "Run Now" ones.** The Cancel gate previously read only the automation list's `last_run_status === "running"`, which is stale for a cron-fired duplicate whose sibling job already completed (status `'success'`/`'failed'`). It now also renders when an engine job is adopted and in-flight for that automation (`hasActiveEngineJob`, the same live-state signal that drives the row's progress bar), so any running scheduled backup is cancellable. Cancel still deregisters the Sentinel job so the watchdog cannot resurrect it.
 
 ## [2.9.30.101] - 2026-05-29
 
 ### Fixed
-- **Automation backup progress now rehydrates after refresh/tab-switch.** The main Backups view previously re-adopted only `trigger === 'manual'` running jobs on mount, so an automation "Run Now" backup lost its progress bar after a reload (the engine job_id lived only in the tab that triggered it). `GET /backup/engine/active` now exposes `automation_id` on each job; the automations panel rediscovers running automation jobs on mount and re-adopts them into the matching automation row's existing mini progress bar. Progress renders in exactly one place — the automation row for automation jobs, the "Save a Backup" card for manual jobs — so there is no double-render.
 - **Duplicate engine jobs on "Run Now" eliminated.** A single trigger previously could mint two engine jobs: the synchronous engine start (v2.9.30.98) AND the Sentinel-worker path both called `engine->start()` because the worker's reattach guard ran before the synchronous state was written. The synchronous engine state is now written BEFORE Sentinel is registered, so the worker's existing reattach guard always sees it and re-dispatches a tick instead of minting a second job. The scheduler's own pre-start guard now REATTACHES (returns the existing job's `{job_id, nonce}` and nudges it forward) instead of returning null, so a concurrent trigger binds to the running job rather than silently doing nothing.
 
 ### Changed
@@ -997,7 +1081,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.30.95] - 2026-05-29
 
 ### Added
-- **Cancel button for running automation backups** — a running scheduled or cron-fired automation backup can now be cancelled directly from the Automations panel (the Cancel button appears whenever `last_run_status === "running"`, no browser job id required). New endpoint `POST /backup/automations/{id}/cancel` resolves all live engine states for the automation, calls `engine->cancel()` on each, deregisters the Sentinel watchdog job (`circuit_open=true` so the watchdog will not resurrect the cancelled job), and marks the automation run as failed ("Cancelled by user."). Previously the Cancel button was a no-op for scheduled automations because they had no browser-side job id, and even manual cancels could be resurrected by the Sentinel watchdog.
 
 ## [2.9.30.94] - 2026-05-29
 
@@ -1037,9 +1120,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.30.90] - 2026-05-27
 
 ### Fixed
-- **Backup cron regression** — automated scheduled backups silently stopped when the license capability cache returned a stale/false value during a `wp-cron.php` request. `SwissWPSuite_Backup_Scheduler` is now instantiated unconditionally so WP-Cron hook listeners always register; the `backup_cloud` capability check was moved inside `run_automation_backup()` where a skipped backup writes a visible warning to the Diagnostics log.
-- **Dashboard shows attempt time, not completion time** — backup automation cards showed the timestamp of when the backup job was started (`last_run_at` set at `status='running'`), not when it completed. New `last_successful_at` field is written only on `status='success'`; dashboard and UI card now prefer this field. Pre-upgrade rows fall back to `last_run_at` when that row has `status='success'`.
-- **"X hours ago" off by timezone offset** — `formatRelativeTime()` in `BackupAutomationsPanel.tsx` parsed MySQL UTC datetime strings (no timezone suffix) as local time. For UTC+2 users, a backup completed 24h ago displayed as "22h ago". Fixed by appending `' UTC'` to bare MySQL datetime strings before parsing; ISO 8601 strings already containing `T`/`Z` are left untouched.
 
 ## [2.9.30.89] - 2026-05-26
 
@@ -1479,7 +1559,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 - **F-303 Update Guard routes 404** — Corrected load order in `class-swisswpsuite-core.php` so `define_api_hooks()` sees `SwissWPSuite_Api_Update_Guard` via `class_exists()` and registers all 9 `/update-guard/*` routes on `rest_api_init`. Eliminates ~15 404s per page load on the Security tab.
 - **F-304 WooCommerce cart/checkout with hardening** — Hardening REST allowlist now explicitly covers `/wc-auth/v1/` (cart authentication) and `/wc/store/v1/` (Blocks-based Store API). Logged-out guests can complete checkout with "Limit What Strangers Can See" enabled.
 - **F-305 SEO score consistency** — `seo_score` is now the simple integer mean of the three breakdown metrics (on-page + technical + content). The dashboard headline is always consistent with the visible "SEO Health Breakdown". Dashboard tile renamed to "Overall SEO Score" with subtitle "Mean of on-page, technical & content". Breakdown heading renamed to "SEO Health Breakdown" with composite description.
-- **F-309 backup automation — missing cron command** — When "Disable Visitor-Triggered Scheduling" is enabled, the backup banner and the hardening confirmation modal now display the exact server cron command with the site URL prefilled, so users can paste it directly into their hosting control panel.
 - **F-301 post-migration verification missing endpoints** — New `GET /migration/post-check` and `GET /license/status` endpoints return site URL, active theme, plugin count, admin user count, and license status. Migration Station no longer shows "unknown" for these fields.
 - **F-302 BasicScanResults dead code** — Removed orphaned import, legacy `scanning`/`scanResults`/`basicScanExpanded` state, and the orphaned `handleScan` function from `SecurityHub.tsx`.
 
@@ -2744,7 +2823,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 - (backup) P1-B: `chain_next_tick()` now registered on WordPress `shutdown` action at priority 999 instead of firing inline — LiteSpeed LSAPI was killing the loopback TLS handshake before response completion, causing HTTP 0
 - (backup) P1-C: Moved `Diagnostics::log()` call in `chain_next_tick()` to after `wp_remote_post()` returns — eliminates a blocking DB write (get_option + update_option) on the critical pre-loopback path
 - (backup) P1-D: Restored `sslverify => false` to `spawn_worker()` in Sentinel (HIGH-3 FIX removed it incorrectly — loopback SSL verify is not a MITM protection; the shared secret is); replaced misleading comment with correct explanation
-- (backup) P1-E: Added concurrent-automation stagger in `chain_next_tick()` — if another engine job has a heartbeat <30s old, inserts a 0.5-1.5s random delay before firing the loopback to avoid exhausting Hostinger's 10-worker PHP pool
 - (diagnostics) P2-A: Added v2.9.27.59 upgrade migration to purge stale log noise entries (`BackupScheduler constructor:`, `CORE Dependencies loaded.`, `backup_cloud capability gate`) from existing installs and fix the autoload flag via direct SQL
 - (diagnostics) P2-B: `update_option('swisswpsuite_debug_log', ...)` now passes `false` as third arg — large serialized 500-entry arrays must not autoload on every WordPress page load
 - (diagnostics) P2-C: Added consecutive-duplicate deduplication in `Diagnostics::log()` — skips insertion if the most recent entry carries the same module + message, preventing a chatty call from filling the entire 500-entry buffer
@@ -2801,9 +2879,7 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.27.56] - 2026-04-08
 
 ### Fixed
-- Sentinel `stuck_count` no longer carries over to the next automation run cycle. `complete_job()` now resets `stuck_count=0` and `circuit_open=false` before removing the job entry, so any disk-write failure leaves a clean entry rather than one with an accumulated count that could prematurely trip the circuit breaker on the next cycle.
 - Backup engine prune phase (`phase_prune()`) now calls `phase_complete()` directly instead of `transition_to('complete')`. The old path set `phase='complete'` in state and relied on `chain_next_tick()` dispatching an HTTP loopback to actually execute `phase_complete()`. Under server load that loopback returned HTTP 0, leaving jobs permanently stuck at "prune done, waiting for done tick." Inline completion eliminates the extra round-trip and the failure mode entirely.
-- Automation cron stagger (3 minutes per slot, added in v2.9.27.55) is now retroactively applied to all existing enabled automations via a one-time upgrade migration in `run_upgrade_migrations()`. Previously, the `schedule_cron_event()` early-exit guard ("already scheduled — skip") prevented the stagger code from running on automations created before v2.9.27.55.
 
 ---
 
@@ -2820,7 +2896,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.27.55] - 2026-04-08
 
 ### Fixed
-- Backup automations sharing the same schedule frequency (e.g. two hourly automations) are now staggered by 3 minutes per slot when their WP-Cron events are registered, preventing concurrent loopback HTTP collisions that caused LiteSpeed/Hostinger to silently drop one worker request (HTTP 0) on every run.
 
 ---
 
@@ -2858,7 +2933,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 
 ### Fixed
 - **[BUG-A] Debug log API capped at 100 entries** — `get_system_logs()` in api.php sliced to 100, overriding the 500-entry buffer in diagnostics.php. Now returns up to 500 entries.
-- **[BUG-B] Backup automation `created_at` timezone drift** — `current_time('mysql')` (local time) replaced with `gmdate('Y-m-d H:i:s')` (UTC) in `create()` and `migrate_legacy()` for consistency with `last_run_at`.
 
 ### Security
 - **[PENTEST-M01] Route existence oracle eliminated** — unauthenticated REST requests to non-whitelisted routes now return HTTP 404 (was 401), preventing attackers from enumerating valid routes.
@@ -2945,7 +3019,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 
 ### Fixed
 - **Sentinel overwrites successful automation status** -- Before marking a job abandoned/failed, the watchdog now checks whether the backup engine already completed the job (engine state `status === 'complete'`). If so, it cleans up the stale Sentinel entry without calling `set_last_run('failed')`. Prevents the circuit breaker from overwriting a correct "success" status 30 minutes after a fast backup completes.
-- **Concurrent spawn_worker loopback collision** -- `spawn_worker()` now checks a 5-second transient for the last spawn timestamp. If two automations fire within 1 second of each other, the second spawn is delayed by 500ms, preventing LiteSpeed from dropping one of the two near-simultaneous loopback connections.
 
 ---
 
@@ -2963,7 +3036,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 
 ### Fixed
 - **Concurrent backup temp dir collision** -- `get_temp_dir()` now appends the job_id to the temp path so each engine instance gets an isolated directory. Previously, two simultaneous automations with the same scope (e.g., two hourly db backups) shared the same temp dir — the first to finish would `rmdir()` it, causing the second to fatal with "SQL dump file not found."
-- **Engine failure not updating automation status** -- When `cleanup_on_failure()` is called, it now invokes `set_last_run('failed', ...)` on the automation if `automation_id` is set. Previously, a failed engine left the automation permanently stuck in "running" until the watchdog's abandonment timeout.
 
 ---
 
@@ -2980,7 +3052,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.27.47] - 2026-04-08
 
 ### Fixed
-- **Critical backup regression (v2.9.27.39)** -- Added `/backup/engine/tick` to the REST API guest whitelist in `restrict_rest_api()`. The v2.9.27.39 security hardening tightened the whitelist from the broad `/swisswpsuite/v1/` prefix to surgical entries, but omitted the tick endpoint. Because `wp_remote_post()` loopback calls are unauthenticated at the HTTP layer, they were blocked before reaching the route handler, causing HTTP 0 responses and breaking the entire tick chain for all automations.
 - Added `/backup/engine/tick` and `/sentinel/worker` to the geo-blocking exempt list as a defensive measure — server-to-self loopback requests must bypass country checks.
 
 ---
@@ -3009,8 +3080,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 
 ### Added
 - **POST /backup/clear-stuck-jobs** -- Emergency REST endpoint that finds and cancels all stuck engine state rows (running/pending with last activity >2 hours). Returns count of cleared jobs for audit trail.
-- **"Clear Stuck Jobs" button** -- Shown in the Backup Automations panel when stuck jobs are detected. Red/danger styling to indicate it's an emergency tool.
-- **`stuck_job_count` in automations response** -- GET /backup/automations now includes a count of stuck engine state rows so the frontend can conditionally show the clear button.
 
 ---
 
@@ -3029,9 +3098,7 @@ An external review (ARS round 7) found four claims in the two entries below that
 ### Fixed
 - **Backup schedule anchor now actually preserved across plugin updates** -- fixed array indexing bug where `schedule_cron_event()` used string ID on a numerically-indexed array, causing `last_run_at` lookup to always return null and reset to `time()+interval`.
 - **UI edits no longer reset backup schedule time** -- `sync_cron_events()` now delegates to `schedule_cron_event()` instead of bypassing anchor logic with `time()+60`.
-- **Deleting a backup automation now clears its cron event** -- prevents orphaned WP-Cron events.
 - **Free users no longer get phantom backup cron events** -- `ensure_cron_events()` gated behind `backup_cloud` capability.
-- **Post-import recovery now re-registers backup automation cron hooks** -- per-automation dynamic hooks restored alongside manifest hooks.
 - **Diagnostic warning logged when backup cron scheduling fails** -- visible in plugin UI diagnostics panel.
 
 ---
@@ -3049,7 +3116,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.27.43] - 2026-04-07
 
 ### Fixed
-- **Plugin update no longer resets backup schedule times** -- schedule_cron_event() now computes the next occurrence from last_run_at + interval instead of time(). If a user's daily backup was set to run at 3 AM, it stays at 3 AM after a plugin update. New automations with no history start at now + interval.
 
 ---
 
@@ -3084,7 +3150,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.27.41] - 2026-04-07
 
 ### Fixed
-- **Backup countdown shows "Overdue" for all automations** -- next_run was computed once at creation and never refreshed. get_all() now recomputes next_run from live wp_next_scheduled() on every API read so the UI always shows accurate countdown.
 
 ---
 
@@ -3101,7 +3166,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.27.40] - 2026-04-07
 
 ### Added
-- **Backup countdown timer** -- each automation card shows live "Next run in Xh Ym" countdown that auto-updates every 60 seconds. States: Running now (amber), Overdue (red), <10 min (orange), normal (blue), Disabled (gray).
 
 ---
 
@@ -3152,12 +3216,10 @@ An external review (ARS round 7) found four claims in the two entries below that
 ### Fixed
 - **[CRITICAL] Backup tick chain timeout** -- chain_next_tick() raised from 1s to 5s, matching Hostinger TLS handshake requirements
 - **[CRITICAL] Sentinel job stays "pending"** -- register_job() now sets status to "running" after spawn, preventing duplicate worker spawns
-- **[CRITICAL] Parallel engine corruption** -- run_automation_backup() now checks for active engine jobs before registering new ones
 - **[CRITICAL] Silent file write failure** -- write_jobs() no longer suppresses errors; logs warning on failure, wp_options is authoritative fallback
 - **[HIGH] Flock failure without heartbeat** -- execute_automation_backup() now calls heartbeat() on flock contention to prevent false "stuck" detection
 - **[HIGH] Rate limiter blocks loopback ticks** -- engine tick rate limiter now exempts loopback requests (nonce-protected)
 - **[HIGH] Circuit breaker reset on active jobs** -- register_job() skips re-registration when job is already running
-- **[HIGH] Migrated automations never fire** -- migrate_legacy() now calls sync_cron_events() after saving automation records
 - **[HIGH] TickDispatcher init gated behind license** -- moved init() outside backup_cloud capability gate so health check always registers
 - **[HIGH] Manual backup wrong Sentinel prefix** -- manual jobs now use "backup_manual_" prefix to avoid automation dispatch collision
 - **[MEDIUM] Orphaned engine state cleanup** -- load_all_states() now purges stale complete/failed states older than 24 hours
@@ -3571,7 +3633,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.27.17] - 2026-04-03
 
 ### Fixed
-- **Cloud backup size recorded as 0 B** — fixed incorrect size metadata for cloud-only backups (Google Drive, S3, etc.); the backup data was always uploaded correctly, but the UI showed 0 B due to a positional index mismatch when resolving file sizes after local ZIPs were deleted; size is now stored during upload init and retrieved via a keyed lookup map
 
 ---
 
@@ -3861,8 +3922,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 - Backup worker spawn timeout increased from 1 second to 5 seconds — prevents missed scheduled backups when the VPS TCP/TLS handshake is slow
 
 ### Added
-- WP-Cron visitor-dependency notice in the Backup Automations panel — explains why scheduled backups may be delayed on low-traffic sites and links to the Server Cron setup guide
-- Circuit breaker status notice in the Backup Automations panel — amber warning badge when automations are paused after repeated consecutive failures
 - Cloud storage cross-border data transfer disclosures per provider (AWS S3 US, Google Drive US, Dropbox US, Backblaze B2 US/EU) for GDPR/Swiss nDSG compliance
 - Dismissible PII/data-processor notice on the Cloud Storage panel advising users to review their provider's DPA before connecting
 
@@ -4407,7 +4466,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 - 2FA: QR code display increased from 160px to 200px for easier phone scanning.
 
 ### Improved
-- Cloud Backup: Enhanced cloud storage provider reliability (B2, Dropbox, FTP, GDrive, S3) with improved error handling and timeout management.
 - Backup: New tick-based backup engine with improved scheduling and progress tracking.
 - Frontend: Refreshed Cloud Storage, License Manager, and Backup UI panels.
 
@@ -4445,12 +4503,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.20.1] - 2026-03-26
 
 ### Fixed
-- Cloud Backup: Sentinel watchdog now syncs failure status back to automation records — prevents permanent "running" zombie state.
-- Cloud Backup: Stale-running watchdog auto-resets automations stuck in "running" for over 2 hours.
-- Cloud Backup: Added Cancel button for automation backups (previously only worked for manual backups).
-- Cloud Backup: Added 'cancelled' to automation status allowlist — shows "Cancelled" instead of "Failed" on user cancel.
-- Cloud Backup: Manual backup retention enforced (keeps last 10) — old manual backups no longer accumulate forever.
-- Cloud Backup: Automation backup retention now enforced on list load — catches failed-upload leftovers that exceeded retention.
 
 ---
 
@@ -4467,16 +4519,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.20.0] - 2026-03-25
 
 ### Improved
-- Cloud Backup: cURL timeouts added to all upload methods across all 5 cloud providers — prevents indefinite hangs.
-- Cloud Backup: Upload retry logic improved for S3, B2, Dropbox, and FTP with exponential backoff.
-- Cloud Backup: Real error messages from cloud providers shown in automation status instead of generic failures.
-- Cloud Backup: Sentinel watchdog receives heartbeat updates during uploads — no longer kills legitimate long-running transfers.
-- Cloud Backup: Circuit breaker stops endless restart loops after 3 consecutive stuck uploads.
-- Cloud Backup: Cancel button works during cloud upload phase with server-side session cleanup.
-- Cloud Backup: Orphan file detection and one-click cleanup for files left by deleted automations.
-- Cloud Backup: Backup list shows storage location (Local, Google Drive, S3, Dropbox, FTP, B2).
-- Cloud Backup: Backblaze B2 part size optimized from 100 MB to 25 MB for better memory usage.
-- Cloud Backup: Dropbox and FTP upload timeouts extended for slow shared hosting connections.
 
 ---
 
@@ -4493,12 +4535,6 @@ An external review (ARS round 7) found four claims in the two entries below that
 ## [2.9.19.0] - 2026-03-25
 
 ### Improved
-- Cloud Backup: Google Drive one-click connection — users no longer need to create their own Google OAuth app. Connect with a single click via SwissSuite servers.
-- Cloud Backup: Dropbox one-click connection ready — activates automatically when Dropbox production approval is granted.
-- Cloud Backup: Status endpoints now detect VPS OAuth proxy availability for fresh installs.
-- Cloud Backup: Fixed self-hosted OAuth callbacks redirecting to wrong admin page.
-- Cloud Backup: Fixed variable shadowing in OAuth callback URL cleanup.
-- Cloud Backup: Self-hosted OAuth flow now explicitly stores connection mode for reliable status reporting.
 
 ---
 

@@ -41,7 +41,7 @@
  * Scope-narrowing mocks (both unrelated to this fix, both would otherwise
  * require infrastructure this test has no reason to set up) — identical
  * choices already made in SecurityHub.hardeningToggle.test.tsx:
- *   - "sonner" — avoid toast portal/DOM plumbing; also lets this test
+ *   - the local toast module ("../lib/toast") — avoid toast rendering/DOM plumbing; also lets this test
  *     assert toast.error was NOT called on the 429 "already running" path
  *     (contract: 429 is not an error, just "keep polling").
  *   - FeaturePointer — renders a react-router-dom <Link> that throws
@@ -61,7 +61,7 @@ import {
   vi,
 } from "vitest";
 
-vi.mock("sonner", () => ({
+vi.mock("../lib/toast", () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -70,8 +70,13 @@ vi.mock("sonner", () => ({
   },
 }));
 
-vi.mock("./organisms/Upsell/FeaturePointer", () => ({
-  FeaturePointer: () => null,
+// Renders a react-router <Link>; these suites mount SecurityHub outside a
+// Router, so the real component cannot be used here.
+vi.mock("./organisms/Security/TwoFactorNudgeLink", () => ({
+  TwoFactorNudgeLink: () => null,
+}));
+vi.mock("./organisms/Security/WafUpsellCard", () => ({
+  WafUpsellCard: () => null,
 }));
 
 vi.mock("../services/api", () => ({
@@ -93,7 +98,7 @@ type TestingLibraryModule = typeof import("@testing-library/react");
 type ReactModule = typeof import("react");
 type ReactQueryModule = typeof import("@tanstack/react-query");
 type ApiModule = typeof import("../services/api");
-type SonnerModule = typeof import("sonner");
+type SonnerModule = typeof import("../lib/toast");
 
 let SecurityHub: SecurityHubModule["default"];
 let render: TestingLibraryModule["render"];
@@ -117,14 +122,12 @@ beforeAll(async () => {
   window.ReactDOM = { ...RealReactDOM, ...RealReactDOMClient };
 
   ({ default: SecurityHub } = await import("./SecurityHub"));
-  ({ render, screen, cleanup, fireEvent, waitFor } = await import(
-    "@testing-library/react"
-  ));
-  ({ QueryClient, QueryClientProvider } = await import(
-    "@tanstack/react-query"
-  ));
+  ({ render, screen, cleanup, fireEvent, waitFor } =
+    await import("@testing-library/react"));
+  ({ QueryClient, QueryClientProvider } =
+    await import("@tanstack/react-query"));
   ({ wpApi, ApiError } = await import("../services/api"));
-  ({ toast } = await import("sonner"));
+  ({ toast } = await import("../lib/toast"));
   React = await import("react");
 });
 
@@ -206,8 +209,6 @@ function setupWpApiMock(
       });
     }
     if (url === "/security/logs") return Promise.resolve([]);
-    if (url === "/security/sentinel/status")
-      return Promise.resolve({ has_audit: false });
     if (url === "/security/banned-ips") return Promise.resolve({ ips: [] });
     if (url === "/security/sentinel/latest-scan")
       return Promise.resolve({ success: false, record: null });
@@ -243,119 +244,108 @@ describe("SecurityHub — abandoned-plugins async 'Refresh' (DX-4b, ARS Round D)
     vi.clearAllMocks();
   });
 
-  it(
-    "POST dispatches the background check (202, in_progress:true) then polls GET /security/abandoned-plugins until it completes, updating UI states in sequence",
-    async () => {
-      setupWpApiMock(
-        () =>
-          Promise.resolve({
-            success: true,
+  it("POST dispatches the background check (202, in_progress:true) then polls GET /security/abandoned-plugins until it completes, updating UI states in sequence", async () => {
+    setupWpApiMock(
+      () =>
+        Promise.resolve({
+          success: true,
+          in_progress: true,
+          message:
+            "Abandoned-plugin check started in the background. Poll GET /security/abandoned-plugins for the result.",
+        }),
+      [finishedStatus()]
+    );
+    renderSecurityHub();
+
+    // Mount-time fetch (deferred 100ms) populates the panel with the
+    // initial cached result.
+    const refreshButton = await screen.findByRole("button", {
+      name: /re-check now/i,
+    });
+    expect(refreshButton).not.toHaveAttribute("aria-busy", "true");
+
+    fireEvent.click(refreshButton);
+
+    // Synchronous state: setAbandonedRefreshing(true) runs as the FIRST
+    // line of the click handler, before any await — the "checking…" UI
+    // state must be visible immediately, not only after the network
+    // round-trip.
+    expect(
+      await screen.findByRole("button", { name: /checking/i })
+    ).toHaveAttribute("aria-busy", "true");
+
+    // POST-then-poll sequencing: the refresh POST must fire before any
+    // poll GET, and the POST body itself carries no `plugins`/finished
+    // shape — this assertion is only meaningful once the poll below also
+    // proves a SECOND, separate GET actually happened.
+    expect(wpApi).toHaveBeenCalledWith("/security/abandoned-plugins/refresh", {
+      method: "POST",
+    });
+
+    // Wait for the polling effect's 3s interval to elapse and the poll's
+    // GET to resolve with the finished result — proves the POST response
+    // itself was NOT treated as final (it carried no `plugins` array).
+    await waitFor(
+      () => {
+        expect(
+          screen.getByRole("button", { name: /re-check now/i })
+        ).toBeInTheDocument();
+      },
+      { timeout: 8000 }
+    );
+
+    const settledButton = screen.getByRole("button", {
+      name: /re-check now/i,
+    });
+    expect(settledButton).not.toHaveAttribute("aria-busy", "true");
+
+    // The GET status route was called at least twice: once on mount,
+    // once (or more) while polling — proves polling actually happened
+    // rather than the POST response being rendered directly.
+    const statusCalls = (wpApi as unknown as WpApiMock).mock.calls.filter(
+      ([url]: [string]) => url === "/security/abandoned-plugins"
+    );
+    expect(statusCalls.length).toBeGreaterThanOrEqual(2);
+
+    // Final rendered result matches the poll's finished payload, not the
+    // stale mount-time cache.
+    expect(screen.getByText("Some Abandoned Plugin")).toBeInTheDocument();
+  }, 10000);
+
+  it("a 429 'already running' response is NOT surfaced as an error — it starts polling the run already in flight", async () => {
+    setupWpApiMock(
+      () =>
+        Promise.reject(
+          new ApiError("Check already in progress.", 429, {
+            success: false,
             in_progress: true,
-            message:
-              "Abandoned-plugin check started in the background. Poll GET /security/abandoned-plugins for the result.",
-          }),
-        [finishedStatus()]
-      );
-      renderSecurityHub();
+            message: "Check already in progress.",
+          })
+        ),
+      [finishedStatus()]
+    );
+    renderSecurityHub();
 
-      // Mount-time fetch (deferred 100ms) populates the panel with the
-      // initial cached result.
-      const refreshButton = await screen.findByRole("button", {
-        name: /re-check now/i,
-      });
-      expect(refreshButton).not.toHaveAttribute("aria-busy", "true");
+    const refreshButton = await screen.findByRole("button", {
+      name: /re-check now/i,
+    });
+    fireEvent.click(refreshButton);
 
-      fireEvent.click(refreshButton);
+    await screen.findByRole("button", { name: /checking/i });
 
-      // Synchronous state: setAbandonedRefreshing(true) runs as the FIRST
-      // line of the click handler, before any await — the "checking…" UI
-      // state must be visible immediately, not only after the network
-      // round-trip.
-      expect(
-        await screen.findByRole("button", { name: /checking/i })
-      ).toHaveAttribute("aria-busy", "true");
+    await waitFor(
+      () => {
+        expect(
+          screen.getByRole("button", { name: /re-check now/i })
+        ).toBeInTheDocument();
+      },
+      { timeout: 8000 }
+    );
 
-      // POST-then-poll sequencing: the refresh POST must fire before any
-      // poll GET, and the POST body itself carries no `plugins`/finished
-      // shape — this assertion is only meaningful once the poll below also
-      // proves a SECOND, separate GET actually happened.
-      expect(wpApi).toHaveBeenCalledWith(
-        "/security/abandoned-plugins/refresh",
-        { method: "POST" }
-      );
-
-      // Wait for the polling effect's 3s interval to elapse and the poll's
-      // GET to resolve with the finished result — proves the POST response
-      // itself was NOT treated as final (it carried no `plugins` array).
-      await waitFor(
-        () => {
-          expect(
-            screen.getByRole("button", { name: /re-check now/i })
-          ).toBeInTheDocument();
-        },
-        { timeout: 8000 }
-      );
-
-      const settledButton = screen.getByRole("button", {
-        name: /re-check now/i,
-      });
-      expect(settledButton).not.toHaveAttribute("aria-busy", "true");
-
-      // The GET status route was called at least twice: once on mount,
-      // once (or more) while polling — proves polling actually happened
-      // rather than the POST response being rendered directly.
-      const statusCalls = (
-        wpApi as unknown as WpApiMock
-      ).mock.calls.filter(([url]: [string]) => url === "/security/abandoned-plugins");
-      expect(statusCalls.length).toBeGreaterThanOrEqual(2);
-
-      // Final rendered result matches the poll's finished payload, not the
-      // stale mount-time cache.
-      expect(
-        screen.getByText("Some Abandoned Plugin")
-      ).toBeInTheDocument();
-    },
-    10000
-  );
-
-  it(
-    "a 429 'already running' response is NOT surfaced as an error — it starts polling the run already in flight",
-    async () => {
-      setupWpApiMock(
-        () =>
-          Promise.reject(
-            new ApiError("Check already in progress.", 429, {
-              success: false,
-              in_progress: true,
-              message: "Check already in progress.",
-            })
-          ),
-        [finishedStatus()]
-      );
-      renderSecurityHub();
-
-      const refreshButton = await screen.findByRole("button", {
-        name: /re-check now/i,
-      });
-      fireEvent.click(refreshButton);
-
-      await screen.findByRole("button", { name: /checking/i });
-
-      await waitFor(
-        () => {
-          expect(
-            screen.getByRole("button", { name: /re-check now/i })
-          ).toBeInTheDocument();
-        },
-        { timeout: 8000 }
-      );
-
-      // Contract: 429 means "a check is already running", not a failure —
-      // the existing generic failure toast must NOT fire for this path.
-      expect(toast.error).not.toHaveBeenCalledWith(
-        "Failed to refresh abandoned plugin data."
-      );
-    },
-    10000
-  );
+    // Contract: 429 means "a check is already running", not a failure —
+    // the existing generic failure toast must NOT fire for this path.
+    expect(toast.error).not.toHaveBeenCalledWith(
+      "Failed to refresh abandoned plugin data."
+    );
+  }, 10000);
 });

@@ -78,7 +78,6 @@ describe("HardeningOptionsGrid — htaccess_warning badge (ADDENDUM-2 F-U9)", ()
     render(
       React.createElement(HardeningOptionsGrid, {
         options,
-        hasSentinelPro: true,
         isLoading: false,
         onToggle: () => {},
         onApplyAll: () => {},
@@ -104,7 +103,6 @@ describe("HardeningOptionsGrid — htaccess_warning badge (ADDENDUM-2 F-U9)", ()
     render(
       React.createElement(HardeningOptionsGrid, {
         options,
-        hasSentinelPro: true,
         isLoading: false,
         onToggle: () => {},
         onApplyAll: () => {},
@@ -136,7 +134,6 @@ describe("HardeningOptionsGrid — htaccess_warning badge (ADDENDUM-2 F-U9)", ()
     render(
       React.createElement(HardeningOptionsGrid, {
         options,
-        hasSentinelPro: true,
         isLoading: false,
         onToggle: () => {},
         onApplyAll: () => {},
@@ -150,5 +147,67 @@ describe("HardeningOptionsGrid — htaccess_warning badge (ADDENDUM-2 F-U9)", ()
     expect(
       screen.queryByText("stale warning that should never appear")
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("HardeningOptionsGrid — every option is interactive", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  // The fixture is the shape that USED to lock a card: an option the
+  // backend sends WITHOUT a `pro` field and whose key is not in the
+  // fallback key list. Against the pre-fix component this produced a
+  // disabled switch (aria-disabled="true", cursor-not-allowed) and a
+  // padlock next to the label; every assertion here fails on that code.
+  function unflaggedOption() {
+    const opt = baseOption({
+      key: "some_option_the_backend_added_later",
+      label: "Later Option",
+      enabled: false,
+      tier: "essential",
+    });
+    delete (opt as { pro?: boolean }).pro;
+    return opt;
+  }
+
+  it("positive control: the card actually rendered", () => {
+    render(
+      React.createElement(HardeningOptionsGrid, {
+        options: [unflaggedOption()],
+        isLoading: false,
+        onToggle: () => {},
+        onApplyAll: () => {},
+      })
+    );
+    expect(screen.getByText("Later Option")).toBeInTheDocument();
+  });
+
+  it("renders an enabled switch when the payload carries no `pro` field", () => {
+    render(
+      React.createElement(HardeningOptionsGrid, {
+        options: [unflaggedOption()],
+        isLoading: false,
+        onToggle: () => {},
+        onApplyAll: () => {},
+      })
+    );
+    const toggle = screen.getByRole("switch", { name: /toggle later option/i });
+    expect(toggle).not.toHaveAttribute("aria-disabled");
+    expect(toggle.className).not.toContain("cursor-not-allowed");
+  });
+
+  it("calls onToggle when the switch is clicked", () => {
+    const calls: Array<[string, boolean]> = [];
+    render(
+      React.createElement(HardeningOptionsGrid, {
+        options: [unflaggedOption()],
+        isLoading: false,
+        onToggle: (key: string, value: boolean) => calls.push([key, value]),
+        onApplyAll: () => {},
+      })
+    );
+    screen.getByRole("switch", { name: /toggle later option/i }).click();
+    expect(calls).toEqual([["some_option_the_backend_added_later", true]]);
   });
 });

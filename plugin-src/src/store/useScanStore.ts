@@ -16,15 +16,13 @@
  *   cohesive — if a field is only used by one tab, it stays as local useState.
  *
  * v2.9.29.0 (3-Scan Redesign Phase 4):
- *   The Full AI Scan (sync + async) is being collapsed into the new Deep
- *   Malware Scan async pipeline. The fullAi* fields are kept for one release
- *   as @deprecated so any in-flight UI does not crash mid-deploy. The new
- *   deepMalware* fields drive the third scan card.
+ *   The scan pipeline moved to the async Deep Malware Scan card, driven by
+ *   the deepMalware* fields below.
  *
  * Usage:
- *   const { aiAuditResult, setAiAuditResult } = useScanStore();
+ *   const { malwareResult, updateMalwareResult } = useScanStore();
  *   // Or with a selector for re-render control:
- *   const aiAuditResult = useScanStore((s) => s.aiAuditResult);
+ *   const malwareResult = useScanStore((s) => s.malwareResult);
  *
  * Non-goals (this store intentionally does NOT own):
  * - Scan-triggering side effects (remain in SecurityHub callbacks)
@@ -33,13 +31,7 @@
  *   the server)
  */
 import { create } from "zustand";
-import type {
-  AiAuditResult,
-  MalwareScanResult,
-  FullAiScanResult,
-  ScanReportConfig,
-  ScanHistoryDetail,
-} from "../types";
+import type { MalwareScanResult, ScanReportConfig, ScanHistoryDetail } from "../types";
 
 /**
  * v2.9.29.0 — Lifecycle status for the new Deep Malware Scan polling flow.
@@ -51,29 +43,19 @@ export type DeepMalwareStatus = "idle" | "running" | "complete" | "error";
 
 export interface ScanState {
   // ── Scan results ──────────────────────────────────────────────────────────
-  aiAuditResult: AiAuditResult | null;
-  malwareResult: MalwareScanResult | null;
-  /** @deprecated v2.9.29.0 — Use deepMalwareResult. Kept for one release while
-   *  the Full AI Scan UI is migrated to the Deep Malware Scan pipeline. */
-  fullAiResult: FullAiScanResult | null;
-
-  // ── Scan loading flags ────────────────────────────────────────────────────
-  aiAuditLoading: boolean;
-  malwareLoading: boolean;
-  /** @deprecated v2.9.29.0 — Use deepMalwareStatus === 'running'. */
-  fullAiLoading: boolean;
-
   /**
-   * @deprecated v2.9.29.0 — Phase-aware progress message for the legacy Full
-   * AI Scan two-phase state machine. Replaced by the deepMalwarePhase label
-   * dictionary below.
+   * Optimistic view of the deep-malware panel's threat list used by
+   * `handleScanPanelBulkAction`'s bulk clear. Only the deep-malware pipeline
+   * (see `deepMalwareResult` below, the value the panel actually renders)
+   * writes a scan result; this field mirrors that same shape so a bulk
+   * action can strip acted-upon entries without waiting for a re-scan.
    */
-  fullAiPhaseMessage: string;
+  malwareResult: MalwareScanResult | null;
 
   // ── Per-file AI-analyze-in-flight marker (one file at a time) ────────────
   analyzingFile: string | null;
 
-  // ── Report scheduling config (cron tier, frequency, last scan stamp) ─────
+  // ── Report scheduling config (schedule, frequency, last scan stamp) ─────
   scanReportConfig: ScanReportConfig | null;
 
   // ── Historical scan detail opened via History tab VIEW button ────────────
@@ -93,16 +75,6 @@ export interface ScanState {
   deepMalwareResult: MalwareScanResult | null;
 
   // ── Setters (named to match the useState names they replace) ─────────────
-  setAiAuditResult: (value: AiAuditResult | null) => void;
-  setMalwareResult: (value: MalwareScanResult | null) => void;
-  /** @deprecated — see fullAiResult JSDoc. */
-  setFullAiResult: (value: FullAiScanResult | null) => void;
-  setAiAuditLoading: (value: boolean) => void;
-  setMalwareLoading: (value: boolean) => void;
-  /** @deprecated — see fullAiLoading JSDoc. */
-  setFullAiLoading: (value: boolean) => void;
-  /** @deprecated — see fullAiPhaseMessage JSDoc. */
-  setFullAiPhaseMessage: (value: string) => void;
   setAnalyzingFile: (value: string | null) => void;
   setScanReportConfig: (value: ScanReportConfig | null) => void;
   setHistoricalScanDetail: (value: ScanHistoryDetail | null) => void;
@@ -115,24 +87,15 @@ export interface ScanState {
 
   /**
    * Functional-update variants — required where a setter is currently called
-   * with a `(prev) => next` callback. Today SecurityHub.tsx uses these for
-   * `setFullAiResult` and `setMalwareResult` when optimistically removing
-   * findings after the user acts on them. Zustand does not auto-promote a
-   * plain value setter into a functional one — so we expose explicit helpers.
+   * with a `(prev) => next` callback. Zustand does not auto-promote a plain
+   * value setter into a functional one — so we expose explicit helpers.
    */
-  updateAiAuditResult: (
-    updater: (prev: AiAuditResult | null) => AiAuditResult | null,
-  ) => void;
   updateMalwareResult: (
-    updater: (prev: MalwareScanResult | null) => MalwareScanResult | null,
-  ) => void;
-  /** @deprecated — see fullAiResult JSDoc. */
-  updateFullAiResult: (
-    updater: (prev: FullAiScanResult | null) => FullAiScanResult | null,
+    updater: (prev: MalwareScanResult | null) => MalwareScanResult | null
   ) => void;
   /** Functional update for the deep-malware result (mirrors malwareResult). */
   updateDeepMalwareResult: (
-    updater: (prev: MalwareScanResult | null) => MalwareScanResult | null,
+    updater: (prev: MalwareScanResult | null) => MalwareScanResult | null
   ) => void;
 
   /** Clear all scan state — useful on logout or license downgrade. */
@@ -141,13 +104,7 @@ export interface ScanState {
 
 const initialState: Pick<
   ScanState,
-  | "aiAuditResult"
   | "malwareResult"
-  | "fullAiResult"
-  | "aiAuditLoading"
-  | "malwareLoading"
-  | "fullAiLoading"
-  | "fullAiPhaseMessage"
   | "analyzingFile"
   | "scanReportConfig"
   | "historicalScanDetail"
@@ -156,13 +113,7 @@ const initialState: Pick<
   | "deepMalwareStatus"
   | "deepMalwareResult"
 > = {
-  aiAuditResult: null,
   malwareResult: null,
-  fullAiResult: null,
-  aiAuditLoading: false,
-  malwareLoading: false,
-  fullAiLoading: false,
-  fullAiPhaseMessage: "",
   analyzingFile: null,
   scanReportConfig: null,
   historicalScanDetail: null,
@@ -175,13 +126,6 @@ const initialState: Pick<
 export const useScanStore = create<ScanState>((set) => ({
   ...initialState,
 
-  setAiAuditResult: (value) => set({ aiAuditResult: value }),
-  setMalwareResult: (value) => set({ malwareResult: value }),
-  setFullAiResult: (value) => set({ fullAiResult: value }),
-  setAiAuditLoading: (value) => set({ aiAuditLoading: value }),
-  setMalwareLoading: (value) => set({ malwareLoading: value }),
-  setFullAiLoading: (value) => set({ fullAiLoading: value }),
-  setFullAiPhaseMessage: (value) => set({ fullAiPhaseMessage: value }),
   setAnalyzingFile: (value) => set({ analyzingFile: value }),
   setScanReportConfig: (value) => set({ scanReportConfig: value }),
   setHistoricalScanDetail: (value) => set({ historicalScanDetail: value }),
@@ -191,12 +135,8 @@ export const useScanStore = create<ScanState>((set) => ({
   setDeepMalwareStatus: (value) => set({ deepMalwareStatus: value }),
   setDeepMalwareResult: (value) => set({ deepMalwareResult: value }),
 
-  updateAiAuditResult: (updater) =>
-    set((state) => ({ aiAuditResult: updater(state.aiAuditResult) })),
   updateMalwareResult: (updater) =>
     set((state) => ({ malwareResult: updater(state.malwareResult) })),
-  updateFullAiResult: (updater) =>
-    set((state) => ({ fullAiResult: updater(state.fullAiResult) })),
   updateDeepMalwareResult: (updater) =>
     set((state) => ({ deepMalwareResult: updater(state.deepMalwareResult) })),
 

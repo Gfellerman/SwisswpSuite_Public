@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "../lib/toast";
 import { wpApi } from "../services/api";
 import {
   ActiveBackupJobsResponse,
@@ -35,7 +35,6 @@ interface GenerateDownloadTokenResponse {
 
 export interface CreateBackupVariables {
   scope: "full" | "db" | "files";
-  destination?: "local" | "gdrive" | "dropbox" | "s3" | "ftp" | "b2";
   /** BACKUP-F3: Abort signal wired to fetch so Cancel actually interrupts the in-flight request. */
   signal?: AbortSignal;
 }
@@ -44,8 +43,8 @@ export interface CreateBackupVariables {
  * Phase 5 engine response (HTTP 202 Accepted).
  *
  * F-264/F-265 FIX: The chunked backup engine returns {success, job_id, message}
- * directly -- NOT the legacy {data:{url,name,date}, cloud_*} shape. The frontend
- * polls /backup/engine/status for progress after receiving this initial 202.
+ * directly. The frontend polls /backup/engine/status for progress after
+ * receiving this initial 202.
  */
 export interface CreateBackupResponse {
   success: boolean;
@@ -143,8 +142,8 @@ export function useBackups() {
     onSuccess: (data: CreateBackupResponse) => {
       queryClient.invalidateQueries({ queryKey: ["backups"] });
       // F-264/F-265: Engine returns 202 with job_id — the frontend polls
-      // useBackupEngineStatus(job_id) for progress. Cloud outcome is surfaced
-      // via the engine status polling, not the initial create response.
+      // useBackupEngineStatus(job_id) for progress, not the initial create
+      // response.
       toast.success(data.message || "Backup started");
     },
     onError: (error: Error) => {
@@ -291,17 +290,6 @@ export function useOrphanBackups() {
         }>;
         total_size: string;
         total_count: number;
-        // BUG-B FIX (2026-08-05): cloud objects a prune/automation-delete pass
-        // could not remove remotely (missing cloud_id or a provider failure).
-        // Additive fields — see SwissWPSuite_Backup_Sets::record_cloud_orphan().
-        cloud_orphans?: Array<{
-          index: number;
-          provider: string;
-          filename: string;
-          reason: string;
-          detected_at: string;
-        }>;
-        cloud_orphan_count?: number;
       }>("/backup/local/orphans"),
     staleTime: 120_000,
     retry: 1,
@@ -325,41 +313,6 @@ export function useCleanupOrphans() {
     },
     onError: () => {
       toast.error("Failed to clean up orphaned files.");
-    },
-  });
-}
-
-/**
- * P4 (2026-08-08 socratic re-audit repair plan): dismiss a single recorded
- * cloud-orphan entry (backend: SwissWPSuite_Backup_Sets::clear_cloud_orphan(),
- * wired up via POST /backup/local/orphans/cloud/dismiss). This does NOT touch
- * anything on the cloud provider itself -- it only clears the local
- * diagnostic record so the banner in BackupList.tsx stops listing it, for use
- * after the admin has manually removed the object from their cloud
- * dashboard. `index` is a zero-based position into the `cloud_orphans[]`
- * array returned by useOrphanBackups() -- the backend matches by index
- * position at read time, so this hook always invalidates ["backup-orphans"]
- * on success to force a re-fetch before any further dismiss (indices shift
- * after every clear).
- */
-export function useDismissCloudOrphan() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (index: number) =>
-      wpApi<{
-        success: boolean;
-        message: string;
-        cleared?: { provider: string; filename: string };
-      }>("/backup/local/orphans/cloud/dismiss", {
-        method: "POST",
-        body: JSON.stringify({ index }),
-      }),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["backup-orphans"] });
-      toast.success(data.message || "Cloud-orphan record cleared.");
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to dismiss cloud-orphan record: ${error.message}`);
     },
   });
 }
@@ -424,7 +377,7 @@ export function useBackupSets() {
     },
   });
 
-  // Delete all files in a set (local + cloud) and remove the set record.
+  // Delete all files in a set and remove the set record.
   const deleteSetMutation = useMutation({
     mutationFn: (setId: string) =>
       wpApi<{ success: boolean }>(`/backup/sets/${setId}/delete`, {

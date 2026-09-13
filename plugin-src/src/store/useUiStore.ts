@@ -25,7 +25,7 @@
  * Non-goals:
  *   - Per-tab local UI state (search inputs, expanded rows) stays in the
  *     tab component as useState — no need to share across consumers.
- *   - Toast notifications (handled by sonner directly).
+ *   - Toast notifications (handled by ../lib/toast directly).
  *
  * Why not just useState?
  *   - Modals are rendered "global" — they show from any tab. The trigger

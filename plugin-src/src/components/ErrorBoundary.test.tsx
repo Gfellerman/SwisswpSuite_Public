@@ -109,7 +109,9 @@ describe("ErrorBoundary", () => {
 
     const alert = screen.getByRole("alert");
     expect(alert).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /reload page/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /reload page/i })
+    ).toBeInTheDocument();
 
     // Bonus coverage (a11y-engineer fix #2, focus management): the fallback
     // container is tabIndex={-1} and programmatically focused in

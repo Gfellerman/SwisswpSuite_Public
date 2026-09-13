@@ -8,23 +8,136 @@
  * @copyright 2026 Swisswpsecure Team
  */
 
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { configDefaults } from "vitest/config";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Freemium Dual-Build (Phase 4, A4 fix, 2026-07-18): which edition this
-// build is producing. Set by build_plugin.sh via `EDITION="$EDITION" npm
-// run build` — a plain shell env var, not a `.env` file value, so it is
-// read directly from `process.env` rather than via `loadEnv()` (which only
-// loads `.env` files). Defaults to 'pro' so `npm run dev` / a bare
-// `npm run build` with no EDITION set behaves exactly as before this change
-// (full/Pro build) — zero risk to the existing dev workflow.
-const EDITION = process.env.EDITION === "free" ? "free" : "pro";
+const SRC_ROOT = path.resolve(__dirname, "src");
+
+/**
+ * Optional source overlay.
+ *
+ * `SWISSWPSUITE_OVERLAY` names a directory laid out with the same relative
+ * structure as `src/`. When it is set, a file at `<overlay>/<rel>` takes
+ * precedence over `src/<rel>` for every importer, and a relative import
+ * written inside an overlay file resolves against `src/` when the overlay
+ * has no file of its own at that path. When it is unset — which is the
+ * default, and what `npm run build` and `npm run dev` do — the resolver is
+ * not installed at all and `src/` is the only source root.
+ *
+ * The path is resolved against this directory. A relative value such as
+ * `../pro-overlay/src` is therefore interpreted from `plugin/`.
+ */
+const OVERLAY_DIR = (() => {
+  const raw = (process.env.SWISSWPSUITE_OVERLAY || "").trim();
+  if (!raw) return null;
+  const abs = path.resolve(__dirname, raw);
+  if (!fs.existsSync(abs)) {
+    throw new Error(
+      `SWISSWPSUITE_OVERLAY points at a directory that does not exist: ${abs}`
+    );
+  }
+  return abs;
+})();
+
+/** Extensions tried when a specifier omits one, in resolution order. */
+const RESOLVE_EXTS = [
+  "",
+  ".tsx",
+  ".ts",
+  ".jsx",
+  ".js",
+  "/index.tsx",
+  "/index.ts",
+];
+
+function firstExisting(base: string): string | null {
+  for (const ext of RESOLVE_EXTS) {
+    const candidate = base + ext;
+    if (candidate === base && !path.extname(base)) continue;
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+/**
+ * Two-way resolver for the overlay directory described above.
+ *
+ * 1. Any resolved path under `src/` is redirected to the overlay when the
+ *    overlay holds a file at the same relative path.
+ * 2. Any relative import written inside an overlay file that the overlay
+ *    cannot satisfy is resolved against `src/` instead, so an overlay file
+ *    can import the shared modules that stayed behind without rewriting a
+ *    single import statement.
+ */
+function sourceOverlay(overlayDir: string): Plugin {
+  return {
+    name: "swisswpsuite-source-overlay",
+    enforce: "pre",
+    resolveId(source, importer) {
+      if (source.startsWith("\0")) return null;
+
+      // (2) relative import from inside the overlay → fall back to src/.
+      if (
+        importer &&
+        importer.startsWith(overlayDir + path.sep) &&
+        (source.startsWith("./") || source.startsWith("../"))
+      ) {
+        const wanted = path.resolve(path.dirname(importer), source);
+        if (!firstExisting(wanted)) {
+          const rel = path.relative(overlayDir, wanted);
+          if (!rel.startsWith("..")) {
+            const inSrc = firstExisting(path.join(SRC_ROOT, rel));
+            if (inSrc) return inSrc;
+          }
+        }
+        return null;
+      }
+
+      // (1) src/ path → overlay override.
+      if (!source.startsWith(".") && !path.isAbsolute(source)) return null;
+      const base = importer
+        ? path.resolve(path.dirname(importer), source)
+        : path.resolve(source);
+      const rel = path.relative(SRC_ROOT, base);
+      if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
+      return firstExisting(path.join(overlayDir, rel));
+    },
+  };
+}
+
+/**
+ * The bundled Immer runtime formats its minified production errors with a
+ * link to a URL-shortener. A shortener hides its destination from anyone
+ * reading the shipped file, so this rewrites that one exact literal to the
+ * page it redirects to. The transform is deterministic, runs on every
+ * build, and lives here in the published build configuration so the
+ * published source reproduces the shipped bundle byte for byte.
+ */
+const IMMER_SHORTENED_URL = "https://bit.ly/3cXEKWf";
+const IMMER_CANONICAL_URL =
+  "https://github.com/immerjs/immer/blob/main/src/utils/errors.ts";
+
+function expandShortenedLinks(): Plugin {
+  return {
+    name: "swisswpsuite-expand-shortened-links",
+    renderChunk(code) {
+      if (!code.includes(IMMER_SHORTENED_URL)) return null;
+      return {
+        code: code.split(IMMER_SHORTENED_URL).join(IMMER_CANONICAL_URL),
+        map: null,
+      };
+    },
+  };
+}
 
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
@@ -35,8 +148,15 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: "0.0.0.0",
+      fs: {
+        allow: OVERLAY_DIR ? [__dirname, OVERLAY_DIR] : [__dirname],
+      },
     },
-    plugins: [react()],
+    plugins: [
+      ...(OVERLAY_DIR ? [sourceOverlay(OVERLAY_DIR)] : []),
+      react(),
+      expandShortenedLinks(),
+    ],
     resolve: {
       alias: {
         // WordPress.org Guideline 13 compliance (2026-08-12): "may not
@@ -86,9 +206,7 @@ export default defineConfig(({ mode }) => {
         // anyway — kept in the same specific-before-generic order for
         // consistency and to guard against a future re-order mistake.)
         //
-        // Applies to BOTH editions (Free and Pro) — this is a WP.org
-        // compliance fix for the shared source tree, not an edition-gated
-        // feature. See docs/architecture/FREEMIUM_DUAL_BUILD_ARCHITECTURE.md
+        // See docs/architecture/FREEMIUM_DUAL_BUILD_ARCHITECTURE.md
         // "React externalization" section for the full audit + rationale.
         "react/jsx-dev-runtime": path.resolve(
           __dirname,
@@ -104,436 +222,7 @@ export default defineConfig(({ mode }) => {
         ),
         "react-dom": path.resolve(__dirname, "src/vendor-shims/react-dom.ts"),
         react: path.resolve(__dirname, "src/vendor-shims/react.ts"),
-        "@": path.resolve(__dirname, "src"),
-        // Freemium Dual-Build (A4 fix): Free-edition-only redirects for the
-        // 3 fully-Pro-only route/component modules (AI Content, Sync page,
-        // SyncManager). These modules already gate their OWN render on
-        // `isProEdition()` and show a ProUpsellPlaceholder in Free — but
-        // that is a runtime check, and each one is reached via
-        // `React.lazy(() => import(...))` in router.tsx / BackupsPage.tsx,
-        // which creates a dynamic-import chunk boundary that Rollup
-        // discovers by static AST analysis of the `import()` call site —
-        // NOT by evaluating whether the code behind it is reachable at
-        // runtime. A runtime-only gate therefore still leaves the real
-        // (heavy — ContentEnhancer / SyncManager, ~18-42KB each) chunk
-        // physically present in the Free zip.
-        //
-        // Vite's alias resolution runs at module-resolve time, BEFORE
-        // Rollup ever parses the real target file — so redirecting the
-        // exact import specifier (as literally written at each call site)
-        // to a tiny Free-only stub means the real file, and everything it
-        // transitively imports, never enters the Free build's module graph
-        // at all. Pro builds (EDITION !== 'free') never add these entries,
-        // so the real files are completely unaffected there.
-        //
-        // Each key is the EXACT string written at its one known call site
-        // (verified via grep — 2026-07-18): '../pages/AIContentPage' and
-        // '../pages/SyncPage' in src/lib/router.tsx; '../components/Sync/
-        // SyncManager' in src/pages/BackupsPage.tsx (SyncPage.tsx uses the
-        // identical relative string for its own now-aliased-away import of
-        // SyncManager, so this one entry covers both). Vite alias matching
-        // is exact-string / prefix-segment based on the raw specifier, not
-        // the resolved path — if a future file imports one of these targets
-        // using a DIFFERENT relative path, it will bypass this alias and
-        // re-introduce the leak; re-grep the target's basename across
-        // src/ after adding a new call site.
-        //
-        // WP.org round-3 remediation (Sprint W2, D6 + A9/V6, 2026-07-26):
-        // two more entries, same mechanism. '../components/organisms/
-        // Settings/LicenseManager' is the exact specifier written at its
-        // one call site (src/pages/SettingsPage.tsx) — the License system
-        // has nothing left to unlock in Free (Guideline 6) once every
-        // locally-implemented feature is de-gated, so Free gets a static
-        // no-network stub instead of the real ~1,900-line component.
-        // '../hooks/useTokenBalance' is the identical specifier used at
-        // all three real importers (SecurityHub.tsx, ContentEnhancer.tsx,
-        // SeoManager.tsx — verified by grep 2026-07-26), so one entry
-        // covers all three; its real MIN_COST quota map must not ship in
-        // the Free bundle at all, even as unreachable dead code.
-        //
-        // WP.org round-3 remediation (Sprint W2c, 2026-07-27): four more
-        // entries, same mechanism. These four cover the remaining leaks a
-        // controller audit of the built Free zip found — a Pro-only
-        // component whose RENDER was already gated by `isProEditionBuild`/
-        // `isProEdition()` at its call site, but reached via a plain static
-        // `import` (not React.lazy), so Rollup still compiled it into the
-        // Free chunk regardless. '../components/Migration/MigrationStation'
-        // and '../components/organisms/Backups/CloudStoragePanel' are both
-        // imported once, in src/pages/BackupsPage.tsx.
-        // '../components/organisms/Settings/TwoFactorSettings' is imported
-        // once, in src/pages/SettingsPage.tsx. './organisms/UpdateGuard/
-        // UpdateGuardCard' is imported once, in src/components/
-        // SecurityHub.tsx — this one alias also removes UpdateGuardCard's
-        // three transitive children (SnapshotList, UpdateReviewPanel,
-        // UpdateBlockedBanner), since grep confirmed they have no other
-        // importer in src/. Each stub still renders a real (compact)
-        // ProUpsellPlaceholder rather than null, per this codebase's
-        // established graceful-degradation convention, even though none of
-        // the four are actually reachable at runtime in Free today.
-        //
-        // WP.org compliance sprint F3 (register row #23, owner decision
-        // (b), 2026-08-01): one more entry, same mechanism.
-        // '../components/organisms/Settings/ApiConfig' is imported once, in
-        // src/pages/SettingsPage.tsx. Its RENDER is already gated by
-        // `isProEdition()` at that call site, but `SettingsPage.tsx` reaches
-        // it via a plain static import (not React.lazy), so Rollup still
-        // compiled the real ApiConfig.tsx — and the literal
-        // "/settings/test-connection" string it POSTs to — into the shipped
-        // Free SettingsPage chunk. `public/readme.txt` states the Free
-        // plugin "does no AI processing, and makes no AI calls"; the Free
-        // zip must contain no code that can POST to a BYO AI endpoint, so
-        // the real BYO-AI panel is removed from the Free build graph
-        // entirely rather than merely left unreachable at runtime.
-        //
-        // WP.org frontend physical-exclusion sweep (2026-08-12, owner-caught
-        // 3rd-rejection response): two more entries, same mechanism — found
-        // by an exhaustive re-audit of every `isProEdition()`/
-        // `isProEditionBuild` call site in src/ after the owner personally
-        // caught the TwoFactorSettings leak in a submitted zip (that
-        // specific leak turned out to already be fixed by the F3 entry
-        // above at the time of the re-audit — this pass found two more that
-        // were NOT yet covered).
-        // TD-60 / WP.org R4 OD-2 (2026-08-22): the
-        // '../components/organisms/Settings/EncryptionSettings' alias entry
-        // that used to sit here is REMOVED — backup encryption-at-rest is now
-        // ENABLED in Free (owner ruling OD-2,
-        // docs/reports/WPORG_REJECTION_R4_ANALYSIS_2026-08-22.md), so the real
-        // component now ships in the Free bundle instead of the freeStub. The
-        // now-orphaned 'src/components/organisms/Settings/
-        // EncryptionSettings.freeStub.tsx' file WAS deleted as part of this
-        // same 2026-08-22 R4 sprint, together with the alias removal above —
-        // it is no longer present on disk or referenced anywhere in src/.
-        // './organisms/Security/GeoLockdownCard' is imported once, in
-        // src/components/SecurityHub.tsx — NEWLY extracted from inline JSX
-        // in that file specifically so it CAN be aliased (geo-blocking was
-        // previously hand-written directly inside the SecurityHub.tsx
-        // monolith with no separate module boundary to alias against; see
-        // docs/architecture/FREEMIUM_DUAL_BUILD_ARCHITECTURE.md's
-        // 2026-08-12 amendment for the extraction rationale and the
-        // component_extraction PRE-mode safety check performed first). The
-        // extraction was presentational-only — zero state/effects moved,
-        // only the JSX + prop-threading — SecurityHub.tsx's own geo state
-        // (geoEnabled, geoSettings, etc.) and its `geoEnabled`-driven
-        // "Geo-Lock Active" tab badge (used elsewhere in the same file) are
-        // completely unaffected.
-        // A THIRD entry from the same 2026-08-12 sweep: '../lib/
-        // logAdvisorGuideContent' is imported once, in src/components/
-        // SecurityHub.tsx. This is the actual root cause the owner's grep
-        // hit — a hardcoded manual-2FA-setup-guide text object PLUS the
-        // "Enable Geo-Lock" action-button label (the exact "Scan the QR
-        // code"/"backup recovery codes"/"Enable Geo-Lock" strings),
-        // completely INDEPENDENT of the real TwoFactorSettings.tsx /
-        // GeoLockdownCard.tsx components (already correctly aliased
-        // above). Both live in SecurityHub.tsx's Log Advisor action-button
-        // dispatcher (getLogActionButton, P4/P5 branches), reached only via
-        // the "Analyze Logs with AI" button, itself gated
-        // `isProEditionBuild && hasSecurity` and therefore unreachable in
-        // Free at runtime — but SecurityHub.tsx is the always-present main
-        // Security page in both editions, so the plain inline string/object
-        // literals were still compiled into the Free bundle regardless.
-        // (The dispatcher's other branches — WAF, login, spam, SQLi, XSS,
-        // debug/perms/hardening fixes, update links — are generic labels
-        // for otherwise-free features and were deliberately left inline.)
-        //
-        // Coordinator follow-up (2026-08-12, same sweep): SeoManager.tsx
-        // (2,877 lines) had the SAME violation shape at much larger scale —
-        // 13 isProEditionBuild-gated AI-SEO-generation call sites woven
-        // throughout a file that also carries the genuinely-free SEO
-        // Health Check / Sitemap / llms.txt features (so the whole file
-        // cannot be aliased away). Fixed via a full extraction — see
-        // docs/architecture/FREEMIUM_DUAL_BUILD_ARCHITECTURE.md's
-        // 2026-08-12 "SeoAiWorkbench extraction" addendum for the complete
-        // state/effects/handler boundary analysis. Two new entries:
-        // './organisms/Seo/SeoAiWorkbench' (imported once, in
-        // src/components/SeoManager.tsx) — the entire AI bulk-generate
-        // workbench (bulk buttons, items table, batch/queue banners,
-        // preview modal, client-batch modal), fully self-contained, zero
-        // props from SeoManager.tsx. './organisms/Seo/
-        // SeoCategoryQuickFixButton' (imported once, in the SAME file) —
-        // the one Pro-only control that lives INSIDE the always-free SEO
-        // Health Check modal (a per-category AI quick-fix button),
-        // deliberately extracted as its own small independently-aliased
-        // component rather than sharing SeoAiWorkbench's internal state,
-        // specifically so SeoManager.tsx never needs to import anything
-        // from the (Free-excluded) workbench module.
-        //
-        // WP.org B12a residual closure (2026-08-13, v2.9.33.17, owner
-        // follow-up after Package E): the last 2 OPEN B12a fingerprints —
-        // "Layer 2 Scan"/"Full AI Scan" labels+descriptions — lived as
-        // inline object-literal VALUES in scanConstants.ts, a module
-        // imported unconditionally by ScanCard.tsx (which also renders the
-        // legitimately-free "ai-audit"/"malware" cards), so the runtime
-        // isProEditionBuild gate at the deep-malware/full-ai call sites in
-        // SecurityHub.tsx never stopped the strings from compiling into the
-        // Free bundle. './scanConstants.pro' is the exact specifier written
-        // at its one importer, scanConstants.ts (same directory). The
-        // shared "ai-audit"/"malware" copy and the SCAN_TYPES/SCAN_TIER
-        // dispatch data stay in scanConstants.ts itself (unaliased, ships
-        // in both editions) — only the Pro-only label/description VALUES
-        // were extracted into this sibling module.
-        ...(EDITION === "free"
-          ? {
-              "../pages/AIContentPage": path.resolve(
-                __dirname,
-                "src/pages/AIContentPage.freeStub.tsx"
-              ),
-              "../pages/SyncPage": path.resolve(
-                __dirname,
-                "src/pages/SyncPage.freeStub.tsx"
-              ),
-              "../components/Sync/SyncManager": path.resolve(
-                __dirname,
-                "src/components/Sync/SyncManager.freeStub.tsx"
-              ),
-              "../components/organisms/Settings/LicenseManager": path.resolve(
-                __dirname,
-                "src/components/organisms/Settings/LicenseManager.freeStub.tsx"
-              ),
-              "../hooks/useTokenBalance": path.resolve(
-                __dirname,
-                "src/hooks/useTokenBalance.freeStub.ts"
-              ),
-              "../components/Migration/MigrationStation": path.resolve(
-                __dirname,
-                "src/components/Migration/MigrationStation.freeStub.tsx"
-              ),
-              "../components/organisms/Backups/CloudStoragePanel": path.resolve(
-                __dirname,
-                "src/components/organisms/Backups/CloudStoragePanel.freeStub.tsx"
-              ),
-              "../components/organisms/Settings/TwoFactorSettings":
-                path.resolve(
-                  __dirname,
-                  "src/components/organisms/Settings/TwoFactorSettings.freeStub.tsx"
-                ),
-              "./organisms/UpdateGuard/UpdateGuardCard": path.resolve(
-                __dirname,
-                "src/components/organisms/UpdateGuard/UpdateGuardCard.freeStub.tsx"
-              ),
-              "../components/organisms/Settings/ApiConfig": path.resolve(
-                __dirname,
-                "src/components/organisms/Settings/ApiConfig.freeStub.tsx"
-              ),
-              "./organisms/Security/GeoLockdownCard": path.resolve(
-                __dirname,
-                "src/components/organisms/Security/GeoLockdownCard.freeStub.tsx"
-              ),
-              "./organisms/Security/TwoFactorNudgeLink": path.resolve(
-                __dirname,
-                "src/components/organisms/Security/TwoFactorNudgeLink.freeStub.tsx"
-              ),
-              "../lib/logAdvisorGuideContent": path.resolve(
-                __dirname,
-                "src/lib/logAdvisorGuideContent.freeStub.ts"
-              ),
-              "./organisms/Seo/SeoAiWorkbench": path.resolve(
-                __dirname,
-                "src/components/organisms/Seo/SeoAiWorkbench.freeStub.tsx"
-              ),
-              "./organisms/Seo/SeoCategoryQuickFixButton": path.resolve(
-                __dirname,
-                "src/components/organisms/Seo/SeoCategoryQuickFixButton.freeStub.tsx"
-              ),
-              // ARS Round D (D-K-7, WP.org R4 F-07, 2026-08-2x): see
-              // SeoFixNonCompliantButton.tsx's own docblock.
-              "./organisms/Seo/SeoFixNonCompliantButton": path.resolve(
-                __dirname,
-                "src/components/organisms/Seo/SeoFixNonCompliantButton.freeStub.tsx"
-              ),
-              "./scanConstants.pro": path.resolve(
-                __dirname,
-                "src/components/organisms/Scan/scanConstants.pro.freeStub.ts"
-              ),
-              // Same target file, DIFFERENT literal specifier (hazard #1):
-              // SecurityHub.tsx imports DEEP_MALWARE_START_FAILURE_MESSAGE
-              // via "./organisms/Scan/scanConstants.pro" (its own relative
-              // path from plugin/src/components/), not the
-              // "./scanConstants.pro" specifier scanConstants.ts itself
-              // uses from one directory deeper — both need their own entry.
-              "./organisms/Scan/scanConstants.pro": path.resolve(
-                __dirname,
-                "src/components/organisms/Scan/scanConstants.pro.freeStub.ts"
-              ),
-              // WP.org R4 (owner ruling OD-3, 2026-08-22): deep-malware's AI
-              // grade badge + "AI: {status}" pill, extracted from
-              // ScanResultPanel.tsx's MalwareResultView so they can be
-              // aliased to no-ops in Free — see DeepScanAiResults.tsx's
-              // docblock. Only one importer, one specifier ("./DeepScanAiResults",
-              // written from within the Scan/ directory) — no hazard-#1
-              // duplicate needed.
-              "./DeepScanAiResults": path.resolve(
-                __dirname,
-                "src/components/organisms/Scan/DeepScanAiResults.freeStub.tsx"
-              ),
-              // WP.org B12a residual closure (2026-08-13, v2.9.33.17,
-              // controller-directed expansion): WpscanApiKeyField.tsx /
-              // PatchstackApiKeyField.tsx are rendered UNCONDITIONALLY at
-              // their one call site (SettingsPage.tsx) — gated only by an
-              // internal isProUser PROP (a Pro-tier capability check, not
-              // an edition check), so every Free install always rendered
-              // the real component's full descriptive copy, outbound
-              // links, and "Not available on this plan" notice. See each
-              // .freeStub.tsx's own docblock for the full writeup.
-              "../components/organisms/Settings/WpscanApiKeyField":
-                path.resolve(
-                  __dirname,
-                  "src/components/organisms/Settings/WpscanApiKeyField.freeStub.tsx"
-                ),
-              "../components/organisms/Settings/PatchstackApiKeyField":
-                path.resolve(
-                  __dirname,
-                  "src/components/organisms/Settings/PatchstackApiKeyField.freeStub.tsx"
-                ),
-              // Same sweep, same shape: BackupAutomationsPanel.tsx is
-              // rendered unconditionally (no isProEdition() gate) at its
-              // one call site (BackupsPage.tsx), internally gated only by
-              // a hasCloudFeature license-capability check that is always
-              // false in Free — see the freeStub's own docblock.
-              "../components/organisms/Backups/BackupAutomationsPanel":
-                path.resolve(
-                  __dirname,
-                  "src/components/organisms/Backups/BackupAutomationsPanel.freeStub.tsx"
-                ),
-              // WP.org string census closure (2026-08-13, v2.9.33.18):
-              // FREE_BUNDLE_STRING_CENSUS_2026-08-13.md found 18 out-of-zone
-              // Pro-descriptive strings still compiled into the Free bundle
-              // (SecurityHub.tsx, ScanResultPanel.tsx, HardeningOptionsGrid.tsx,
-              // ScanHistoryTable.tsx, OnPageDiagnostics.tsx, SettingsLayout.tsx)
-              // — same violation class as every entry above (shared files,
-              // runtime-only isProEdition()/isProEditionBuild/capability
-              // gates, no build-time branch elimination). Each entry below is
-              // the exact specifier written at its one importer; see each
-              // real/.freeStub module pair's own docblock for the specific
-              // strings and rationale.
-              "../lib/securityHubAiProCopy": path.resolve(
-                __dirname,
-                "src/lib/securityHubAiProCopy.freeStub.ts"
-              ),
-              "./organisms/Security/WafUpsellCard": path.resolve(
-                __dirname,
-                "src/components/organisms/Security/WafUpsellCard.freeStub.tsx"
-              ),
-              "./organisms/Security/AiLogAnalysisLockedCard": path.resolve(
-                __dirname,
-                "src/components/organisms/Security/AiLogAnalysisLockedCard.freeStub.tsx"
-              ),
-              "./scanResultProCopy": path.resolve(
-                __dirname,
-                "src/components/organisms/Scan/scanResultProCopy.freeStub.ts"
-              ),
-              "./EditionMismatchDownloadCta": path.resolve(
-                __dirname,
-                "src/components/organisms/Scan/EditionMismatchDownloadCta.freeStub.tsx"
-              ),
-              // ARS Round D (D-K-1, WP.org R4 F-01, 2026-08-2x): the 4
-              // AI bulk/per-file "locked" controls in ScanResultPanel.tsx
-              // (2 button components + the confirm modal they can open)
-              // are extracted so the whole control disappears from the
-              // Free build instead of merely relabeling it (superseding
-              // the 2026-08-13 "KEEP-BUT-RENAME" treatment of the same
-              // surface) — see each real module's own docblock. Each
-              // specifier below is the exact relative path written at its
-              // one importer, ScanResultPanel.tsx (same directory).
-              "./AiAnalyzeFileButton": path.resolve(
-                __dirname,
-                "src/components/organisms/Scan/AiAnalyzeFileButton.freeStub.tsx"
-              ),
-              "./BulkAiAnalyzeButton": path.resolve(
-                __dirname,
-                "src/components/organisms/Scan/BulkAiAnalyzeButton.freeStub.tsx"
-              ),
-              "./BulkAiConfirmModal": path.resolve(
-                __dirname,
-                "src/components/organisms/Scan/BulkAiConfirmModal.freeStub.tsx"
-              ),
-              "./hardeningProCopy": path.resolve(
-                __dirname,
-                "src/components/organisms/Security/hardeningProCopy.freeStub.ts"
-              ),
-              "./AdditionalPlanRequiredNotice": path.resolve(
-                __dirname,
-                "src/components/organisms/Security/AdditionalPlanRequiredNotice.freeStub.tsx"
-              ),
-              // Hazard #1 (same target file, DIFFERENT literal specifier):
-              // ScanHistoryTable.tsx (in components/organisms/Security/)
-              // imports the Scan-directory scanConstants.pro module via
-              // "../Scan/scanConstants.pro" — a third distinct specifier for
-              // the same physical file already covered by two other entries
-              // above ("./scanConstants.pro" and
-              // "./organisms/Scan/scanConstants.pro").
-              "../Scan/scanConstants.pro": path.resolve(
-                __dirname,
-                "src/components/organisms/Scan/scanConstants.pro.freeStub.ts"
-              ),
-              "./onPageProCopy": path.resolve(
-                __dirname,
-                "src/components/organisms/Seo/onPageProCopy.freeStub.ts"
-              ),
-              "./settingsApiTabLabel": path.resolve(
-                __dirname,
-                "src/components/organisms/Settings/settingsApiTabLabel.freeStub.ts"
-              ),
-              // ARS Round C P1-21 (F-41, 2026-08-23): three more locked-
-              // control-shaped surfaces the reviewer flagged in the compiled
-              // Free bundle — Backup page's migrate/sync tabs + "Locked"
-              // badge, Dashboard's "activate your license" empty-state
-              // copy, and the Settings "License" tab. Each specifier below
-              // is exactly what its one importer writes; see each real/
-              // .freeStub module pair's own docblock.
-              "./backupsPageProCopy": path.resolve(
-                __dirname,
-                "src/pages/backupsPageProCopy.freeStub.ts"
-              ),
-              "./dashboardProCopy": path.resolve(
-                __dirname,
-                "src/components/dashboardProCopy.freeStub.ts"
-              ),
-              "./settingsTabs": path.resolve(
-                __dirname,
-                "src/components/organisms/Settings/settingsTabs.freeStub.ts"
-              ),
-              // ARS Round D (D-K-3, WP.org R4 F-01/F-41, 2026-08-2x): see
-              // LicenseTierBadge.tsx's own docblock. Specifier as written
-              // at its one importer, DashboardLayout.tsx (same
-              // directory).
-              "./LicenseTierBadge": path.resolve(
-                __dirname,
-                "src/components/templates/LicenseTierBadge.freeStub.tsx"
-              ),
-              // ARS Round D (D-K-4 follow-up fix, lane-K verifier,
-              // 2026-08-24): see BetaFeaturesToggleRow.tsx's own
-              // docblock — the original D-K-4 pass deleted this control
-              // outright, which broke Pro (its ONLY UI writer for the
-              // actively-consumed `swisswpsuite_beta_features` option,
-              // which gates BackupsPage.tsx's Sync/Migration sections).
-              // Restored as an extracted, aliasable component instead of
-              // an inline runtime gate, so it still ships in Pro but is
-              // physically absent from Free (Sync/Migration are
-              // themselves Pro-only, so Free has nothing for this toggle
-              // to unlock). Specifier as written at its one importer,
-              // GeneralSettings.tsx (same directory).
-              "./BetaFeaturesToggleRow": path.resolve(
-                __dirname,
-                "src/components/organisms/Settings/BetaFeaturesToggleRow.freeStub.tsx"
-              ),
-              // ARS Round D delta (M1, SOCRATIC_AUDIT_ROUND_D.md MEDIUM-1,
-              // 2026-08-24): see BetaFeatureGate.tsx's own docblock —
-              // BackupsPage.tsx's inline BetaGate/BetaBanner compiled the
-              // literal "Beta Features" string into the Free bundle even
-              // though both only render when isProEditionBuild is true
-              // (Sync/Migration are Pro-only). Extracted + aliased so Free
-              // gets the null-rendering stub instead. Specifier as written
-              // at its one importer, BackupsPage.tsx
-              // ("../components/organisms/Backups/BetaFeatureGate" — note
-              // this key differs from the other entries in this block,
-              // which import from the same directory; BackupsPage.tsx is
-              // in src/pages/, one level up from src/components/).
-              "../components/organisms/Backups/BetaFeatureGate": path.resolve(
-                __dirname,
-                "src/components/organisms/Backups/BetaFeatureGate.freeStub.tsx"
-              ),
-            }
-          : {}),
+        "@": SRC_ROOT,
       },
     },
     // Vitest config (2026-08-15 fix). Previously there was no `test` block at
@@ -567,40 +256,65 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: "jsdom",
       exclude: [...configDefaults.exclude, "tests/e2e/**"],
+      // Suites under `src/` and `tests/` describe THIS tree's behaviour and
+      // run with no overlay configured. When an overlay IS configured the
+      // run switches to the overlay's own suites, which describe what the
+      // overlay contributes — running both sets against one resolution
+      // would ask the same assertion about two different component trees.
+      ...(OVERLAY_DIR
+        ? {
+            include: [
+              path.join(OVERLAY_DIR, "..", "**/*.{test,spec}.?(c|m)[jt]s?(x)"),
+            ],
+          }
+        : {}),
     },
     build: {
-      manifest: true, // Generate manifest.json for PHP to read
+      // Emit the build manifest that PHP reads to resolve hashed asset
+      // names. A string value is used as the file name relative to
+      // `outDir`, so this writes `assets/manifest.json`; the boolean form
+      // would write it into a dot-directory, and a WordPress plugin package
+      // may not contain hidden files or directories.
+      manifest: "manifest.json",
       outDir: "assets", // Output to the 'assets' folder in the root
       emptyOutDir: true, // Clean the folder before build
+      // This build emits exactly one JS file and one CSS file, both named
+      // in assets/manifest.json, so class-swisswpsuite-admin.php's single
+      // wp_enqueue_script()/wp_enqueue_style() pair is the only script and
+      // the only stylesheet this plugin ever loads — no runtime loader
+      // exists alongside it. `modulePreload: false` disables Vite's
+      // modulepreload polyfill/`<link rel="modulepreload">` injection,
+      // which has no chunk to preload once `inlineDynamicImports` (below)
+      // removes route-level code-splitting.
+      //
+      // `cssCodeSplit` is deliberately left at its Vite default (true), NOT
+      // set to false: this codebase imports exactly one global stylesheet
+      // (Tailwind, in `src/main.tsx`), so a single CSS asset is what Vite
+      // emits either way — but `cssCodeSplit: false` changes the MANIFEST
+      // SHAPE, moving the stylesheet out of `index.html.css[0]` into a
+      // separate top-level `"style.css"` manifest entry (verified by
+      // building both ways: with `false` the css array under `index.html`
+      // disappears entirely). class-swisswpsuite-admin.php reads the
+      // stylesheet at exactly `$manifest['index.html']['css'][0]`
+      // (register_styles()) — breaking that shape would 404 every
+      // admin-page stylesheet. Leaving `cssCodeSplit` at its default keeps
+      // both the shape and the single-file outcome.
+      modulePreload: false,
       rollupOptions: {
         input: {
           app: "index.html",
         },
         output: {
           entryFileNames: "entry-[name]-[hash].js",
-          chunkFileNames: "chunks/[name]-[hash].js",
           assetFileNames: "assets/[name]-[hash][extname]",
-          manualChunks: {
-            // "react"/"react-dom" removed 2026-08-12: the resolve.alias
-            // block above redirects both specifiers to local
-            // src/vendor-shims/*.ts proxy modules before Rollup ever sees
-            // an npm-package import, so these two chunk-matcher strings
-            // (which match by node_modules package path) would never match
-            // anything again — the tiny shim files simply live wherever
-            // their importers pull them in.
-            vendor: [
-              "react-router-dom",
-              "@tanstack/react-query",
-              "zustand",
-              "recharts",
-              "lucide-react",
-              "@radix-ui/react-slot",
-              "class-variance-authority",
-              "clsx",
-              "tailwind-merge",
-              "sonner",
-            ],
-          },
+          // `inlineDynamicImports: true` folds every dynamically-imported
+          // route module into the single entry file at build time, so the
+          // output carries no runtime chunk-dependency map and fetches no
+          // separate JS file at all. This option is mutually exclusive with
+          // Rollup's `manualChunks` (there is nothing left to place into a
+          // separate chunk once everything is inlined into one file), and
+          // `chunkFileNames` has no output to apply to for the same reason.
+          inlineDynamicImports: true,
         },
       },
     },

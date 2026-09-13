@@ -31,7 +31,7 @@
  *
  * Scope-narrowing mocks (both unrelated to hardening, both would otherwise
  * require infrastructure this test has no reason to set up):
- *   - "sonner" — avoid toast portal/DOM plumbing.
+ *   - the local toast module ("../lib/toast") — avoid toast rendering/DOM plumbing.
  *   - FeaturePointer — SecurityHub renders
  *     `{!isProEditionBuild && <FeaturePointer variant="edition" />}` in the
  *     default "dashboard" tab (mounted first, before this test switches to
@@ -53,7 +53,7 @@ import {
   vi,
 } from "vitest";
 
-vi.mock("sonner", () => ({
+vi.mock("../lib/toast", () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -62,8 +62,13 @@ vi.mock("sonner", () => ({
   },
 }));
 
-vi.mock("./organisms/Upsell/FeaturePointer", () => ({
-  FeaturePointer: () => null,
+// Renders a react-router <Link>; these suites mount SecurityHub outside a
+// Router, so the real component cannot be used here.
+vi.mock("./organisms/Security/TwoFactorNudgeLink", () => ({
+  TwoFactorNudgeLink: () => null,
+}));
+vi.mock("./organisms/Security/WafUpsellCard", () => ({
+  WafUpsellCard: () => null,
 }));
 
 vi.mock("../services/api", () => ({
@@ -99,12 +104,10 @@ beforeAll(async () => {
   window.ReactDOM = { ...RealReactDOM, ...RealReactDOMClient };
 
   ({ default: SecurityHub } = await import("./SecurityHub"));
-  ({ render, screen, cleanup, fireEvent, waitFor } = await import(
-    "@testing-library/react"
-  ));
-  ({ QueryClient, QueryClientProvider } = await import(
-    "@tanstack/react-query"
-  ));
+  ({ render, screen, cleanup, fireEvent, waitFor } =
+    await import("@testing-library/react"));
+  ({ QueryClient, QueryClientProvider } =
+    await import("@tanstack/react-query"));
   ({ wpApi } = await import("../services/api"));
   React = await import("react");
 });
@@ -177,10 +180,7 @@ function setupWpApiMock() {
         });
       }
       if (url === "/security/logs") return Promise.resolve([]);
-      if (url === "/security/sentinel/status")
-        return Promise.resolve({ has_audit: false });
-      if (url === "/security/banned-ips")
-        return Promise.resolve({ ips: [] });
+      if (url === "/security/banned-ips") return Promise.resolve({ ips: [] });
       if (url === "/security/sentinel/latest-scan")
         return Promise.resolve({ success: false, record: null });
       if (url === "/security/environment")
@@ -284,7 +284,9 @@ describe("SecurityHub — live toggleHardening() race fix (A-1, ARS Round C Phas
     // not two identical "enable" calls.
     const bodies = (wpApi as unknown as ReturnType<typeof vi.fn>).mock.calls
       .filter(([url]: [string]) => url === "/hardening/toggle")
-      .map(([, opts]: [string, RequestInit]) => JSON.parse(opts.body as string));
+      .map(([, opts]: [string, RequestInit]) =>
+        JSON.parse(opts.body as string)
+      );
     expect(bodies).toEqual([
       { option: OPTION_KEY, enable: true },
       { option: OPTION_KEY, enable: false },

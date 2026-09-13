@@ -13,31 +13,12 @@
  * truth during the TD-1 incremental refactor. Once SecurityHub.tsx itself
  * migrates fully to the new stores (follow-up task), the props can be
  * removed and the organism can read from useSecurityStateStore directly.
- *
- * WP.org round-3 remediation (Sprint W2/T7, 2026-07-26): IP allowlist
- * add/remove and ban/unban were gated on `hasSecurity` (the Security-plan
- * capability) with a disabled input, an upgrade-prompt onClick swap, a Lock
- * icon, and a "Requires Pro" tooltip — trialware, since Sprint W1 already
- * de-gated these PHP endpoints (pure local wp_options writes, free for
- * everyone). That gating is REMOVED below; `hasSecurity` is gone from this
- * file entirely as a result.
- *
- * WP.org round-3 remediation (follow-up, 2026-07-27): the Quarantined Files
- * restore/delete sub-component had the SAME trialware bug — gated on
- * `hasSentinelPro` (any paid plan) with a disabled button, an
- * upgrade-prompt onClick swap, and a "Requires Pro" tooltip. This was based
- * on a mistaken assumption that quarantine restore/delete was Pro-only; in
- * fact `SwissWPSuite_License::get_free_capabilities()` has always listed
- * `quarantine` (move/restore/delete) as a FREE tier capability, and both
- * REST routes (`/security/quarantine/restore`, `/security/quarantine/delete`)
- * register with the general `check_permission` callback, never a Pro-gated
- * one. That false lock is REMOVED below too; `hasSentinelPro` and
- * `onUpgradePrompt` are gone from this file entirely as a result.
  */
 import React, { useEffect } from "react";
-import { ExternalLink, EyeOff } from "lucide-react";
+import { EyeOff } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Badge } from "../../ui/Badge";
+import { blockedIpExtraLinks } from "./blockedIpExtraLinks";
 
 export interface QuarantineFile {
   id: string;
@@ -55,15 +36,6 @@ export interface QuarantineTabProps {
   manualAllowedIp: string;
   quarantinedFiles: QuarantineFile[];
   ignoredPaths: string[];
-
-  // ── Capability flags ─────────────────────────────────────────────────────
-  // hasSecurity (Security-plan capability) was removed here — Sprint W2/T7,
-  // 2026-07-26 — since IP allowlist/ban/unban are free/functional in every
-  // edition now. hasSentinelPro (any paid plan) was removed here too —
-  // follow-up, 2026-07-27 — quarantine restore/delete is also a free
-  // capability (`SwissWPSuite_License::get_free_capabilities()`); the
-  // Quarantined Files restore/delete sub-component below is unconditionally
-  // enabled now.
 
   // ── Setters (form input round-trip) ──────────────────────────────────────
   onChangeManualIp: (s: string) => void;
@@ -340,24 +312,16 @@ const BlockedIpsTable: React.FC<BlockedIpsTableProps> = ({
             </tr>
           ) : (
             bannedIps.map((ip) => {
-              const banType = bannedIpTypes[ip] || "auto";
               return (
                 <tr key={ip} className="hover:bg-background/50 transition-all">
                   <td className="text-swiss-navy px-6 py-4 text-sm font-black">
                     {ip}
-                    <Badge
-                      className={`ml-3 text-xs font-black tracking-widest uppercase ${banType === "manual" ? "border-blue-200 bg-blue-50 text-blue-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}
-                    >
-                      {banType === "manual" ? "Manual" : "Auto"}
+                    <Badge className="ml-3 border-amber-200 bg-amber-50 text-xs font-black tracking-widest text-amber-700 uppercase">
+                      Auto
                     </Badge>
-                    <a
-                      href={`https://who.is/whois/${ip}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-swiss-navy ml-4 inline-flex items-center gap-1 text-neutral-700 transition-colors"
-                    >
-                      <ExternalLink size={10} /> Whois
-                    </a>
+                    {blockedIpExtraLinks.map((ExtraLink, i) => (
+                      <ExtraLink key={i} ip={ip} />
+                    ))}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <Button

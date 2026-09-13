@@ -25,7 +25,7 @@
  */
 import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "../lib/toast";
 import { wpApi } from "../services/api";
 import { useSecurityStateStore } from "../store/useSecurityStateStore";
 import { useUiStore } from "../store/useUiStore";
@@ -80,16 +80,12 @@ export function useQuarantine(): UseQuarantineReturn {
   const setAllowedIps = useSecurityStateStore((s) => s.setAllowedIps);
   const setCurrentIp = useSecurityStateStore((s) => s.setCurrentIp);
   const setManualIp = useSecurityStateStore((s) => s.setManualIp);
-  const setManualAllowedIp = useSecurityStateStore(
-    (s) => s.setManualAllowedIp
-  );
+  const setManualAllowedIp = useSecurityStateStore((s) => s.setManualAllowedIp);
   const setQuarantinedFiles = useSecurityStateStore(
     (s) => s.setQuarantinedFiles
   );
   const setIgnoredPaths = useSecurityStateStore((s) => s.setIgnoredPaths);
-  const setIgnoredFindings = useSecurityStateStore(
-    (s) => s.setIgnoredFindings
-  );
+  const setIgnoredFindings = useSecurityStateStore((s) => s.setIgnoredFindings);
 
   // ── Refresh handlers ──────────────────────────────────────────────────────
   const refreshBannedIps = useCallback(async () => {
@@ -102,12 +98,7 @@ export function useQuarantine(): UseQuarantineReturn {
     } catch (e) {
       console.error("Failed to fetch banned IPs:", e);
     }
-  }, [
-    setBannedIps,
-    setBannedIpTypes,
-    setAllowedIps,
-    setCurrentIp,
-  ]);
+  }, [setBannedIps, setBannedIpTypes, setAllowedIps, setCurrentIp]);
 
   const refreshQuarantine = useCallback(async () => {
     try {
@@ -282,10 +273,10 @@ export function useQuarantine(): UseQuarantineReturn {
         message: "Permanently delete this file? This cannot be undone.",
         onConfirm: async () => {
           try {
-            await wpApi<{ success: boolean }>(
-              "/security/quarantine/delete",
-              { method: "POST", body: JSON.stringify({ id }) }
-            );
+            await wpApi<{ success: boolean }>("/security/quarantine/delete", {
+              method: "POST",
+              body: JSON.stringify({ id }),
+            });
             await refreshQuarantine();
             toast.success("File permanently deleted.");
           } catch (e) {
