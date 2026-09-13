@@ -39,25 +39,12 @@ export interface SecurityDataReviewActions {
 
 /** Page state a section that reviews security data reads. */
 export interface SecurityDataReviewProps {
-  /** Which of the page's detail reports should be on screen. */
-  reportOpen: { logs: boolean; firewall: boolean };
-  /** Ask the page to open one of its detail reports. */
-  onOpenReport: (report: "logs" | "firewall") => void;
-  /** Ask the page to close one of its detail reports. */
-  onCloseReport: (report: "logs" | "firewall") => void;
-  /**
-   * File the scan result panel asked to have inspected. `requestedAt`
-   * changes on every request so the same file can be requested twice.
-   */
-  inspectRequest: { file: string; requestedAt: number } | null;
   /** IP addresses already on the ban list. */
   bannedIps: string[];
   /** Increments whenever a ban lands, so an open report can refresh itself. */
   banRevision: number;
   /** True while a scan that owns file findings is still running. */
   scanInFlight: boolean;
-  /** The most recent scan response envelope, or null before the first scan. */
-  lastScanResponse: unknown;
   /** Actions the section delegates back to the page. */
   actions: SecurityDataReviewActions;
 }

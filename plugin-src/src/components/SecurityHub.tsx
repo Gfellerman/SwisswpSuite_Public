@@ -93,150 +93,6 @@ const calculatePercent = (value: number, total: number): number => {
   return Math.min(100, Math.round((value / total) * 100));
 };
 
-/**
- * v2.9.30.x — Persistent "Mark Safe" management sheet.
- *
- * Renders a modal listing every finding id the user has marked safe. The id
- * alone is not human-readable ("auto-a1b2c3d4e5f6", "m4-001"), so we resolve
- * each id against the current AI Audit findings to display a friendly title
- * when possible. Ids without a match (e.g. items safelisted on a previous
- * scan whose underlying condition has since been remediated) render as the
- * raw id — still removable, but labeled "Previously dismissed finding" so the
- * user knows what they're looking at.
- *
- * The sheet uses the same modal pattern as ScanReportPreviewModal: role=dialog
- * + aria-modal, Escape closes, backdrop click closes. Focus management is
- * lightweight (focus the close button on mount) because the action list is
- * short and the existing pattern's focus trap is not strictly required.
- */
-interface SentinelSafelistSheetProps {
-  findingIds: string[];
-  currentScanFindings: SecurityAuditResult["findings"];
-  onClose: () => void;
-  onRemove: (findingId: string) => Promise<void> | void;
-}
-
-const SentinelSafelistSheet: React.FC<SentinelSafelistSheetProps> = ({
-  findingIds,
-  currentScanFindings,
-  onClose,
-  onRemove,
-}) => {
-  const closeBtnRef = React.useRef<HTMLButtonElement | null>(null);
-  const [removingId, setRemovingId] = useState<string | null>(null);
-
-  // Resolve id -> title from the current scan if available. The current scan
-  // already had safelisted entries filtered out, so the typical hit-rate is
-  // low — we still try because users often "Manage" right after marking, in
-  // which case the most-recent finding can match.
-  const titleById = useMemo(() => {
-    const map: Record<string, { title: string; severity: string }> = {};
-    for (const f of currentScanFindings) {
-      map[f.id] = { title: f.title, severity: f.severity };
-    }
-    return map;
-  }, [currentScanFindings]);
-
-  useEffect(() => {
-    closeBtnRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="safelist-sheet-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="flex max-h-[80vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl">
-        <div className="border-border flex items-center justify-between border-b p-4">
-          <h2
-            id="safelist-sheet-title"
-            className="text-swiss-navy flex items-center gap-2 text-sm font-black"
-          >
-            <ShieldOff size={14} aria-hidden="true" />
-            Safelist — items you marked safe
-          </h2>
-          <button
-            ref={closeBtnRef}
-            type="button"
-            onClick={onClose}
-            aria-label="Close safelist manager"
-            className="hover:bg-secondary focus-visible:ring-swiss-navy rounded-full p-1 focus-visible:ring-2 focus-visible:outline-none"
-          >
-            <X size={16} aria-hidden="true" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">
-          {findingIds.length === 0 ? (
-            <p className="text-xs font-medium text-neutral-500">
-              You haven&rsquo;t marked any findings safe yet. When you do, they
-              appear here so you can undo if needed.
-            </p>
-          ) : (
-            <ul role="list" className="space-y-2">
-              {findingIds.map((id) => {
-                const meta = titleById[id];
-                const label = meta?.title ?? "Previously dismissed finding";
-                const isRemoving = removingId === id;
-                return (
-                  <li
-                    key={id}
-                    className="bg-secondary border-border flex items-center justify-between gap-2 rounded-xl border p-2.5"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-black text-neutral-800">
-                        {label}
-                      </p>
-                      <p className="truncate text-[10px] font-medium text-neutral-500">
-                        {id}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={isRemoving}
-                      aria-busy={isRemoving}
-                      aria-label={`Remove "${label}" from safelist — future scans will re-check this item`}
-                      onClick={async () => {
-                        setRemovingId(id);
-                        try {
-                          await onRemove(id);
-                        } finally {
-                          setRemovingId(null);
-                        }
-                      }}
-                      className="border-border text-swiss-navy hover:bg-muted focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full border bg-white px-2.5 py-1 text-[10px] font-black tracking-[0.08em] uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isRemoving ? (
-                        <Loader
-                          size={10}
-                          className="animate-spin"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <RotateCcw size={10} aria-hidden="true" />
-                      )}
-                      Undo
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const SecurityHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
     | "dashboard"
@@ -318,11 +174,6 @@ const SecurityHub: React.FC = () => {
     []
   );
   const [ignoredPaths, setIgnoredPaths] = useState<string[]>([]);
-  // v2.9.30.x — id-based safelist (parallel to ignoredPaths). Returned by the
-  // same GET /security/ignore endpoint as `ignored_findings`. Drives the
-  // "Manage safelist" sheet rendered from the scan result panel.
-  const [ignoredFindings, setIgnoredFindings] = useState<string[]>([]);
-  const [safelistSheetOpen, setSafelistSheetOpen] = useState(false);
   const [bannedIps, setBannedIps] = useState<string[]>([]);
   // v2.9.30.84: parallel map from IP -> ban source ('auto' | 'manual') for the
   // Blocked IPs UI badge. Kept separate from bannedIps so all existing
@@ -337,22 +188,8 @@ const SecurityHub: React.FC = () => {
   const [allowedIps, setAllowedIps] = useState<string[]>([]);
   const [currentIp, setCurrentIp] = useState("");
   const [manualAllowedIp, setManualAllowedIp] = useState("");
-  // v2.9.28.43: migrated to useScanStore (scan-related state consolidation)
-  const analyzingFile = useScanStore((s) => s.analyzingFile);
-
-  // Which analysis dialog, if any, is on screen.
-  const [showLogAdvisor, setShowLogAdvisor] = useState(false);
-  const [showFirewallAdvisor, setShowFirewallAdvisor] = useState(false);
-  // File the result panel asked to have analysed; the stamp changes on every
-  // request so the same file can be requested twice in a row.
-  const [analyzeRequest, setAnalyzeRequest] = useState<{
-    file: string;
-    requestedAt: number;
-  } | null>(null);
   // Bumped on every successful ban so an open report can refresh itself.
   const [banRevision, setBanRevision] = useState(0);
-  // Most recent scan response envelope, handed to the analysis section.
-  const [lastScanResponse, setLastScanResponse] = useState<unknown>(null);
 
   // B.6/DASH-2 (VALIDATOR_DASH.md, v2.9.33.49): WAF self-test tile state.
   // wafSelfTest is populated from GET /security/status's additive
@@ -1261,46 +1098,10 @@ const SecurityHub: React.FC = () => {
 
   const fetchIgnored = async () => {
     try {
-      const data = await wpApi<{
-        ignored: string[];
-        ignored_findings?: string[];
-      }>("/security/ignore");
+      const data = await wpApi<{ ignored: string[] }>("/security/ignore");
       setIgnoredPaths(data.ignored || []);
-      setIgnoredFindings(
-        Array.isArray(data.ignored_findings) ? data.ignored_findings : []
-      );
     } catch (e) {
       console.error(e);
-    }
-  };
-
-  /**
-   * v2.9.30.x — Remove a finding id from the persistent safelist.
-   * Used by the "Manage safelist" sheet's Undo button.
-   */
-  const handleRemoveSafelistFinding = async (findingId: string) => {
-    if (!findingId) return;
-    try {
-      const res = await wpApi<{ success: boolean; message?: string }>(
-        "/security/ignore/remove",
-        {
-          method: "POST",
-          body: JSON.stringify({ finding_id: findingId }),
-        }
-      );
-      if (!res.success) {
-        toast.error(res.message || "Failed to remove from safelist.");
-        return;
-      }
-      setIgnoredFindings((prev) => prev.filter((id) => id !== findingId));
-      // The next scan will re-emit the finding — the user must re-scan to
-      // see it return, which is the expected and least-surprising behavior.
-      toast.success(
-        "Removed from safelist. Next scan will re-check this item."
-      );
-    } catch (e) {
-      console.error("Failed to remove safelist finding", e);
-      toast.error("Network error removing safelist entry.");
     }
   };
 
@@ -2806,10 +2607,6 @@ const SecurityHub: React.FC = () => {
             onViewHistory={handleViewScanInHistory}
             onMarkSafe={handleMarkMalwareSafe}
             onBulkAction={handleScanPanelBulkAction}
-            onAnalyze={(file) =>
-              setAnalyzeRequest({ file, requestedAt: Date.now() })
-            }
-            analyzingFile={analyzingFile}
           />
 
           <ScanReportSettingsPanel
@@ -2900,22 +2697,9 @@ const SecurityHub: React.FC = () => {
       {securityDataReviewSections.map((Section, i) => (
         <Section
           key={i}
-          reportOpen={{ logs: showLogAdvisor, firewall: showFirewallAdvisor }}
-          onOpenReport={(report) =>
-            report === "logs"
-              ? setShowLogAdvisor(true)
-              : setShowFirewallAdvisor(true)
-          }
-          onCloseReport={(report) =>
-            report === "logs"
-              ? setShowLogAdvisor(false)
-              : setShowFirewallAdvisor(false)
-          }
-          inspectRequest={analyzeRequest}
           bannedIps={bannedIps}
           banRevision={banRevision}
           scanInFlight={deepScanStatus?.status === "running"}
-          lastScanResponse={lastScanResponse}
           actions={reviewActions}
         />
       ))}

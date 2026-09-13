@@ -1,7 +1,7 @@
 === SwissSuite AI ===
 Contributors: gfellerman
 Tags: security, malware scanner, firewall, backup, login security
-Requires at least: 6.2
+Requires at least: 6.3
 Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 2.9.33.58
@@ -52,7 +52,7 @@ SwissSuite AI Pro, available at https://swisswpsecure.com/products/, adds more f
 
 No phone-home, telemetry, or account is required to use this plugin - nothing to activate, nothing to log into. Scanning, backup, and SEO run locally - no AI calls. Only WordPress.org is contacted by default: update checks, checksum verification, and a daily abandoned-plugin check (see External Services). The optional, off-by-default Dashboard Traffic Counter stores no IPs/cookies and sends nothing off-server. Security alerts and the daily report stay off until enabled. Auto-updates are controlled entirely by WordPress core's own per-plugin toggle - this plugin does not add, override, or otherwise interfere with that setting. Failed-login IPs/usernames are logged locally, retained for 90 days after the 15-minute lockout expires. An optional SMTP relay (off until configured; you supply the server address of your own mail provider, whose password is stored in your database) can route site email. Deleting the plugin removes its settings, tables, quarantined files, backups, and all data under wp-content/uploads/ (swisswpsuite-backups, -quarantine, -snapshots, -exports-temp, -temp, swisssuite-ai) - download first.
 
-Some security actions modify files outside the plugin folder. One-click hardening options write rule blocks into the site-root .htaccess and the uploads folder's .htaccess (removed again on deactivation). The maintenance tool can permanently delete post revisions, trashed content, spam comments, and stale auto-drafts after a single confirmation, and, after a preview run and a second explicit confirmation, drop database tables it identifies as orphaned by uninstalled plugins. If LiteSpeed Cache, WP Rocket, W3 Total Cache or Autoptimize is active, the plugin asks it to leave the plugin's own admin scripts and styles out of minification, and the Maintenance screen's cache purge (also run after a restore) asks it to purge its page cache - local plugin calls, no network. Settings -> Diagnostics offers Self-Check (local checks, also shown in Site Health), a redacted diagnostics file you download yourself, and a test e-mail; nothing is sent automatically. On WordPress 6.9+ the plugin registers two administrator-only abilities with the WordPress Abilities API (Get Server Health, Scan for Malware).
+Some security actions modify files outside the plugin folder. One-click hardening options write rule blocks into the site-root .htaccess and the uploads folder's .htaccess (removed again on deactivation). The maintenance tool can permanently delete post revisions, trashed content, spam comments, and stale auto-drafts after a single confirmation, and, after a preview run and a second explicit confirmation, drop database tables it identifies as orphaned by uninstalled plugins. If LiteSpeed Cache, WP Rocket or Autoptimize is active, the plugin asks it to leave the plugin's own admin scripts and styles out of minification; the Maintenance screen's cache purge (also run after a restore) asks whichever supported cache plugin is active to purge its page cache - local plugin calls, no network. Settings -> Diagnostics offers Self-Check (local checks, also shown in Site Health), a redacted diagnostics file you download yourself, and a test e-mail; nothing is sent automatically. On WordPress 6.9+ the plugin registers two administrator-only abilities with the WordPress Abilities API (Get Server Health, Scan for Malware).
 
 == Source Code ==
 
@@ -79,6 +79,7 @@ For full details on what data is transmitted and your rights, see our Privacy Po
 == Changelog ==
 
 = 2.9.33.58 =
+* Changed: Requires WordPress 6.3 or newer.
 * Fixed: The deep malware scan now scans the files it enumerated (a scan could complete having examined nothing).
 * Changed: The deep scan's status response lists the phases it performs (file enumeration, local signature scan).
 * Changed: "Hide WordPress Fingerprints" removes only the WordPress version (generator tag, asset URLs); other plugins' assets are untouched.

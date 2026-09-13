@@ -13,6 +13,7 @@ WordPress.org resubmission release.
 - Settings and Self-Check readouts (last scan time, login lockout state, scan report preview) now read the values the plugin actually stores; readme wording matches the 15-minute lockout and the 90-day log retention.
 
 ### Changed
+- Minimum supported WordPress version is now 6.3 (the JSON-LD output relies on the inline-script id WordPress prints since 6.3).
 - The deep scan's status response lists only the phases this package performs (file enumeration, then a local signature scan).
 - "Hide WordPress Fingerprints" limits itself to the WordPress version: it removes it from the generator tag and from asset URLs that carry it, and leaves other plugins' asset version strings and page output untouched.
 - Scan history records now use the internal type name `security_audit`; existing records are relabelled automatically the first time this update runs, no action needed.

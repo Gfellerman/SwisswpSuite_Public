@@ -102,14 +102,6 @@ interface MalwareResultViewProps {
     action: "ignore" | "quarantine" | "delete",
     pathList: string[]
   ) => Promise<void> | void;
-  /**
-   * v2.9.28.14 — Per-threat "Analyze with AI" handler (regression restore from v2.9.27.94).
-   * When provided, each actionable threat row renders an "Analyze" button that
-   * invokes onAnalyze(threat.file). Parent owns the analysis request + dialog.
-   */
-  onAnalyze?: (filepath: string, options?: { bulk?: boolean }) => void;
-  /** v2.9.28.14 — File path currently being analyzed (drives per-row spinner). */
-  analyzingFile?: string | null;
 }
 
 const MalwareResultView: React.FC<MalwareResultViewProps> = ({
@@ -117,8 +109,6 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
   onViewHistory,
   onMarkSafe,
   onBulkAction,
-  onAnalyze,
-  analyzingFile,
 }) => {
   const hasThreats = (result.threats_found ?? 0) > 0;
   const resultRecord = result as unknown as Record<string, unknown>;
@@ -360,15 +350,13 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                   >
                     Delete {selected.size}
                   </button>
-                  {onAnalyze &&
-                    scanSelectionActions.map((Action, i) => (
-                      <Action
-                        key={i}
-                        selected={[...selected]}
-                        onInspect={onAnalyze}
-                        onClearSelection={() => setSelected(new Set())}
-                      />
-                    ))}
+                  {scanSelectionActions.map((Action, i) => (
+                    <Action
+                      key={i}
+                      selected={[...selected]}
+                      onClearSelection={() => setSelected(new Set())}
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -449,15 +437,9 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                       {isPending ? "Marking…" : "Mark Safe"}
                     </button>
                   )}
-                  {onAnalyze &&
-                    scanFindingActions.map((Action, i) => (
-                      <Action
-                        key={i}
-                        file={threat.file}
-                        isInspecting={analyzingFile === threat.file}
-                        onInspect={onAnalyze}
-                      />
-                    ))}
+                  {scanFindingActions.map((Action, i) => (
+                    <Action key={i} file={threat.file} />
+                  ))}
                 </li>
               );
             })}
@@ -618,15 +600,13 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                         >
                           Delete {selectedLow.size}
                         </button>
-                        {onAnalyze &&
-                          scanSelectionActions.map((Action, i) => (
-                            <Action
-                              key={i}
-                              selected={[...selectedLow]}
-                              onInspect={onAnalyze}
-                              onClearSelection={() => setSelectedLow(new Set())}
-                            />
-                          ))}
+                        {scanSelectionActions.map((Action, i) => (
+                          <Action
+                            key={i}
+                            selected={[...selectedLow]}
+                            onClearSelection={() => setSelectedLow(new Set())}
+                          />
+                        ))}
                       </div>
                     )}
                   </div>
@@ -740,13 +720,6 @@ interface ScanResultPanelProps {
     action: "ignore" | "quarantine" | "delete",
     fileList: string[]
   ) => Promise<void> | void;
-  /**
-   * Hand one file to the page for inspection. Wired to whichever control a
-   * finding row or a selection offers.
-   */
-  onAnalyze?: (filepath: string, options?: { bulk?: boolean }) => void;
-  /** File path currently being inspected (drives the per-row spinner). */
-  analyzingFile?: string | null;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -757,8 +730,6 @@ export const ScanResultPanel: React.FC<ScanResultPanelProps> = ({
   onViewHistory,
   onMarkSafe,
   onBulkAction,
-  onAnalyze,
-  analyzingFile,
 }) => {
   if (isLoading) {
     return <LoadingBar />;
@@ -774,8 +745,6 @@ export const ScanResultPanel: React.FC<ScanResultPanelProps> = ({
       onViewHistory={onViewHistory}
       onMarkSafe={onMarkSafe}
       onBulkAction={onBulkAction}
-      onAnalyze={onAnalyze}
-      analyzingFile={analyzingFile}
     />
   );
 };

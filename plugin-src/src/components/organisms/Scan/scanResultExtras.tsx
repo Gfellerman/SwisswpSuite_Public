@@ -72,8 +72,6 @@ export interface ScanSelectionActionProps {
   selected: string[];
   /** Every finding in the result, so a selection can be looked up. */
   findings?: SelectableFinding[];
-  /** Hand one file to the page for inspection. */
-  onInspect: (file: string, options?: { bulk?: boolean }) => void;
   /** Clear the current selection. */
   onClearSelection: () => void;
   /** Note the findings that have no source file to inspect. */
@@ -87,10 +85,6 @@ export const scanSelectionActions: React.FC<ScanSelectionActionProps>[] = [];
 export interface ScanFindingActionProps {
   /** The file the finding is about. */
   file: string;
-  /** True while this file is being inspected. */
-  isInspecting: boolean;
-  /** Hand the file to the page for inspection. */
-  onInspect: (file: string) => void;
 }
 
 /** Controls offered on a single finding row, in render order. */

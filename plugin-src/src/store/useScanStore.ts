@@ -52,9 +52,6 @@ export interface ScanState {
    */
   malwareResult: MalwareScanResult | null;
 
-  // ── Per-file AI-analyze-in-flight marker (one file at a time) ────────────
-  analyzingFile: string | null;
-
   // ── Report scheduling config (schedule, frequency, last scan stamp) ─────
   scanReportConfig: ScanReportConfig | null;
 
@@ -75,7 +72,6 @@ export interface ScanState {
   deepMalwareResult: MalwareScanResult | null;
 
   // ── Setters (named to match the useState names they replace) ─────────────
-  setAnalyzingFile: (value: string | null) => void;
   setScanReportConfig: (value: ScanReportConfig | null) => void;
   setHistoricalScanDetail: (value: ScanHistoryDetail | null) => void;
 
@@ -105,7 +101,6 @@ export interface ScanState {
 const initialState: Pick<
   ScanState,
   | "malwareResult"
-  | "analyzingFile"
   | "scanReportConfig"
   | "historicalScanDetail"
   | "deepMalwareJobId"
@@ -114,7 +109,6 @@ const initialState: Pick<
   | "deepMalwareResult"
 > = {
   malwareResult: null,
-  analyzingFile: null,
   scanReportConfig: null,
   historicalScanDetail: null,
   deepMalwareJobId: null,
@@ -126,7 +120,6 @@ const initialState: Pick<
 export const useScanStore = create<ScanState>((set) => ({
   ...initialState,
 
-  setAnalyzingFile: (value) => set({ analyzingFile: value }),
   setScanReportConfig: (value) => set({ scanReportConfig: value }),
   setHistoricalScanDetail: (value) => set({ historicalScanDetail: value }),
 
