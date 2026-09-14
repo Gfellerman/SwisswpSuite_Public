@@ -1,6 +1,6 @@
 /**
- * WP.org R14 remediation, Lane E2 (v2.9.33.54) — source-content regression
- * lock for ScanCard.tsx.
+ * Source-content regression lock for ScanCard.tsx, added after a
+ * WordPress.org reviewer flagged a wording inaccuracy.
  *
  * Why a source-content assertion instead of a render test: TierBadge (the
  * component that used to render "NO LICENSE") is an unexported, internal
@@ -15,7 +15,7 @@
  * compiled-but-unreachable string, matching this project's own
  * FREE_BUNDLE_STRING_CENSUS methodology.
  *
- * Fail-first (CLAUDE.md §0.5 rule 1): run against the pre-fix file (which
+ * Fail-first: run against the pre-fix file (which
  * declared `labels: Record<typeof tier, string> = { pro: "PRO", free:
  * "FREE", none: "NO LICENSE" }`) — this test fails. After removing the
  * "none"/"NO LICENSE" case, it passes.

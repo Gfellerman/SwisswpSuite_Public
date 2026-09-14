@@ -2,12 +2,21 @@
  * Tree-wide source assertion: nothing under `src/` tells a user that a
  * feature or an action belongs to a different build of this plugin.
  *
+ * The corpus includes `*.test.ts(x)` files as well as application source.
+ * This build's zip excludes tests, but the published source repository
+ * ships them (they are read by anyone reviewing the build) — a comment or
+ * fixture in a test file is exactly as visible there as a string in
+ * application code, so the census must cover both.
+ *
  * The strings and identifiers are assembled from fragments at runtime so
  * that this file does not itself contain the literals it forbids — a
  * source-content test that quotes its own subject matter becomes a hit for
- * the very census it exists to keep at zero.
+ * the very census it exists to keep at zero. Because the corpus now
+ * includes this file itself, that self-exemption is load-bearing, not
+ * cosmetic: without the fragment split, every one of this file's own
+ * `it.each` titles below would be a permanent, unfixable self-hit.
  *
- * Fail-first (CLAUDE.md §0.5 rule 1): run against the pre-fix tree, where
+ * Fail-first: run against the pre-fix tree, where
  * the phrase fragments below appear in several copy modules and the
  * identifiers appear in 30-plus components — every assertion fails.
  */
@@ -22,7 +31,7 @@ function sourceFiles(dir: string, out: string[] = []): string[] {
     const full = path.join(dir, entry);
     if (statSync(full).isDirectory()) {
       sourceFiles(full, out);
-    } else if (/\.tsx?$/.test(entry) && !/\.test\.tsx?$/.test(entry)) {
+    } else if (/\.tsx?$/.test(entry)) {
       out.push(full);
     }
   }

@@ -1166,9 +1166,9 @@ const SecurityHub: React.FC = () => {
   // by ScanCard / ScanResultPanel. The endpoint + BasicScanResults organism
   // remain available for future reuse.
 
-  // ARS Round D (D-K-10, 2026-08-2x, surfaced by C5 — not itself an R4
-  // finding, CLAUDE.md two-proof dead-code doctrine applies): proceedDeepScan()
-  // + startDeepScan() DELETED. Two-proof: (1) source — zero callers anywhere
+  // ARS Round D (D-K-10, 2026-08-2x, surfaced by C5): proceedDeepScan()
+  // + startDeepScan() DELETED under the project's two-proof dead-code rule.
+  // Two-proof: (1) source — zero callers anywhere
   // in this file besides each other (confirmed via `command grep -n
   // "proceedDeepScan\|startDeepScan"`); the actual deep-malware trigger
   // wired to the UI is handleTriggerScan("deep-malware") below, a

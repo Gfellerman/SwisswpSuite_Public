@@ -28,7 +28,7 @@
  * "react-dom/client" / "react/jsx-runtime" to a proxy module under
  * src/vendor-shims/ that reads WordPress's already-loaded `window.React` /
  * `window.ReactDOM` GLOBAL at import time. See ErrorBoundary.test.tsx /
- * WafUpsellCard.test.tsx for the full rationale (same workaround, copied
+ * WafTierPanel.test.tsx for the full rationale (same workaround, copied
  * here): pre-stamp window.React / window.ReactDOM from the REAL npm
  * packages via Node's own `createRequire` in `beforeAll`, defer every
  * import that transitively needs "react"/"react-dom"/"react/jsx-runtime"
@@ -36,7 +36,7 @@
  * use JSX syntax anywhere in this file — every element is built with
  * `React.createElement` instead.
  *
- * Per CLAUDE.md §0.5 rule 1 / corollary 1, the first test below was run
+ * Following fail-first practice, the first test below was run
  * against the unfixed source FIRST (RED: the early return fired on
  * issues_found===0 alone, so the grouped view and "3 informational" text
  * never rendered), then re-run after the fix (GREEN). Reverted via the

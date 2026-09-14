@@ -22,7 +22,7 @@
  * hooks fetch through a mocked `wpApi` — not a pre-seeded cache bypassing
  * the fetch, and not a reimplementation of the indicator logic.
  *
- * Fail-first evidence (CLAUDE.md §0.5 rule — a test must be proven to fail
+ * Fail-first evidence (a test must be proven to fail
  * against the unfixed code): this file was run against the pre-fix
  * Dashboard.tsx (recovered via `git show HEAD:plugin/src/components/
  * Dashboard.tsx`, the HEAD-baseline method — never git stash, per project

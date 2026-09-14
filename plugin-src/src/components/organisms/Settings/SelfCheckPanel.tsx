@@ -5,22 +5,16 @@
  *
  * Self-Check panel (DIAG-EXPORT-SELFCHECK Phase 1, v2.9.33.53).
  *
- * Pre-execution gate: .claude/audit-reports/security-control-2026-09-03/
- * VALIDATOR_V53_DIAG_EXPORT.md. This file is the E5-JS/E5-REACT lane —
- * §7.5 Group 1. Response shape is FROZEN in that gate's §7.5 and copied
- * verbatim into types.ts (SelfCheckResult et al.) so this lane could build
- * in parallel with the PHP lane (class-swisswpsuite-selfcheck.php) against
- * the same contract without waiting on it. Run /contract_sync once both
- * land.
+ * Response shape is copied verbatim into types.ts (SelfCheckResult et
+ * al.) to match class-swisswpsuite-selfcheck.php's response shape.
  *
- * One-click AJAX, no "Save" button (CLAUDE.md §5): "Run self-check" fires
+ * One-click AJAX, no "Save" button: "Run self-check" fires
  * POST /selfcheck/run and updates in place; nothing here requires a page
  * reload. "Export diagnostics" downloads a JSON file client-side (Blob +
  * object URL) — no network round trip beyond the GET that fetches the
- * redacted payload, and the file is never transmitted anywhere by this
- * plugin (VALIDATOR_V53_DIAG_EXPORT.md §4.3: "NEVER auto-sent" must be a
- * structural property — this component contains zero transport code for
- * the exported payload beyond the single GET that retrieves it).
+ * redacted payload. "Never auto-sent" is a structural property here —
+ * this component contains zero transport code for the exported payload
+ * beyond the single GET that retrieves it.
  *
  * Six statuses render distinctly (never collapse `not_available` or
  * `inconclusive` into a failure-looking style):
@@ -31,8 +25,7 @@
  *   not_available  — this check does not apply to this install
  *   inconclusive   — could not determine (never shown as a failure)
  *
- * 2026-09-07 audit-fix round (VALIDATOR_V53_SELFCHECK_FIXES.md, lane
- * E5-REACT, gated on REAUDIT_V53_SELFCHECK.md M-1/M-3/H-1/H-2):
+ * Audit-fix round:
  *   - M-1: "Run self-check" no longer sends mail (the backend moved the
  *     mail probe out of run_all()); the panel copy above reflects that.
  *     "Send test email" is a NEW, separate, explicit action — its own

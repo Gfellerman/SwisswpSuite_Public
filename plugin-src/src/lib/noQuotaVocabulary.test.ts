@@ -9,7 +9,7 @@
  * to keep at zero. (Recurring trap: the same mistake was made four times in
  * one earlier session.)
  *
- * Fail-first (CLAUDE.md §0.5 rule 1): against the pre-fix tree every
+ * Fail-first: against the pre-fix tree every
  * assertion below fails — `hooks/useTokenBalance.ts` declares `packBalance`
  * and `canAfford`, `lib/securityHubAiProCopy.ts` and `services/api.ts` carry
  * the exhausted-allowance sentence and the 402 branch, `SecurityHub.tsx`

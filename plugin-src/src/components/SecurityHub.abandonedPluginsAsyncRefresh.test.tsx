@@ -38,14 +38,12 @@
  * onto those globals in beforeAll BEFORE any aliased import runs. No JSX
  * in this file, React.createElement only.
  *
- * Scope-narrowing mocks (both unrelated to this fix, both would otherwise
- * require infrastructure this test has no reason to set up) — identical
- * choices already made in SecurityHub.hardeningToggle.test.tsx:
- *   - the local toast module ("../lib/toast") — avoid toast rendering/DOM plumbing; also lets this test
- *     assert toast.error was NOT called on the 429 "already running" path
- *     (contract: 429 is not an error, just "keep polling").
- *   - FeaturePointer — renders a react-router-dom <Link> that throws
- *     outside a Router; mounted in the default "dashboard" tab.
+ * Scope-narrowing mock (unrelated to this fix, would otherwise require
+ * infrastructure this test has no reason to set up) — identical choice
+ * already made in SecurityHub.hardeningToggle.test.tsx: the local toast
+ * module ("../lib/toast") — avoid toast rendering/DOM plumbing; also lets
+ * this test assert toast.error was NOT called on the 429 "already
+ * running" path (contract: 429 is not an error, just "keep polling").
  * `wpApi` ("../services/api") is mocked at the network boundary only —
  * every hook/handler/state update inside SecurityHub.tsx runs for real.
  */
@@ -74,9 +72,6 @@ vi.mock("../lib/toast", () => ({
 // Router, so the real component cannot be used here.
 vi.mock("./organisms/Security/TwoFactorNudgeLink", () => ({
   TwoFactorNudgeLink: () => null,
-}));
-vi.mock("./organisms/Security/WafUpsellCard", () => ({
-  WafUpsellCard: () => null,
 }));
 
 vi.mock("../services/api", () => ({

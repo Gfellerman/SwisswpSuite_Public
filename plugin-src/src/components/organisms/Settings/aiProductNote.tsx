@@ -1,8 +1,8 @@
 /**
  * AiProductNote — the Settings > General screen's one permitted pointer to
- * the paid AI product line (WP.org Guideline 11: an upgrade prompt used
- * sparingly on the settings page, not a destination in the settings
- * navigation).
+ * the company's separate paid product (WP.org Guideline 11 permits one
+ * such pointer, used sparingly on the settings page, not a destination
+ * in the settings navigation).
  *
  * This plugin runs entirely on the site's own server. It needs no key, no
  * account and no call to any of our systems to do everything it does. The

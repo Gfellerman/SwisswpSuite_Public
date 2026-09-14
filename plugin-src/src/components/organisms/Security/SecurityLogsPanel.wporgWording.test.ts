@@ -1,13 +1,13 @@
 /**
- * WP.org R14 remediation round 10, Lane E28-REACT (v2.9.33.58) —
- * source-content regression lock for SecurityLogsPanel.tsx.
+ * Source-content regression lock for SecurityLogsPanel.tsx, added after a
+ * WordPress.org reviewer flagged a wording inaccuracy.
  *
  * The reviewer flagged "Only the most recent 50 high-priority security
  * events are shown here." — SwissWPSuite_Api_Security::get_security_logs()
  * (class-swisswpsuite-api-security.php) calls
  * `$security->get_logs( 20 )`, so the endpoint returns 20 rows, not 50.
  *
- * Fail-first (CLAUDE.md §0.5 rule 1): run against the pre-fix file (which
+ * Fail-first: run against the pre-fix file (which
  * still said "50") — this test fails. After the reword to "20", it passes.
  */
 import { readFileSync } from "fs";

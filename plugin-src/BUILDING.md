@@ -35,11 +35,14 @@ plugin-src/
 
 ## Build
 
-From inside this directory:
+This tree builds a single plugin's admin app — there is no build-time
+switch and no environment variable that changes what gets
+compiled. From inside this directory:
 
 ```bash
 npm ci
 npm run build
+npx vitest run
 ```
 
 `npm ci` performs a clean, reproducible install strictly from
@@ -58,62 +61,40 @@ the plugin's PHP layer reads to enqueue the two hashed filenames through
 and `build.rollupOptions` govern all of this — read it for the exact output
 naming scheme.
 
-Both `npm ci` and `npm run build` were run end-to-end against this exact
-tree as part of preparing this publication and completed successfully
-(exit code 0), including a full production bundle (one `entry-app-*.js`,
-one `assets/app-*.css`, `manifest.json`).
+`npx vitest run` runs this tree's own test suite (Vitest + Testing
+Library + jsdom) with no separate configuration step.
 
-## The `EDITION` build flag
+`npm ci`, `npm run build` and `npx vitest run` were all run end-to-end
+against this exact tree as part of preparing this publication and
+completed successfully (exit code 0), including a full production bundle
+(one `entry-app-*.js`, one `assets/app-*.css`, `manifest.json`).
 
-SwissSuite AI ships as two editions from one source tree — a Free edition
-(distributed on WordPress.org) and a Pro edition (distributed from
-swisswpsecure.com only). `vite.config.ts` reads a plain shell environment
-variable, `EDITION`, to decide which one it's building:
+`vite.config.ts` aliases `react`/`react-dom`/`react-dom/client`/
+`react/jsx-runtime`/`react/jsx-dev-runtime` to small proxy modules in
+`src/vendor-shims/` that re-export WordPress core's own already-loaded
+`window.React`/`window.ReactDOM` globals at runtime, instead of bundling
+this project's own copy of React (WordPress.org Guideline 13 — a plugin
+must not bundle a library WordPress core already ships).
 
-```bash
-npm run build                # EDITION unset -> defaults to Pro (full build)
-EDITION=free npm run build   # Free edition
-EDITION=pro npm run build    # Pro edition (same as unset)
-```
+The actual release zip is produced by the monorepo's `build_plugin.sh`
+wrapper, which runs this same `npm run build` and then assembles the full
+plugin zip around the resulting `assets/` output. That wrapper script, and
+the rest of the PHP backend, are not part of this repository — see "Where
+this fits" below.
 
-When `EDITION=free`, `vite.config.ts`'s `resolve.alias` block redirects a
-growing, individually-dated list of Pro-only module import specifiers (41
-entries as of v2.9.33.42, each added by its own dated code comment
-recording the exact call site and rationale — grep `resolve.alias` in
-`vite.config.ts` for the current, authoritative, itemized list; do not
-hand-maintain a name list here, it has already gone stale once) — covering
-areas such as the AI Content page, Sync page/manager, the License Manager
-organism, the token-balance hook, Migration Station, Cloud Storage panel,
-the Update Guard card, Two-Factor Settings, the Geo-Lockdown card, the AI
-SEO bulk-generation workbench, and the AI Log Advisor's guide-content data
-module — to their `*.freeStub.tsx`/`*.freeStub.ts` counterparts already
-present in `src/`. (Encryption Settings was REMOVED from this list on
-2026-08-22 — backup encryption-at-rest is now enabled in Free, so the real
-component ships in both editions.) This is a Vite-level,
-module-resolution-time substitution — the real Pro implementations, and
-everything they transitively import, never enter the Free build's module
-graph, so they cannot end up in the compiled Free bundle. This is why the
-Free edition's zip does not contain the Pro/AI code even though both
-editions build from the same `src/` tree. Both `EDITION=free` and the
-default (Pro) build were verified to complete successfully as part of
-preparing this publication.
+## Why the rebuilt CSS differs from the shipped `assets/app-*.css`
 
-Separately, and unconditionally in **both** editions, `vite.config.ts`
-also aliases `react`/`react-dom`/`react-dom/client`/`react/jsx-runtime`/
-`react/jsx-dev-runtime` to small proxy modules in `src/vendor-shims/` that
-re-export WordPress core's own already-loaded `window.React`/
-`window.ReactDOM` globals at runtime, instead of bundling this project's
-own copy of React (WordPress.org Guideline 13 — a plugin must not bundle
-a library WordPress core already ships). This is not an edition-gated
-substitution; it applies to the shared source tree the same way for
-Free and Pro alike.
-
-The actual release zips are produced by the monorepo's
-`build_plugin.sh --edition free|pro` wrapper, which runs this same
-`npm run build` (with `EDITION` set accordingly) and then assembles the
-full plugin zip around the resulting `assets/` output. That wrapper script,
-and the rest of the PHP backend, are not part of this repository — see
-"Where this fits" below.
+The JS bundle you get from `npm run build` above is byte-for-byte
+identical to the one in the shipped release zip. The CSS is not, and this
+is expected and benign: the actual release build runs Tailwind v4's
+automatic class-name detection over the **whole plugin directory**, not
+just `plugin-src/`, so the shipped stylesheet is a strict superset of a
+`plugin-src`-only rebuild. The extra utility classes come from English
+words that happen to appear in PHP comments and PHP-side test files
+elsewhere in the plugin (Tailwind's scanner has no way to tell a class
+name apart from an ordinary word in a comment, so it includes anything
+that looks like one) — none of them are referenced anywhere in this
+tree's own `src/`, and rebuilding here simply omits that dead weight.
 
 ## Lockfile provenance (read before comparing output to a shipped release)
 
@@ -138,8 +119,8 @@ JS/CSS assets that the plugin's PHP backend enqueues inside the WordPress
 admin. The plugin itself — including this compiled output — is distributed
 through:
 
-- Free edition: https://wordpress.org/plugins/swisssuite-ai/
-- Pro edition: https://www.swisswpsecure.com/
+- The plugin on WordPress.org: https://wordpress.org/plugins/swisssuite-ai/
+- The company site: https://www.swisswpsecure.com/
 
 See this repository's top-level `readme.txt` (`== Source Code ==` section)
 for the canonical pointer to this directory from the plugin's own

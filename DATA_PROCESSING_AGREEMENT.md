@@ -5,6 +5,10 @@
 
 ---
 
+> **Scope.** This DPA applies only to a **SwissSuite AI Pro** subscription agreement (a separately distributed paid package available at swisswpsecure.com) and the swisswpsecure.com cloud service. The free **SwissSuite AI** plugin published on WordPress.org has no account and no subscription agreement, so there is no Controller/Processor relationship under this DPA for it — the site owner alone processes any data the Free plugin's local features touch, entirely on their own server.
+
+---
+
 ## Preamble
 
 This Data Processing Agreement ("DPA") forms part of the Terms of Service between:

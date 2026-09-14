@@ -30,7 +30,7 @@ export const Badge: React.FC<BadgeProps> = ({
    * it was misleading noise in every variant definition.
    */
   /**
-   * WCAG 1.4.3 (Contrast Minimum, Zero Tolerance rule — CLAUDE.md §5):
+   * WCAG 1.4.3 (Contrast Minimum, zero-tolerance contrast rule):
    * neutral/default/secondary/outline previously hard-coded `text-slate-700`
    * against `bg-secondary` / a transparent (page/card) background with no
    * `dark:` override. `--secondary` and `--background`/`--card` invert in

@@ -29,15 +29,9 @@
  * react/react-dom is stamped onto those globals in beforeAll BEFORE any
  * aliased import runs. No JSX in this file, React.createElement only.
  *
- * Scope-narrowing mocks (both unrelated to hardening, both would otherwise
- * require infrastructure this test has no reason to set up):
- *   - the local toast module ("../lib/toast") — avoid toast rendering/DOM plumbing.
- *   - FeaturePointer — SecurityHub renders
- *     `{!isProEditionBuild && <FeaturePointer variant="edition" />}` in the
- *     default "dashboard" tab (mounted first, before this test switches to
- *     "hardening"), and that component renders a react-router-dom <Link>,
- *     which throws outside a Router. Mocking it out is the same choice
- *     already made in SeoManager.test.tsx for the identical component.
+ * Scope-narrowing mock (unrelated to hardening, would otherwise require
+ * infrastructure this test has no reason to set up): the local toast
+ * module ("../lib/toast") — avoid toast rendering/DOM plumbing.
  * `wpApi` ("../services/api") is mocked at the network boundary only —
  * every hook/handler/state update inside SecurityHub.tsx runs for real.
  */
@@ -66,9 +60,6 @@ vi.mock("../lib/toast", () => ({
 // Router, so the real component cannot be used here.
 vi.mock("./organisms/Security/TwoFactorNudgeLink", () => ({
   TwoFactorNudgeLink: () => null,
-}));
-vi.mock("./organisms/Security/WafUpsellCard", () => ({
-  WafUpsellCard: () => null,
 }));
 
 vi.mock("../services/api", () => ({

@@ -26,16 +26,12 @@ WP.org serves banner images and screenshots directly from `/assets/`. If you com
 | `banner-1544x500.png` | **TODO** — produce per `ASSET_BRIEF.md` | 1544 × 500 px, PNG, ≤ 1 MB |
 | `icon-128x128.png` | **TODO** — produce per `ASSET_BRIEF.md` | 128 × 128 px, PNG, opaque bg |
 | `icon-256x256.png` | **TODO** — produce per `ASSET_BRIEF.md` | 256 × 256 px, PNG, opaque bg |
-| `screenshot-1.png` | **TODO** — Security Hub dashboard overview | 1200 × 675 px, PNG |
-| `screenshot-2.png` | **TODO** — Malware scan results + AI analysis | 1200 × 675 px, PNG |
-| `screenshot-3.png` | **TODO** — WAF / IP blocking log | 1200 × 675 px, PNG |
-| `screenshot-4.png` | **TODO** — Hardening options (11 toggles) | 1200 × 675 px, PNG |
-| `screenshot-5.png` | **TODO** — 2FA TOTP setup screen | 1200 × 675 px, PNG |
-| `screenshot-6.png` | **TODO** — Backup list with cloud status | 1200 × 675 px, PNG |
-| `screenshot-7.png` | **TODO** — Sync Teleport diff comparison | 1200 × 675 px, PNG |
-| `screenshot-8.png` — | **TODO** — Migration wizard progress | 1200 × 675 px, PNG |
-| `screenshot-9.png` | **TODO** — AI SEO bulk meta table | 1200 × 675 px, PNG |
-| `screenshot-10.png` | **TODO** — Tablet responsive view at 768px | 1200 × 675 px, PNG |
+| `screenshot-1.png` | **TODO** — Security Hub overview | 1200 × 675 px, PNG |
+| `screenshot-2.png` | **TODO** — Deep Scan results | 1200 × 675 px, PNG |
+| `screenshot-3.png` | **TODO** — Firewall / IP blocking log | 1200 × 675 px, PNG |
+| `screenshot-4.png` | **TODO** — One-click hardening (12 toggles) | 1200 × 675 px, PNG |
+| `screenshot-5.png` | **TODO** — Backup list and restore | 1200 × 675 px, PNG |
+| `screenshot-6.png` | **TODO** — On-page SEO audit | 1200 × 675 px, PNG |
 
 See [ASSET_BRIEF.md](ASSET_BRIEF.md) for the full production spec for each file.
 
@@ -51,9 +47,9 @@ svn checkout https://plugins.svn.wordpress.org/swisssuite-ai/ ~/wpsvn/swisssuite
 cd ~/wpsvn/swisssuite-ai
 ```
 
-> **Slug note (2026-08-16):** the Free edition's WordPress.org slug is
-> `swisssuite-ai` (reviewer-reassigned 2026-08-22). The SVN repository only
-> exists once the plugin has been approved — until then these commands will 404.
+> **Slug note:** the WordPress.org slug for this plugin is `swisssuite-ai`. The
+> SVN repository only exists once the plugin has been approved — until then
+> these commands will 404.
 
 ### Adding assets
 
@@ -104,5 +100,5 @@ WP.org parses asset filenames exactly. Do not rename, add suffixes, or use upper
 
 - Banners: `banner-772x250.png` and `banner-1544x500.png` — both required; only the retina variant is shown on HiDPI displays
 - Icon: `icon-128x128.png` and `icon-256x256.png` — both required
-- Screenshots: `screenshot-1.png` through `screenshot-10.png` — numbered sequentially, no gaps. The order matches the `== Screenshots ==` section in `readme.txt`
+- Screenshots: `screenshot-1.png` through `screenshot-6.png` — numbered sequentially, no gaps. Once produced, add an `== Screenshots ==` section to `readme.txt` (it has none today) listing each one in the same order, per `ASSET_BRIEF.md`
 - All filenames: lowercase, no spaces

@@ -7,51 +7,26 @@
 **License:** GPL-2.0-or-later
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
-SwissSuite AI ships as two separate, independently distributed plugins built from one codebase:
-
-| Edition | Slug | Where to get it | What it is |
-| :--- | :--- | :--- | :--- |
-| **SwissSuite AI** (Free) | `swisssuite-ai` | WordPress.org | The security & backup core, standalone and fully functional on its own |
-| **SwissSuite AI Pro** | `swisssuite-ai-pro` | https://www.swisswpsecure.com/products/ (download-only) | A standalone superset — cloud backup, AI, sync, migration, and more |
-
-Pro is **not an add-on or unlock** for the Free plugin — it is installed in place of it. The code that makes up SwissSuite AI Pro is physically absent from the Free package; there is nothing in Free to "unlock" with a key, and Free has no license field at all.
+SwissSuite AI is a local WordPress security and backup core: malware scanning, a firewall, hardening, backup and restore, quarantine, login protection, and on-page SEO. No account required, no AI.
 
 ## Features
-
-### SwissSuite AI (Free)
 
 - **Malware scanner** — local signature-based scanning, on-demand and daily, entirely on your own server; no file contents ever leave your site
 - **Malware quarantine** — isolate suspicious files locally before removing them
 - **Web Application Firewall** — starts in observe (simulation) mode on install so it never blocks legitimate traffic by surprise; enable active blocking any time in Security > Firewall. Covers SQL injection, XSS, and path-traversal attempts, with IP ban/unban/allowlist and a threat log
-- **Hardening** — all one-click hardening toggles (XML-RPC, file editing, user enumeration, REST API restrictions, and more), plus Security Level presets
+- **Hardening** — 12 one-click hardening toggles (XML-RPC, file editing, user enumeration, REST API restrictions, and more), plus a Security Level preset
 - **Login protection** — brute-force lockout and honeypot spam blocking
-- **Backup & restore** — full site backup (files + database) and one-click restore of your site files and database, run on demand. A safety copy of your current database is taken before the restore touches anything.
-- **SEO** — on-page audit and score, plus XML sitemap generation, all computed locally
+- **Backup & restore** — full site backup (files + database) and one-click restore of your site files and database, including AES-256-encrypted archives, run on demand. A safety copy of your current database is taken before the restore touches anything. Optional WP-CLI commands for hosts with real cron access
+- **SEO** — on-page audit and score, plus XML sitemap and optional llms.txt generation, all computed locally
 - **Dashboard** — security dashboard, threat log, and a daily email security report
 
-Free does no AI processing, makes no AI calls, and does not phone home on install. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) and the External Services section below.
-
-### SwissSuite AI Pro (adds, on top of everything in Free)
-
-- **Scheduled, automated backups** with rolling retention, plus cloud destinations — Google Drive, Amazon S3, Backblaze B2, Dropbox, and FTP/SFTP
-- **Two-Factor Authentication (TOTP)** for every user role
-- **Geo-blocking** with country-level allow/deny rules
-- **Advanced firewall rules** — command injection, XXE, serialized-object, PHP-in-uploads, and XML-RPC multicall detection, with recursive input decoding, on top of the Free WAF's basic SQL injection/XSS/path-traversal rule set
-- **Site sync** — two-way content sync between staging and production
-- **Migration** — plugin-to-plugin and standalone-receiver modes, tuned for shared hosting
-- **Update-guard suite** — safe updates with automatic rollback and pre-update snapshots
-- **AI features** (Groq-powered) — deep malware analysis, AI SEO meta generation, vision AI for image alt text, and AI content rewriting
-- **Vulnerability lookups** via WPScan and Patchstack (bring your own API key)
+A separately distributed paid package with additional features is available at https://swisswpsecure.com/products/; this repository, and everything below, describes only the plugin published on WordPress.org.
 
 ## Installation
 
-1. Choose your edition: Free from WordPress.org, or Pro from https://www.swisswpsecure.com/products/ .
-2. In WordPress Admin, go to **Plugins > Add New > Upload Plugin** (or install the Free plugin directly from the WordPress.org directory).
-3. Upload the zip file and click **Install Now**.
-4. Activate the plugin.
-5. Free: no account or key of any kind is required — run your first scan from **Security > Scan**. Pro: open **License & Tokens** to activate your license.
-
-Free and Pro cannot be active at the same time — activating one automatically deactivates the other, since they share the same underlying data.
+1. In WordPress Admin, go to **Plugins > Add New**, search for **SwissSuite AI**, and click **Install Now**.
+2. Activate the plugin.
+3. No account or key of any kind is required — run your first scan from **Security > Scan**.
 
 ## Requirements
 
@@ -59,17 +34,27 @@ Free and Pro cannot be active at the same time — activating one automatically 
 - PHP 7.4 or higher
 - HTTPS recommended for all security features
 
+## Building from source
+
+The complete, uncompiled source for the admin UI (React/TypeScript) is published in this repository at [`plugin-src/`](plugin-src/), with build instructions in [`plugin-src/BUILDING.md`](plugin-src/BUILDING.md). The plugin's PHP is not published separately here because it ships unminified inside the plugin itself — download it from WordPress.org, or read it in any installed copy.
+
+## Get the plugin
+
+SwissSuite AI is intended for listing on the WordPress.org Plugin Directory; there is no separate download link for it. To report an issue with this repository or its published source, use [GitHub Issues](https://github.com/Gfellerman/SwisswpSuite_Public/issues).
+
 ## External Services
 
-**SwissSuite AI (Free)** — the package published on WordPress.org and whose source is published in this repository — connects to exactly one external service:
+This plugin's code connects to exactly one external service:
 
 | Service | When | Data Sent |
 |---------|------|-----------|
-| WordPress.org | Plugin update checks, core-file checksum verification during a scan, daily check for closed/abandoned plugins | Site URL, plugin/theme list |
+| WordPress.org | Plugin update checks (standard WordPress behavior); a daily core-file checksum verification; a daily check for closed/abandoned plugins | Your WordPress version and site locale (checksum requests), and your installed plugin slugs (update checks, abandoned-plugin check) |
 
-That is the only host Free's code can reach. It does not phone home to any server operated by its developer, does not require an account or a key of any kind, and does not send site content or visitor data anywhere.
+That is the only host this plugin's code can reach. It does not phone home to any server operated by its developer, does not require an account or a key of any kind, and does not send site content or visitor data anywhere. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) and `readme.txt`'s `== External Services ==` section for full details.
 
-**SwissSuite AI Pro** is a separate, independently distributed plugin (not published in this repository) and connects to further services of its own — its license/billing API, an AI proxy, and an IP-geolocation lookup for its geo-blocking feature — none of which this Free package's code can reach. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for full details, and Pro's own documentation at https://swisswpsecure.com for what it sends to those services.
+## Third-party licenses
+
+The admin UI compiles several MIT/ISC-licensed open-source libraries into its bundle. See [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md) for the full list and notices.
 
 ## Support
 

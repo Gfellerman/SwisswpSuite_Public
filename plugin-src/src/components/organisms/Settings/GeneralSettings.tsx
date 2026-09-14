@@ -263,7 +263,7 @@ export function GeneralSettings({
 
         {/* DIAG-EMAIL E-5 (VALIDATOR_DIAG_EMAIL.md §4 D6): cadence for the
             ERROR/WARNING alert digest. Saves immediately on change — no
-            Save button (CLAUDE.md). Server default is 'daily' (owner gate
+            Save button. Server default is 'daily' (owner gate
             G2), mirrored here so the control never renders blank before
             the settings response loads. */}
         <div>

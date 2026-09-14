@@ -19,8 +19,7 @@
  * crashes at module-evaluation time — this is exactly why 3 pre-existing
  * vitest files (Welcome.test.tsx et al.) currently fail; that is a known,
  * out-of-scope infra gap, not touched here (see plugin/vite.config.ts's
- * resolve.alias block and .claude/agent-memory/frontend-specialist for the
- * full externalization rationale).
+ * resolve.alias block for the full externalization rationale).
  *
  * This file works around it, without touching vite.config.ts or any shared
  * setup file (out of this task's touch scope), by:

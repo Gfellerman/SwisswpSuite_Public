@@ -1,10 +1,8 @@
 /**
- * Vitest coverage for SelfCheckPanel (DIAG-EXPORT-SELFCHECK Phase 1,
- * v2.9.33.53). Pre-execution gate:
- * .claude/audit-reports/security-control-2026-09-03/VALIDATOR_V53_DIAG_EXPORT.md
+ * Vitest coverage for SelfCheckPanel.
  *
- * Covers the acceptance categories named in the E5-REACT task prompt:
- *   - absent/404 route (deployment skew, gate's A-14)
+ * Covers:
+ *   - absent/404 route (deployment skew)
  *   - each of the six SelfCheckStatus values renders distinctly
  *   - "Export diagnostics" triggers a download with the returned content
  *   - loading + generic-error states
@@ -100,13 +98,12 @@ type WpApiMock = ReturnType<typeof vi.fn>;
 const EMPTY_SUMMARY = { ok: 0, warn: 0, fail: 0, skip: 0, not_available: 0 };
 
 /**
- * The shared never-run shape (H-1 fix, VALIDATOR_V53_SELFCHECK_FIXES.md
- * §2.3/§7): the backend never sends `{ ran_at: 0, edition, summary,
- * groups: [] }` — it sends this structurally different, `groups`-less body
- * from BOTH /selfcheck/last (`success:true`, 200) and /selfcheck/export
- * (`success:false, code:'never_run'`, still 200 — see the `forExport`
- * variant, consumed as an ApiError below since wpApi() auto-throws on
- * `success:false` at 2xx).
+ * The shared never-run shape: the backend never sends a zeroed-out
+ * general-purpose object — it sends this structurally different,
+ * `groups`-less body from BOTH /selfcheck/last (`success:true`, 200) and
+ * /selfcheck/export (`success:false, code:'never_run'`, still 200 — see
+ * the `forExport` variant, consumed as an ApiError below since wpApi()
+ * auto-throws on `success:false` at 2xx).
  */
 function neverRunResult(options: { forExport?: boolean } = {}) {
   return {
@@ -333,11 +330,12 @@ describe("SelfCheckPanel", () => {
   });
 
   // ---------------------------------------------------------------------
-  // M-3 — export "never run" is a 200 with success:false, code:'never_run',
-  // NOT a 404. AC-15 (fail-first) + AC-16 (control, proves discrimination
-  // from genuine deployment skew).
+  // Export "never run" is a 200 with success:false, code:'never_run',
+  // NOT a 404. The pair below is a fail-first + control: the first proves
+  // the friendly message renders, the second proves the same code path
+  // still tells a genuine route error apart from that friendly message.
   // ---------------------------------------------------------------------
-  it("M-3 / AC-15: export never_run (200, success:false) shows the backend's friendly message, not a generic route-error message", async () => {
+  it("export never_run (200, success:false) shows the backend's friendly message, not a generic route-error message", async () => {
     const neverRun = neverRunResult({ forExport: true });
     (wpApi as unknown as WpApiMock).mockImplementation((url: string) => {
       if (url === "/selfcheck/last") return Promise.resolve(sixStatusResult());
@@ -373,7 +371,7 @@ describe("SelfCheckPanel", () => {
     expect(window.URL.createObjectURL).not.toHaveBeenCalled();
   });
 
-  it("AC-16 (control): a genuine route error on export uses ordinary error handling, not a special skew message", async () => {
+  it("control: a genuine route error on export uses ordinary error handling, not a special skew message", async () => {
     (wpApi as unknown as WpApiMock).mockImplementation((url: string) => {
       if (url === "/selfcheck/last") return Promise.resolve(sixStatusResult());
       if (url === "/selfcheck/export")
@@ -412,7 +410,7 @@ describe("SelfCheckPanel", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("M-1 / AC-18: Send test email posts /selfcheck/mail-test exactly once and renders an `ok` result", async () => {
+  it("Send test email posts /selfcheck/mail-test exactly once and renders an `ok` result", async () => {
     (wpApi as unknown as WpApiMock).mockImplementation((url: string) => {
       if (url === "/selfcheck/last") return Promise.resolve(sixStatusResult());
       if (url === "/selfcheck/mail-test")
@@ -596,7 +594,7 @@ describe("SelfCheckPanel", () => {
     expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it("M-1 / AC-19: Send test email route error degrades to an ordinary message and does not crash the panel", async () => {
+  it("Send test email route error degrades to an ordinary message and does not crash the panel", async () => {
     (wpApi as unknown as WpApiMock).mockImplementation((url: string) => {
       if (url === "/selfcheck/last") return Promise.resolve(sixStatusResult());
       if (url === "/selfcheck/mail-test")

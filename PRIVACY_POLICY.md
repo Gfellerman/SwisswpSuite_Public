@@ -5,6 +5,14 @@
 
 ---
 
+## Free edition (WordPress.org)
+
+**If you are using the SwissSuite AI plugin published on WordPress.org, this section is the part of this policy that applies to you.** The Free plugin's malware scanning, backup and restore, hardening, firewall, and on-page SEO all run entirely on your own WordPress server. The only thing the Free plugin's code sends anywhere is to **api.wordpress.org**: your WordPress version and site locale (for core-file checksum verification), and your installed plugin slugs (for standard plugin-update checks and a daily check for abandoned/closed plugins). If you configure the plugin's optional Custom SMTP setting, it hands mail to the SMTP server you specify. That is everything — the Free plugin makes no AI calls, uses no license server, has no account, and does not use a payment processor. See `readme.txt`'s `== External Services ==` section for the complete, authoritative statement of what the Free plugin transmits.
+
+Everything else in this document — AI processing, licensing and payment data, third-party AI/payment sub-processors, domain-lock and account data — describes **SwissSuite AI Pro**, a separately distributed paid package available at swisswpsecure.com, and the swisswpsecure.com website and its cloud service. None of it applies to the Free plugin.
+
+---
+
 ## 1. Who We Are
 
 **SwissWPSecure Sàrl** ("we", "us", "SwissWPSecure") operates the SwissSuite AI WordPress plugin and the associated cloud service at swisswpsecure.com.

@@ -16,7 +16,7 @@
  * `window.React`/`window.ReactDOM` global at import time. jsdom never loads
  * that global, so this file stamps the REAL npm react/react-dom onto those
  * globals in `beforeAll`, BEFORE any aliased import runs (same pattern as
- * WafUpsellCard.test.tsx / ErrorBoundary.test.tsx) — no JSX anywhere in this
+ * WafTierPanel.test.tsx / ErrorBoundary.test.tsx) — no JSX anywhere in this
  * file, `React.createElement` only.
  */
 import { createRequire } from "node:module";

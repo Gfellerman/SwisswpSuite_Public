@@ -17,11 +17,7 @@
  * useSettings() is mocked directly (rather than wiring a QueryClientProvider
  * + wpApi network mock) — SeoManager makes no other TanStack Query calls of
  * its own, so this gives full, direct control over the loading/loaded/
- * enabled/disabled states under test. FeaturePointer is mocked out because
- * it renders a react-router-dom <Link>, which is unrelated to what this
- * file tests and would otherwise require a Router wrapper for no benefit
- * (isProEdition() defaults to Free with no window.swisswpsuiteData.edition
- * set, so the AI-workbench branch that would need it isn't exercised here).
+ * enabled/disabled states under test.
  */
 import { createRequire } from "node:module";
 import "@testing-library/jest-dom/vitest";

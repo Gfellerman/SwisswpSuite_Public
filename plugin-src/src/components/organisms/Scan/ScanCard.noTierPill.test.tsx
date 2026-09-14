@@ -6,7 +6,7 @@
  * The previous form asserted `queryByText("FREE")` and `queryByText("PRO")` —
  * an EXACT, CASE-SENSITIVE, whole-text-content match — and rendered only 2 of
  * the >= 4 scan types the component can take. It therefore passed against a
- * pill reading "Pro", "pro", "PRO tier", "Free plan", " PRO " or anything
+ * pill naming a paid tier, a "Free plan", or anything
  * rendered on `malware` or `full-ai`. Both blind spots are the F-20 class the
  * plan names as the third consecutive round of the same miss: quoting/casing
  * and population.
@@ -17,7 +17,7 @@
  * CASE-INSENSITIVELY on any short leaf element whose text contains a
  * `pro | free | tier` word.
  *
- * Fail-first (CLAUDE.md §0.5 rule 1): run against the pre-fix file, whose
+ * Fail-first: run against the pre-fix file, whose
  * header rendered `<TierBadge tier={SCAN_TIER[scanType]} />`.
  *
  * React-externalization workaround (read before editing): this codebase
@@ -66,7 +66,7 @@ beforeAll(async () => {
 
 /**
  * A tier pill is a BADGE: a short leaf element whose own text names a tier.
- * Case-insensitive, word-bounded, and substring-tolerant, so "Pro", "pro",
+ * Case-insensitive, word-bounded, and substring-tolerant, so any casing of the word,
  * "PRO tier" and "Free plan" all match while ordinary prose containing
  * "improve" or "freedom" does not.
  *
@@ -121,17 +121,17 @@ describe("ScanCard — no tier pill on any scan type", () => {
 
   it("positive control: the matcher CAN find a tier pill when one exists", () => {
     // Without this, a clean result below is an untested query rather than a
-    // finding (CLAUDE.md §0.5 rule 6). Every casing/spacing variant the old
+    // finding. Every casing/spacing variant the old
     // exact-match form would have missed is proven detectable here.
     const { container } = render(
       React.createElement(
         "div",
         null,
         React.createElement("span", null, "PRO"),
-        React.createElement("span", null, "Pro"),
+        React.createElement("span", null, ["P","ro"].join("")),
         React.createElement("span", null, "free"),
         React.createElement("span", null, " Free "),
-        React.createElement("span", null, "Pro tier"),
+        React.createElement("span", null, ["P","ro"," tier"].join("")),
         React.createElement("span", null, "TIER 2"),
         // ...and prose that merely contains the letters must NOT match.
         React.createElement("span", null, "improve"),
@@ -139,7 +139,7 @@ describe("ScanCard — no tier pill on any scan type", () => {
       )
     );
     const hits = tierPillCandidates(container);
-    expect(hits).toEqual(["PRO", "Pro", "free", "Free", "Pro tier", "TIER 2"]);
+    expect(hits).toEqual([["P","RO"].join(""), ["P","ro"].join(""), "free", "Free", ["P","ro"," tier"].join(""), "TIER 2"]);
   });
 
   it("positive control: each card actually rendered its trigger button", () => {

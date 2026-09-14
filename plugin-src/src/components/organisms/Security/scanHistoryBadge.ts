@@ -4,7 +4,7 @@
  * This build's own scan writer stores exactly one value, 'security_audit'
  * (see class-swisswpsuite-scan-orchestrator.php's persist_security_audit_
  * history()). Any other stored value is a row this build did not write —
- * an older install, or one written by a different edition — so it renders
+ * an older install, or one written by a different version — so it renders
  * with one neutral "archived" badge rather than naming what produced it.
  */
 import { HISTORY_LABEL_LEGACY_FULL } from "../Scan/scanCopy";

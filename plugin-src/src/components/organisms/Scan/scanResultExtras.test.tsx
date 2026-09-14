@@ -3,11 +3,10 @@
  *
  * The Free deep scan orchestrator writes only `status: 'ok'` per phase
  * (`enumerate`, `local_scan`) — it never produces `unavailable`,
- * `degraded_*` or `rate_limited` (those are Pro provider-phase statuses,
- * see pro-overlay/src/.../scanResultExtras.tsx). This file's Free copy
- * must type and render exactly what Free produces, with any unrecognized
- * status string handled by a generic fallback that never names a Pro
- * state — round 10 remediation, ZC-RULE.
+ * `degraded_*` or `rate_limited`. This file must type and render exactly
+ * what this build produces, with any unrecognized status string handled
+ * by a generic fallback that never assumes a status this build cannot
+ * emit.
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
@@ -31,7 +30,7 @@ describe("scanResultExtras (Free)", () => {
     ]);
   });
 
-  it("carries no Pro-only phase-status vocabulary in source (positive control: 'local_scan' is present)", () => {
+  it("carries no phase-status vocabulary this build never produces, in source (positive control: 'local_scan' is present)", () => {
     // `new URL(rel, import.meta.url)` resolves relative to the test
     // runner's own root under Vitest, not this file's directory — resolve
     // from process.cwd() (vitest always runs from `plugin/`) instead.

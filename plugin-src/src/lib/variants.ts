@@ -2,10 +2,10 @@
  * Local variant-class helper.
  *
  * Replaces `class-variance-authority` (Apache-2.0), which is GPL-compatible
- * in principle but was flagged for removal 2026-09-14 to keep the plugin's
- * own compiled code free of any question mark for WP.org review (CLAUDE.md
- * §5, WordPress.org Compliance — "GPL compatibility ... run `composer
- * licenses` to verify" extended here to the npm side of the Free bundle).
+ * in principle but was removed to keep the plugin's own compiled code free
+ * of any question mark for WordPress.org review — the same GPL-compatibility
+ * standard the project applies to Composer/PHP dependencies, extended here
+ * to the npm side of the Free bundle.
  *
  * This file implements ONLY the subset of cva's runtime behavior actually
  * used by atoms/Button.tsx, atoms/Badge.tsx and atoms/Card.tsx: a single

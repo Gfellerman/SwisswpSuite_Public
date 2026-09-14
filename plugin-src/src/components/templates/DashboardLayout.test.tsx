@@ -13,7 +13,7 @@
  * statically imports React (or JSX, which auto-imports "react/jsx-runtime")
  * — including react-router-dom, which itself depends on React — crashes at
  * module-evaluation time unless those globals are stamped first. Same
- * workaround as WafUpsellCard.test.tsx / GeneralSettings.test.tsx: pre-stamp
+ * workaround as WafTierPanel.test.tsx / GeneralSettings.test.tsx: pre-stamp
  * window.React / window.ReactDOM from the REAL npm packages via Node's own
  * `createRequire` in `beforeAll`, defer every import that transitively needs
  * "react"/"react-dom"/"react-router-dom" to a runtime `await import()`
@@ -76,25 +76,20 @@ function renderLayout() {
   );
 }
 
-describe("DashboardLayout — navigation carries no tier or lock state", () => {
+describe("DashboardLayout — navigation is the fixed Free set, with no tier badge and no locked item", () => {
   afterEach(() => {
     cleanup();
     delete (window as any).swisswpsuiteData;
   });
 
-  // The fixture below is the exact shape that USED to drive the removed
-  // UI: an install claiming a paid tier whose capability list grants
-  // neither seo_meta nor content_rewrite. Against the pre-fix component
-  // this rendered a "License Tier" badge, two padlocked nav items and an
-  // "AI Content" entry; each assertion here fails on that code.
+  // DashboardLayout's navItems array is a fixed, hard-coded list — it does
+  // not read window.swisswpsuiteData at all. These assertions lock that:
+  // no fixture value can make a tier badge, a locked/disabled nav item, or
+  // an entry outside the five static destinations (Dashboard, Security,
+  // SEO, Backup, Settings) appear.
   function stampPayload() {
     (window as any).swisswpsuiteData = {
-      edition: "pro",
-      license: {
-        tier: "sentinel_pro",
-        tier_name: "Sentinel Pro",
-        capabilities: [],
-      },
+      license: { tier_name: "Free" },
     };
   }
 
@@ -104,11 +99,30 @@ describe("DashboardLayout — navigation carries no tier or lock state", () => {
     expect(screen.getByText("Security")).toBeInTheDocument();
   });
 
+  it("renders exactly the five static Free nav destinations, nothing more", () => {
+    stampPayload();
+    const { container } = renderLayout();
+    const nav = container.querySelector("nav");
+    expect(nav).not.toBeNull();
+    const navLabels = Array.from(nav!.querySelectorAll("a")).map(
+      (a) => a.textContent
+    );
+    expect(navLabels).toEqual([
+      "Dashboard",
+      "Security",
+      "SEO",
+      "Backup",
+      "Settings",
+    ]);
+    expect(navLabels).not.toContain("Sync");
+    expect(navLabels).not.toContain("Migration");
+    expect(navLabels).not.toContain("AI Content");
+  });
+
   it("renders no tier badge", () => {
     stampPayload();
     renderLayout();
     expect(screen.queryByText(/license tier/i)).not.toBeInTheDocument();
-    expect(screen.queryByText("Sentinel Pro")).not.toBeInTheDocument();
   });
 
   it("renders no locked navigation item", () => {
@@ -117,40 +131,23 @@ describe("DashboardLayout — navigation carries no tier or lock state", () => {
     expect(container.querySelectorAll(".cursor-not-allowed")).toHaveLength(0);
     expect(container.querySelectorAll(".grayscale")).toHaveLength(0);
   });
-
-  it("does not offer an AI Content destination", () => {
-    stampPayload();
-    renderLayout();
-    expect(screen.queryByText("AI Content")).not.toBeInTheDocument();
-  });
 });
 
-describe("DashboardLayout — sidebar wordmark rebrand (ARS Round D, D-K-8; owner ruling 2026-08-24: 'SwissWP…' rendering risks confusion with the swisswpsecure.com company trademark)", () => {
+describe("DashboardLayout — sidebar wordmark rebrand ('SwissWP…' rendering risks confusion with the swisswpsecure.com company trademark)", () => {
   afterEach(() => {
     cleanup();
     delete (window as any).swisswpsuiteData;
   });
 
-  // The tagline under the wordmark is a build-time source-overlay swap
-  // (brandTagline.ts): `plugin/src/…/brandTagline.ts` ships
-  // "SECURITY & BACKUP SUITE" and `pro-overlay/src/…/brandTagline.ts`
-  // overrides it to "AI SECURITY SUITE" only when Vite is built with
-  // SWISSWPSUITE_OVERLAY set. This suite imports DashboardLayout directly
-  // (no overlay configured), so it always exercises the Free tagline
-  // module regardless of the `edition` value stamped into
-  // window.swisswpsuiteData — that flag drives nav/tier gating elsewhere
-  // in the component, not which tagline file was bundled. Pro's overlay
-  // value is a separate, file-identity assertion — see
-  // pro-overlay/tests/Unit/brandTagline.test.ts, not a runtime branch this
-  // suite could exercise.
-  it("renders the SwissSuite AI wordmark and the Free tagline, no SwissWP token — Free edition", () => {
+  // The tagline under the wordmark comes from a module this build's Vite
+  // config selects at build time (brandTagline.ts) — DashboardLayout itself
+  // never branches on window.swisswpsuiteData to choose a tagline. The
+  // second test below proves that: it stamps an arbitrary, unrelated
+  // payload shape and confirms the wordmark and tagline are unchanged —
+  // nothing in window.swisswpsuiteData can affect which tagline renders.
+  it("renders the SwissSuite AI wordmark and this build's tagline, no SwissWP token", () => {
     (window as any).swisswpsuiteData = {
-      edition: "free",
-      license: {
-        tier: "free",
-        tier_name: "Free",
-        capabilities: [],
-      },
+      license: { tier_name: "Free" },
     };
 
     const { container } = renderLayout();
@@ -162,19 +159,14 @@ describe("DashboardLayout — sidebar wordmark rebrand (ARS Round D, D-K-8; owne
     // assert on the full recursive textContent instead of getByText.
     expect(container.textContent).toContain("SWISSSUITE");
     expect(container.textContent).toContain("SECURITY & BACKUP SUITE");
-    expect(container.textContent).not.toContain("AI SECURITY SUITE");
     expect(container.textContent).not.toMatch(/SWISSWP/i);
     expect(container.textContent).not.toMatch(/SECURE SUITE/i);
   });
 
-  it("renders the SwissSuite AI wordmark and the Free tagline module (no overlay configured) — Pro edition data flag", () => {
+  it("renders the same wordmark and tagline no matter what window.swisswpsuiteData contains", () => {
     (window as any).swisswpsuiteData = {
-      edition: "pro",
-      license: {
-        tier: "sentinel_pro",
-        tier_name: "Sentinel Pro",
-        capabilities: [],
-      },
+      arbitraryField: "anything-at-all",
+      nested: { value: 123 },
     };
 
     const { container } = renderLayout();

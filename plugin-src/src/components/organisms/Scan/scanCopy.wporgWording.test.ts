@@ -1,8 +1,7 @@
 /**
- * WP.org R14 remediation round 10, Lane E31-REACT (v2.9.33.58) —
- * source-content regression lock for scanCopy.ts (Free).
+ * Source-content regression lock for scanCopy.ts (Free).
  *
- * Round-10 Lane E28-REACT fixed this module's wording accuracy (the
+ * An earlier fix corrected this module's wording accuracy (the
  * enumeration cap and the daily-cadence gate). A later reviewer pass found
  * a second, structural issue: SECURITY_AUDIT_DESCRIPTION and
  * MALWARE_DESCRIPTION named a "Security Audit" / "Malware Scan" the Free
@@ -14,7 +13,7 @@
  * description alone carries the on-demand + daily-quick-audit facts, since
  * it is the only card this build renders.
  *
- * Fail-first (CLAUDE.md §0.5 rule 1): reverting DEEP_SCAN_DESCRIPTIONS'
+ * Fail-first: reverting DEEP_SCAN_DESCRIPTIONS'
  * "deep-malware" entry to drop the "On demand" / daily-audit clauses, or
  * reintroducing SECURITY_AUDIT_DESCRIPTION / MALWARE_DESCRIPTION, fails the
  * assertions below.

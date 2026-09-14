@@ -32,7 +32,7 @@ const SRC_ROOT = path.resolve(__dirname, "src");
  * not installed at all and `src/` is the only source root.
  *
  * The path is resolved against this directory. A relative value such as
- * `../pro-overlay/src` is therefore interpreted from `plugin/`.
+ * `../some-overlay/src` is therefore interpreted from `plugin/`.
  */
 const OVERLAY_DIR = (() => {
   const raw = (process.env.SWISSWPSUITE_OVERLAY || "").trim();

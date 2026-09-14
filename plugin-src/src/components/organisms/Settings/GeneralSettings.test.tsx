@@ -8,7 +8,7 @@
  * WordPress's already-loaded `window.React` global at import time. jsdom
  * never loads that global, so this file stamps the REAL npm react/react-dom
  * onto those globals in `beforeAll`, BEFORE any aliased import runs (same
- * pattern as HardeningOptionsGrid.test.tsx / WafUpsellCard.test.tsx) — no
+ * pattern as HardeningOptionsGrid.test.tsx / WafTierPanel.test.tsx) — no
  * JSX anywhere in this file, `React.createElement` only.
  */
 import { createRequire } from "node:module";
@@ -261,7 +261,7 @@ describe("GeneralSettings — Alert Digest Frequency select (A-21, DIAG-EMAIL E-
     ).not.toBeInTheDocument();
   });
 
-  it("helper text states the immediate-send condition and the 'off' data-loss consequence truthfully (R2-06, VALIDATOR_V51_ROUND3_FIXES.md Lane U)", () => {
+  it("helper text states the immediate-send condition and the 'off' data-loss consequence truthfully", () => {
     render(
       React.createElement(GeneralSettings, {
         settings: baseSettings(),

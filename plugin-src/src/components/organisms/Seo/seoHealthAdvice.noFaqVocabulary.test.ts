@@ -1,16 +1,13 @@
 /**
- * WP.org R14 remediation round 10, Lane E27-REACT (v2.9.33.58) —
- * source-content regression lock for seoHealthAdvice.tsx.
+ * Source-content regression lock for seoHealthAdvice.tsx.
  *
- * The FAQ scoring dimension (`faq_bonus` field + its advice sentence) moved
- * to the Pro package (pro-overlay/src/components/organisms/Seo/
- * seoHealthAdvice.tsx keeps it, backed by
- * pro-overlay/src/types.pro.ts#ProSeoScanResultFields). The Free module must
- * carry no reference to it — a compiled-but-unreachable string still ships
- * in the Free bundle (ZC-RULE), so this is a source-content check, matching
- * this project's FREE_BUNDLE_STRING_CENSUS methodology, not a render test.
+ * The FAQ scoring dimension (`faq_bonus` field + its advice sentence) is
+ * not part of this build. This module must carry no reference to it — a
+ * compiled-but-unreachable string would still ship in the bundle even
+ * though nothing can ever read it — so this is a source-content check,
+ * not a render test.
  *
- * Fail-first (CLAUDE.md §0.5 rule 1): run against the pre-fix file (which
+ * Fail-first: run against the pre-fix file (which
  * declared `if (scanResult.faq_bonus < 5) { parts.push(\`Adding FAQ
  * content can earn up to ...\`); }`) — this test fails. After removing the
  * faq_bonus branch, it passes.

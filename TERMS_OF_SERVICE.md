@@ -5,6 +5,10 @@
 
 ---
 
+> **Scope.** These Terms govern **SwissSuite AI Pro** (a separately distributed paid package available at swisswpsecure.com) and the swisswpsecure.com website and cloud service. If you are using the free **SwissSuite AI** plugin published on WordPress.org, these Terms do not apply to you: that plugin requires no account and no acceptance of these Terms, and is governed solely by the GNU General Public License v2.0 (or later) — see `LICENSE` in this repository.
+
+---
+
 ## 1. Introduction
 
 These Terms of Service ("Terms") govern your use of the SwissSuite AI WordPress plugin ("Plugin"), the associated services provided through swisswpsecure.com ("Service"), and any related APIs, documentation, and support (collectively, the "Platform"). By activating a license key, creating an account, or using any paid feature, you agree to these Terms.

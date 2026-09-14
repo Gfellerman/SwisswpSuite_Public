@@ -74,10 +74,10 @@ describe("wpApi() — U10 200+success:false hardening", () => {
     vi.stubGlobal("fetch", mockFetchOnce(body, 200));
 
     // Endpoint string kept realistic (matches the WpApiOptions.allowSuccessFalse
-    // doc comment's "gold pattern" opt-out example, api.ts:70-75): its
-    // allowSuccessFalse callers live in the Pro overlay's one-click fix
-    // dispatcher (recommendedActionDispatcher.tsx's remediate()), so that
-    // real caller is what this test exercises the shape of.
+    // doc comment's "gold pattern" opt-out example, api.ts:70-75): a
+    // real one-click fix dispatcher's remediate() call uses this exact
+    // endpoint with allowSuccessFalse, so this test exercises the shape
+    // that real caller depends on.
     await expect(
       wpApi("/security/sentinel/remediate", { allowSuccessFalse: true })
     ).resolves.toEqual(body);

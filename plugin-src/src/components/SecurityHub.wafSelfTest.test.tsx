@@ -22,13 +22,13 @@
  *     shape before calling setWafSelfTest().
  *
  * This test drives the REAL production render path: it mounts the actual
- * <SecurityHub> on its default "dashboard" tab (the WAF card lives there,
- * un-gated by hasSecurity/isProEditionBuild — confirmed via source, same
- * card as the Smart Firewall toggle) and, for the click scenario, fires the
+ * <SecurityHub> on its default "dashboard" tab (the WAF card renders there
+ * unconditionally — confirmed via source, same card as the Smart Firewall
+ * toggle) and, for the click scenario, fires the
  * real on-screen "Run self-test now" button — not a reimplementation of
  * runWafSelfTest().
  *
- * Fail-first evidence (CLAUDE.md §0.5 — a test must be proven to fail
+ * Fail-first evidence (a test must be proven to fail
  * against the unfixed code): every assertion below was run against the
  * pre-B.6 SecurityHub.tsx (recovered via `git show HEAD:plugin/src/
  * components/SecurityHub.tsx`, the HEAD-baseline method — never git stash)
@@ -67,9 +67,6 @@ vi.mock("../lib/toast", () => ({
 // Router, so the real component cannot be used here.
 vi.mock("./organisms/Security/TwoFactorNudgeLink", () => ({
   TwoFactorNudgeLink: () => null,
-}));
-vi.mock("./organisms/Security/WafUpsellCard", () => ({
-  WafUpsellCard: () => null,
 }));
 
 vi.mock("../services/api", () => ({
@@ -337,7 +334,7 @@ describe("SecurityHub — WAF Self-Test tile (B.6/DASH-2)", () => {
   // own `detail` sentence is rendered underneath — the field was fetched,
   // typed, and stored since v2.9.33.49 but never read until this fix.
   //
-  // Fail-first (CLAUDE.md §0.5): reverting the tile's label expression
+  // Fail-first: reverting the tile's label expression
   // from `Unknown ({unknownCause(wafSelfTest.http_code)})` back to the old
   // literal `Unknown (loopback unreachable)` turns exactly 5 of these 6
   // cases red — case "http_code: 0" stays green BY DESIGN, since that is

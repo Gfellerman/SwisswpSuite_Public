@@ -14,9 +14,9 @@
  * options shape.
  *
  * `toast.loading`, `toast.promise`, `toast.custom`, and a bare `toast(...)`
- * call are NOT implemented — a source-tree census across plugin/src and
- * pro-overlay/src at the time this module was written found zero call
- * sites for any of them.
+ * call are NOT implemented — a source-tree census across this plugin's
+ * frontend at the time this module was written found zero call sites for
+ * any of them.
  */
 import { create } from "zustand";
 

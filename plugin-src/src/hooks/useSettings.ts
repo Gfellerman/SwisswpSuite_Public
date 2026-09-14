@@ -14,10 +14,10 @@ import { toast } from "../lib/toast";
 import { wpApi } from "../services/api";
 
 export interface SwissSettings {
-  // WP.org R14 item 3 (2026-09-07, v2.9.33.54): autoUpdatePlugin removed —
-  // the plugin no longer registers an 'auto_update_plugin' filter, and the
-  // underlying option is retired. WordPress core's own per-plugin
-  // auto-update toggle (Plugins screen) is the only mechanism now.
+  // autoUpdatePlugin removed — the plugin no longer registers an
+  // 'auto_update_plugin' filter, and the underlying option is retired.
+  // WordPress core's own per-plugin auto-update toggle (Plugins screen) is
+  // the only mechanism now.
   emailNotifications: boolean;
   loginMaxRetries: number;
   coreIntegrityEnabled?: boolean; // WordPress core file integrity check

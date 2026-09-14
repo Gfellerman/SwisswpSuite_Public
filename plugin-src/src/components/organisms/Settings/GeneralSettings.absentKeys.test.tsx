@@ -1,6 +1,6 @@
 /**
- * AC-9 lock: the Settings surface renders against the response this build's
- * `GET /settings` actually sends.
+ * Regression lock: the Settings surface renders against the response this
+ * build's `GET /settings` actually sends.
  *
  * That response carries no spending-allowance block and no model-provider
  * fields — `tokens`, `apiKey`, `useCustomApi`, `customApiUrl`,
@@ -9,7 +9,7 @@
  * not zeroed and not null. A reader that assumes any of them is present
  * throws on the first paint, which is the failure this file exists to catch.
  *
- * Fail-first (CLAUDE.md §0.5 rule 1): against the pre-fix tree the fixture
+ * Fail-first: against the pre-fix tree the fixture
  * below does not type-check and `expect(...).not.toThrow()` is the only part
  * that would still pass, because `SettingsResponse` declared five of these
  * keys as required — that is exactly the contract this test now pins open.
