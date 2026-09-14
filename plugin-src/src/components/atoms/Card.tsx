@@ -6,10 +6,10 @@
  */
 
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
+import { variants, type VariantProps } from "../../lib/variants";
 import { cn } from "../../lib/utils";
 
-const cardVariants = cva("rounded-md text-card-foreground bg-card", {
+const cardVariants = variants("rounded-md text-card-foreground bg-card", {
   variants: {
     variant: {
       flat: "border border-border shadow-none", // Swiss default: border, no shadow
