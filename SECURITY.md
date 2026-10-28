@@ -17,8 +17,8 @@ We will acknowledge your report and work with you on a fix and, where appropriat
 
 ## Supported Versions
 
-Only the latest version published on the WordPress.org Plugin Directory is supported with security fixes. Please update to the latest version before reporting an issue, to confirm it still reproduces.
+Only the latest released version is supported with security fixes. Please update to the latest version before reporting an issue, to confirm it still reproduces.
 
 ## Scope
 
-This policy covers the SwissSuite Security Backup and SEO plugin as published on WordPress.org and its published source in this repository. It does not cover third-party plugins, themes, or hosting environments.
+This policy covers the SwissSuite Security Backup and SEO plugin and its published source in this repository. It does not cover third-party plugins, themes, or hosting environments.

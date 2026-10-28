@@ -5,7 +5,7 @@
 
 ---
 
-> **Scope.** These Terms govern **SwissSuite AI Pro** (a separately distributed paid package available at swisswpsecure.com) and the swisswpsecure.com website and cloud service. If you are using the free **SwissSuite AI** plugin published on WordPress.org, these Terms do not apply to you: that plugin requires no account and no acceptance of these Terms, and is governed solely by the GNU General Public License v2.0 (or later) — see `LICENSE` in this repository.
+> **Scope.** These Terms govern **SwissSuite AI Pro** (a separately distributed paid package available at swisswpsecure.com) and the swisswpsecure.com website and cloud service. If you are using the free **SwissSuite Security Backup and SEO** plugin, these Terms do not apply to you: that plugin requires no account and no acceptance of these Terms, and is governed solely by the GNU General Public License v2.0 (or later) — see `LICENSE` in this repository.
 
 ---
 
@@ -30,12 +30,12 @@ The Plugin is developed and operated by **SwissWPSecure Sàrl**, a limited liabi
 
 The Plugin is distributed as **two editions built from a single source tree**:
 
-- **SwissSuite AI (Free edition)** — distributed through the WordPress.org plugin directory (slug `swisssuite-ai`). It contains only the free features described in Section 3.1 and does not require a license key, an account, or a connection to our Service. It is governed solely by the GPL-2.0+ license.
+- **SwissSuite Security Backup and SEO (Free edition)** — intended for distribution through the WordPress.org plugin directory (slug `swisssuite-ai`). It contains only the free features described in Section 3.1 and does not require a license key, an account, or a connection to our Service. It is governed solely by the GPL-2.0+ license.
 - **SwissSuite AI Pro (Paid edition)** — distributed **only** as a download from swisswpsecure.com to customers who have purchased a plan (slug `swisssuite-ai-pro`). It is a full superset that includes the free features plus the paid features described in Section 3.2. Pro receives updates directly from swisswpsecure.com (not WordPress.org). Access to Pro downloads, updates, and the Service requires a valid, active license key and acceptance of these Terms. The premium features are not present in the Free edition; they are delivered exclusively by installing the Pro edition.
 
 The Pro edition's source code remains available under the GPL-2.0+ license to licensed customers; the license key controls access to downloads, updates, and the Service, not your rights under the GPL to the code you have received.
 
-### 3.1 Plugin (Free Tier — SwissSuite AI, WordPress.org)
+### 3.1 Plugin (Free Tier — SwissSuite Security Backup and SEO)
 
 The Free edition includes features that operate entirely on your server without requiring a license or external service connection:
 

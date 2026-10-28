@@ -45,9 +45,9 @@ SwissSuite Security Backup and SEO is a WordPress plugin for **security** and **
 
 ### 1.2 Installation
 
-Install SwissSuite from the official WordPress.org plugin directory:
+Once the plugin is listed in the official WordPress.org plugin directory, install it from there:
 
-1. In your WordPress dashboard, go to **Plugins → Add New**.
+1. In your WordPress dashboard, go to **Plugins → Add Plugin** (**Add New Plugin** or **Add New** in older WordPress).
 2. Search for **SwissSuite Security Backup and SEO**.
 3. Click **Install Now**, then **Activate**.
 

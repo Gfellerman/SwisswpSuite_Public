@@ -13,18 +13,18 @@ SwissSuite Security Backup and SEO is a local WordPress security and backup core
 
 - **Malware scanner** — local signature-based scanning, on-demand and daily, entirely on your own server; no file contents ever leave your site
 - **Malware quarantine** — isolate suspicious files locally before removing them
-- **Web Application Firewall** — starts in observe (simulation) mode on install so it never blocks legitimate traffic by surprise; enable active blocking any time in Security > Firewall. Checks the page address and its query arguments for SQL-injection, script-injection and path-traversal patterns (cookies, form submissions, uploads, request bodies and headers are not inspected), with IP ban/unban/allowlist and a threat log
+- **Web Application Firewall** — starts in observe (simulation) mode on install so it never blocks legitimate traffic by surprise; enable active blocking any time in Security > Dashboard by unticking Detection Only Mode on the Smart Firewall card. Checks the page address and its query arguments for SQL-injection, script-injection and path-traversal patterns (cookies, form submissions, uploads, request bodies and headers are not inspected), with IP ban/unban/allowlist and a threat log
 - **Hardening** — 12 one-click hardening toggles (XML-RPC, file editing, user enumeration, REST API restrictions, and more)
 - **Login protection** — brute-force lockout and honeypot spam blocking
 - **Backup & restore** — full site backup (files + database) and one-click restore of your site files, including AES-256-encrypted archives, run on demand. The database copy inside a backup is not imported; the restore result tells you how to bring it back yourself with your hosting provider's database tool. Optional WP-CLI commands for hosts with real cron access
 - **SEO** — on-page audit and score, plus XML sitemap and optional llms.txt generation, all computed locally
 - **Dashboard** — security dashboard, threat log, and a daily email security report
 
-A separately distributed paid package with additional features is available at https://swisswpsecure.com/products/; this repository, and everything below, describes only the plugin published on WordPress.org.
+A separately distributed paid package with additional features is available at https://swisswpsecure.com/products/; this repository, and everything below, describes only the plugin intended for the WordPress.org Plugin Directory.
 
 ## Installation
 
-1. In WordPress Admin, go to **Plugins > Add New**, search for **SwissSuite Security Backup and SEO**, and click **Install Now**.
+1. Once the plugin is listed on WordPress.org: in WordPress Admin, go to **Plugins > Add Plugin** (**Add New Plugin** or **Add New** in older WordPress), search for **SwissSuite Security Backup and SEO**, and click **Install Now**.
 2. Activate the plugin.
 3. No account or key of any kind is required — run your first scan from **Security > Scan**.
 
@@ -36,7 +36,7 @@ A separately distributed paid package with additional features is available at h
 
 ## Building from source
 
-The complete, uncompiled source for the admin UI (React/TypeScript) is published in this repository at [`plugin-src/`](plugin-src/), with build instructions in [`plugin-src/BUILDING.md`](plugin-src/BUILDING.md). The plugin's PHP is not published separately here because it ships unminified inside the plugin itself — download it from WordPress.org, or read it in any installed copy.
+The complete, uncompiled source for the admin UI (React/TypeScript) is published in this repository at [`plugin-src/`](plugin-src/), with build instructions in [`plugin-src/BUILDING.md`](plugin-src/BUILDING.md). The plugin's PHP is not published separately here because it ships unminified inside the plugin itself — read it in any installed copy.
 
 ## Get the plugin
 
@@ -44,13 +44,13 @@ SwissSuite Security Backup and SEO is intended for listing on the WordPress.org 
 
 ## External Services
 
-This plugin's code connects to exactly one external service:
+This plugin's code connects to exactly one external service, plus, only if you set one under Settings -> General -> Email Delivery (SMTP), your own SMTP server for outgoing e-mail:
 
 | Service | When | Data Sent |
 |---------|------|-----------|
-| WordPress.org | Plugin update checks (standard WordPress behavior); a daily core-file checksum verification and a daily check for closed/abandoned plugins (both only after you agree) | Your WordPress version and site locale (checksum requests), and your installed plugin slugs (update checks, abandoned-plugin check) |
+| WordPress.org | Plugin update checks (standard WordPress behavior); a daily core-file checksum verification and a daily check for closed/abandoned plugins (both only after you agree) | Your WordPress version and site locale (checksum requests, abandoned-plugin check), and your installed plugin slugs (update checks, abandoned-plugin check) |
 
-That is the only host this plugin's code can reach. It does not phone home to any server operated by its developer, does not require an account or a key of any kind, and does not send site content or visitor data anywhere. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) and `readme.txt`'s `== External Services ==` section for full details.
+That is the only host this plugin's code can reach, apart from an SMTP server you configure yourself. It does not phone home to any server operated by its developer, does not require an account or a key of any kind, and sends site content or visitor data only in your site's own e-mail. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) and `readme.txt`'s `== External Services ==` section for full details.
 
 ## Third-party licenses
 
