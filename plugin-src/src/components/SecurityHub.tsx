@@ -85,13 +85,24 @@ import type {
   MalwareScanResult,
   DeepMalwareScanJob,
   ScanReportConfig,
+  ScanReportPreview,
   HardeningToggleResponse,
+  HardeningApplyAllResponse,
 } from "../types";
+import {
+  FileIntegrityBadge,
+  type CoreIntegrityStatus,
+} from "./organisms/Security/FileIntegrityBadge";
 
 const calculatePercent = (value: number, total: number): number => {
   if (!total || total === 0) return 0;
   return Math.min(100, Math.round((value / total) * 100));
 };
+
+// A refusal from the server carries its own reason; only a request that never
+// completed is a network problem.
+const serverReason = (e: unknown, fallback: string): string =>
+  e instanceof ApiError && e.status > 0 && e.message ? e.message : fallback;
 
 const SecurityHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
@@ -125,7 +136,7 @@ const SecurityHub: React.FC = () => {
   // deep-malware).
   // BasicScanResults lives as an organism in case the flow is revived later.
   const [logs, setLogs] = useState<SecurityLog[]>([]);
-  const [lastScan, setLastScan] = useState<string>("Never");
+  const [, setLastScan] = useState<string>("Never");
 
   // ── Scan state (v2.9.28.43): sourced from useScanStore Zustand slice ─────
   // Replaces 10 useState hooks that previously lived here. See
@@ -147,7 +158,8 @@ const SecurityHub: React.FC = () => {
     (s) => s.updateDeepMalwareResult
   );
   const [previewModalOpen, setPreviewModalOpen] = React.useState(false);
-  const [previewHtml, setPreviewHtml] = React.useState<string | null>(null);
+  const [reportPreview, setReportPreview] =
+    React.useState<ScanReportPreview | null>(null);
 
   // Deep Scan State
   // ARS Round D (D-K-10, 2026-08-2x): showDeepScanModal/setShowDeepScanModal
@@ -250,6 +262,9 @@ const SecurityHub: React.FC = () => {
   // background check (202) or confirms one is already running (429); the
   // polling useEffect near handleAbandonedPluginsRefresh watches this flag.
   const [abandonedCheckPending, setAbandonedCheckPending] = useState(false);
+  // True once the poller gave up while the server still reported the check as
+  // running: an empty list is then "not finished", never "nothing found".
+  const [abandonedCheckStalled, setAbandonedCheckStalled] = useState(false);
 
   // Cloud Shield (Cloudflare detection) State
   const [cloudflareDetected, setCloudflareDetected] = useState(false);
@@ -297,6 +312,7 @@ const SecurityHub: React.FC = () => {
     // an older backend response (pre-self-test) still satisfies this
     // shape — see SecurityStatus in types.ts for the field definition.
     waf_self_test?: SecurityStatus["waf_self_test"];
+    core_integrity?: SecurityStatus["core_integrity"];
   }>({
     queryKey: ["security-status"],
     queryFn: () =>
@@ -310,6 +326,7 @@ const SecurityHub: React.FC = () => {
         login_max_retries?: number;
         last_scan: string;
         waf_self_test?: SecurityStatus["waf_self_test"];
+        core_integrity?: SecurityStatus["core_integrity"];
       }>("/security/status"),
     staleTime: STATUS_TTL,
   });
@@ -336,6 +353,26 @@ const SecurityHub: React.FC = () => {
   const wafSelfTestBlockedByFirewallOff = securityStatusError
     ? _securityStatusData !== undefined && !firewallEnabled
     : !firewallEnabled;
+
+  // File Integrity card: outcome of the latest core file check. A response
+  // without `core_integrity` reads as "not run", never as clean.
+  const coreIntegrity = _securityStatusData?.core_integrity;
+  const coreIntegrityBadge: CoreIntegrityStatus =
+    coreIntegrity?.result === "issues" || coreIntegrity?.result === "clean"
+      ? coreIntegrity.result
+      : "not_run";
+  const coreCheckOff = coreIntegrity?.enabled === false;
+  const coreCheckOn = coreIntegrity?.enabled === true;
+  // The footer shows when the core check last ran, not when any scan last ran.
+  // Without a /security/status answer it cannot tell whether the check ever
+  // ran: it shows no value while the request is pending or paused, and the
+  // unavailable sentence once the request has failed.
+  const coreCheckedAtMs = coreIntegrity?.checked_at
+    ? Date.parse(coreIntegrity.checked_at)
+    : NaN;
+  const coreCheckedAt = Number.isNaN(coreCheckedAtMs)
+    ? null
+    : new Date(coreCheckedAtMs).toLocaleString();
 
   // /security/logs
   const { data: _logsData } = useQuery<SecurityLog[]>({
@@ -503,8 +540,19 @@ const SecurityHub: React.FC = () => {
     const deferredId = setTimeout(() => {
       void fetchDeepScanStatus();
       // Abandoned plugin detection — non-critical, silent fail
-      wpApi<AbandonedPluginsStatus>("/security/abandoned-plugins")
-        .then((data) => setAbandonedPlugins(data))
+      wpApi<AbandonedPluginsStatus & { in_progress?: boolean }>(
+        "/security/abandoned-plugins"
+      )
+        .then((data) => {
+          setAbandonedPlugins(data);
+          // A check that is still running (started elsewhere, or before this
+          // page was opened) is followed until it finishes, so an empty list
+          // is not shown as "nothing found" while the check is incomplete.
+          if (data.in_progress) {
+            setAbandonedRefreshing(true);
+            setAbandonedCheckPending(true);
+          }
+        })
         .catch(() => {});
     }, 100);
 
@@ -627,6 +675,13 @@ const SecurityHub: React.FC = () => {
     let cancelled = false;
     const MAX_POLLS = 200;
     const POLL_INTERVAL_MS = 3000;
+    // Gives up after a small bounded number of CONSECUTIVE non-404
+    // failures rather than retrying every attempt up to MAX_POLLS — each
+    // retry re-runs the entire single-shot `local_scan` phase, so
+    // unbounded retries amplify load on a host that is already failing.
+    // Resets to 0 on every successful poll.
+    const MAX_CONSECUTIVE_FAILURES = 3;
+    let consecutiveFailures = 0;
 
     const runPoller = async () => {
       for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
@@ -649,10 +704,17 @@ const SecurityHub: React.FC = () => {
             }
             return;
           }
-          // Transient network error — keep trying until cap.
-          if (attempt === MAX_POLLS - 1) {
+          consecutiveFailures++;
+          // Transient network error — keep trying until either the
+          // consecutive-failure cap or the overall MAX_POLLS safety cap.
+          if (
+            consecutiveFailures >= MAX_CONSECUTIVE_FAILURES ||
+            attempt === MAX_POLLS - 1
+          ) {
             if (!cancelled) {
-              toast.error("Network error during scan. Please try again.");
+              toast.error(
+                serverReason(e, "Network error during scan. Please try again.")
+              );
               setDeepMalwareStatus("error");
               setDeepMalwareJobId(null);
               setDeepMalwarePhase(null);
@@ -663,6 +725,7 @@ const SecurityHub: React.FC = () => {
         }
         if (cancelled) return;
 
+        consecutiveFailures = 0;
         setDeepMalwarePhase(envelope.phase);
 
         if (envelope.status === "complete" && envelope.result) {
@@ -703,9 +766,7 @@ const SecurityHub: React.FC = () => {
       }
 
       if (!cancelled) {
-        toast.error(
-          "Scan is taking longer than expected. Check back in a few minutes."
-        );
+        toast.error("The scan did not finish in time. Start a new scan.");
         setDeepMalwareStatus("error");
         setDeepMalwareJobId(null);
         setDeepMalwarePhase(null);
@@ -758,10 +819,19 @@ const SecurityHub: React.FC = () => {
       updateDeepMalwareResult(stripFinding);
       // Refresh the ignore list so the Ignore Paths panel picks up the new entry.
       fetchIgnored();
-      toast.success("Marked as safe. Future scans will skip this file.");
+      toast.success(
+        "Marked as safe. Future scans skip this file while its content stays the same."
+      );
     } catch (e) {
       console.error("Failed to mark as safe", e);
-      toast.error("Network error marking file as safe.");
+      // A refusal from the server carries its own reason (for example a file
+      // that cannot be read); only a request that never completed is a
+      // network problem.
+      toast.error(
+        e instanceof ApiError && e.status > 0 && e.message
+          ? e.message
+          : "Network error marking file as safe."
+      );
     }
   };
 
@@ -798,10 +868,10 @@ const SecurityHub: React.FC = () => {
 
   const handleOpenPreview = async () => {
     try {
-      const data = await wpApi<{ html?: string }>(
+      const data = await wpApi<ScanReportPreview>(
         "/security/scan/report-preview"
       );
-      setPreviewHtml(data.html ?? null);
+      setReportPreview(data);
       setPreviewModalOpen(true);
     } catch (e) {
       console.error("Failed to load report preview", e);
@@ -884,6 +954,7 @@ const SecurityHub: React.FC = () => {
         // in_progress:true at 202 — only reachable if a future backend
         // revision reintroduces a synchronous-shaped response.
         setAbandonedPlugins(data);
+        setAbandonedCheckStalled(false);
         setAbandonedRefreshing(false);
       }
     } catch (e) {
@@ -901,9 +972,10 @@ const SecurityHub: React.FC = () => {
   /**
    * DX-4a async "Refresh" poller. Fires once abandonedCheckPending flips
    * true and polls the EXISTING GET /security/abandoned-plugins status
-   * route (DX-4a taught it to also return `in_progress`) every 3s until the
-   * dispatched check finishes (in_progress:false && last_check>0) or 60s
-   * elapse, whichever comes first — mirrors the Deep Malware Scan poller's
+   * route (DX-4a taught it to also return `in_progress`) every 5s until the
+   * check finishes (in_progress:false && last_check>0) or 10 minutes
+   * elapse, whichever comes first (the background check queries about 15
+   * plugins a minute) — mirrors the Deep Malware Scan poller's
    * cancelled-flag/attempt-cap pattern above (React.useEffect keyed off
    * deepMalwareJobId) for unmount-safety and codebase consistency.
    */
@@ -913,8 +985,11 @@ const SecurityHub: React.FC = () => {
     }
 
     let cancelled = false;
-    const MAX_POLLS = 20; // 20 x 3s = 60s
-    const POLL_INTERVAL_MS = 3000;
+    const MAX_POLLS = 120; // 120 x 5s = 10 min
+    const POLL_INTERVAL_MS = 5000;
+    // The poller only starts because a run was dispatched or reported as
+    // running; the last answer that arrives replaces this assumption.
+    let serverStillRunning = true;
 
     const runPoller = async () => {
       for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
@@ -926,8 +1001,10 @@ const SecurityHub: React.FC = () => {
             AbandonedPluginsStatus & { in_progress?: boolean }
           >("/security/abandoned-plugins");
           if (cancelled) return;
+          serverStillRunning = Boolean(status.in_progress);
           if (!status.in_progress && status.last_check > 0) {
             setAbandonedPlugins(status);
+            setAbandonedCheckStalled(false);
             setAbandonedCheckPending(false);
             setAbandonedRefreshing(false);
             return;
@@ -940,8 +1017,11 @@ const SecurityHub: React.FC = () => {
       }
       if (!cancelled) {
         toast.info(
-          "Still checking for abandoned plugins — this can take a few minutes on large sites. Check back shortly."
+          serverStillRunning
+            ? "Still checking for abandoned plugins — this can take a few minutes on large sites. Check back shortly."
+            : "The check did not finish. Click Re-check now to try again."
         );
+        setAbandonedCheckStalled(serverStillRunning);
         setAbandonedCheckPending(false);
         setAbandonedRefreshing(false);
       }
@@ -1065,7 +1145,9 @@ const SecurityHub: React.FC = () => {
         }
       } catch (e) {
         console.error(e);
-        toast.error("Network error while adding IP to allowlist.");
+        toast.error(
+          serverReason(e, "Network error while adding IP to allowlist.")
+        );
       }
     });
   };
@@ -1091,7 +1173,9 @@ const SecurityHub: React.FC = () => {
         }
       } catch (e) {
         console.error(e);
-        toast.error("Network error while removing IP from allowlist.");
+        toast.error(
+          serverReason(e, "Network error while removing IP from allowlist.")
+        );
       }
     });
   };
@@ -1271,6 +1355,21 @@ const SecurityHub: React.FC = () => {
     }
   };
 
+  // Opens the latest scan's record in the Scan tab's record viewer, so the
+  // summary card's button lands on the findings it counts.
+  const handleViewLatestFindings = () => {
+    const latest = _latestScanData;
+    if (latest?.success && latest.record) {
+      setHistoricalScanDetail(
+        mapScanDetail({
+          record: latest.record,
+          layer1_findings: latest.layer1_findings ?? [],
+        })
+      );
+    }
+    setActiveTab("scan");
+  };
+
   const toggleHardening = (key: string, enabled: boolean): Promise<void> => {
     // ARS Round C P1-24 / LiveQA-F3 (2026-08-23): every call is chained onto
     // hardeningMutationQueueRef instead of firing immediately, so at most one
@@ -1281,7 +1380,9 @@ const SecurityHub: React.FC = () => {
     const run = async (): Promise<void> => {
       // Optimistic update — toggle immediately so UI reacts at once
       setHardeningOptions((prev) =>
-        prev.map((opt) => (opt.key === key ? { ...opt, enabled } : opt))
+        prev.map((opt) =>
+          opt.key === key ? { ...opt, enabled, server_rules: undefined } : opt
+        )
       );
       try {
         const data = await wpApi<HardeningToggleResponse>("/hardening/toggle", {
@@ -1328,22 +1429,56 @@ const SecurityHub: React.FC = () => {
       async () => {
         setLoadingHardening(true);
         try {
-          const data = await wpApi<{ success: boolean; message?: string }>(
+          // The server reports `success` from the actual per-option
+          // outcome, so a partial failure (Nginx's everyday
+          // block_php_uploads decline, or any other toggle_option()
+          // error) surfaces here rather than being reported as a
+          // complete success.
+          const data = await wpApi<HardeningApplyAllResponse>(
             "/hardening/apply-all",
             {
               method: "POST",
+              allowSuccessFalse: true,
             }
           );
+          // Some options may have applied even when `success` is false —
+          // always refresh the grid so it reflects the server's true
+          // post-apply state, not just the all-clear path.
+          queryClient.invalidateQueries({ queryKey: ["hardening-status"] });
+          // The everyday Nginx/OpenLiteSpeed partial (block_php_uploads
+          // declining with error code manual_action_required) is not a
+          // real failure the admin needs to act on inside the plugin — it
+          // renders as a warning, using the server's own message. Any
+          // other failed key (a genuine write failure) renders as an
+          // error. A missing `manual_action` field defaults to `[]`, which
+          // routes to the error path rather than assuming a warning that
+          // cannot be confirmed.
           if (data.success) {
-            // v2.9.30.117: invalidate so the hardening grid reflects server state
-            queryClient.invalidateQueries({ queryKey: ["hardening-status"] });
-            toast.success("All recommended security options applied.");
+            if (data.warnings && Object.keys(data.warnings).length > 0) {
+              toast.warning(
+                data.message ||
+                  "Some hardening options need manual server configuration."
+              );
+            } else {
+              toast.success("All recommended security options applied.");
+            }
           } else {
-            toast.error("Failed: " + data.message);
+            const manualAction = data.manual_action ?? [];
+            const isManualActionOnly =
+              data.failed.length > 0 &&
+              data.failed.every((key) => manualAction.includes(key));
+            if (isManualActionOnly) {
+              toast.warning(
+                data.message ||
+                  "Manual server configuration required for some options."
+              );
+            } else {
+              toast.error(data.message || "Failed to apply hardening options.");
+            }
           }
         } catch (e) {
           console.error(e);
-          toast.error("Network error.");
+          toast.error(serverReason(e, "Network error."));
         } finally {
           setLoadingHardening(false);
         }
@@ -1375,7 +1510,7 @@ const SecurityHub: React.FC = () => {
         }
       } catch (e) {
         console.error(e);
-        toast.error("Network error during ban.");
+        toast.error(serverReason(e, "Network error during ban."));
       }
     });
   };
@@ -1469,7 +1604,7 @@ const SecurityHub: React.FC = () => {
           : prev
       );
       toast.success(
-        "Marked as safe. This file will not appear on future scans."
+        "Marked as safe. Future scans skip this file while its content stays the same."
       );
     } catch {
       toast.error("Failed to mark file as safe.");
@@ -1790,7 +1925,7 @@ const SecurityHub: React.FC = () => {
       const verbMap = {
         ignore: "marked safe",
         quarantine: "quarantined",
-        delete: "deleted",
+        delete: "quarantined",
       } as const;
       const result = await performBulkOperation(action, fileList);
       if (result.success) {
@@ -2001,7 +2136,7 @@ const SecurityHub: React.FC = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`hover:text-swiss-navy hover:border-swiss-navy shrink-0 border-b-2 px-6 py-4 transition-all ${activeTab === tab ? "border-swiss-navy text-swiss-navy" : "border-transparent text-slate-500"}`}
+              className={`hover:text-swiss-navy dark:hover:text-foreground hover:border-swiss-navy shrink-0 border-b-2 px-6 py-4 transition-all ${activeTab === tab ? "border-swiss-navy text-swiss-navy dark:text-foreground" : "border-transparent text-slate-600 dark:text-slate-400"}`}
             >
               {tab === "history" ? (
                 <span className="flex items-center gap-1.5">
@@ -2034,7 +2169,7 @@ const SecurityHub: React.FC = () => {
               <div className="bg-swiss-navy absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full" />
               <div className="relative z-10 mb-6 flex items-start justify-between">
                 <div
-                  className={`rounded-2xl p-3 ${firewallEnabled ? "bg-swiss-navy shadow-swiss-navy/20 text-white shadow-lg" : "bg-secondary text-neutral-700"}`}
+                  className={`rounded-2xl p-3 ${firewallEnabled ? "bg-swiss-navy shadow-swiss-navy/20 text-white shadow-lg" : "bg-secondary text-neutral-700 dark:text-neutral-400"}`}
                 >
                   <Shield size={24} />
                 </div>
@@ -2064,12 +2199,13 @@ const SecurityHub: React.FC = () => {
                   />
                 </div>
               </div>
-              <h3 className="text-swiss-navy relative z-10 mb-2 text-xs font-black tracking-widest uppercase">
+              <h3 className="text-swiss-navy dark:text-foreground relative z-10 mb-2 text-xs font-black tracking-widest uppercase">
                 Smart Firewall
               </h3>
-              <p className="relative z-10 mb-4 text-sm leading-relaxed font-medium text-neutral-700">
-                Automatically stops malicious requests, SQL injections, and
-                cross-site scripting attacks.
+              <p className="relative z-10 mb-4 text-sm leading-relaxed font-medium text-neutral-700 dark:text-neutral-400">
+                Checks incoming requests for SQL-injection, script-injection and
+                path-traversal patterns. It stops the ones it recognises unless
+                Detection Only Mode is on.
               </p>
 
               {/* Detection Only Mode switches the firewall between
@@ -2083,16 +2219,16 @@ const SecurityHub: React.FC = () => {
                     onChange={(e) =>
                       handleToggle("simulation_mode", e.target.checked)
                     }
-                    className="border-border text-swiss-navy focus:ring-swiss-navy mt-0.5 h-4 w-4 shrink-0 rounded-md transition-all"
+                    className="border-border text-swiss-navy dark:text-foreground focus:ring-swiss-navy mt-0.5 h-4 w-4 shrink-0 rounded-md transition-all"
                   />
                   <div>
                     <label
                       htmlFor="simMode"
-                      className="hover:text-swiss-navy mb-0.5 block cursor-pointer text-sm font-black tracking-widest text-slate-600 uppercase transition-colors"
+                      className="hover:text-swiss-navy dark:hover:text-foreground mb-0.5 block cursor-pointer text-sm font-black tracking-widest text-slate-600 uppercase transition-colors dark:text-slate-400"
                     >
                       Detection Only Mode
                     </label>
-                    <p className="text-xs leading-relaxed font-medium text-neutral-500">
+                    <p className="text-xs leading-relaxed font-medium text-neutral-600 dark:text-neutral-400">
                       Log threats without blocking them. Useful for testing —
                       attacks are recorded but not stopped.
                     </p>
@@ -2116,7 +2252,7 @@ const SecurityHub: React.FC = () => {
                   must never be shown as OK). */}
               <div className="border-border relative z-10 mt-4 border-t pt-4">
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="text-xs font-black tracking-widest text-neutral-700 uppercase">
+                  <p className="text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
                     WAF Self-Test
                   </p>
                   <Button
@@ -2190,8 +2326,9 @@ const SecurityHub: React.FC = () => {
                         className="text-xs font-semibold text-neutral-600 dark:text-neutral-400"
                         role="status"
                       >
-                        Never run — click "Run self-test now" to verify the
-                        firewall is actually blocking attacks.
+                        Never run — click "Run self-test now" to check that the
+                        firewall detects attacks (and, with Detection Only Mode
+                        off, blocks them).
                       </p>
                     );
                   }
@@ -2244,7 +2381,7 @@ const SecurityHub: React.FC = () => {
                     // the two in sync; the authoritative sentence is always
                     // wafSelfTest.detail, rendered below.
                     const unknownCause = (code: number | null): string => {
-                      if (code === null) return "loopback request failed";
+                      if (code === null) return "no HTTP answer";
                       if (code === 0) return "loopback unreachable";
                       if (code >= 500 || code === 429)
                         return "site did not respond normally";
@@ -2294,7 +2431,7 @@ const SecurityHub: React.FC = () => {
               <div className="bg-card/5 absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full" />
               <div className="relative z-10 mb-6 flex items-start justify-between">
                 <div
-                  className={`rounded-2xl p-3 ${loginEnabled ? "bg-slate-800 text-white shadow-lg shadow-slate-900/20" : "bg-secondary text-neutral-700"}`}
+                  className={`rounded-2xl p-3 ${loginEnabled ? "bg-slate-800 text-white shadow-lg shadow-slate-900/20" : "bg-secondary text-neutral-700 dark:text-neutral-400"}`}
                 >
                   <KeyRound size={24} />
                 </div>
@@ -2323,10 +2460,10 @@ const SecurityHub: React.FC = () => {
                   />
                 </div>
               </div>
-              <h3 className="text-swiss-navy relative z-10 mb-2 text-xs font-black tracking-widest uppercase">
+              <h3 className="text-swiss-navy dark:text-foreground relative z-10 mb-2 text-xs font-black tracking-widest uppercase">
                 Login Safeguard
               </h3>
-              <p className="relative z-10 mb-3 text-sm leading-relaxed font-medium text-neutral-700">
+              <p className="relative z-10 mb-3 text-sm leading-relaxed font-medium text-neutral-700 dark:text-neutral-400">
                 Protect your admin area from brute-force login attempts with
                 automated locking.
               </p>
@@ -2340,7 +2477,7 @@ const SecurityHub: React.FC = () => {
                 <div className="mb-1 flex items-center justify-between">
                   <label
                     htmlFor="loginRetries"
-                    className="text-sm font-black tracking-widest text-slate-600 uppercase"
+                    className="text-sm font-black tracking-widest text-slate-600 uppercase dark:text-slate-400"
                   >
                     Max Login Attempts
                   </label>
@@ -2359,7 +2496,7 @@ const SecurityHub: React.FC = () => {
                     ))}
                   </select>
                 </div>
-                <p className="text-xs leading-relaxed font-medium text-neutral-500">
+                <p className="text-xs leading-relaxed font-medium text-neutral-600 dark:text-neutral-400">
                   After this many failed logins, the IP is blocked for 15
                   minutes.
                 </p>
@@ -2370,45 +2507,77 @@ const SecurityHub: React.FC = () => {
             <div className="glass-panel relative overflow-hidden p-6 transition-all">
               <div className="absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full bg-emerald-500/5" />
               <div className="relative z-10 mb-6 flex items-start justify-between">
-                <div className="text-foreground dark:text-foreground rounded-2xl bg-emerald-500 p-3 shadow-lg shadow-emerald-500/20">
+                <div className="text-foreground rounded-2xl bg-emerald-500 p-3 shadow-lg shadow-emerald-500/20 dark:text-neutral-800">
                   <FileSearch size={24} />
                 </div>
-                <Badge className="rounded-full border-none bg-emerald-100 px-3 py-1 text-xs font-black tracking-widest text-emerald-700 uppercase">
-                  Secure
-                </Badge>
+                <FileIntegrityBadge status={coreIntegrityBadge} />
               </div>
-              <h3 className="text-swiss-navy relative z-10 mb-2 text-xs font-black tracking-widest uppercase">
+              <h3 className="text-swiss-navy dark:text-foreground relative z-10 mb-2 text-xs font-black tracking-widest uppercase">
                 File Integrity
               </h3>
-              <p className="relative z-10 mb-4 text-sm leading-relaxed font-medium text-neutral-700">
+              <p className="relative z-10 mb-4 text-sm leading-relaxed font-medium text-neutral-700 dark:text-neutral-400">
                 Compares your WordPress core files to the official WordPress
-                release to detect any unexpected changes. Alerts you if core
+                release to detect any unexpected changes. Shows here if core
                 files have been modified, deleted, or replaced — a common sign
                 of a hack.
               </p>
+              {coreIntegrity?.result === "issues" && (
+                <p className="relative z-10 mb-4 text-sm font-bold text-red-700 dark:text-red-400">
+                  {coreIntegrity.issues_found === 1
+                    ? "1 core file differs from the official release."
+                    : `${coreIntegrity.issues_found} core files differ from the official release.`}
+                </p>
+              )}
+              {coreIntegrity?.result === "error" && (
+                <p className="relative z-10 mb-4 text-sm font-bold text-neutral-700 dark:text-neutral-300">
+                  The last check could not reach WordPress.org.
+                </p>
+              )}
               <div className="border-border mt-auto flex items-center justify-between border-t pt-4">
-                <span className="text-sm font-black tracking-widest text-neutral-700 uppercase">
-                  Last Verified
+                <span className="text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
+                  Last Scan
                 </span>
-                <span className="text-sm font-black tracking-widest text-emerald-600 uppercase">
-                  {lastScan === "Never"
-                    ? "Automatic daily checks enabled"
-                    : lastScan}
+                <span
+                  className={`text-sm font-black tracking-widest uppercase ${
+                    coreCheckedAt === null && !coreCheckOn
+                      ? "text-neutral-700 dark:text-neutral-300"
+                      : "text-emerald-800 dark:text-emerald-600"
+                  }`}
+                >
+                  {coreCheckedAt !== null
+                    ? coreCheckedAt
+                    : coreCheckOn
+                      ? "Automatic daily checks enabled"
+                      : coreCheckOff
+                        ? "Daily check off"
+                        : securityStatusError
+                          ? "Status unavailable — try again."
+                          : ""}
                 </span>
               </div>
+              {coreCheckOn && (
+                <p className="mt-2 text-right text-xs text-neutral-700 dark:text-neutral-400">
+                  Reload the page to see the latest result.
+                </p>
+              )}
             </div>
           </div>
 
           {/* Abandoned Plugins Panel */}
           {abandonedPlugins !== null && (
             <div className="glass-panel relative mt-4 overflow-hidden p-6 transition-all">
+              <span role="status" className="sr-only">
+                {abandonedCheckPending && abandonedPlugins.enabled
+                  ? "Checking installed plugins."
+                  : ""}
+              </span>
               <div className="absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full bg-orange-500/5" />
               <div className="relative z-10 mb-4 flex items-start justify-between">
                 <div>
-                  <h3 className="text-swiss-navy text-xs font-black tracking-widest uppercase">
+                  <h3 className="text-swiss-navy dark:text-foreground text-xs font-black tracking-widest uppercase">
                     Closed / Abandoned Plugins
                   </h3>
-                  <p className="mt-1 text-sm leading-relaxed font-medium text-neutral-700">
+                  <p className="mt-1 text-sm leading-relaxed font-medium text-neutral-700 dark:text-neutral-400">
                     Plugins closed on WordPress.org no longer receive security
                     updates. Commercial/custom plugins not on WP.org are
                     informational only.
@@ -2439,24 +2608,52 @@ const SecurityHub: React.FC = () => {
                   Abandoned plugin detection is disabled.
                 </p>
               ) : abandonedPlugins.plugins.length === 0 ? (
-                <div className="relative z-10">
-                  <div className="mb-2 flex items-center gap-2 text-sm font-black tracking-widest text-emerald-700 uppercase">
-                    <CheckCircle size={16} />
-                    No closed or abandoned plugins detected
+                abandonedCheckPending ? (
+                  <div className="relative z-10 flex items-center gap-2 text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-300">
+                    <Loader size={16} className="animate-spin" />
+                    Checking installed plugins...
                   </div>
-                  {abandonedPlugins.last_check > 0 && (
-                    <p className="text-muted-foreground text-xs font-medium">
-                      Last checked:{" "}
-                      {new Date(
-                        abandonedPlugins.last_check * 1000
-                      ).toLocaleString()}
-                    </p>
-                  )}
-                </div>
+                ) : abandonedCheckStalled ? (
+                  <p className="relative z-10 text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    The check is still running. Come back in a few minutes.
+                  </p>
+                ) : !(abandonedPlugins.last_check > 0) ? (
+                  <p className="relative z-10 text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Not checked yet. Select Re-check now to check your installed
+                    plugins.
+                  </p>
+                ) : (
+                  <div className="relative z-10">
+                    <div className="mb-2 flex items-start gap-2 text-sm">
+                      <CheckCircle
+                        size={16}
+                        className="mt-0.5 shrink-0 text-emerald-700"
+                      />
+                      <p>
+                        <span className="font-black tracking-widest text-emerald-800 uppercase dark:text-emerald-600">
+                          No closed or unlisted plugins found.
+                        </span>{" "}
+                        <span className="font-medium text-neutral-700 dark:text-neutral-300">
+                          This plugin and plugins known to come from outside
+                          WordPress.org are not checked.
+                        </span>
+                      </p>
+                    </div>
+                    {abandonedPlugins.last_check > 0 && (
+                      <p className="text-muted-foreground text-xs font-medium">
+                        Last checked:{" "}
+                        {new Date(
+                          abandonedPlugins.last_check * 1000
+                        ).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )
               ) : (
                 <div className="relative z-10 space-y-3">
                   {abandonedPlugins.plugins.map((plugin) => {
                     const isClosed = plugin.reason === "closed";
+                    const isLookupFailed = plugin.reason === "lookup_failed";
                     return (
                       <div
                         key={plugin.slug}
@@ -2479,7 +2676,9 @@ const SecurityHub: React.FC = () => {
                           >
                             {isClosed
                               ? "CLOSED"
-                              : "SLUG MISMATCH — Verify if the plugin is still available on WordPress.org if it has been removed"}
+                              : isLookupFailed
+                                ? "NOT CHECKED"
+                                : "NOT FOUND ON WORDPRESS.ORG"}
                           </Badge>
                         </div>
                         <code className="font-mono text-xs text-neutral-600">
@@ -2496,47 +2695,56 @@ const SecurityHub: React.FC = () => {
                                   ? ` on ${plugin.closed_date}`
                                   : ""
                               }. It no longer receives security updates. Deactivate and find an alternative.`
-                            : "This plugin is not listed on WordPress.org. This is normal for commercial, hosting-bundled, or custom-built plugins. Verify it comes from a trusted source."}
+                            : isLookupFailed
+                              ? "WordPress.org did not give a usable answer for this plugin, so it could not be checked. Select Re-check now to try again."
+                              : "This plugin is not listed on WordPress.org. This is normal for commercial, hosting-bundled, or custom-built plugins. Verify it comes from a trusted source."}
                         </p>
                       </div>
                     );
                   })}
+                  {abandonedCheckPending && (
+                    <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                      Checking installed plugins...
+                    </p>
+                  )}
                 </div>
               )}
 
-              <div className="border-border relative z-10 mt-4 flex items-center justify-between border-t pt-4">
-                {abandonedPlugins.last_check > 0 && abandonedPlugins.enabled ? (
-                  <span className="text-muted-foreground text-xs font-medium">
-                    Last checked:{" "}
-                    {new Date(
-                      abandonedPlugins.last_check * 1000
-                    ).toLocaleString()}
-                  </span>
-                ) : (
-                  <span />
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-xl text-xs font-black tracking-widest uppercase"
-                  onClick={handleAbandonedPluginsRefresh}
-                  disabled={abandonedRefreshing}
-                  loading={abandonedRefreshing}
-                  aria-busy={abandonedRefreshing}
-                >
-                  {abandonedRefreshing ? (
-                    <>
-                      <Loader size={12} className="mr-1.5 animate-spin" />
-                      Checking...
-                    </>
+              {abandonedPlugins.enabled && (
+                <div className="border-border relative z-10 mt-4 flex items-center justify-between border-t pt-4">
+                  {abandonedPlugins.last_check > 0 ? (
+                    <span className="text-muted-foreground text-xs font-medium">
+                      Last checked:{" "}
+                      {new Date(
+                        abandonedPlugins.last_check * 1000
+                      ).toLocaleString()}
+                    </span>
                   ) : (
-                    <>
-                      <RotateCcw size={12} className="mr-1.5" />
-                      Re-check now
-                    </>
+                    <span />
                   )}
-                </Button>
-              </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl text-xs font-black tracking-widest uppercase"
+                    onClick={handleAbandonedPluginsRefresh}
+                    disabled={abandonedRefreshing}
+                    loading={abandonedRefreshing}
+                    aria-busy={abandonedRefreshing}
+                  >
+                    {abandonedRefreshing ? (
+                      <>
+                        <Loader size={12} className="mr-1.5 animate-spin" />
+                        Checking...
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw size={12} className="mr-1.5" />
+                        Re-check now
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -2560,10 +2768,10 @@ const SecurityHub: React.FC = () => {
                 <Button
                   variant="secondary"
                   className="shrink-0 rounded-xl text-sm"
-                  onClick={() => setActiveTab("scan")}
-                  aria-label="View findings and apply fixes on the Scan tab"
+                  onClick={handleViewLatestFindings}
+                  aria-label="View findings of the latest scan"
                 >
-                  View &amp; Fix
+                  View findings
                 </Button>
               </div>
             </div>
@@ -2642,7 +2850,8 @@ const SecurityHub: React.FC = () => {
           headersActive={hardeningOptions.some(
             (o) => o.key === "force_security_headers" && o.enabled
           )}
-          wafActive={firewallEnabled}
+          wafActive={firewallEnabled && !simulationMode}
+          wafDetectionOnly={firewallEnabled && simulationMode}
           botBlockingActive={hardeningOptions.some(
             (o) => o.key === "block_bad_bots" && o.enabled
           )}
@@ -2708,7 +2917,7 @@ const SecurityHub: React.FC = () => {
       <ScanReportPreviewModal
         isOpen={previewModalOpen}
         onClose={() => setPreviewModalOpen(false)}
-        previewHtml={previewHtml}
+        preview={reportPreview}
       />
 
       {/* T4 (Package E / G2 dead-path removal, 2026-08-13): the Module 5
@@ -2757,8 +2966,11 @@ const SecurityHub: React.FC = () => {
           <div className="bg-card dark:bg-card border-border dark:border-border/20 animate-in zoom-in-95 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-[2.5rem] border backdrop-blur-xl duration-500">
             <div className="bg-swiss-navy flex shrink-0 items-center justify-between p-8 text-white">
               <h3 className="flex items-center gap-4 text-xl font-black tracking-[0.1em] uppercase">
-                <AlertTriangle size={24} className="text-brand-accent" /> Manual
-                Fix REQUIRED
+                <AlertTriangle
+                  size={24}
+                  className="text-red-600 dark:text-red-400"
+                />{" "}
+                Manual Fix REQUIRED
               </h3>
               <button
                 onClick={() => setL1ManualFix(null)}
@@ -2773,27 +2985,27 @@ const SecurityHub: React.FC = () => {
               {/* WHAT */}
               <div className="bg-card dark:bg-secondary border-border dark:border-border/10 shadow-soft rounded-3xl border p-8">
                 <div className="mb-4 flex items-center justify-between">
-                  <span className="bg-secondary dark:bg-secondary rounded-lg px-3 py-1.5 text-xs font-black tracking-widest text-neutral-700 uppercase">
+                  <span className="bg-secondary dark:bg-secondary rounded-lg px-3 py-1.5 text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
                     NODE_STATUS
                   </span>
                   <h4 className="dark:text-foreground text-xs font-black tracking-widest text-neutral-900 uppercase">
                     THE SECURITY BREACH
                   </h4>
                 </div>
-                <p className="text-[14px] leading-relaxed font-bold text-neutral-700">
+                <p className="text-[14px] leading-relaxed font-bold text-neutral-700 dark:text-neutral-400">
                   {l1ManualFix.what}
                 </p>
               </div>
 
               {/* WHY */}
               <div className="bg-background border-border rounded-3xl border p-8 shadow-inner">
-                <h4 className="text-swiss-navy mb-5 flex items-center gap-3 text-xs font-black tracking-widest uppercase">
-                  <span className="bg-brand-accent/10 text-brand-accent rounded-lg px-3 py-1.5 text-xs font-black tracking-widest uppercase">
+                <h4 className="text-swiss-navy dark:text-foreground mb-5 flex items-center gap-3 text-xs font-black tracking-widest uppercase">
+                  <span className="bg-brand-accent/10 rounded-lg px-3 py-1.5 text-xs font-black tracking-widest text-red-800 uppercase dark:text-red-400">
                     RESTRICTION
                   </span>
                   REASON FOR MANUAL INTERVENTION
                 </h4>
-                <p className="text-[14px] leading-relaxed font-bold text-slate-600 italic">
+                <p className="text-[14px] leading-relaxed font-bold text-slate-600 italic dark:text-slate-400">
                   {l1ManualFix.why}
                 </p>
               </div>
@@ -2815,7 +3027,7 @@ const SecurityHub: React.FC = () => {
                 <ol className="relative z-10 space-y-6">
                   {l1ManualFix.how.map((step, idx) => (
                     <li key={idx} className="flex items-start gap-6">
-                      <span className="text-swiss-navy bg-card shadow-glow-white flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl text-[12px] font-black">
+                      <span className="text-swiss-navy dark:text-foreground bg-card shadow-glow-white flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl text-[12px] font-black">
                         {idx + 1}
                       </span>
                       <span className="text-[14px] leading-relaxed font-black tracking-tight">

@@ -43,10 +43,10 @@ const scoreColor = (score: number): string => {
 
 /** Text color for a given score percentage. */
 const scoreTextColor = (score: number): string => {
-  if (score >= 90) return "text-emerald-600";
-  if (score >= 70) return "text-yellow-600";
-  if (score >= 40) return "text-orange-600";
-  return "text-red-600";
+  if (score >= 90) return "text-emerald-800 dark:text-emerald-600";
+  if (score >= 70) return "text-yellow-800 dark:text-yellow-600";
+  if (score >= 40) return "text-orange-800 dark:text-orange-600";
+  return "text-red-700 dark:text-red-500";
 };
 
 /** Dot color for severity badge. */
@@ -91,7 +91,7 @@ const FactorRow: React.FC<{ factorKey: string; factor: OnPageFactor }> = ({
       >
         <div className="flex items-center gap-3">
           <div className={`h-3 w-3 rounded-full ${scoreColor(factor.score)}`} />
-          <span className="text-[11px] font-black tracking-widest text-neutral-700 uppercase">
+          <span className="text-[11px] font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
             {factor.label}
           </span>
         </div>
@@ -102,14 +102,14 @@ const FactorRow: React.FC<{ factorKey: string; factor: OnPageFactor }> = ({
             {factor.score}%
           </span>
           {issueCount > 0 && (
-            <span className="rounded-full border border-red-100 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600">
+            <span className="rounded-full border border-red-100 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:bg-red-950 dark:text-red-400">
               {issueCount} {issueCount === 1 ? "issue" : "issues"}
             </span>
           )}
           {expanded ? (
-            <ChevronUp size={14} className="text-neutral-400" />
+            <ChevronUp size={14} className="text-neutral-500" />
           ) : (
-            <ChevronDown size={14} className="text-neutral-400" />
+            <ChevronDown size={14} className="text-neutral-500" />
           )}
         </div>
       </button>
@@ -128,20 +128,22 @@ const FactorRow: React.FC<{ factorKey: string; factor: OnPageFactor }> = ({
                   href={issue.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-swiss-navy flex max-w-[280px] items-center gap-1 truncate text-xs font-bold hover:underline"
+                  className="text-swiss-navy dark:text-foreground flex max-w-[280px] items-center gap-1 truncate text-xs font-bold hover:underline"
                 >
                   {issue.title}
                   <ExternalLink size={10} className="flex-shrink-0" />
                 </a>
               </div>
-              <p className="ml-3.5 text-[11px] text-neutral-600">{issue.gap}</p>
-              <p className="ml-3.5 text-[10px] text-neutral-400 italic">
+              <p className="ml-3.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                {issue.gap}
+              </p>
+              <p className="ml-3.5 text-[10px] text-neutral-600 italic dark:text-neutral-400">
                 {issue.fix_hint}
               </p>
             </div>
           ))}
           {issueCount > 10 && (
-            <div className="p-3 text-center text-[10px] font-bold tracking-widest text-neutral-400 uppercase">
+            <div className="p-3 text-center text-[10px] font-bold tracking-widest text-neutral-600 uppercase dark:text-neutral-400">
               + {issueCount - 10} more issues
             </div>
           )}
@@ -154,8 +156,6 @@ const FactorRow: React.FC<{ factorKey: string; factor: OnPageFactor }> = ({
 const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
   seoBreakdown,
 }) => {
-  const [hasTriggeredScan, setHasTriggeredScan] = useState(false);
-
   const {
     data: auditData,
     isLoading,
@@ -163,7 +163,7 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
     refetch,
   } = useQuery<OnPageAuditResult>({
     queryKey: ["onpage-audit"],
-    queryFn: () => fetchOnPageAudit(hasTriggeredScan),
+    queryFn: () => fetchOnPageAudit(true),
     enabled: false,
     // A2: PHP onpage-audit always returns status: "complete" — no polling needed.
     // isFetching (React Query internal) handles the loading state during refetch.
@@ -171,7 +171,6 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
   });
 
   const handleRunScan = useCallback(() => {
-    setHasTriggeredScan(true);
     refetch();
   }, [refetch]);
 
@@ -181,12 +180,12 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
   return (
     <div className="glass-panel border-border rounded-[32px] border p-10">
       <h3
-        className="text-swiss-navy border-border mb-2 border-b pb-6 text-center text-[12px] font-black tracking-[0.3em] uppercase"
+        className="text-swiss-navy dark:text-foreground border-border mb-2 border-b pb-6 text-center text-[12px] font-black tracking-[0.3em] uppercase"
         title="Composite of metadata coverage, technical health, and image alt text quality"
       >
         SEO Health Breakdown
       </h3>
-      <p className="mb-8 text-center text-[10px] text-neutral-500 italic">
+      <p className="mb-8 text-center text-[10px] text-neutral-700 italic dark:text-neutral-300">
         Composite of metadata coverage, technical health, and image alt text
         quality
       </p>
@@ -195,11 +194,13 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
       <div className="mb-8 space-y-8">
         {Object.entries(seoBreakdown).map(([key, value]) => (
           <div key={key} className="group">
-            <div className="mb-3 flex justify-between text-[11px] font-black tracking-widest text-neutral-700 uppercase">
-              <span className="group-hover:text-swiss-navy transition-colors">
+            <div className="mb-3 flex justify-between text-[11px] font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
+              <span className="group-hover:text-swiss-navy dark:group-hover:text-foreground transition-colors">
                 {DIMENSION_LABELS[key] || key.replace("_", " ")}
               </span>
-              <span className="text-swiss-navy">{value}%</span>
+              <span className="text-swiss-navy dark:text-foreground">
+                {value}%
+              </span>
             </div>
             <div className="bg-background border-border h-3 w-full overflow-hidden rounded-full border p-0.5">
               <div
@@ -216,9 +217,10 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
       </div>
 
       {/* Explanation text — always visible */}
-      <p className="mb-6 px-1 text-[10px] leading-relaxed text-neutral-500">
-        Technical score reflects server and WordPress configuration — the plugin
-        monitors and can help fix these. Meta Coverage and Image Alt Text scores
+      <p className="mb-6 px-1 text-[10px] leading-relaxed text-neutral-700 dark:text-neutral-300">
+        Technical score reflects server and WordPress configuration (HTTPS,
+        permalinks, PHP version, debug mode) — the plugin checks these; you or
+        your host make the changes. Meta Coverage and Image Alt Text scores
         reflect your content decisions — the plugin identifies what is missing;
         you make the changes.
       </p>
@@ -254,13 +256,13 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
           <div className="bg-background/50 border-border flex items-center justify-between rounded-2xl border p-4">
             <div className="flex items-center gap-3">
               {auditData.score >= 80 ? (
-                <CheckCircle size={18} className="text-emerald-500" />
+                <CheckCircle size={18} className="text-emerald-700" />
               ) : auditData.score >= 50 ? (
-                <AlertTriangle size={18} className="text-orange-500" />
+                <AlertTriangle size={18} className="text-orange-700" />
               ) : (
                 <AlertTriangle size={18} className="text-red-500" />
               )}
-              <span className="text-[11px] font-black tracking-widest text-neutral-700 uppercase">
+              <span className="text-[11px] font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
                 Overall SEO Health
               </span>
             </div>
@@ -272,7 +274,7 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
           </div>
 
           {/* Metadata */}
-          <div className="flex justify-between px-1 text-[10px] text-neutral-400">
+          <div className="flex justify-between px-1 text-[10px] text-neutral-600 dark:text-neutral-400">
             <span>
               {auditData.post_count} pages scanned
               {auditData.is_sample ? " (sample)" : ""}
@@ -292,7 +294,7 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
           {/* Quick Wins */}
           {auditData.quick_wins.length > 0 && (
             <div className="mt-6">
-              <h4 className="text-swiss-navy mb-4 flex items-center gap-2 text-[11px] font-black tracking-[0.2em] uppercase">
+              <h4 className="text-swiss-navy dark:text-foreground mb-4 flex items-center gap-2 text-[11px] font-black tracking-[0.2em] uppercase">
                 <Zap size={12} />
                 Quick Wins
               </h4>
@@ -302,14 +304,14 @@ const OnPageDiagnostics: React.FC<OnPageDiagnosticsProps> = ({
                     key={idx}
                     className="bg-background/30 border-border flex items-start gap-3 rounded-xl border p-3"
                   >
-                    <span className="text-swiss-navy bg-swiss-navy/5 mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-black">
+                    <span className="text-swiss-navy dark:text-foreground bg-swiss-navy/5 mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-black">
                       {idx + 1}
                     </span>
                     <div>
-                      <p className="text-[11px] font-bold text-neutral-700">
+                      <p className="text-[11px] font-bold text-neutral-700 dark:text-neutral-400">
                         {win.action}
                       </p>
-                      <p className="text-[10px] font-bold text-emerald-600">
+                      <p className="text-[10px] font-bold text-emerald-800 dark:text-emerald-600">
                         {win.impact}
                       </p>
                     </div>

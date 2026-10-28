@@ -2,7 +2,10 @@ import React from "react";
 import { History, X, CheckCircle2 } from "lucide-react";
 import { ScanHistoryDetail } from "../../../types";
 import { SentinelGradeBadge } from "../Sentinel/SentinelGradeBadge";
-import { HISTORY_LABEL_LEGACY_FULL_SCAN } from "./scanCopy";
+import {
+  HISTORY_LABEL_DEEP_MALWARE,
+  HISTORY_LABEL_LEGACY_FULL_SCAN,
+} from "./scanCopy";
 
 export interface ScanHistoricalRecordProps {
   historicalScanDetail: ScanHistoryDetail;
@@ -67,8 +70,10 @@ export function ScanHistoricalRecord({
             <p className="mt-0.5 text-xs font-medium text-neutral-500">
               {historicalScanDetail.record.scan_type === "security_audit"
                 ? "Security Audit"
-                : HISTORY_LABEL_LEGACY_FULL_SCAN}{" "}
-              · {historicalScanDetail.record.findings_count ?? 0} findings ·{" "}
+                : historicalScanDetail.record.scan_type === "malware_deep"
+                  ? HISTORY_LABEL_DEEP_MALWARE
+                  : HISTORY_LABEL_LEGACY_FULL_SCAN}{" "}
+              · {historicalScanDetail.layer1_findings.length} findings ·{" "}
               {historicalScanDetail.record.critical_count ?? 0} critical
             </p>
           </div>
@@ -137,7 +142,8 @@ export function ScanHistoricalRecord({
             aria-hidden="true"
           />
           <span className="text-xs font-black text-emerald-700">
-            No findings recorded for this scan.
+            No open findings for this scan. Findings marked safe or fixed are
+            hidden.
           </span>
         </div>
       )}

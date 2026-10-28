@@ -17,7 +17,7 @@ export const generalPreferenceRows: GeneralPreferenceRow[] = [
   {
     field: "emailNotifications",
     label: "Email Notifications",
-    desc: "Receive security digests and backup reports",
+    desc: "E-mails you right away about critical problems and sends a digest of other warnings. A failed backup or a failed restore is e-mailed even when this switch is off. The daily scan report has its own switch on the Security page.",
     fallback: false,
   },
   {

@@ -51,10 +51,10 @@ const LoadingBar: React.FC = () => (
     <div className="flex items-center gap-3">
       <Loader2
         size={18}
-        className="text-swiss-navy shrink-0 animate-spin"
+        className="text-swiss-navy dark:text-foreground shrink-0 animate-spin"
         aria-hidden="true"
       />
-      <p className="text-swiss-navy text-sm font-black tracking-tight uppercase">
+      <p className="text-swiss-navy dark:text-foreground text-sm font-black tracking-tight uppercase">
         Scanning…
       </p>
     </div>
@@ -75,8 +75,8 @@ const LoadingBar: React.FC = () => (
     >
       <div className="bg-swiss-navy/70 h-full w-1/3 animate-pulse rounded-full" />
     </div>
-    <p className="text-xs font-medium text-neutral-500">
-      This may take up to a minute. Please wait…
+    <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
+      This can take several minutes. Please wait…
     </p>
   </div>
 );
@@ -188,7 +188,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
       <div className="flex flex-wrap gap-3">
         <div className="bg-secondary border-border flex items-center gap-2 rounded-xl border px-4 py-2.5">
           <Shield size={14} className="text-neutral-500" aria-hidden="true" />
-          <span className="text-xs font-black text-neutral-700">
+          <span className="text-xs font-black text-neutral-700 dark:text-neutral-400">
             {(result.files_scanned ?? 0).toLocaleString()} files scanned
           </span>
         </div>
@@ -210,9 +210,9 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
           </span>
         </div>
         <div className="bg-secondary border-border flex items-center gap-2 rounded-xl border px-3 py-2.5">
-          <span className="text-xs font-medium text-neutral-500">
+          <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
             Mode:{" "}
-            <span className="font-black text-neutral-700 uppercase">
+            <span className="font-black text-neutral-700 uppercase dark:text-neutral-400">
               {result.mode}
             </span>
           </span>
@@ -240,7 +240,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
               ? "bg-emerald-50 border-emerald-200 text-emerald-800"
               : isDegraded
                 ? "bg-amber-50 border-amber-200 text-amber-800"
-                : "bg-secondary border-border text-neutral-600";
+                : "bg-secondary border-border text-neutral-600 dark:text-neutral-400";
             return (
               <span
                 key={p.label}
@@ -261,13 +261,13 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
       {/* Detection sources that contributed to this scan's findings. */}
       {result.sources && result.sources.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-black tracking-[0.08em] text-neutral-500 uppercase">
+          <span className="text-[10px] font-black tracking-[0.08em] text-neutral-600 uppercase dark:text-neutral-400">
             Sources:
           </span>
           {result.sources.map((src) => (
             <span
               key={src}
-              className="bg-secondary border-border inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-neutral-700 uppercase"
+              className="bg-secondary border-border inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-neutral-700 uppercase dark:text-neutral-400"
             >
               {src}
             </span>
@@ -278,14 +278,14 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
       {/* Actionable threat list (medium+ severity only) */}
       {hasThreats && actionableThreats.length > 0 && (
         <div>
-          <h4 className="mb-3 text-xs font-black tracking-[0.08em] text-neutral-500 uppercase">
+          <h4 className="mb-3 text-xs font-black tracking-[0.08em] text-neutral-600 uppercase dark:text-neutral-400">
             Threats detected
           </h4>
 
           {/* v2.9.28.11 — Batch-action bar for malware. */}
           {onBulkAction && (
             <div className="bg-secondary border-border mb-3 flex items-center justify-between gap-3 rounded-xl border p-2">
-              <label className="flex cursor-pointer items-center gap-2 text-xs font-black tracking-[0.08em] text-neutral-700 uppercase select-none">
+              <label className="flex cursor-pointer items-center gap-2 text-xs font-black tracking-[0.08em] text-neutral-700 uppercase select-none dark:text-neutral-400">
                 <input
                   type="checkbox"
                   checked={
@@ -322,7 +322,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                         setSelected(new Set())
                       );
                     }}
-                    className="bg-secondary text-swiss-navy border-border hover:bg-muted focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black tracking-[0.08em] uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    className="bg-secondary text-swiss-navy dark:text-foreground border-border hover:bg-muted focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black tracking-[0.08em] uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none"
                   >
                     Mark {selected.size} Safe
                   </button>
@@ -334,21 +334,9 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                         () => setSelected(new Set())
                       );
                     }}
-                    className="focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-amber-700 focus-visible:ring-2 focus-visible:outline-none"
+                    className="focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-amber-700 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-amber-700 focus-visible:ring-2 focus-visible:outline-none"
                   >
                     Quarantine {selected.size}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const list = [...selected];
-                      Promise.resolve(onBulkAction("delete", list)).then(() =>
-                        setSelected(new Set())
-                      );
-                    }}
-                    className="focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-red-700 focus-visible:ring-2 focus-visible:outline-none"
-                  >
-                    Delete {selected.size}
                   </button>
                   {scanSelectionActions.map((Action, i) => (
                     <Action
@@ -369,7 +357,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
               return (
                 <li
                   key={idx}
-                  className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3"
+                  className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3 dark:bg-red-950"
                 >
                   {/* v2.9.28.11 — Per-threat checkbox. */}
                   {onBulkAction && (
@@ -387,10 +375,10 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                     aria-hidden="true"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-black break-all text-red-800">
+                    <p className="text-xs font-black break-all text-red-800 dark:text-red-400">
                       {threat.file}
                     </p>
-                    <p className="mt-0.5 text-xs font-medium text-red-600">
+                    <p className="mt-0.5 text-xs font-medium text-red-700 dark:text-red-400">
                       {threat.type}
                       {threat.severity ? ` — ${threat.severity}` : ""}
                     </p>
@@ -400,7 +388,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                         explanation — shown here unconditionally, not gated
                         behind the paid "Analyze with AI" action. */}
                     {threat.explanation && (
-                      <p className="mt-1 text-[11px] leading-snug font-medium text-red-500">
+                      <p className="mt-1 text-[11px] leading-snug font-medium text-red-700 dark:text-red-400">
                         {threat.explanation}
                       </p>
                     )}
@@ -421,9 +409,9 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                       onClick={() => handleMarkSafe(key, threat.file)}
                       disabled={isPending}
                       aria-busy={isPending}
-                      aria-label={`Mark ${threat.file} as safe and exclude from future scans`}
+                      aria-label={`Mark Safe: ${threat.file}. Excludes it from future scans while its content stays the same`}
                       className="inline-flex shrink-0 items-center gap-1 rounded-full border border-red-300 bg-white px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-red-700 uppercase transition-colors hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                      title="Exclude this file from future malware scans"
+                      title="Exclude this file from future malware scans while its content stays the same"
                     >
                       {isPending ? (
                         <Loader2
@@ -445,10 +433,11 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
             })}
           </ul>
           {onMarkSafe && (
-            <p className="mt-2 text-[11px] leading-snug font-medium text-neutral-500">
+            <p className="mt-2 text-[11px] leading-snug font-medium text-neutral-700 dark:text-neutral-300">
               Mark Safe adds the file to your ignore list so future scans skip
-              it. You can review or remove entries later under Security Hub &gt;
-              Ignore Paths.
+              it while its content stays the same. You can review or remove
+              entries later under Security Hub &gt; Quarantine &gt; Ignored
+              Paths.
             </p>
           )}
         </div>
@@ -462,7 +451,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
             aria-hidden="true"
           />
           <span className="text-xs font-black text-emerald-700">
-            No malware detected. Your files look clean.
+            No malware detected in the scanned files.
           </span>
         </div>
       )}
@@ -503,7 +492,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
               aria-controls="low-risk-findings-list"
               className="bg-secondary hover:bg-secondary/70 border-border focus-visible:ring-swiss-navy flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 transition-colors focus-visible:ring-2 focus-visible:outline-none"
             >
-              <span className="text-xs font-black tracking-[0.08em] text-neutral-700 uppercase">
+              <span className="text-xs font-black tracking-[0.08em] text-neutral-700 uppercase dark:text-neutral-400">
                 {lowRiskThreats.length} low-risk finding
                 {lowRiskThreats.length !== 1 ? "s" : ""} (not counted as
                 threats)
@@ -530,12 +519,12 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                   On clean sites the "actionable threats" block is empty, so the
                   primary bulk bar never rendered. Users reported they could not
                   bulk-ignore low-risk deviations. This bar exposes Mark Safe /
-                  Quarantine / Delete for the low-risk section independently,
+                  Quarantine for the low-risk section independently,
                   with its own selection state (selectedLow).
                 */}
                 {onBulkAction && lowRiskThreats.length > 0 && (
                   <div className="bg-secondary border-border mt-2 mb-2 flex items-center justify-between gap-3 rounded-xl border p-2">
-                    <label className="flex cursor-pointer items-center gap-2 text-xs font-black tracking-[0.08em] text-neutral-700 uppercase select-none">
+                    <label className="flex cursor-pointer items-center gap-2 text-xs font-black tracking-[0.08em] text-neutral-700 uppercase select-none dark:text-neutral-400">
                       <input
                         type="checkbox"
                         checked={
@@ -572,7 +561,7 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                               () => setSelectedLow(new Set())
                             );
                           }}
-                          className="bg-secondary text-swiss-navy border-border hover:bg-muted focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black tracking-[0.08em] uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                          className="bg-secondary text-swiss-navy dark:text-foreground border-border hover:bg-muted focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black tracking-[0.08em] uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none"
                         >
                           Mark {selectedLow.size} Safe
                         </button>
@@ -584,21 +573,9 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                               onBulkAction("quarantine", list)
                             ).then(() => setSelectedLow(new Set()));
                           }}
-                          className="focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-amber-700 focus-visible:ring-2 focus-visible:outline-none"
+                          className="focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-amber-700 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-amber-700 focus-visible:ring-2 focus-visible:outline-none"
                         >
                           Quarantine {selectedLow.size}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const list = [...selectedLow];
-                            Promise.resolve(onBulkAction("delete", list)).then(
-                              () => setSelectedLow(new Set())
-                            );
-                          }}
-                          className="focus-visible:ring-swiss-navy inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-white uppercase transition-colors hover:bg-red-700 focus-visible:ring-2 focus-visible:outline-none"
-                        >
-                          Delete {selectedLow.size}
                         </button>
                         {scanSelectionActions.map((Action, i) => (
                           <Action
@@ -637,14 +614,14 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                         )}
                         <Info
                           size={12}
-                          className="mt-0.5 shrink-0 text-blue-700"
+                          className="mt-0.5 shrink-0 text-blue-700 dark:text-blue-600"
                           aria-hidden="true"
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-black break-all text-neutral-700">
+                          <p className="text-xs font-black break-all text-neutral-700 dark:text-neutral-400">
                             {threat.file}
                           </p>
-                          <p className="mt-0.5 text-xs font-medium text-neutral-500">
+                          <p className="mt-0.5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
                             {threat.type}
                             {threat.severity ? ` — ${threat.severity}` : ""}
                           </p>
@@ -655,9 +632,9 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
                             onClick={() => handleMarkSafe(key, threat.file)}
                             disabled={isPending}
                             aria-busy={isPending}
-                            aria-label={`Mark ${threat.file} as safe and exclude from future scans`}
+                            aria-label={`Ignore ${threat.file}: exclude it from future scans while its content stays the same`}
                             className="border-border hover:bg-secondary focus-visible:ring-swiss-navy inline-flex shrink-0 items-center gap-1 rounded-full border bg-white px-2.5 py-1 text-[10px] font-black tracking-[0.08em] text-neutral-600 uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                            title="Exclude this file from future malware scans"
+                            title="Exclude this file from future malware scans while its content stays the same"
                           >
                             {isPending ? (
                               <Loader2
@@ -682,14 +659,14 @@ const MalwareResultView: React.FC<MalwareResultViewProps> = ({
       )}
 
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-medium text-neutral-400">
+        <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
           Scanned {new Date(result.scanned_at).toLocaleDateString()}
         </p>
         {onViewHistory && (
           <button
             type="button"
             onClick={onViewHistory}
-            className="text-swiss-navy hover:text-swiss-navy/70 focus-visible:ring-swiss-navy inline-flex shrink-0 items-center gap-1.5 rounded text-xs font-black underline underline-offset-2 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            className="text-swiss-navy dark:text-foreground hover:text-swiss-navy/70 focus-visible:ring-swiss-navy inline-flex shrink-0 items-center gap-1.5 rounded text-xs font-black underline underline-offset-2 transition-colors focus-visible:ring-2 focus-visible:outline-none dark:hover:text-blue-300/70"
             aria-label="View this scan in the History tab"
           >
             View in History
@@ -713,7 +690,7 @@ interface ScanResultPanelProps {
   /**
    * v2.9.28.11 — Batch action handler (restored from v2.9.27.71).
    * When provided, ScanResultPanel renders a select-all checkbox + per-row
-   * checkboxes + a batch-action bar with Mark Safe / Quarantine / Delete buttons.
+   * checkboxes + a batch-action bar with Mark Safe / Quarantine buttons.
    * Parent (SecurityHub) calls /security/bulk and updates the scan result state.
    */
   onBulkAction?: (

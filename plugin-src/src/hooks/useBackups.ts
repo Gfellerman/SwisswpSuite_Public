@@ -24,7 +24,7 @@ interface MissingPluginsReport {
 }
 
 function formatMissingPluginsNotice(report: MissingPluginsReport): string {
-  return `Note: ${report.plugins.length} plugin(s) referenced by the restored database are not installed on this site: ${report.plugins.join(", ")}. They were left untouched — review them on the Plugins screen.`;
+  return `Note: ${report.plugins.length} plugin(s) in this site's list of active plugins are not installed: ${report.plugins.join(", ")}. They were left untouched — review them on the Plugins screen.`;
 }
 
 interface GenerateDownloadTokenResponse {
@@ -85,13 +85,75 @@ interface DeleteBackupVariables {
   filename: string;
 }
 
+/**
+ * When a restore imports a database (`db_restored: true`), the mutation's
+ * onSuccess reloads the page to reset the DB connection/session. That
+ * reload destroys this hook's React state before it can render anything,
+ * so any DB-import warning or repair sentence carried in `db_notice`,
+ * `plugins_notice`, or the REST headline (`message`) would never reach the
+ * web UI. The composed summary is written here to `sessionStorage` before
+ * the reload and read back once, non-destructively, by every
+ * `useBackups()` mount — see the lazy initializer below and
+ * `useBackupSets()`'s restore-set mutation, which writes through the same
+ * key. No new REST field: this uses `message`/`db_notice`/`plugins_notice`
+ * exactly as the REST layer already sends them.
+ */
+const RESTORE_SUMMARY_STORAGE_KEY = "swisswpsuite_restore_summary";
+
+/**
+ * Best-effort write. Private browsing / blocked storage throws on some
+ * browsers — that must never crash the mutation's onSuccess. When it
+ * throws, the summary is simply lost and the reload proceeds exactly as it
+ * would without any persisted text.
+ */
+function persistRestoreSummary(text: string): void {
+  try {
+    sessionStorage.setItem(RESTORE_SUMMARY_STORAGE_KEY, text);
+  } catch {
+    // See docblock above — best-effort, never surfaced to the user.
+  }
+}
+
+/**
+ * Non-destructive read: `useBackups()` mounts up to three times on the
+ * Backups page (BackupsPage, BackupList, BackupControl). Deleting the key on
+ * read would mean only whichever instance re-mounts first after the reload
+ * ever sees the summary — the others would read `null`.
+ */
+function readPersistedRestoreSummary(): string | null {
+  try {
+    return sessionStorage.getItem(RESTORE_SUMMARY_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Cleared at the start of every restore mutation (`onMutate`), so a stale
+ * summary from a prior restore never resurfaces after a later, clean one —
+ * and explicitly on `clearRestoreNotice()` (user dismissal).
+ */
+function clearPersistedRestoreSummary(): void {
+  try {
+    sessionStorage.removeItem(RESTORE_SUMMARY_STORAGE_KEY);
+  } catch {
+    // Best-effort — see persistRestoreSummary() above.
+  }
+}
+
 export function useBackups() {
   const queryClient = useQueryClient();
   // W6-A: persistent, dismissible notice shown when a restore succeeded but
   // left the database untouched (files-only restore). Deliberately NOT a
   // toast — a toast would be destroyed by the reload this replaces, and the
   // whole point is that the user must be able to actually read it.
-  const [restoreNotice, setRestoreNotice] = useState<string | null>(null);
+  //
+  // The lazy initializer also picks up a summary persisted to
+  // sessionStorage by a DB-import restore just before its own reload — see
+  // RESTORE_SUMMARY_STORAGE_KEY above. `null` when nothing was persisted.
+  const [restoreNotice, setRestoreNotice] = useState<string | null>(() =>
+    readPersistedRestoreSummary()
+  );
 
   // 1. Fetch Backups
   const {
@@ -159,10 +221,30 @@ export function useBackups() {
         body: JSON.stringify(variables),
       });
     },
+    // Clears any previously persisted restore summary before this mutation
+    // starts, so a stale entry left over from an earlier restore cannot
+    // resurface after this one completes with nothing to report.
+    onMutate: () => {
+      clearPersistedRestoreSummary();
+    },
     onSuccess: (data) => {
       if (data.db_restored) {
         // Genuine DB import happened — force reload to reset DB connection
         // and session. Unchanged from the pre-W6-A behaviour.
+        //
+        // When there is a warning or repair sentence to show
+        // (db_notice/plugins_notice non-empty), the composed summary is
+        // persisted to sessionStorage before the reload so it survives —
+        // see RESTORE_SUMMARY_STORAGE_KEY above. A restore with nothing to
+        // report persists nothing, matching the silent-clean-reload
+        // behaviour.
+        if (data.db_notice || data.plugins_notice) {
+          persistRestoreSummary(
+            [data.message, data.db_notice, data.plugins_notice]
+              .filter(Boolean)
+              .join(" ")
+          );
+        }
         window.location.reload();
         return;
       }
@@ -205,6 +287,11 @@ export function useBackups() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["backups"] });
     },
+    // The request is sent once (no automatic retry), so a failure has to be
+    // shown here; the archive stays listed since nothing is removed.
+    onError: (error: Error) => {
+      toast.error(`Delete failed: ${error.message}`);
+    },
   });
 
   // 5. Download Backup (token-based — avoids bare href that strips nonce)
@@ -235,6 +322,10 @@ export function useBackups() {
 
   const clearRestoreNotice = () => {
     setRestoreNotice(null);
+    // Also drops the persisted sessionStorage summary — otherwise a
+    // dismissed notice would reappear on this instance's next mount (e.g.
+    // navigating away and back within the same tab session).
+    clearPersistedRestoreSummary();
     // WP.org R9 fix (FIX-1 / R-01, 2026-08-31): best-effort dismiss of the
     // persisted report -- without this it would simply reappear on the next
     // ["backups"] refetch (staleTime is only 30s). Harmless no-op when there
@@ -246,6 +337,20 @@ export function useBackups() {
         // on the next list refresh -- not worth surfacing as an error toast.
       }
     );
+  };
+
+  /**
+   * Clears this hook's restore-notice state and its persisted sessionStorage
+   * copy WITHOUT calling the dismiss-notice endpoint (unlike
+   * `clearRestoreNotice` above, which is the user-initiated dismissal and
+   * does call it). A sibling restore mutation (set-level restore) calls this
+   * right before it starts, so a still-showing single-file notice can never
+   * be joined to the set restore's own in-place result by BackupList's
+   * `composeRestoreNotices()`.
+   */
+  const resetRestoreNotice = () => {
+    setRestoreNotice(null);
+    clearPersistedRestoreSummary();
   };
 
   return {
@@ -267,6 +372,7 @@ export function useBackups() {
     // W6-A: persistent files-only-restore notice — see setRestoreNotice above.
     restoreNotice,
     clearRestoreNotice,
+    resetRestoreNotice,
     deleteBackup: deleteBackupMutation.mutate,
     isDeleting: deleteBackupMutation.isPending,
     deleteError: deleteBackupMutation.error,
@@ -354,10 +460,27 @@ export function useBackupSets() {
         /** LIVEQA run-book §3.4 (2026-08-04) — see RestoreBackupResponse above. */
         plugins_notice: string;
       }>(`/backup/sets/${setId}/restore`, { method: "POST" }),
+    // Same stale-summary guard as the single-file restore mutation above.
+    onMutate: () => {
+      clearPersistedRestoreSummary();
+    },
     onSuccess: (data) => {
       if (data.db_restored) {
         // Hard reload after a genuine DB import — same pattern as
         // single-file restore. Unchanged from pre-W6-A behaviour.
+        //
+        // The summary is persisted before reloading — see the
+        // RESTORE_SUMMARY_STORAGE_KEY docblock in useBackups() above. This
+        // hook does not read the key back itself; the fresh useBackups()
+        // mount after the reload does (BackupList.tsx already renders it
+        // via `composeRestoreNotices()`).
+        if (data.db_notice || data.plugins_notice) {
+          persistRestoreSummary(
+            [data.message, data.db_notice, data.plugins_notice]
+              .filter(Boolean)
+              .join(" ")
+          );
+        }
         window.location.reload();
         return;
       }
@@ -380,11 +503,31 @@ export function useBackupSets() {
   // Delete all files in a set and remove the set record.
   const deleteSetMutation = useMutation({
     mutationFn: (setId: string) =>
-      wpApi<{ success: boolean }>(`/backup/sets/${setId}/delete`, {
-        method: "POST",
-      }),
-    onSuccess: () => {
+      wpApi<{ success: boolean; skipped?: string[] }>(
+        `/backup/sets/${setId}/delete`,
+        {
+          method: "POST",
+        }
+      ),
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["backups"] });
+      // A file the server could not delete stays on disk and is listed as a
+      // backup of its own; a file that was already gone is not a failure.
+      const FAILED_SUFFIX = " (delete failed)";
+      const skipped: unknown = data?.skipped;
+      const stuck = (Array.isArray(skipped) ? skipped : [])
+        .filter(
+          (entry): entry is string =>
+            typeof entry === "string" && entry.endsWith(FAILED_SUFFIX)
+        )
+        .map((entry) => entry.slice(0, -FAILED_SUFFIX.length));
+      if (stuck.length > 0) {
+        toast.warning(
+          `Backup set deleted, but ${stuck.length} file(s) could not be removed from the server: ${stuck.join(", ")}.`,
+          { duration: Infinity }
+        );
+        return;
+      }
       toast.success("Backup set deleted.");
     },
     onError: (error: Error) => {

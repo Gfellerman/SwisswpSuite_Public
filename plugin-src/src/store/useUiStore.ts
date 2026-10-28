@@ -55,7 +55,7 @@ export interface UiState {
   confirmDialog: ConfirmDialog | null;
   showLogAdvisor: boolean;
   showFirewallAdvisor: boolean;
-  /** W4 — Elapsed timer for long AI calls (compound model; 15–60s). */
+  /** Elapsed timer for long AI calls (15–60s). */
   aiElapsed: number;
 }
 

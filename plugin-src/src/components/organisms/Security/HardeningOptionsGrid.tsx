@@ -5,7 +5,7 @@
  *   - Three-tier layout: "Protect My Site" (essential) + "Advanced Controls" (collapsed)
  *   - Two-way risk color: low=green / high=red (the API only ever assigns
  *     "low" or "high" to a hardening option's risk field)
- *   - Risk label text: "Safe for all sites" / "Read before enabling"
+ *   - Risk label text: "Low risk" / "Read before enabling"
  *   - Confirmation dialog integration: intercepts toggle before calling onToggle
  *     when the option has requires_confirmation===true and the user is enabling it.
  *   - Backward-compat: uses `opt.tier ?? 'essential'` fallback when server omits tier
@@ -20,19 +20,20 @@ import { ChevronDown, ChevronUp, Lock, AlertTriangle } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { HardeningOption, PreToggleCheckResult } from "../../../types";
 import { HardeningConfirmDialog } from "./HardeningConfirmDialog";
+import { ServerRulesPanel } from "./ServerRulesPanel";
 import { ESSENTIAL_HARDENING_KEYS } from "../../../constants/hardening";
 
 // ---------------------------------------------------------------------------
 // Risk helpers
 // ---------------------------------------------------------------------------
 function getRiskColor(risk: string | undefined): string {
-  if (risk === "high") return "text-red-600";
-  return "text-emerald-600";
+  if (risk === "high") return "text-red-700 dark:text-red-500";
+  return "text-emerald-800 dark:text-emerald-600";
 }
 
 function getRiskLabel(risk: string | undefined): string {
   if (risk === "high") return "Read before enabling";
-  return "Safe for all sites";
+  return "Low risk";
 }
 
 // ---------------------------------------------------------------------------
@@ -79,7 +80,7 @@ const HardeningOptionCard: React.FC<HardeningOptionCardProps> = ({
     <div className="glass-panel group relative overflow-hidden rounded-2xl p-6">
       <div className="mb-6 flex items-start justify-between">
         <div
-          className={`rounded-2xl p-3 ${opt.enabled ? "bg-swiss-navy/10 text-swiss-navy" : "bg-background text-neutral-700"}`}
+          className={`rounded-2xl p-3 ${opt.enabled ? "bg-swiss-navy/10 text-swiss-navy dark:text-foreground" : "bg-background text-neutral-700 dark:text-neutral-400"}`}
         >
           <Lock size={20} aria-hidden="true" />
         </div>
@@ -101,7 +102,7 @@ const HardeningOptionCard: React.FC<HardeningOptionCardProps> = ({
           />
         </div>
       </div>
-      <h4 className="text-swiss-navy mb-2 flex items-center gap-2 text-xs font-black tracking-widest uppercase">
+      <h4 className="text-swiss-navy dark:text-foreground mb-2 flex items-center gap-2 text-xs font-black tracking-widest uppercase">
         {opt.label}
         {/*
           ADDENDUM-2 F-U9 (2026-08-20, condition (5)): a server-level
@@ -115,7 +116,7 @@ const HardeningOptionCard: React.FC<HardeningOptionCardProps> = ({
         */}
         {opt.enabled && opt.htaccess_warning && (
           <span
-            className="inline-flex shrink-0 cursor-help items-center text-amber-600"
+            className="inline-flex shrink-0 cursor-help items-center text-amber-800 dark:text-amber-600"
             title={opt.htaccess_warning}
             tabIndex={0}
           >
@@ -124,11 +125,11 @@ const HardeningOptionCard: React.FC<HardeningOptionCardProps> = ({
           </span>
         )}
       </h4>
-      <p className="mb-4 text-sm leading-relaxed font-medium text-neutral-700">
+      <p className="mb-4 text-sm leading-relaxed font-medium text-neutral-700 dark:text-neutral-400">
         {opt.description}
       </p>
       <div className="border-border mt-auto flex items-center justify-between border-t pt-4">
-        <span className="text-xs font-black tracking-widest text-neutral-700 uppercase">
+        <span className="text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
           Risk Mitigation
         </span>
         <span
@@ -201,9 +202,15 @@ export const HardeningOptionsGrid: React.FC<HardeningOptionsGridProps> = ({
     const opt = options.find((o) => o.key === key);
     if (!opt) return;
 
+    const apiUrl = window.swisswpsuiteData?.apiUrl;
+    if (!apiUrl) {
+      // No REST base URL is available to build the check request from —
+      // fail-open: allow the toggle without confirmation.
+      onToggle(key, value);
+      return;
+    }
+
     try {
-      const apiUrl =
-        window.swisswpsuiteData?.apiUrl || "/wp-json/swisswpsuite/v1";
       const nonce = window.swisswpsuiteData?.nonce || "";
 
       const res = await fetch(`${apiUrl}/hardening/pre-toggle-check`, {
@@ -244,10 +251,10 @@ export const HardeningOptionsGrid: React.FC<HardeningOptionsGridProps> = ({
       {/* -------------------------------------------------------------------- */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h3 className="text-swiss-navy text-xl font-black tracking-tight uppercase">
+          <h3 className="text-swiss-navy dark:text-foreground text-xl font-black tracking-tight uppercase">
             System Hardening
           </h3>
-          <p className="mt-1 text-sm font-black tracking-widest text-neutral-700 uppercase">
+          <p className="mt-1 text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
             Strengthen your WordPress security settings
           </p>
         </div>
@@ -255,7 +262,7 @@ export const HardeningOptionsGrid: React.FC<HardeningOptionsGridProps> = ({
           variant="primary"
           onClick={onApplyAll}
           disabled={isLoading}
-          className="bg-swiss-navy text-foreground dark:text-foreground hover:bg-brand-accent rounded-xl border-none px-6 text-sm font-black tracking-widest uppercase"
+          className="bg-swiss-navy dark:text-foreground hover:bg-brand-accent rounded-xl border-none px-6 text-sm font-black tracking-widest text-neutral-400 uppercase"
         >
           Apply All Recommended Settings
         </Button>
@@ -292,10 +299,10 @@ export const HardeningOptionsGrid: React.FC<HardeningOptionsGridProps> = ({
             onClick={() => setShowAdvanced((prev) => !prev)}
             aria-expanded={showAdvanced}
             aria-controls="hardening-advanced-section"
-            className="text-foreground hover:text-swiss-navy group mb-4 flex w-full items-center justify-between text-xs font-black tracking-widest uppercase transition-colors"
+            className="text-foreground hover:text-swiss-navy dark:hover:text-foreground group mb-4 flex w-full items-center justify-between text-xs font-black tracking-widest uppercase transition-colors"
           >
             <span className="flex items-center gap-2">Advanced Controls</span>
-            <span className="group-hover:text-swiss-navy text-neutral-400 transition-colors">
+            <span className="group-hover:text-swiss-navy dark:group-hover:text-foreground text-neutral-600 transition-colors dark:text-neutral-400">
               {showAdvanced ? (
                 <ChevronUp size={16} aria-hidden="true" />
               ) : (
@@ -326,6 +333,12 @@ export const HardeningOptionsGrid: React.FC<HardeningOptionsGridProps> = ({
           )}
         </div>
       )}
+
+      {/* -------------------------------------------------------------------- */}
+      {/* Server rules — blocks to add to (or remove from) the site-root        */}
+      {/* .htaccess file by hand; renders nothing when there is none.           */}
+      {/* -------------------------------------------------------------------- */}
+      <ServerRulesPanel options={options} />
 
       {/* -------------------------------------------------------------------- */}
       {/* Confirmation dialog — rendered at grid root so it shows regardless    */}

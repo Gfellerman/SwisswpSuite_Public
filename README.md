@@ -1,22 +1,22 @@
-# SwissSuite AI - WordPress Security & Backup Plugin
+# SwissSuite Security Backup and SEO - WordPress Security & Backup Plugin
 
-**Version:** 2.9.33.58
+**Version:** 2.9.33.69
 **Requires WordPress:** 6.3+
 **Tested up to:** 7.1
 **Requires PHP:** 7.4+
 **License:** GPL-2.0-or-later
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
-SwissSuite AI is a local WordPress security and backup core: malware scanning, a firewall, hardening, backup and restore, quarantine, login protection, and on-page SEO. No account required, no AI.
+SwissSuite Security Backup and SEO is a local WordPress security and backup core: malware scanning, a firewall, hardening, backup and restore, quarantine, login protection, and on-page SEO. No account required, no AI features.
 
 ## Features
 
 - **Malware scanner** — local signature-based scanning, on-demand and daily, entirely on your own server; no file contents ever leave your site
 - **Malware quarantine** — isolate suspicious files locally before removing them
-- **Web Application Firewall** — starts in observe (simulation) mode on install so it never blocks legitimate traffic by surprise; enable active blocking any time in Security > Firewall. Covers SQL injection, XSS, and path-traversal attempts, with IP ban/unban/allowlist and a threat log
-- **Hardening** — 12 one-click hardening toggles (XML-RPC, file editing, user enumeration, REST API restrictions, and more), plus a Security Level preset
+- **Web Application Firewall** — starts in observe (simulation) mode on install so it never blocks legitimate traffic by surprise; enable active blocking any time in Security > Firewall. Checks the page address and its query arguments for SQL-injection, script-injection and path-traversal patterns (cookies, form submissions, uploads, request bodies and headers are not inspected), with IP ban/unban/allowlist and a threat log
+- **Hardening** — 12 one-click hardening toggles (XML-RPC, file editing, user enumeration, REST API restrictions, and more)
 - **Login protection** — brute-force lockout and honeypot spam blocking
-- **Backup & restore** — full site backup (files + database) and one-click restore of your site files and database, including AES-256-encrypted archives, run on demand. A safety copy of your current database is taken before the restore touches anything. Optional WP-CLI commands for hosts with real cron access
+- **Backup & restore** — full site backup (files + database) and one-click restore of your site files, including AES-256-encrypted archives, run on demand. The database copy inside a backup is not imported; the restore result tells you how to bring it back yourself with your hosting provider's database tool. Optional WP-CLI commands for hosts with real cron access
 - **SEO** — on-page audit and score, plus XML sitemap and optional llms.txt generation, all computed locally
 - **Dashboard** — security dashboard, threat log, and a daily email security report
 
@@ -24,7 +24,7 @@ A separately distributed paid package with additional features is available at h
 
 ## Installation
 
-1. In WordPress Admin, go to **Plugins > Add New**, search for **SwissSuite AI**, and click **Install Now**.
+1. In WordPress Admin, go to **Plugins > Add New**, search for **SwissSuite Security Backup and SEO**, and click **Install Now**.
 2. Activate the plugin.
 3. No account or key of any kind is required — run your first scan from **Security > Scan**.
 
@@ -40,7 +40,7 @@ The complete, uncompiled source for the admin UI (React/TypeScript) is published
 
 ## Get the plugin
 
-SwissSuite AI is intended for listing on the WordPress.org Plugin Directory; there is no separate download link for it. To report an issue with this repository or its published source, use [GitHub Issues](https://github.com/Gfellerman/SwisswpSuite_Public/issues).
+SwissSuite Security Backup and SEO is intended for listing on the WordPress.org Plugin Directory; there is no separate download link for it. To report an issue with this repository or its published source, use [GitHub Issues](https://github.com/Gfellerman/SwisswpSuite_Public/issues).
 
 ## External Services
 
@@ -48,7 +48,7 @@ This plugin's code connects to exactly one external service:
 
 | Service | When | Data Sent |
 |---------|------|-----------|
-| WordPress.org | Plugin update checks (standard WordPress behavior); a daily core-file checksum verification; a daily check for closed/abandoned plugins | Your WordPress version and site locale (checksum requests), and your installed plugin slugs (update checks, abandoned-plugin check) |
+| WordPress.org | Plugin update checks (standard WordPress behavior); a daily core-file checksum verification and a daily check for closed/abandoned plugins (both only after you agree) | Your WordPress version and site locale (checksum requests), and your installed plugin slugs (update checks, abandoned-plugin check) |
 
 That is the only host this plugin's code can reach. It does not phone home to any server operated by its developer, does not require an account or a key of any kind, and does not send site content or visitor data anywhere. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) and `readme.txt`'s `== External Services ==` section for full details.
 

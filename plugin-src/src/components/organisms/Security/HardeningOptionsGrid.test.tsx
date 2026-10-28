@@ -21,7 +21,7 @@
  */
 import { createRequire } from "node:module";
 import "@testing-library/jest-dom/vitest";
-import { describe, it, expect, afterEach, beforeAll } from "vitest";
+import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 
 type GridModule = typeof import("./HardeningOptionsGrid");
 type TestingLibraryModule = typeof import("@testing-library/react");
@@ -32,6 +32,7 @@ let HardeningOptionsGrid: GridModule["HardeningOptionsGrid"];
 let render: TestingLibraryModule["render"];
 let screen: TestingLibraryModule["screen"];
 let cleanup: TestingLibraryModule["cleanup"];
+let waitFor: TestingLibraryModule["waitFor"];
 let React: ReactModule;
 
 beforeAll(async () => {
@@ -43,7 +44,8 @@ beforeAll(async () => {
   window.ReactDOM = { ...RealReactDOM, ...RealReactDOMClient };
 
   ({ HardeningOptionsGrid } = await import("./HardeningOptionsGrid"));
-  ({ render, screen, cleanup } = await import("@testing-library/react"));
+  ({ render, screen, cleanup, waitFor } =
+    await import("@testing-library/react"));
   React = await import("react");
 });
 
@@ -209,5 +211,98 @@ describe("HardeningOptionsGrid — every option is interactive", () => {
     );
     screen.getByRole("switch", { name: /toggle later option/i }).click();
     expect(calls).toEqual([["some_option_the_backend_added_later", true]]);
+  });
+});
+
+describe("HardeningOptionsGrid — confirmation pre-check request URL", () => {
+  type SiteData = { apiUrl?: string; nonce?: string };
+  const holder = window as unknown as { swisswpsuiteData?: SiteData };
+  const previousSiteData = holder.swisswpsuiteData;
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    if (previousSiteData === undefined) {
+      delete holder.swisswpsuiteData;
+    } else {
+      holder.swisswpsuiteData = previousSiteData;
+    }
+  });
+
+  // An option that asks for confirmation when it is switched ON, so a click
+  // on its switch goes through the pre-check request.
+  function confirmingOption() {
+    return baseOption({
+      key: "needs_confirmation_option",
+      label: "Confirming Option",
+      enabled: false,
+      requires_confirmation: true,
+    });
+  }
+
+  function renderGrid(onToggle: (key: string, value: boolean) => void) {
+    render(
+      React.createElement(HardeningOptionsGrid, {
+        options: [confirmingOption()],
+        isLoading: false,
+        onToggle,
+        onApplyAll: () => {},
+      })
+    );
+    return screen.getByRole("switch", { name: /toggle confirming option/i });
+  }
+
+  it("positive control: with a REST base URL the check is requested from that URL and the toggle follows it", async () => {
+    holder.swisswpsuiteData = {
+      apiUrl: "https://example.test/wp-json/swisswpsuite/v1",
+      nonce: "abc123",
+    };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ requires_confirmation: false }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const calls: Array<[string, boolean]> = [];
+    renderGrid((key, value) => calls.push([key, value])).click();
+
+    await waitFor(() =>
+      expect(calls).toEqual([["needs_confirmation_option", true]])
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://example.test/wp-json/swisswpsuite/v1/hardening/pre-toggle-check"
+    );
+  });
+
+  it("makes no request to a guessed /wp-json/ path when no REST base URL exists, and still lets the toggle through", async () => {
+    delete holder.swisswpsuiteData;
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValue(new Error("must not be called"));
+    vi.stubGlobal("fetch", fetchMock);
+    const calls: Array<[string, boolean]> = [];
+    renderGrid((key, value) => calls.push([key, value])).click();
+
+    await waitFor(() =>
+      expect(calls).toEqual([["needs_confirmation_option", true]])
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("treats an empty REST base URL like an absent one", async () => {
+    holder.swisswpsuiteData = { apiUrl: "", nonce: "abc123" };
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValue(new Error("must not be called"));
+    vi.stubGlobal("fetch", fetchMock);
+    const calls: Array<[string, boolean]> = [];
+    renderGrid((key, value) => calls.push([key, value])).click();
+
+    await waitFor(() =>
+      expect(calls).toEqual([["needs_confirmation_option", true]])
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    // The toggle fires exactly once (no second call from a fall-through path).
+    expect(calls).toHaveLength(1);
   });
 });

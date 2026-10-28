@@ -14,6 +14,7 @@ import { Toaster } from "../atoms/Toaster";
 import { ThemeToggle } from "../ThemeToggle";
 import { HeaderAccountCluster } from "./HeaderAccountCluster";
 import { BRAND_TAGLINE } from "./brandTagline";
+import { EXTRA_NAV_ITEMS } from "../../lib/extraNavItems";
 import {
   LayoutDashboard,
   Shield,
@@ -69,7 +70,8 @@ export function DashboardLayout() {
     { id: "dashboard", label: "Dashboard", path: "/", icon: LayoutDashboard },
     { id: "security", label: "Security", path: "/security", icon: Shield },
     { id: "seo", label: "SEO", path: "/seo", icon: Search },
-    { id: "backups", label: "Backup", path: "/backups", icon: Database },
+    ...EXTRA_NAV_ITEMS,
+    { id: "backups", label: "Backups", path: "/backups", icon: Database },
     {
       id: "settings",
       label: "Settings",
@@ -79,7 +81,7 @@ export function DashboardLayout() {
   ];
 
   return (
-    <div className="bg-bg-deep dark:text-foreground dark:bg-card selection:bg-swiss-red/20 selection:text-foreground flex min-h-screen overflow-hidden font-sans text-neutral-900 transition-colors duration-300">
+    <div className="dark:text-foreground dark:bg-card selection:bg-swiss-red/20 selection:text-foreground flex min-h-screen overflow-hidden font-sans text-neutral-900 transition-colors duration-300">
       {/* Background Mesh Overlay - Visual Flair from Foundation */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="bg-brand-accent/5 absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full opacity-50 blur-[120px] dark:opacity-100" />
@@ -134,7 +136,7 @@ export function DashboardLayout() {
           className={`flex h-24 items-center ${isSidebarCollapsed ? "justify-center" : "justify-between px-8"} border-border dark:border-border/5 bg-background/50 dark:bg-secondary border-b`}
         >
           <div className="flex items-center gap-4 overflow-hidden">
-            <div className="bg-swiss-red/10 text-swiss-red border-swiss-red/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border">
+            <div className="bg-swiss-red/10 border-swiss-red/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-red-700 dark:text-red-400">
               <Shield
                 size={20}
                 className="drop-shadow-sm"
@@ -144,9 +146,12 @@ export function DashboardLayout() {
             {!isSidebarCollapsed && (
               <div className="flex flex-col">
                 <span className="dark:text-foreground text-lg leading-none font-extrabold tracking-tight text-neutral-900">
-                  SWISS<span className="text-swiss-red">SUITE</span>
+                  SWISS
+                  <span className="text-swiss-red dark:text-red-400">
+                    SUITE
+                  </span>
                 </span>
-                <span className="mt-1 items-center text-xs font-bold tracking-[0.2em] text-neutral-700 uppercase">
+                <span className="mt-1 items-center text-xs font-bold tracking-[0.2em] text-neutral-700 uppercase dark:text-neutral-400">
                   {BRAND_TAGLINE}
                 </span>
               </div>
@@ -156,7 +161,7 @@ export function DashboardLayout() {
           {/* Mobile Close Button */}
           <button
             onClick={() => setIsMobileMenuOpen(false)}
-            className="dark:hover:text-foreground p-2 text-neutral-700 transition-colors hover:text-neutral-900 md:hidden"
+            className="dark:hover:text-foreground p-2 text-neutral-700 transition-colors hover:text-neutral-900 md:hidden dark:text-neutral-400"
             aria-label="Close menu"
           >
             <X size={24} />
@@ -174,8 +179,8 @@ export function DashboardLayout() {
               className={({ isActive }) =>
                 `group relative flex min-h-[44px] items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${
                   isActive
-                    ? "bg-swiss-red/10 text-swiss-redred dark:text-foreground shadow-sm"
-                    : "hover:bg-secondaryforeground dark:hover:text-foreground dark:hover:bg-secondary text-neutral-600 hover:text-neutral-900 dark:bg-transparent"
+                    ? "bg-swiss-red/10 dark:text-foreground shadow-sm"
+                    : "dark:hover:text-foreground dark:hover:bg-secondary text-neutral-600 hover:text-neutral-900 dark:bg-transparent dark:text-neutral-400"
                 } ${isSidebarCollapsed ? "justify-center px-2" : ""} `
               }
               title={isSidebarCollapsed ? item.label : ""}
@@ -209,7 +214,7 @@ export function DashboardLayout() {
         <div className="border-border dark:border-border/5 bg-background/50 dark:bg-secondary border-t p-4">
           <button
             onClick={toggleSidebar}
-            className={`hover:bg-card dark:hover:text-foreground dark:hover:bg-secondary flex min-h-[44px] w-full items-center gap-3 rounded-xl px-4 py-3 text-neutral-700 transition-all duration-200 hover:text-neutral-900 dark:bg-transparent ${isSidebarCollapsed ? "justify-center" : ""}`}
+            className={`hover:bg-card dark:hover:text-foreground dark:hover:bg-secondary flex min-h-[44px] w-full items-center gap-3 rounded-xl px-4 py-3 text-neutral-700 transition-all duration-200 hover:text-neutral-900 dark:bg-transparent dark:text-neutral-400 ${isSidebarCollapsed ? "justify-center" : ""}`}
           >
             <PanelLeftClose
               size={18}
@@ -236,7 +241,7 @@ export function DashboardLayout() {
           <div className="flex items-center gap-4 lg:gap-8">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="dark:hover:text-foreground -ml-2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 text-neutral-700 transition-colors hover:text-neutral-900 md:hidden"
+              className="dark:hover:text-foreground -ml-2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 text-neutral-700 transition-colors hover:text-neutral-900 md:hidden dark:text-neutral-400"
               aria-label="Open menu"
             >
               <Menu size={24} />

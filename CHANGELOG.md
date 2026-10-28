@@ -4,6 +4,165 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/) with a 4-segment scheme: `MAJOR.MINOR.SPRINT.HOTFIX`.
 
+## [2.9.33.69] - 2026-10-23
+
+### Added
+- An e-mail and a notice when a backup fails, with the reason and how to try again.
+- A reminder on the Dashboard and the plugin screen when no backup has been made for 7 days or more.
+
+### Fixed
+- A restore that could not write all its files is now reported as failed, not as successful.
+- Each backup file is checked right after it is written; a damaged file stops the backup instead of being kept.
+- When the hosting storage is full, a backup now stops at once and removes its temporary files.
+- Files left over by an interrupted restore are removed once the restore has clearly stopped.
+- Plugins that WordPress.org did not answer for are shown as not checked, and a firewall in Detection Only Mode no longer counts as active.
+
+### Changed
+- The diagnostics export includes the last 100 log lines, with recognised personal data removed.
+- Less background work while no backup is running.
+
+## [2.9.33.68] - 2026-10-22
+
+### Changed
+- lucide-react, TanStack Query, zustand, immer and reselect, built into the admin interface, are updated to their newest releases.
+
+## [2.9.33.67] - 2026-10-22
+
+### Changed
+- The readme lists every JavaScript library built into the admin interface, with its version.
+- A backup names the plugins, themes and uploads folders it cannot include when they are stored outside the WordPress folder.
+
+### Fixed
+- llms.txt names the sitemap only while the sitemap is switched on.
+- The sitemap address in llms.txt, robots.txt and the SEO screen also works when the site uses plain permalinks.
+- A plugin closed on WordPress.org is reported as closed instead of as not listed there.
+- The closed-plugin check skips a plugin whose Update URI points to another site, such as a private plugin.
+- A restore no longer writes a copy of the security settings into the uploads folder.
+- A backup skips cache folders only inside the folder that holds both the plugins and the themes, so a site's own folders elsewhere are never left out.
+
+## [2.9.33.66] - 2026-10-19
+
+### Fixed
+- Backups use the themes folder WordPress reports and no longer guess a location for it.
+- The Nginx example rule for blocking PHP in uploads is left out when WordPress reports an uploads address at the root of a host, instead of pointing at a guessed folder.
+
+## [2.9.33.65] - 2026-10-19
+
+### Changed
+- A new installation no longer turns off the built-in theme and plugin file editor; the welcome notice says where to turn it off. Sites that already use the plugin keep their setting.
+- The file that records start-up errors in the uploads folder has a random name; the older file with a fixed name is removed after the update.
+- The bundled JavaScript libraries are updated to their latest releases that work with the React version WordPress provides (lucide-react 1.59.0, React Router 7.18.4, TanStack Query 5.104.4, Zustand 5.0.15, tailwind-merge 3.7.0).
+
+### Fixed
+- llms.txt gives the site and sitemap addresses at the site's home address when WordPress is installed in its own folder.
+- Backups no longer assume a folder named wp-content when the uploads folder is outside the WordPress folder.
+
+## [2.9.33.64] - 2026-10-18
+
+### Changed
+- The two daily WordPress.org checks (core file comparison and closed-plugin lookup) stay off until you agree. The plugin asks once on its own screen; a site that already chose keeps its setting.
+- The page shown to a blocked visitor uses your site's name and no longer names this plugin.
+- Deactivating the plugin keeps your crawler and search-engine restriction settings.
+- The notice about failed e-mail delivery says how to fix it.
+- Pro: the Sentinel core-file comparison also stays off until you agree.
+
+### Fixed
+- A test e-mail to a blocked mail port reports the problem after about 10 seconds instead of waiting up to five minutes.
+- The settings link in alert e-mails uses your site's admin address.
+
+## [2.9.33.63] - 2026-10-18
+
+### Added
+- Self-Check shows when entries could not be written to the debug log.
+- Folders left out of backups are listed under Save Backup Now, each with an "Include <folder> again" button. Replacing the backup encryption password asks first and reminds you that earlier backups need the previous one.
+
+### Changed
+- The firewall checks only the page address and its query arguments. Cookies, form submissions, file uploads, request bodies and request headers are not inspected.
+- Hardening no longer edits the .htaccess file in your site's root folder. For the options that need rules there, the Hardening screen shows each rule block for you to copy into that file. Blocks an earlier version wrote there are left in place, and the screen lists any whose option is off, with the lines to delete. Rules in uploads/.htaccess are still added and removed for you.
+- Report e-mails are sent as plain text.
+- The XML sitemap no longer lists images.
+- Only one restore runs at a time. A second restore is refused and says when the first one's lock expires if it has stopped.
+- Deleting the plugin leaves its settings, tables and upload folders in place while another installed copy of it still uses them. Emptied upload folders are now removed on hosts where WordPress cannot write files directly.
+- A file on the malware scan's ignore list is reported again when its content changes.
+- A failed restore, backup, delete or settings change is not sent again automatically; the error is shown and you repeat the action if you want to.
+
+### Fixed
+- Files and database copies over 100 MiB are added to a backup in a request of their own instead of being skipped, the database copy resumes where it stopped after an interruption, and a table row too large to copy stops the backup with the table named instead of a PHP memory error.
+- A WP-CLI backup on a host with a PHP time limit adds files over 100 MiB instead of stopping.
+- A running backup keeps its speed when a scheduled step and a page-load step arrive at the same time, and two steps of one backup can no longer run at once. A backup step that cannot write its list of files stops with an error instead of leaving the backup short.
+- The e-mail about a failed restore is still sent when the request stops between preparing and sending it.
+- Backup and restore find the site's files when WordPress is installed in its own folder.
+- Settings and the Dashboard say when their data could not be loaded and offer "Try again"; a failed backup delete is reported; Amazon S3 shows as connected only when it is.
+
+## [2.9.33.62] - 2026-10-03
+
+### Added
+- Readme: a "Third-party libraries" note names the icon library compiled into the admin JavaScript (lucide-react, ISC licence).
+
+### Changed
+- Firewall: builds whose firewall reads only values WordPress has already parsed check the page address, its query arguments and cookies. Form submissions, file uploads, request bodies and request headers are not inspected, and the Security screen, the readme and the README say so.
+- Scan report preview: the grade, summary, findings and sections are shown inside the plugin screen from data, instead of the e-mail's HTML.
+- Author-archive blocking: uses the author value WordPress parsed from the request instead of the raw query string.
+- Bad-bot blocking: the match runs on the whole sanitised User-Agent; only the copy written to the log is shortened, and it is cut on a character boundary.
+- Server-rule snippets (Hardening, uploads-folder PHP blocking): the rules use the site's actual uploads path instead of a fixed `/wp-content/uploads`.
+- XML sitemap and llms.txt: each value is escaped as it is written out. The sitemap cache now holds the page list instead of finished XML, and a cache written by an earlier version is rebuilt.
+
+### Fixed
+- Scan report preview: loads the stored scan results itself, and a scan with no findings shows "No issues found in this scan."
+- Scan report e-mail: the Description column shows the finding's text; an empty description shows a dash.
+- Start-up failure notice: names the log file only when the details were saved there; otherwise it says they could not be saved and gives the file and line of the failure.
+
+## [2.9.33.61] - Unreleased
+
+### Changed
+- The plugin's name is now SwissSuite Security Backup and SEO (address unchanged); e-mail sender name, Site Health and privacy-guide labels follow. The separate paid product is now called SwissSuite AI.
+- Encryption: the SMTP password and the backup-encryption password are now protected with a key the plugin generates and keeps in your site's own database, instead of your WordPress security keys. If Settings says a saved password cannot be read, re-enter it once: until then encrypted backups stop with a message and e-mail goes through PHP mail() instead of your SMTP server. Older encrypted backups restore once the same backup password is entered again.
+- Restore: when this build does not import a backup's database copy, it puts back the backup's files, says so in the restore result, leaves the current database exactly as it was, and points to importing the .sql file inside the backup with your host's database tool.
+
+### Fixed
+- Database backup: a value containing a `%` character (a stored CSS width, a URL query string, a percentage in a product description) is no longer replaced with an unreadable placeholder in the backup file, which corrupted that value when its database copy was imported. When a build of this plugin that imports the database copy next imports a backup already affected by this, the affected values are repaired automatically during that import; a build that does not import the database copy leaves the .sql file as it is.
+- Database import (in builds that import the database copy): the automatic repair above now only ever touches a value that could actually be affected, so a value that happens to look similar by coincidence is never rewritten by mistake. When a repair happens, the restore result and the WP-CLI restore command both say how many values were repaired.
+
+## [2.9.33.60] - 2026-09-15
+
+Post-submission quality release, round 2. Not submitted to WordPress.org; the public mirror stays at 2.9.33.58.
+
+### Added
+- WP-CLI: `wp swisswpsuite backup restore <file>` restores a backup from the command line without the web request time limit; if it is interrupted, running the same command again restores from the beginning of the archive. Supports `--db-only`, `--files-only`, `--dry-run`, `--part`, and refuses without `--yes` on a site that already has content; `wp swisswpsuite backup decrypt <file.zip.enc> --password=…` turns a password-protected archive into a plain zip.
+- User manual: a "Disaster recovery" chapter for restoring a site that is completely down (same domain and table prefix, encryption password, where to place the archive parts, the WP-CLI route, the by-hand fallback).
+
+### Fixed
+- Database dump: views are now dumped as views after all tables, with no data rows, and a table or view whose definition cannot be read is skipped with a logged warning instead of being dropped without a replacement; rows with a primary key of zero or below are included; the dump reports what it skipped.
+- Restore: a failed SQL statement is no longer counted as applied, a discarded buffer is reported, the result distinguishes "complete" from "completed with warnings" (the on-screen headline follows it, and now has a dedicated wording for a statement refused by the security filter), the legacy single-file dump path now takes the safety dump and runs the table-prefix check, and the prefix-mismatch message names both prefixes.
+- Restore: the import's dangerous-statement filter no longer looks inside the text of ordinary content — it previously scanned a statement's raw text for words like "call" or "execute" and could refuse an otherwise ordinary row (a post, a setting, a product description) whose wording happened to contain one, silently dropping it while still reporting the restore as complete. It now looks only at the statement's actual structure, never at content inside it, so ordinary rows are restored unchanged; a statement genuinely refused is named, counted, and reflected in the restore's result and headline instead of vanishing without a trace.
+- WP-CLI restore: `--restart` stops with an error naming the lock file while an import is running, instead of reporting a clear that did not happen and then attempting a restore the same lock refuses. Pointing `restore` at one archive of a backup written as several archives stops before anything is restored and lists every archive of the set in the order they must be restored (database first); `--part` restores that one archive and reports which part of which set it restored, rather than reporting a finished restore; `--part` on an archive that is not part of any set is now refused with an explanation instead of silently restoring the whole archive. The command also recognises the archives of a set from the files sitting beside the one it was pointed at, even when the plugin's own record of that set has been cleaned up. The user manual's Disaster recovery chapter and the readme describe the full command family (`run|due|status|restore|decrypt`), `--part`, and `--restart`.
+- Restore: a decrypted working copy that vanishes before it can be read is no longer reported as a wrong password; the message says plainly that the password was not the cause. Working files a restore leaves behind if it is interrupted (a decrypted copy of an encrypted archive) are now cleared automatically once they are old enough that they can no longer belong to a restore still genuinely in progress.
+- Encryption: a wrong password or a tampered archive now fails the decryption instead of returning success with an empty file.
+- Backup watchdog: it now reads the same progress marker as the engine (bytes, parts, encryption and upload progress count as liveness) and treats any change as progress, so a healthy upload or encryption phase is no longer cancelled on hosts that block loopback requests.
+- Scheduled backups: automation settings are written under a lock, so a status update can no longer be lost when two writes race; a leftover cleanup step that deleted older user backups by a filename pattern was removed; backups that belong to a deleted or disabled schedule are now listed as orphans.
+- Activation: a site whose host changes only by "www." is no longer locked out; the identity lock keeps the activation and records why a downgrade happened; plugin update checks send the activation key in a request header instead of the URL and only accept metadata from allowlisted hosts.
+- AI batch queue: results for image items and custom post types are no longer discarded after the batch was charged; an unrecognised result is logged instead of silently dropped.
+- Interface: a cancelled scheduled run shows as "Cancelled" instead of "Never run"; the stuck-job banner states the real 30-minute threshold.
+- Word count for content scoring handles en dashes and repeated separators.
+
+## [2.9.33.59] - 2026-09-15
+
+Post-submission quality release (fleet QA round 1). Not submitted to WordPress.org; the public mirror stays at 2.9.33.58.
+
+### Fixed
+- Login protection: the brute-force lockout now really blocks a login attempt from a locked-out address. It previously ran before WordPress's own password check, which discarded the lockout, so a correct password still logged in. Application passwords and XML-RPC logins from a locked-out address are now refused as well; addresses on the firewall allowlist are never locked out. A blocked attempt no longer extends its own 15-minute window.
+- Guest REST restriction: the allowlist now recognises requests that use the `?rest_route=` form (plain permalinks), so the plugin's own backup ticks and the allowlisted WooCommerce, form and SEO routes are no longer answered with 404 on those sites.
+- Security grade: the "block PHP in uploads" bonus counts the protection that is actually in place in `.htaccess`, not only the saved switch.
+- "Apply All Recommended Settings" reports the real outcome (how many options applied, which did not, and which need a manual server change on Nginx/OpenLiteSpeed); the interface shows a warning for the manual case instead of an error.
+- Reactivating the plugin restores the `.htaccess` rules that deactivation removed, for every hardening option that is still switched on.
+- Backups: retention now recognises password-protected archives (`.zip.enc`), removes the backup record together with its files, and keeps the record whenever a file could not be removed; archive parts are capped at 45,000 entries so every backup stays restorable; the completed-job summary no longer reports a total size smaller than the bytes written or a leftover time estimate.
+- Backup watchdog: cancelled or circuit-tripped jobs are no longer resumed, and finished entries are cleared so the watchdog can stop itself.
+- Settings: two quick saves in a row no longer fail with "modified by another session"; switching the SEO output off now purges the page cache like the other SEO switches; the abandoned-plugin check re-arms itself if its scheduled event is lost.
+- SEO: the schema factor only scores when structured-data output is actually enabled; the health check no longer scores meta descriptions from keys this package never writes; word counts handle accented, hyphenated, apostrophe and CJK text; the JSON-LD block is safe against titles containing `</script`.
+- Malware quarantine: restoring a file from quarantine removes it from the scan ignore list.
+- Daily core file check: an error result is logged as an error instead of "0 issues found"; a failing firewall self-test is now logged.
+- Interface: the File Integrity card no longer shows a hard-coded "Secure"; the deep scan stops retrying after three consecutive failures; the system log view polls every 15 seconds and pauses while the tab is hidden.
+
 ## [2.9.33.58] - 2026-09-12
 
 WordPress.org resubmission release.

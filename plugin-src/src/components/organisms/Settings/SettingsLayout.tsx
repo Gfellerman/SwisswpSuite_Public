@@ -33,7 +33,7 @@ export function SettingsLayout({
               className={`relative min-h-[44px] shrink-0 rounded-md px-6 py-2.5 text-sm font-medium transition-all duration-200 focus:ring-2 focus:ring-blue-500/50 focus:outline-none ${
                 activeTab === tab.id
                   ? "bg-card dark:bg-secondary dark:text-foreground text-neutral-900 shadow-sm"
-                  : "dark:hover:text-foreground text-neutral-700 hover:text-neutral-700"
+                  : "dark:hover:text-foreground text-neutral-700 hover:text-neutral-700 dark:text-neutral-400"
               } `}
             >
               {tab.label}

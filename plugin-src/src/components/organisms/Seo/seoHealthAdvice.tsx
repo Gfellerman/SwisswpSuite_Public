@@ -20,14 +20,14 @@ export const SEO_THIN_CONTENT_HEADING = "Thin Content";
 
 /** Note under the thin-content heading. */
 export const SEO_THIN_CONTENT_NOTE =
-  "These pages have minimal source content, so their page text alone does not carry enough detail for a useful description. Add more body copy, then run the Health Check again.";
+  "These pages have a short description and very little page text. The Health Check reads descriptions from Yoast SEO or Rank Math; lengthen the description there, then run the Health Check again.";
 
 /** Heading for the group whose descriptions are shorter than the target. */
 export const SEO_SHORT_DESCRIPTION_HEADING = "Description Too Short";
 
 /** Note under the short-description heading. */
 export const SEO_SHORT_DESCRIPTION_NOTE =
-  "These items have descriptions under 150 characters despite sufficient page content.";
+  "These items have a description, or for images alt text, shorter than the target.";
 
 // ── "What To Do Next" ────────────────────────────────────────────────────────
 
@@ -53,12 +53,12 @@ export function buildSeoNextStep(scanResult: SeoScanResult): React.ReactNode {
   const parts: string[] = [];
   if (missing > 0) {
     parts.push(
-      `${missing} item${missing === 1 ? " has" : "s have"} no description at all — add more body copy or an excerpt, then run the Health Check again.`
+      `At least ${missing} item${missing === 1 ? " has" : "s have"} no description or image alt text. Descriptions are read from Yoast SEO or Rank Math, and alt text from the Media Library; add them there, then run the Health Check again.`
     );
   }
   if (shortOrThin > 0) {
     parts.push(
-      `${shortOrThin} item${shortOrThin === 1 ? " has" : "s have"} a description that is shorter than the 150-character target.`
+      `At least ${shortOrThin} item${shortOrThin === 1 ? " has" : "s have"} a description or image alt text that is shorter than the target.`
     );
   }
   return parts.join(" ");

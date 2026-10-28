@@ -345,10 +345,10 @@ describe("SecurityHub — WAF Self-Test tile (B.6/DASH-2)", () => {
   // case).
   it.each([
     {
-      label: "http_code null -> loopback request failed",
+      label: "http_code null -> no HTTP answer",
       http_code: null as number | null,
       detail: "Loopback request failed: cURL error 28",
-      labelPattern: /unknown \(loopback request failed\)/i,
+      labelPattern: /unknown \(no HTTP answer\)/i,
       detailPattern: /cURL error 28/,
     },
     {
@@ -443,7 +443,12 @@ describe("SecurityHub — WAF Self-Test tile (B.6/DASH-2)", () => {
     setupWpApiMock({ status: { firewall_enabled: true }, statusError: true });
     renderSecurityHub();
 
-    expect(await screen.findByText(/status unavailable/i)).toBeInTheDocument();
+    // The firewall tile and the File Integrity footer both say it; the tile
+    // is the one with the status role.
+    const unavailable = await screen.findAllByText(/status unavailable/i);
+    expect(unavailable.some((el) => el.getAttribute("role") === "status")).toBe(
+      true
+    );
 
     expect(screen.queryByText(/checking/i)).not.toBeInTheDocument();
 

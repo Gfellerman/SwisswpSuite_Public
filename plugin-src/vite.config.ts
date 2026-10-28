@@ -14,6 +14,7 @@ import { fileURLToPath } from "url";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { configDefaults } from "vitest/config";
+import { stripVendorUrlsPlugin } from "./build/strip-vendor-urls.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -156,6 +157,14 @@ export default defineConfig(({ mode }) => {
       ...(OVERLAY_DIR ? [sourceOverlay(OVERLAY_DIR)] : []),
       react(),
       expandShortenedLinks(),
+      // Reads the files Vite has already written to `outDir` (its
+      // `closeBundle` hook fires after every other plugin's renderChunk
+      // transform, including expandShortenedLinks() above, and
+      // unconditionally after minification) and rewrites any remaining
+      // third-party URL literal to a non-URL phrase — see
+      // plugin/build/strip-vendor-urls.mjs for why renderChunk/
+      // generateBundle could not be used here.
+      stripVendorUrlsPlugin(),
     ],
     resolve: {
       alias: {
@@ -222,6 +231,63 @@ export default defineConfig(({ mode }) => {
         ),
         "react-dom": path.resolve(__dirname, "src/vendor-shims/react-dom.ts"),
         react: path.resolve(__dirname, "src/vendor-shims/react.ts"),
+        // WordPress.org Guideline 13 compliance (CF1-FE, 2026-10-03):
+        // `recharts` (its internal Redux-style state layer,
+        // `state/hooks.js`) and `react-redux` (recharts' `<Provider>` /
+        // `useSelector`) each pull in a transitive copy of Meta's
+        // `use-sync-external-store` polyfill package — three separate
+        // `@license React` banners land in the built bundle
+        // (`use-sync-external-store-shim.production.js`,
+        // `use-sync-external-store-shim/with-selector.production.js`,
+        // `use-sync-external-store-with-selector.production.js`). The
+        // polyfill exists only for pre-React-18 consumers; WordPress core's
+        // bundled React is 18.3.1 and has shipped a native
+        // `useSyncExternalStore` since 18.0 (see the `react`/`react-dom`
+        // aliases above), so every one of those three files is dead weight
+        // AND an undisclosed bundled copy of a library core already
+        // provides. All four specifier shapes actually used across the
+        // dependency graph (`recharts` imports the extensionless
+        // `"use-sync-external-store/shim/with-selector"`; `react-redux`
+        // imports `"use-sync-external-store/with-selector.js"`; the other
+        // two are aliased defensively so no caller can resolve the real
+        // package by a different path) are redirected to one local module
+        // that re-exports `useSyncExternalStore` from the `react` alias
+        // above and re-implements `useSyncExternalStoreWithSelector` on top
+        // of it — see `src/shims/use-sync-external-store.ts` for the full
+        // rationale and the ported algorithm.
+        //
+        // Same specific-before-generic ordering concern as the react/
+        // react-dom entries above: the two `/shim` subpaths are listed
+        // before anything that could be read as a prefix match of a
+        // shorter entry, and `/with-selector` + `/with-selector.js` are
+        // listed as their own exact entries (there is no bare
+        // `"use-sync-external-store"` entry — nothing in this codebase's
+        // dependency graph imports the unqualified package specifier, so
+        // aliasing it was not needed and was deliberately left out).
+        "use-sync-external-store/shim/with-selector.js": path.resolve(
+          __dirname,
+          "src/shims/use-sync-external-store.ts"
+        ),
+        "use-sync-external-store/shim/with-selector": path.resolve(
+          __dirname,
+          "src/shims/use-sync-external-store.ts"
+        ),
+        "use-sync-external-store/shim/index.js": path.resolve(
+          __dirname,
+          "src/shims/use-sync-external-store.ts"
+        ),
+        "use-sync-external-store/shim": path.resolve(
+          __dirname,
+          "src/shims/use-sync-external-store.ts"
+        ),
+        "use-sync-external-store/with-selector.js": path.resolve(
+          __dirname,
+          "src/shims/use-sync-external-store.ts"
+        ),
+        "use-sync-external-store/with-selector": path.resolve(
+          __dirname,
+          "src/shims/use-sync-external-store.ts"
+        ),
         "@": SRC_ROOT,
       },
     },

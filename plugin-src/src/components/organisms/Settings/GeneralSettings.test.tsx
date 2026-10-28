@@ -272,8 +272,53 @@ describe("GeneralSettings — Alert Digest Frequency select (A-21, DIAG-EMAIL E-
 
     expect(
       screen.getByText(
-        /critical alerts are sent immediately when alert e-mails are switched on \(at most 5 per day\)\. everything else is bundled into this summary — turning the summary off also discards any events still waiting to be summarised\./i
+        /critical alerts are sent immediately when alert e-mails are switched on \(at most 5 per day\); a failed backup or restore is e-mailed even when they are off\. everything else is bundled into this summary — turning the summary off also discards any events still waiting to be summarised\./i
       )
     ).toBeInTheDocument();
+  });
+
+  it("digest help is the owner-signed text, byte for byte, and says a failed backup or restore ignores the switch", () => {
+    render(
+      React.createElement(GeneralSettings, {
+        settings: baseSettings({ emailNotifications: false }),
+        onSave: async () => ({ success: true }),
+        isSaving: false,
+      })
+    );
+
+    const help = document.getElementById("alertDigestFrequency-desc");
+    expect(help).not.toBeNull();
+    expect(help?.textContent).toBe(
+      "Critical alerts are sent immediately when alert e-mails are switched on (at most 5 per day); a failed backup or restore is e-mailed even when they are off. Everything else is bundled into this summary — turning the summary off also discards any events still waiting to be summarised."
+    );
+    // The select that this help describes keeps pointing at it.
+    expect(
+      screen.getByLabelText(/alert digest frequency/i).getAttribute("id")
+    ).toBe("alertDigestFrequency");
+  });
+});
+
+describe("GeneralSettings — Alert Email help text", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("names backup and restore alerts, byte for byte as signed, and stays linked to the input", () => {
+    render(
+      React.createElement(GeneralSettings, {
+        settings: baseSettings({ alertEmail: "owner@example.test" }),
+        onSave: async () => ({ success: true }),
+        isSaving: false,
+      })
+    );
+
+    const help = document.getElementById("alertEmail-desc");
+    expect(help).not.toBeNull();
+    expect(help?.textContent).toBe(
+      "Email address for security alerts, backup and restore alerts, and diagnostic notifications. Saved automatically when you leave the field."
+    );
+    const input = screen.getByLabelText(/^alert email$/i);
+    expect(input.getAttribute("id")).toBe("alertEmail");
+    expect(input.getAttribute("aria-describedby")).toContain("alertEmail-desc");
   });
 });

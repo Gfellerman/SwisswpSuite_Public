@@ -34,7 +34,10 @@ function ToggleRow({ label, desc, checked, onChange }: ToggleRowProps) {
         >
           {label}
         </p>
-        <p id={descId} className="mt-0.5 text-xs text-neutral-700">
+        <p
+          id={descId}
+          className="mt-0.5 text-xs text-neutral-700 dark:text-neutral-400"
+        >
           {desc}
         </p>
       </div>
@@ -93,7 +96,7 @@ export function ScanCoverageSettings({
           <h3 className="dark:text-foreground text-lg font-semibold text-neutral-900">
             Scan Coverage
           </h3>
-          <p className="text-xs text-neutral-700">
+          <p className="text-xs text-neutral-700 dark:text-neutral-400">
             Extra checks included in your daily security scan
           </p>
         </div>
@@ -102,7 +105,7 @@ export function ScanCoverageSettings({
       <div className="space-y-0">
         <ToggleRow
           label="WordPress Core Integrity Check"
-          desc="Verifies all WordPress core files match official checksums. Detects any tampering including novel malware injections."
+          desc="Compares WordPress core files with the official WordPress.org checksums and reports files that were changed or are missing. New files added to the site, and the plugins and themes you installed, are not checked."
           checked={settings?.coreIntegrityEnabled ?? true}
           onChange={(v) => handleToggle("coreIntegrityEnabled", v)}
         />

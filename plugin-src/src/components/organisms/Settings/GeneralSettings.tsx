@@ -63,7 +63,10 @@ function ToggleRow({
         <p id={labelId} className="text-sm font-medium">
           {label}
         </p>
-        <p id={descId} className="mt-0.5 text-xs text-neutral-700">
+        <p
+          id={descId}
+          className="mt-0.5 text-xs text-neutral-700 dark:text-neutral-400"
+        >
           {desc}
         </p>
       </div>
@@ -189,7 +192,7 @@ export function GeneralSettings({
       {/* Preferences Card */}
       <Card className="space-y-2 p-6">
         <div className="border-border dark:border-border mb-4 flex items-center gap-2 border-b pb-3">
-          <Settings className="h-4 w-4 text-neutral-700" />
+          <Settings className="h-4 w-4 text-neutral-700 dark:text-neutral-500" />
           <h3 className="text-base font-semibold">General Preferences</h3>
         </div>
         {generalPreferenceRows.map((row) => (
@@ -207,7 +210,7 @@ export function GeneralSettings({
       {/* Alert Email Card */}
       <Card className="space-y-4 p-6">
         <div className="border-border dark:border-border mb-2 flex items-center gap-2 border-b pb-3">
-          <Mail className="h-4 w-4 text-neutral-700" />
+          <Mail className="h-4 w-4 text-neutral-700 dark:text-neutral-500" />
           <h3 className="text-base font-semibold">Notifications</h3>
         </div>
         <div>
@@ -250,14 +253,18 @@ export function GeneralSettings({
             <p
               id={emailErrorId}
               role="alert"
-              className="mt-1 text-xs text-red-600"
+              className="mt-1 text-xs text-red-700 dark:text-red-400"
             >
               {emailError}
             </p>
           )}
-          <p id="alertEmail-desc" className="mt-1 text-xs text-neutral-700">
-            Email address for security alerts and diagnostic notifications.
-            Saved automatically when you leave the field.
+          <p
+            id="alertEmail-desc"
+            className="mt-1 text-xs text-neutral-700 dark:text-neutral-400"
+          >
+            Email address for security alerts, backup and restore alerts, and
+            diagnostic notifications. Saved automatically when you leave the
+            field.
           </p>
         </div>
 
@@ -291,12 +298,13 @@ export function GeneralSettings({
           </select>
           <p
             id="alertDigestFrequency-desc"
-            className="mt-1 text-xs text-neutral-700"
+            className="mt-1 text-xs text-neutral-700 dark:text-neutral-400"
           >
             Critical alerts are sent immediately when alert e-mails are switched
-            on (at most 5 per day). Everything else is bundled into this summary
-            — turning the summary off also discards any events still waiting to
-            be summarised.
+            on (at most 5 per day); a failed backup or restore is e-mailed even
+            when they are off. Everything else is bundled into this summary —
+            turning the summary off also discards any events still waiting to be
+            summarised.
           </p>
         </div>
       </Card>

@@ -70,9 +70,8 @@ export const ScanCard: React.FC<ScanCardProps> = ({
   if (result && !isLoading) {
     lastScanSummary = (
       // WCAG 1.4.3: text-neutral-500 on white is ~3.5:1 (FAIL) → text-neutral-600 is ~5.9:1 (PASS)
-      <p className="mt-1 text-xs font-medium text-neutral-600">
-        Last scan: {(result.files_scanned ?? 0).toLocaleString()} files
-        checked,{" "}
+      <p className="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+        Last scan: {(result.files_scanned ?? 0).toLocaleString()} files checked,{" "}
         <span
           className={
             (result.threats_found ?? 0) > 0
@@ -93,10 +92,14 @@ export const ScanCard: React.FC<ScanCardProps> = ({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="bg-secondary shrink-0 rounded-xl p-2.5">
-            <Icon size={20} className="text-swiss-navy" aria-hidden="true" />
+            <Icon
+              size={20}
+              className="text-swiss-navy dark:text-foreground"
+              aria-hidden="true"
+            />
           </div>
           <div>
-            <h3 className="text-swiss-navy text-sm font-black tracking-tight uppercase">
+            <h3 className="text-swiss-navy dark:text-foreground text-sm font-black tracking-tight uppercase">
               {label}
             </h3>
           </div>
@@ -107,7 +110,7 @@ export const ScanCard: React.FC<ScanCardProps> = ({
       </div>
 
       {/* Description */}
-      <p className="text-xs leading-relaxed font-medium text-neutral-600">
+      <p className="text-xs leading-relaxed font-medium text-neutral-600 dark:text-neutral-400">
         {description}
       </p>
 

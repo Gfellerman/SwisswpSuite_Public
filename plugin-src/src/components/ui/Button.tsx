@@ -28,13 +28,13 @@ export const Button: React.FC<ButtonProps> = ({
     secondary:
       "bg-card dark:bg-secondary text-neutral-900 dark:text-foreground border border-border dark:border-border/10 shadow-soft hover:bg-background dark:hover:bg-card/10 hover:border-border dark:hover:border-border/20",
     danger:
-      "bg-brand-accent/10 text-brand-accent border border-brand-accent/20 hover:bg-brand-accent hover:text-foreground dark:hover:text-foreground hover:shadow-glow-red",
+      "bg-brand-accent/10 text-red-800 dark:text-red-400 border border-brand-accent/20 hover:bg-brand-accent hover:text-neutral-200 dark:hover:text-neutral-950 hover:shadow-glow-red",
     success:
-      "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-foreground dark:hover:text-foreground hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]",
+      "bg-emerald-500/10 text-emerald-800 dark:text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-foreground dark:hover:text-neutral-800 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]",
     ghost:
-      "bg-transparent dark:bg-transparent text-neutral-700 hover:text-neutral-900foreground dark:hover:text-foreground hover:bg-secondary dark:hover:bg-secondary",
+      "bg-transparent dark:bg-transparent text-neutral-700 dark:text-neutral-400 dark:hover:text-foreground hover:bg-secondary dark:hover:bg-secondary",
     outline:
-      "bg-transparent border border-border dark:border-border text-neutral-700  hover:bg-secondary dark:hover:bg-secondary",
+      "bg-transparent border border-border dark:border-border text-neutral-700 dark:text-neutral-400  hover:bg-secondary dark:hover:bg-secondary",
   };
 
   const sizes = {

@@ -1,9 +1,9 @@
 /**
  * Vitest coverage for WafTierPanel — the firewall summary card on the
- * Security dashboard. This build ships one WAF rule set and applies it
- * unconditionally, so the panel takes no props: it always renders the
- * same static list of what that rule set blocks, and never renders a
- * comparative "tier" claim.
+ * Security dashboard. The panel takes no props: it always renders the same
+ * static list of what the request check inspects, says what it does not
+ * inspect, and never renders a comparative "tier" claim (CF1-WAF,
+ * validator-written; RED on HEAD 11401a40, whose list had no scope).
  *
  * React-externalization workaround (read before editing): this codebase
  * externalizes React (WP.org Guideline 13, 2026-08-12) — vite.config.ts's
@@ -48,17 +48,37 @@ describe("WafTierPanel", () => {
     cleanup();
   });
 
-  it("renders the firewall panel heading and its rule list", () => {
+  it("lists what the request check inspects, with its scope", () => {
     render(React.createElement(WafTierPanel));
 
     expect(screen.getByText("Web Application Firewall")).toBeInTheDocument();
     expect(
-      screen.getByText("SQL injection pattern blocking")
+      screen.getByText("SQL-injection patterns in the page address")
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Cross-site scripting (XSS) pattern blocking")
+      screen.getByText(
+        "Basic script-injection patterns (javascript: links, inline event handlers) in the page address"
+      )
     ).toBeInTheDocument();
-    expect(screen.getByText("Path traversal protection")).toBeInTheDocument();
+    expect(
+      screen.getByText("Path traversal in the page address")
+    ).toBeInTheDocument();
+  });
+
+  it("says what the request check does not inspect", () => {
+    render(React.createElement(WafTierPanel));
+
+    expect(
+      screen.getByText(
+        "Form submissions, file uploads, request bodies, request headers and cookies are not inspected."
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("SQL injection pattern blocking")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Cross-site scripting (XSS) pattern blocking")
+    ).not.toBeInTheDocument();
   });
 
   it("renders identically regardless of window.swisswpsuiteData — the panel takes no props and reads no global", () => {

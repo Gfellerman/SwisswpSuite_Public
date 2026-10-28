@@ -1,6 +1,6 @@
 # SwissSuite AI — Data Processing Agreement
 
-> **Last Updated:** 2026-07-21
+> **Last Updated:** 2026-10-06
 > **Effective Date:** 2026-07-21
 
 ---
@@ -69,6 +69,8 @@ This DPA covers only Personal Data that the Processor processes **on the Control
 - Site domain (license validation)
 - Content submitted to AI features (may incidentally contain personal data such as names mentioned in blog posts)
 - Token usage records (license key, action type, amount)
+
+The Processor does not receive the restore-failure e-mail described in the Privacy Policy: it is generated and sent by the Controller's own installation.
 
 ---
 

@@ -21,7 +21,7 @@ const RD = window.ReactDOM;
 
 if (!RD || typeof RD.createRoot !== "function") {
   throw new Error(
-    "SwissSuite AI: window.ReactDOM.createRoot is missing. Either " +
+    "SwissSuite Security Backup and SEO: window.ReactDOM.createRoot is missing. Either " +
       "WordPress's 'react-dom' script did not load before this plugin's " +
       "bundle ran, or the loaded build does not expose createRoot on the " +
       "global (unexpected for WP core >= 6.2's bundled React 18) — check " +

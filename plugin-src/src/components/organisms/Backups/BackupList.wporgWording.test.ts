@@ -40,3 +40,48 @@ describe("BackupList.tsx (Free) — retention wording matches the engine", () =>
     );
   });
 });
+
+/**
+ * Source-content regression lock added for STEP 4.2 (v2.9.33.61, design B′
+ * — FIX_PLAN_L6X_VALIDATED.md §5c): the database restore leaves the Free
+ * edition. The restore confirm dialogs here used to promise the plugin
+ * would import the database dump inside a backup ("your database will be
+ * restored too … a safety copy … is saved first"). This build's restorer
+ * (class-swisswpsuite-restorer.php process_database_dump()) never imports
+ * a dump — it writes nothing and returns db_restored:false. A confirm
+ * dialog that still promised an import would contradict the honest
+ * db_notice text the same restore then shows.
+ *
+ * Fail-first: run against the pre-fix file (which still carried "your
+ * database will be restored too" in both handleRestore() and
+ * handleRestoreSet()) — this test fails. After the reword, it passes.
+ */
+describe("BackupList.tsx (Free) — restore confirm dialogs never promise a database import", () => {
+  it("never claims a restore will bring the database back", () => {
+    expect(SOURCE).not.toContain("your database will be restored too");
+    expect(SOURCE).not.toContain(
+      "a safety copy of your current database is saved first"
+    );
+  });
+
+  it("the single-file restore confirm states the database is not imported", () => {
+    expect(SOURCE).toContain(
+      "This will replace your current files with the files in the backup file ${backup.name}. Your existing files will be overwritten. If it holds a database copy, that copy is not imported; your current database is not replaced. This cannot be undone."
+    );
+    // A continuation part holds no database copy, so the text must not presume one.
+    expect(SOURCE).not.toContain("The database copy inside this backup");
+  });
+
+  it("the set restore confirm states the database is not imported", () => {
+    expect(SOURCE).toContain(
+      'the site files in it will be restored to disk. If it also holds a database copy, that copy is not imported; your current database is not replaced. This cannot be undone.`'
+    );
+  });
+
+  it("carries no Pro/upgrade vocabulary (the one upsell link lives in Settings only)", () => {
+    expect(SOURCE).not.toMatch(/\bPro\b/);
+    expect(SOURCE.toLowerCase()).not.toMatch(
+      /\b(upgrade|unlock|subscription)\b/
+    );
+  });
+});

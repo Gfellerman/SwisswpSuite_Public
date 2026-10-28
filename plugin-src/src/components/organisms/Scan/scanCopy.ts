@@ -30,9 +30,10 @@ export const DEEP_MALWARE_PHASE_LABELS: Record<string, string> = {
 };
 
 /**
- * Labels for scan-history rows whose scan type this build does not write, so
- * an older row still renders a meaningful badge instead of an empty one.
+ * Labels for scan-history rows. A finished manual Deep Scan is stored as
+ * `malware_deep` and shows under the Deep Scan name; rows of a scan type this
+ * build does not write still render a meaningful badge instead of an empty one.
  */
-export const HISTORY_LABEL_DEEP_MALWARE = "Archived scan";
+export const HISTORY_LABEL_DEEP_MALWARE = "Deep Scan";
 export const HISTORY_LABEL_LEGACY_FULL = "Archived scan";
 export const HISTORY_LABEL_LEGACY_FULL_SCAN = "Archived scan";

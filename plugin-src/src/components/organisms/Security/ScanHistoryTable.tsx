@@ -11,6 +11,20 @@ import { SentinelGradeBadge } from "../Sentinel/SentinelGradeBadge";
 import { ScanHistoryRecord } from "../../../types";
 import { getScanHistoryBadge } from "./scanHistoryBadge";
 
+// The server sends the time as an ISO 8601 UTC string; people read it in their
+// own time zone, in the same form in the table and in the button's name.
+const formatScanTime = (value: string): string => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+};
+
 interface ScanHistoryTableProps {
   scanHistory: ScanHistoryRecord[];
   loadingRecordId: number | null;
@@ -28,8 +42,12 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
     <div className="animate-in fade-in slide-in-from-right-4 space-y-6">
       <div className="bg-card border border-black p-6">
         <div className="mb-8 flex items-center justify-between border-b border-black pb-4">
-          <h3 className="flex items-center gap-2 text-xs font-black tracking-widest text-black uppercase">
-            <History size={16} className="text-black" aria-hidden="true" />
+          <h3 className="dark:text-foreground flex items-center gap-2 text-xs font-black tracking-widest text-black uppercase">
+            <History
+              size={16}
+              className="dark:text-foreground text-black"
+              aria-hidden="true"
+            />
             Scan History
           </h3>
           <Button
@@ -48,7 +66,7 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
             aria-label="Scan history"
           >
             <thead className="bg-background text-foreground dark:text-foreground">
-              <tr className="bg-background dark:bg-secondary border-border dark:border-border/10 border-b text-left text-sm font-black tracking-widest text-neutral-700 uppercase">
+              <tr className="bg-background dark:bg-secondary border-border dark:border-border/10 border-b text-left text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
                 <th className="border-border dark:border-border/10 border-r p-4">
                   Date
                 </th>
@@ -72,7 +90,7 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
                 <tr>
                   <td
                     colSpan={6}
-                    className="p-12 text-center text-xs font-black tracking-widest text-neutral-500 uppercase"
+                    className="p-12 text-center text-xs font-black tracking-widest text-neutral-600 uppercase dark:text-neutral-400"
                   >
                     No scan history yet. Run a scan to start tracking your
                     security posture.
@@ -84,13 +102,8 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
                     key={record.id}
                     className="hover:bg-secondary/50 transition-colors"
                   >
-                    <td className="p-4 text-xs font-bold text-neutral-700">
-                      {new Date(record.scanned_at).toLocaleString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                    <td className="p-4 text-xs font-bold text-neutral-700 dark:text-neutral-400">
+                      {formatScanTime(record.scanned_at)}
                     </td>
                     <td className="p-4">
                       {(() => {
@@ -107,17 +120,17 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
                           size="sm"
                         />
                       ) : (
-                        <span className="text-xs font-black tracking-widest text-neutral-400 uppercase">
+                        <span className="text-xs font-black tracking-widest text-neutral-600 uppercase dark:text-neutral-400">
                           --
                         </span>
                       )}
                     </td>
-                    <td className="p-4 text-center text-xs font-black text-neutral-700">
+                    <td className="p-4 text-center text-xs font-black text-neutral-700 dark:text-neutral-400">
                       {record.findings_count ?? 0}
                     </td>
                     <td className="p-4 text-center">
                       <span
-                        className={`text-xs font-black ${(record.critical_count ?? 0) > 0 ? "text-red-600" : "text-neutral-500"}`}
+                        className={`text-xs font-black ${(record.critical_count ?? 0) > 0 ? "text-red-600" : "text-neutral-600 dark:text-neutral-400"}`}
                       >
                         {record.critical_count ?? 0}
                       </span>
@@ -127,7 +140,7 @@ export const ScanHistoryTable: React.FC<ScanHistoryTableProps> = ({
                         onClick={() => onViewRecord(record)}
                         disabled={loadingRecordId === record.id}
                         className="text-swiss-navy hover:text-brand-accent inline-flex items-center gap-1 text-xs font-black tracking-widest uppercase underline underline-offset-2 transition-colors disabled:cursor-wait disabled:opacity-50"
-                        aria-label={`View scan from ${record.scanned_at}`}
+                        aria-label={`View scan from ${formatScanTime(record.scanned_at)}`}
                       >
                         {loadingRecordId === record.id ? (
                           <>

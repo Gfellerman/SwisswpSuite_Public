@@ -210,6 +210,9 @@ describe("SeoManager — llms.txt 'Check Live File' link gated on llmsTxtEnabled
   });
 
   it("shows the live 'Check Live File' link when llmsTxtEnabled is true", async () => {
+    (window as any).swisswpsuiteData = {
+      llmsTxtUrl: "https://example.test/llms.txt",
+    };
     mockSettings({ llmsTxtEnabled: true });
     render(React.createElement(SeoManager));
 
@@ -217,7 +220,7 @@ describe("SeoManager — llms.txt 'Check Live File' link gated on llmsTxtEnabled
 
     expect(
       screen.getByRole("link", { name: /check live file/i })
-    ).toBeInTheDocument();
+    ).toHaveAttribute("href", "https://example.test/llms.txt");
     expect(
       screen.queryByTitle(
         /enable the llms\.txt feature to publish this file first/i

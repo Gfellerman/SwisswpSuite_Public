@@ -6,9 +6,11 @@
  *
  * This plugin runs entirely on the site's own server. It needs no key, no
  * account and no call to any of our systems to do everything it does. The
- * AI-assisted analysis and writing tools are a separate paid product; this
- * note is the single place in the plugin that says so, and it says it as
- * one sentence and one link on the plugin's own settings screen.
+ * AI-assisted tools, the firewall that also inspects cookies, form
+ * submissions and uploads, and the rules written to .htaccess for you belong
+ * to a separate plugin; this note is the single place in the plugin that says
+ * so, and it says it as one sentence and one link on the plugin's own
+ * settings screen.
  *
  * Keep it that way. No card, no heading, no button, no icon, no feature
  * comparison, no call-to-action pair, no branch on any runtime signal — the
@@ -16,14 +18,16 @@
  */
 import React from "react";
 
-/** Product page for the paid AI tools. */
+/** Product page for the separate plugin. */
 export const PRODUCT_PAGE_URL = "https://swisswpsecure.com/products/";
 
 export function AiProductNote() {
   return (
     <p className="text-xs text-neutral-600 dark:text-neutral-400">
-      AI-assisted security analysis and content tools are a separate product.
-      Details and pricing are on the product page at{" "}
+      AI-assisted security analysis, AI rewriting of WooCommerce product
+      descriptions, a firewall that also inspects cookies, form submissions and
+      uploads, and rules written to .htaccess for you are available in
+      SwissSuite AI Plus, a separate plugin described at{" "}
       <a
         href={PRODUCT_PAGE_URL}
         target="_blank"

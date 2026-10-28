@@ -33,7 +33,7 @@ const GradeBadge: React.FC<GradeBadgeProps> = ({ grade }) => {
 
   return (
     <span
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-sm font-black ${styles[upper] ?? "bg-secondary border-border text-neutral-600"}`}
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-sm font-black ${styles[upper] ?? "bg-secondary border-border text-neutral-600 dark:text-neutral-400"}`}
       aria-label={`Last scan grade: ${upper}`}
     >
       {/* WCAG 4.1.2: aria-hidden on visible text prevents VoiceOver double-announcement
@@ -93,9 +93,16 @@ export const ScanCronStatusBanner: React.FC<ScanCronStatusBannerProps> = ({
 }) => {
   const lastScan = config?.last_scan ?? null;
 
+  // The daily scan event stays scheduled while the report is off, but it
+  // returns without scanning, so a countdown would announce a scan that does
+  // not run.
+  const reportOff = config?.scan_report_enabled === false;
   const nextScheduledLabel = useMemo(
-    () => formatNextScheduled(config?.next_scheduled_ts ?? null),
-    [config?.next_scheduled_ts]
+    () =>
+      reportOff
+        ? "Off"
+        : formatNextScheduled(config?.next_scheduled_ts ?? null),
+    [reportOff, config?.next_scheduled_ts]
   );
 
   return (
@@ -112,12 +119,12 @@ export const ScanCronStatusBanner: React.FC<ScanCronStatusBannerProps> = ({
       <div className="flex shrink-0 items-center gap-2">
         <Clock
           size={14}
-          className="shrink-0 text-neutral-400"
+          className="shrink-0 text-neutral-600 dark:text-neutral-400"
           aria-hidden="true"
         />
-        <span className="text-xs font-medium text-neutral-600">
+        <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
           Next scan:{" "}
-          <span className="font-black text-neutral-800">
+          <span className="font-black text-neutral-800 dark:text-neutral-400">
             {nextScheduledLabel}
           </span>
         </span>
@@ -128,10 +135,10 @@ export const ScanCronStatusBanner: React.FC<ScanCronStatusBannerProps> = ({
         <div className="flex shrink-0 items-center gap-2">
           <Calendar
             size={14}
-            className="shrink-0 text-neutral-400"
+            className="shrink-0 text-neutral-600 dark:text-neutral-400"
             aria-hidden="true"
           />
-          <span className="text-xs font-medium text-neutral-600">
+          <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
             Last grade:
           </span>
           <GradeBadge grade={lastScan.grade} />
@@ -142,11 +149,11 @@ export const ScanCronStatusBanner: React.FC<ScanCronStatusBannerProps> = ({
               silently ignored by AT. The visible text span conveys the meaning already. */}
           <Calendar
             size={14}
-            className="shrink-0 text-neutral-400"
+            className="shrink-0 text-neutral-600 dark:text-neutral-400"
             aria-hidden="true"
           />
           {/* WCAG 1.4.3: text-neutral-500 on white was ~3.5:1 (FAIL) → text-neutral-600 (PASS) */}
-          <span className="text-xs font-medium text-neutral-600">
+          <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
             No scan yet
           </span>
         </div>
@@ -174,7 +181,7 @@ export const ScanCronStatusBanner: React.FC<ScanCronStatusBannerProps> = ({
         <button
           type="button"
           onClick={onPreviewEmail}
-          className="bg-secondary border-border hover:bg-card hover:border-swiss-navy/40 focus-visible:ring-swiss-navy inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black tracking-[0.08em] text-neutral-700 uppercase transition-all duration-200 focus-visible:ring-2 focus-visible:outline-none"
+          className="bg-secondary border-border hover:bg-card hover:border-swiss-navy/40 focus-visible:ring-swiss-navy inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black tracking-[0.08em] text-neutral-700 uppercase transition-all duration-200 focus-visible:ring-2 focus-visible:outline-none dark:text-neutral-400"
           aria-label="Preview scheduled scan email report"
         >
           <Mail size={12} aria-hidden="true" />
@@ -189,7 +196,7 @@ export const ScanCronStatusBanner: React.FC<ScanCronStatusBannerProps> = ({
               .getElementById(settingsPanelId)
               ?.scrollIntoView({ behavior: "smooth" });
           }}
-          className="bg-secondary border-border hover:bg-card hover:border-swiss-navy/40 focus-visible:ring-swiss-navy inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black tracking-[0.08em] text-neutral-700 uppercase transition-all duration-200 focus-visible:ring-2 focus-visible:outline-none"
+          className="bg-secondary border-border hover:bg-card hover:border-swiss-navy/40 focus-visible:ring-swiss-navy inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black tracking-[0.08em] text-neutral-700 uppercase transition-all duration-200 focus-visible:ring-2 focus-visible:outline-none dark:text-neutral-400"
           aria-label="Scroll to scan report settings"
         >
           <Settings size={12} aria-hidden="true" />

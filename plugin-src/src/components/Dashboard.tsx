@@ -23,7 +23,7 @@ import {
 import { ViewState, SecurityStatus } from "../types";
 import OnPageDiagnostics from "./organisms/Seo/OnPageDiagnostics";
 import { useSettings } from "../hooks/useSettings";
-import { DASHBOARD_EMPTY_STATE_DESCRIPTION } from "./dashboardProCopy";
+import { DASHBOARD_BACKUP_TILE_DESCRIPTION } from "./dashboardProCopy";
 
 interface DashboardProps {
   onNavigate: (view: ViewState) => void;
@@ -107,10 +107,10 @@ const DataTile = ({
     <div className="bg-swiss-navy group-hover:bg-swiss-navy/10 absolute -top-10 -right-10 h-40 w-40 rounded-full blur-[80px] transition-all duration-700"></div>
 
     <div className="relative z-10 mb-6 flex items-start justify-between">
-      <h3 className="group-hover:text-foreground dark:group-hover:text-foreground dark:hover:text-foreground text-xs font-black tracking-[0.4em] text-neutral-700 uppercase transition-colors">
+      <h3 className="group-hover:text-foreground dark:group-hover:text-foreground dark:hover:text-foreground text-xs font-black tracking-[0.4em] text-neutral-700 uppercase transition-colors dark:text-neutral-400">
         {label}
       </h3>
-      <div className="bg-card dark:bg-secondary border-border dark:border-border/10 group-hover:bg-swiss-navy group-hover:text-foreground dark:group-hover:text-foreground dark:hover:text-foreground dark:text-foreground rounded-2xl border p-4 text-neutral-900 transition-all duration-500 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+      <div className="bg-card dark:bg-secondary border-border dark:border-border/10 group-hover:bg-swiss-navy dark:group-hover:text-foreground dark:hover:text-foreground dark:text-foreground rounded-2xl border p-4 text-neutral-900 transition-all duration-500 group-hover:text-neutral-400 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
         <Icon size={20} />
       </div>
     </div>
@@ -123,7 +123,7 @@ const DataTile = ({
 
     {trend && (
       <div className="relative z-10 mt-5 flex items-center gap-2">
-        <span className="text-swiss-red bg-swiss-red/5 border-swiss-red/10 rounded-full border px-3 py-1 text-xs font-black tracking-[0.2em] uppercase">
+        <span className="bg-swiss-red/5 border-swiss-red/10 rounded-full border px-3 py-1 text-xs font-black tracking-[0.2em] text-red-700 uppercase dark:text-red-400">
           {trend}
         </span>
       </div>
@@ -151,7 +151,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   // v2.9.30.117: replaced raw fetch() useEffect with useQuery so repeated
   // tab-switches serve from cache (staleTime: STATS_TTL = 60 s) instead of
   // re-fetching on every mount.
-  const { data: statsData, isLoading: statsLoading } = useQuery<Stats>({
+  const {
+    data: statsData,
+    isLoading: statsLoading,
+    isFetching: statsFetching,
+    refetch: refetchStats,
+  } = useQuery<Stats>({
     queryKey: ["stats"],
     queryFn: () => wpApi<Stats>("/stats"),
     staleTime: STATS_TTL,
@@ -181,6 +186,23 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       setLoading(false);
     }
   }, [statsData, statsLoading]);
+
+  // "Try again" sits inside the load-error alert, which leaves the page once the
+  // summary arrives; the button's focus would drop to <body>. The flag is set
+  // by a retry the user starts and cleared when that retry ends without data,
+  // so a later refresh the user did not ask for never moves focus.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const retryFocusPending = useRef(false);
+  useEffect(() => {
+    if (!statsFetching && !statsData) retryFocusPending.current = false;
+  }, [statsFetching, statsData]);
+  useEffect(() => {
+    if (!hasData || !retryFocusPending.current) return;
+    retryFocusPending.current = false;
+    // Move focus to the page heading unless the user already moved it.
+    const active = document.activeElement;
+    if (!active || active === document.body) headingRef.current?.focus();
+  }, [hasData]);
 
   // A.1/C.2 (VALIDATOR_DASH.md, v2.9.33.49): get_stats() always emits
   // exactly 7 traffic_data entries (api-settings.php get_stats()), so
@@ -226,13 +248,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               SwissSuite v{window.swisswpsuiteData?.version || "unknown"}
             </span>
           </div>
-          <h2 className="text-foreground dark:text-foreground mb-6 text-7xl leading-none font-black tracking-tighter">
+          <h2
+            ref={headingRef}
+            tabIndex={-1}
+            className="text-foreground dark:text-foreground focus:outline-ring mb-6 text-7xl leading-none font-black tracking-tighter focus:outline-2 focus:outline-offset-4"
+          >
             SITE{" "}
-            <span className="from-swiss-navy to-swiss-navy/40 bg-gradient-to-r bg-clip-text text-transparent">
+            <span className="from-swiss-navy to-swiss-navy/70 dark:from-foreground dark:to-foreground/70 bg-gradient-to-r bg-clip-text text-transparent">
               OVERVIEW
             </span>
           </h2>
-          <p className="max-w-2xl text-lg leading-relaxed font-medium text-neutral-700">
+          <p className="max-w-2xl text-lg leading-relaxed font-medium text-neutral-700 dark:text-neutral-400">
             Your site health at a glance — security, backups, and SEO in one
             place.
           </p>
@@ -242,7 +268,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <div className="absolute inset-0 h-3 w-3 animate-ping rounded-full bg-emerald-500 opacity-75"></div>
             <div className="relative h-3 w-3 rounded-full bg-emerald-500"></div>
           </div>
-          <span className="text-swiss-navy text-[12px] font-black tracking-[0.3em] uppercase">
+          <span className="text-swiss-navy dark:text-foreground text-[12px] font-black tracking-[0.3em] uppercase">
             Plugin Active
           </span>
         </div>
@@ -257,40 +283,58 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             loading ? "-" : hasData ? animatedThreats.toLocaleString() : "—"
           }
           loading={loading}
-          trend={hasData ? "Based on last scan" : undefined}
-          colorClass="text-swiss-navy"
+          trend={hasData ? "Blocked requests in the security log" : undefined}
+          colorClass="text-swiss-navy dark:text-foreground"
         />
         <DataTile
           icon={HardDrive}
           label="Last Backup"
-          value={loading ? "-" : hasData ? stats.last_backup : "No backup yet"}
+          value={loading ? "-" : hasData ? stats.last_backup : "—"}
           loading={loading}
-          colorClass="text-swiss-navy"
+          colorClass="text-swiss-navy dark:text-foreground"
         />
         <DataTile
           icon={TrendingUp}
           label="Overall SEO Score"
           value={loading ? "-" : hasData ? `${animatedSeo}%` : "—"}
           loading={loading}
-          trend={hasData ? "Mean of on-page, technical & content" : undefined}
+          trend={
+            hasData
+              ? "Mean of meta coverage, technical & image alt text"
+              : undefined
+          }
           colorClass="text-swiss-red"
         />
       </div>
 
-      {/* Empty state — shown when no scan data is available yet */}
+      {/* Shown when the site summary request returned no data. The summary
+          endpoint always answers with values, so a missing payload means the
+          request itself did not succeed. */}
       {!loading && !hasData && (
         <div
           className="border-border bg-background/30 flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-8 py-10"
-          role="status"
-          aria-label="No site data available"
+          role="alert"
         >
-          <Activity size={32} className="text-neutral-400" />
-          <p className="text-sm font-semibold text-neutral-500">
-            No data yet — run your first scan to see results here.
+          <Activity size={32} className="text-neutral-500" aria-hidden="true" />
+          <p className="text-foreground text-sm font-semibold">
+            Dashboard data could not be loaded.
           </p>
-          <p className="max-w-md text-center text-xs text-neutral-400">
-            {DASHBOARD_EMPTY_STATE_DESCRIPTION}
+          <p className="text-foreground max-w-md text-center text-xs">
+            The site summary request did not succeed. Try again, or reload the
+            page.
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              if (statsFetching) return;
+              retryFocusPending.current = true;
+              void refetchStats();
+            }}
+            aria-disabled={statsFetching}
+            className="text-foreground rounded border border-neutral-400 px-3 py-1 text-xs font-semibold aria-disabled:cursor-not-allowed aria-disabled:opacity-60"
+          >
+            Try again
+          </button>
         </div>
       )}
 
@@ -300,7 +344,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           {
             id: "security",
             label: "Run Security Scan",
-            desc: "Scan for malware, blocked threats, and site vulnerabilities",
+            desc: "Scan for malware and site security issues",
             icon: Zap,
           },
           {
@@ -313,13 +357,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           {
             id: "backups",
             label: "Back Up Site",
-            desc: "Save a copy of your site — restore it any time",
+            desc: DASHBOARD_BACKUP_TILE_DESCRIPTION,
             icon: HardDrive,
           },
           {
             id: "settings",
-            label: "View Logs",
-            desc: "Activity logs, plugin settings & diagnostics",
+            label: "Open Settings",
+            desc: "Plugin settings, system logs and diagnostics",
             icon: Terminal,
           },
         ].map((action) => (
@@ -329,13 +373,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             className="group bg-background/50 border-border hover:border-swiss-navy/20 hover:bg-background relative flex flex-col items-center overflow-hidden rounded-[32px] border p-10 transition-all duration-500"
           >
             <div className="via-swiss-navy/10 absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
-            <div className="bg-card dark:bg-secondary border-border dark:border-border/10 group-hover:bg-swiss-navy group-hover:text-foreground dark:group-hover:text-foreground dark:hover:text-foreground dark:text-foreground mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border text-neutral-900 shadow-sm transition-all duration-500">
+            <div className="bg-card dark:bg-secondary border-border dark:border-border/10 group-hover:bg-swiss-navy dark:group-hover:text-foreground dark:hover:text-foreground dark:text-foreground mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border text-neutral-900 shadow-sm transition-all duration-500 group-hover:text-neutral-400">
               <action.icon size={24} />
             </div>
             <span className="dark:text-foreground mb-2 text-[12px] font-black tracking-[0.2em] text-neutral-900 uppercase">
               {action.label}
             </span>
-            <span className="text-center text-xs font-bold tracking-widest text-neutral-700">
+            <span className="text-center text-xs font-bold tracking-widest text-neutral-700 dark:text-neutral-400">
               {action.desc}
             </span>
           </button>
@@ -347,13 +391,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         {/* Traffic chart */}
         <div className="glass-panel border-border relative rounded-3xl border p-10 lg:col-span-2">
           <div className="border-border mb-10 flex items-center justify-between border-b pb-6">
-            <h3 className="text-swiss-navy text-[12px] font-black tracking-[0.4em] uppercase">
+            <h3 className="text-swiss-navy dark:text-foreground text-[12px] font-black tracking-[0.4em] uppercase">
               Traffic This Week
             </h3>
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs font-black tracking-widest">
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.2)]"></div>{" "}
-                <span className="text-neutral-700">Visits</span>
+                <span className="text-neutral-700 dark:text-neutral-400">
+                  Page views
+                </span>
                 {/* A.1 (VALIDATOR_DASH.md, v2.9.33.49): the old
                     `traffic_data.length === 0` empty-state this replaced was
                     dead code — get_stats() always returns 7 entries, so that
@@ -379,13 +425,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                      floor for this 12px text. -600/dark:-400 clears both
                      backgrounds (~5.2:1 light, ~6.3:1 dark). */
                   <span className="border-border bg-secondary rounded-full border px-2 py-0.5 text-xs font-black tracking-widest text-neutral-600 uppercase dark:text-neutral-400">
-                    No visits yet
+                    No page views yet
                   </span>
                 ) : null}
               </div>
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)]"></div>{" "}
-                <span className="text-neutral-700">Blocked</span>
+                <span className="text-neutral-700 dark:text-neutral-400">
+                  Blocked
+                </span>
                 {/* C.2 (VALIDATOR_DASH.md, v2.9.33.49): same treatment for
                     the WAF-off case as the Visits badge above — reuses
                     settings.firewallEnabled (Fix C.1, additive/optional so
@@ -407,7 +455,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </div>
             </div>
           </div>
-          <div className="h-72 w-full">
+          <div className="text-muted-foreground h-72 w-full">
             {/* A.1/C.2: chart is unconditional now — traffic_data.length is
                 never 0 in a real response, and the Blocked series must
                 never be hidden just because the pageview toggle is off (the
@@ -448,14 +496,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   fontSize={11}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "rgba(13,20,26,0.4)", fontWeight: 800 }}
+                  tick={{ fill: "currentColor", fontWeight: 800 }}
                 />
                 <YAxis
                   stroke="rgba(13,20,26,0.1)"
                   fontSize={11}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "rgba(13,20,26,0.4)", fontWeight: 800 }}
+                  tick={{ fill: "currentColor", fontWeight: 800 }}
                 />
                 <CartesianGrid stroke="rgba(13,20,26,0.03)" vertical={false} />
                 <Tooltip
@@ -477,6 +525,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <Area
                   type="monotone"
                   dataKey="visits"
+                  name="Page views"
                   stroke="#06B6D4"
                   strokeWidth={3}
                   fill="url(#colorVisits)"

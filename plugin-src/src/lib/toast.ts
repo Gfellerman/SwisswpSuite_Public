@@ -31,6 +31,13 @@ export interface ToastOptions {
   /** Milliseconds before auto-dismiss. `Infinity` disables auto-dismiss. */
   duration?: number;
   action?: ToastAction;
+  /**
+   * Optional caller-supplied identifier. NOT currently read by `push()` —
+   * every toast still gets its own internally-generated id via `nextId()` —
+   * this is a type-only widening so call sites that pass one (e.g. as a
+   * future dedup hook) type-check; it has no dedup effect today.
+   */
+  id?: string;
 }
 
 export interface ToastRecord {

@@ -169,8 +169,10 @@ export const queryClient = new QueryClient({
             // but usually better handled at the UI layer or via mutation callbacks.
         },
         mutations: {
-            // Mutations usually shouldn't retry automatically unless idempotent
-            retry: 1,
+            // A failed change is reported to the user, who decides whether to
+            // repeat it. It is never sent again automatically: a request that
+            // timed out at a proxy may still have run on the server.
+            retry: 0,
         },
     },
 });

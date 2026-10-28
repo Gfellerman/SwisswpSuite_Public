@@ -1,27 +1,28 @@
 {
   "name": "swisssuite-ai-admin",
   "private": true,
-  "version": "2.9.33.58",
+  "version": "2.9.33.69",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test:a11y-render": "playwright test -c tests/a11y-render/playwright.config.ts",
     "test": "vitest"
   },
   "dependencies": {
-    "@radix-ui/react-slot": "^1.2.4",
-    "@tanstack/react-query": "^5.90.21",
+    "@radix-ui/react-slot": "^1.5.0",
+    "@tanstack/react-query": "5.105.0",
     "clsx": "^2.1.1",
-    "lucide-react": "^0.561.0",
+    "lucide-react": "1.62.0",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.13.0",
-    "react-window": "^2.2.7",
+    "react-router-dom": "^7.18.5",
+    "react-window": "^2.4.0",
     "recharts": "^3.6.0",
-    "tailwind-merge": "^3.4.1",
-    "zustand": "^5.0.11"
+    "tailwind-merge": "^3.7.0",
+    "zustand": "5.0.16"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
@@ -54,5 +55,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "overrides": {
+    "reselect": "5.3.0"
   }
 }

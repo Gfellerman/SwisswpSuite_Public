@@ -22,7 +22,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "../../ui/Card";
 import { Button } from "../../ui/Button";
-import { wpApi } from "../../../services/api";
+import { wpApi, ApiError } from "../../../services/api";
 import { SMTP_TTL } from "../../../lib/cacheTtl";
 import { toast } from "../../../lib/toast";
 import {
@@ -171,6 +171,7 @@ type FormState = {
   fromEmail: string;
   fromName: string;
   hasPassword: boolean; // reflects server state
+  passwordUnreadable: boolean; // reflects server state — see SmtpSettings.passwordUnreadable
   passwordTouched: boolean; // has the user typed anything new?
 };
 
@@ -198,6 +199,7 @@ const emptyForm: FormState = {
   fromEmail: "",
   fromName: "",
   hasPassword: false,
+  passwordUnreadable: false,
   passwordTouched: false,
 };
 
@@ -314,6 +316,7 @@ export function SmtpSettings() {
       fromEmail: data.fromEmail,
       fromName: data.fromName,
       hasPassword: data.hasPassword,
+      passwordUnreadable: !!data.passwordUnreadable,
       passwordTouched: false,
     });
     setBaseline({
@@ -444,11 +447,18 @@ export function SmtpSettings() {
         return;
       }
       toast.success("SMTP settings saved");
-      // Sync hasPassword from server response; reset touched state and mask the field again.
+      // Sync hasPassword and passwordUnreadable from the server response;
+      // reset touched state and mask the field again. passwordUnreadable is
+      // NEVER derived locally (e.g. "this save succeeded so it must be
+      // readable now") -- a save that didn't touch the password (the field
+      // was left blank/untouched) leaves an existing unreadable password
+      // exactly as unreadable as it was before, and only the server knows
+      // that.
       setForm((prev) => ({
         ...prev,
         hasPassword: !!res.hasPassword,
         password: res.hasPassword ? MASKED_PLACEHOLDER : "",
+        passwordUnreadable: !!res.passwordUnreadable,
         passwordTouched: false,
       }));
       // Update baseline to the just-saved values so isDirty drops back to false.
@@ -505,6 +515,7 @@ export function SmtpSettings() {
         ...prev,
         hasPassword: false,
         password: "",
+        passwordUnreadable: false,
         passwordTouched: false,
       }));
     } catch (err: any) {
@@ -568,16 +579,36 @@ export function SmtpSettings() {
       loadEnvironment();
     } catch (err: any) {
       const msg = err?.message ?? "Network error sending test email";
-      setTestResult({ ok: false, msg });
+      // A failed test comes back as a non-2xx answer, so wpApi throws and the
+      // structured cause and diagnostics arrive on the error's parsed body.
+      const body = err instanceof ApiError ? err.data : undefined;
+      const rootCause: SmtpTestRootCause | undefined =
+        body && typeof body.rootCause === "string" ? body.rootCause : undefined;
+      const diagnostics: SmtpTestDiagnostics | undefined =
+        body &&
+        body.diagnostics &&
+        typeof body.diagnostics === "object" &&
+        Array.isArray(body.diagnostics.wp_error_messages)
+          ? body.diagnostics
+          : undefined;
+      setTestResult({ ok: false, msg, rootCause, diagnostics });
       toast.error(msg);
+      if (rootCause === "password_decrypt_failed") {
+        setTimeout(() => {
+          const btn = document.getElementById("smtp-change-password-btn");
+          if (btn instanceof HTMLElement) btn.focus();
+        }, 0);
+      }
+      if (rootCause) loadEnvironment();
     } finally {
       if (mountedRef.current) setIsTesting(false);
     }
   }, [isDirty, hostIsSaved, loadEnvironment]);
 
-  // Scenario 7: "Send Daily Report Now" — triggers the daily security report
-  // email immediately, bypassing wp-cron. Lets the user verify end-to-end
-  // delivery without waiting hours for a cron tick on low-traffic sites.
+  // Scenario 7: "Send Report to Administrator Now" — sends the security report
+  // email to the WordPress administrator address immediately, bypassing
+  // wp-cron. Lets the user verify end-to-end delivery without waiting hours for
+  // a cron tick on low-traffic sites.
   const handleSendDailyReportNow = useCallback(async () => {
     setIsSendingReport(true);
     try {
@@ -602,18 +633,21 @@ export function SmtpSettings() {
   return (
     <Card className="max-w-3xl space-y-4 p-6">
       <div className="border-border dark:border-border flex items-center gap-2 border-b pb-3">
-        <Mail className="h-4 w-4 text-neutral-700" aria-hidden="true" />
+        <Mail
+          className="h-4 w-4 text-neutral-700 dark:text-neutral-500"
+          aria-hidden="true"
+        />
         <h3 className="text-base font-semibold">Email Delivery (SMTP)</h3>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center gap-2 text-sm text-neutral-700">
+        <div className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-400">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           Loading SMTP configuration…
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-xs text-neutral-700">
+          <p className="text-xs text-neutral-700 dark:text-neutral-400">
             Configure a custom SMTP server so WordPress emails (security alerts,
             password resets, backup reports) are delivered reliably. Leave blank
             to use the server's default mailer.
@@ -639,9 +673,11 @@ export function SmtpSettings() {
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-neutral-700">
+            <p className="mt-1 text-xs text-neutral-700 dark:text-neutral-400">
               Selecting a preset fills in the host, port, and encryption for
-              you. Choose “Custom” to edit them manually.
+              you. Choose “Custom / Other” to edit them manually. For SiteGround
+              and Bluehost, choose “Custom / Other” and enter your own mail
+              server name.
             </p>
           </div>
 
@@ -777,11 +813,33 @@ export function SmtpSettings() {
                   </>
                 )}
               </div>
-              <p className="mt-1 text-xs text-neutral-700">
+              <p className="mt-1 text-xs text-neutral-700 dark:text-neutral-400">
                 {form.hasPassword
                   ? 'A password is currently saved. Click "Change" to enter a new one, or "Clear" to remove it entirely.'
-                  : "Leave blank if your SMTP server does not require authentication."}
+                  : "Enter the password for this SMTP account."}
               </p>
+              {form.hasPassword && form.passwordUnreadable && (
+                <div
+                  className="dark:text-foreground mt-2 flex items-start gap-2 rounded-lg border-2 border-amber-400 bg-amber-50 p-3 text-sm text-neutral-900 dark:border-amber-700 dark:bg-amber-950/30"
+                  role="alert"
+                >
+                  <ShieldAlert
+                    className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400"
+                    aria-hidden="true"
+                  />
+                  <div>
+                    <p className="font-semibold">
+                      The saved SMTP password can't be read.
+                    </p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-neutral-700 dark:text-neutral-400">
+                      Mail is sending through PHP's unauthenticated{" "}
+                      <code>mail()</code> function instead of your authenticated
+                      SMTP account until you click "Change" and re-enter the
+                      password.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -806,11 +864,12 @@ export function SmtpSettings() {
               />
               <p
                 id="smtp-from-email-help"
-                className="mt-1 text-xs text-neutral-700"
+                className="mt-1 text-xs text-neutral-700 dark:text-neutral-400"
               >
                 This is only the display sender address — it does{" "}
                 <strong>not</strong> need its own SMTP account. Leave blank to
-                automatically use your SMTP username as the From address.
+                use your SMTP username as the From address when the username is
+                an email address.
               </p>
             </div>
             <div>
@@ -829,7 +888,7 @@ export function SmtpSettings() {
                 placeholder="Example Site"
                 className="border-border bg-background dark:text-foreground w-full rounded-lg border px-3 py-2 text-sm text-neutral-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
-              <p className="mt-1 text-xs text-neutral-700">
+              <p className="mt-1 text-xs text-neutral-700 dark:text-neutral-400">
                 Friendly name shown alongside the From email (e.g. "My
                 Website").
               </p>
@@ -850,14 +909,14 @@ export function SmtpSettings() {
                 Tip: many SMTP providers require the From address to match the
                 authenticated account.
               </p>
-              <p className="leading-relaxed text-neutral-700">
+              <p className="leading-relaxed text-neutral-700 dark:text-neutral-400">
                 Hostinger, Gmail, Microsoft 365 and most shared hosts will
                 silently drop (or mark as spam) any message whose <em>From</em>{" "}
                 does not match the SMTP username you authenticate with. If your
                 test email sends "successfully" but never arrives, make sure the
                 From email and SMTP username are the same mailbox — or leave
                 From email blank to let the plugin use the username
-                automatically.
+                automatically when it is an email address.
               </p>
             </div>
           </div>
@@ -883,7 +942,7 @@ export function SmtpSettings() {
                 <p className="font-semibold">
                   Warning: {env.competing_plugins.join(", ")} is active.
                 </p>
-                <p className="mt-0.5 text-xs leading-relaxed text-neutral-700">
+                <p className="mt-0.5 text-xs leading-relaxed text-neutral-700 dark:text-neutral-400">
                   This plugin may override SwissSuite's SMTP configuration.
                   Either <strong>deactivate it</strong>, or configure your SMTP
                   credentials through that plugin instead of here. Running two
@@ -908,7 +967,7 @@ export function SmtpSettings() {
                 <p className="font-semibold">
                   PHP mail() is disabled on this server.
                 </p>
-                <p className="mt-0.5 text-xs leading-relaxed text-neutral-700">
+                <p className="mt-0.5 text-xs leading-relaxed text-neutral-700 dark:text-neutral-400">
                   Email features (daily security reports, test emails, password
                   resets) will <strong>not work</strong> without SMTP
                   credentials. Configure the fields above and click Save SMTP
@@ -926,7 +985,7 @@ export function SmtpSettings() {
               role="note"
             >
               <Info
-                className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+                className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400"
                 aria-hidden="true"
               />
               <div>
@@ -934,7 +993,7 @@ export function SmtpSettings() {
                   Reduced encryption — your SMTP password is obfuscated, not
                   encrypted.
                 </p>
-                <p className="mt-0.5 leading-relaxed text-neutral-700">
+                <p className="mt-0.5 leading-relaxed text-neutral-700 dark:text-neutral-400">
                   Your server does not have the <code>sodium</code> or
                   <code> openssl</code> PHP extensions enabled, so SwissSuite is
                   using an XOR obfuscation fallback. Your password is still
@@ -976,7 +1035,9 @@ export function SmtpSettings() {
                 )}
                 <div className="flex-1">
                   <p className="mb-1 text-sm font-medium">
-                    Last email send:{" "}
+                    {env.smtp_health.context === "test_email"
+                      ? "Last test email:"
+                      : "Last email:"}{" "}
                     {env.smtp_health.status === "ok" ? "succeeded" : "FAILED"}
                   </p>
                   <div className="space-y-0.5">
@@ -1007,7 +1068,10 @@ export function SmtpSettings() {
                   </div>
                   {env.smtp_health.status === "fail" && (
                     <p className="mt-2 text-red-700 dark:text-red-300">
-                      The last outgoing email did not reach its destination. Run{" "}
+                      {env.smtp_health.context === "test_email"
+                        ? "The last test email"
+                        : "The last email"}{" "}
+                      did not reach its destination. Run{" "}
                       <strong>Send Test Email</strong> below to diagnose, or
                       review the SMTP settings above.
                     </p>
@@ -1017,12 +1081,12 @@ export function SmtpSettings() {
             </div>
           )}
 
-          {/* Scenario 7 — wp-cron status + "Send Daily Report Now" action. */}
+          {/* Scenario 7 — wp-cron status + "Send Report to Administrator Now" action. */}
           {env && (
             <div className="border-border dark:text-foreground rounded-lg border bg-neutral-50 p-3 text-xs text-neutral-900 dark:bg-neutral-900/40">
               <div className="flex items-start gap-2">
                 <Clock
-                  className="mt-0.5 h-4 w-4 shrink-0 text-neutral-700"
+                  className="mt-0.5 h-4 w-4 shrink-0 text-neutral-700 dark:text-neutral-500"
                   aria-hidden="true"
                 />
                 <div className="flex-1">
@@ -1040,7 +1104,7 @@ export function SmtpSettings() {
                         : "never run yet"}
                     </div>
                     <div>
-                      <strong>Next scheduled:</strong>{" "}
+                      <strong>Next daily run:</strong>{" "}
                       {env.wp_cron.next_daily_report_ts
                         ? formatRelativeTime(
                             env.wp_cron.next_daily_report_ts,
@@ -1057,7 +1121,13 @@ export function SmtpSettings() {
                           : "standard (fires on page visits — low-traffic sites may see delays)"}
                     </div>
                   </div>
+                  <p className="mt-1">
+                    No report is sent on this schedule unless “Enable scheduled
+                    email reports” is switched on (Security → Scan → Scheduled
+                    Scan Report).
+                  </p>
                   {!env.wp_cron.disable_wp_cron &&
+                    env.wp_cron.scan_report_enabled !== false &&
                     env.wp_cron.last_scan_run_ts > 0 &&
                     env.server_time_ts - env.wp_cron.last_scan_run_ts >
                       172800 && (
@@ -1075,8 +1145,8 @@ export function SmtpSettings() {
                       size="sm"
                       onClick={handleSendDailyReportNow}
                       disabled={isSendingReport}
-                      aria-label="Send daily security report now"
-                      title="Dispatches the daily security report immediately, bypassing wp-cron. Useful for verifying delivery end-to-end."
+                      aria-label="Send report to administrator now"
+                      title="Sends a security report to the WordPress administrator address now, whether or not scheduled reports are switched on."
                     >
                       {isSendingReport ? (
                         <>
@@ -1089,7 +1159,7 @@ export function SmtpSettings() {
                       ) : (
                         <>
                           <Send className="mr-2 h-4 w-4" aria-hidden="true" />
-                          Send Daily Report Now
+                          Send Report to Administrator Now
                         </>
                       )}
                     </Button>
@@ -1114,7 +1184,7 @@ export function SmtpSettings() {
               />
               <div>
                 <p className="font-semibold">You have unsaved SMTP changes.</p>
-                <p className="mt-0.5 text-xs text-neutral-700">
+                <p className="mt-0.5 text-xs text-neutral-700 dark:text-neutral-400">
                   Click <strong>Save SMTP Settings</strong> below to persist
                   your changes. Until you save, nothing is applied and "Send
                   Test Email" will not use your current edits.
@@ -1182,7 +1252,9 @@ export function SmtpSettings() {
               {testResult && (
                 <div
                   className={`flex items-start gap-2 text-sm ${
-                    testResult.ok ? "text-green-600" : "text-red-600"
+                    testResult.ok
+                      ? "text-green-800 dark:text-green-600"
+                      : "text-red-700 dark:text-red-400"
                   }`}
                   role="status"
                   aria-live="polite"
@@ -1222,12 +1294,12 @@ export function SmtpSettings() {
                     <p className="font-semibold">
                       Your saved password can&apos;t be read.
                     </p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-neutral-700">
-                      This happens when WordPress security keys (salts in
-                      wp-config.php) change — for example, during a site
-                      migration or restore. Click <strong>Change</strong> in the
-                      Password field above and re-enter your SMTP password, then
-                      Save.
+                    <p className="mt-0.5 text-xs leading-relaxed text-neutral-700 dark:text-neutral-400">
+                      This happens when the plugin's own stored encryption key
+                      is missing or was regenerated — for example, after
+                      updating from an older version. Click{" "}
+                      <strong>Change</strong> in the Password field above and
+                      re-enter your SMTP password, then Save.
                     </p>
                   </div>
                 </div>
@@ -1246,7 +1318,7 @@ export function SmtpSettings() {
                   <p className="font-semibold">
                     SMTP host is set but no username is entered.
                   </p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-neutral-700">
+                  <p className="mt-0.5 text-xs leading-relaxed text-neutral-700 dark:text-neutral-400">
                     Your server is falling back to PHP mail() instead of SMTP.
                     Enter your SMTP <strong>Username</strong> and{" "}
                     <strong>Password</strong> above and save — or clear the{" "}
@@ -1273,7 +1345,7 @@ export function SmtpSettings() {
                       Using your server&apos;s default mail (no SMTP credentials
                       configured).
                     </p>
-                    <p className="leading-relaxed text-neutral-700">
+                    <p className="leading-relaxed text-neutral-700 dark:text-neutral-400">
                       If emails don&apos;t reach the inbox, configure SMTP
                       credentials above — or verify that your domain&apos;s SPF
                       and DMARC records authorize the server&apos;s outgoing IP.
@@ -1293,7 +1365,7 @@ export function SmtpSettings() {
                 <button
                   type="button"
                   onClick={() => setShowDiagnostics((v) => !v)}
-                  className="rounded text-xs font-medium text-neutral-700 underline decoration-dotted hover:text-neutral-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="rounded text-xs font-medium text-neutral-700 underline decoration-dotted hover:text-neutral-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-neutral-400 dark:hover:text-neutral-400"
                   aria-expanded={showDiagnostics}
                   aria-controls="smtp-test-diagnostics"
                 >
@@ -1352,7 +1424,7 @@ export function SmtpSettings() {
 
             {/* Contextual helper text under the action bar explains the current state
                 so the user always understands what Test would do right now. */}
-            <p className="mt-3 text-xs text-neutral-700">
+            <p className="mt-3 text-xs text-neutral-700 dark:text-neutral-400">
               {isDirty ? (
                 <>
                   <strong>Test disabled:</strong> you have unsaved changes.

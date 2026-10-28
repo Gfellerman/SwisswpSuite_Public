@@ -31,12 +31,12 @@ const MAINTENANCE_ACTIONS = [
   {
     id: "clear_transients",
     label: "Clear Transients",
-    desc: "Removes expired temporary data from the database.",
+    desc: "Removes this plugin's own temporary data from the database, expired or not.",
   },
   {
     id: "delete_revisions",
     label: "Delete Post Revisions",
-    desc: "Removes old post revision history to save space.",
+    desc: "Removes all saved post revisions to save space.",
   },
   {
     id: "spam_comments",
@@ -64,12 +64,12 @@ const DATABASE_CLEANUP_ACTIONS = [
   {
     id: "clean_trashed_posts",
     label: "Empty Trash",
-    desc: "Permanently deletes all posts and pages currently in the trash.",
+    desc: "Permanently deletes the posts, pages and other content items in the trash, together with their comments. Other comments in the trash are not deleted.",
   },
   {
     id: "clean_auto_drafts",
     label: "Delete Auto-Drafts",
-    desc: "Removes auto-draft posts created when opening the editor without publishing.",
+    desc: "Removes auto-draft posts older than 7 days, created when opening the editor without publishing.",
   },
   {
     id: "clean_orphan_relationships",
@@ -79,7 +79,7 @@ const DATABASE_CLEANUP_ACTIONS = [
   {
     id: "drop_orphaned_tables",
     label: "Drop Orphaned Tables",
-    desc: "Drops database tables left behind by uninstalled plugins. Core tables and tables belonging to active plugins are never touched. Back up your database first.",
+    desc: "Drops database tables whose names match no installed plugin. WordPress core tables are never touched. A table can still belong to a plugin with a different name, so review the list before confirming. Back up your database first.",
   },
 ];
 
@@ -90,16 +90,16 @@ const SEVERITY_STYLES: Record<
   low: {
     banner:
       "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800",
-    icon: "text-amber-500",
+    icon: "text-amber-800 dark:text-amber-500",
   },
   medium: {
     banner:
       "bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-800",
-    icon: "text-orange-500",
+    icon: "text-orange-800 dark:text-orange-500",
   },
   high: {
     banner: "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800",
-    icon: "text-red-500",
+    icon: "text-red-700 dark:text-red-500",
   },
 };
 
@@ -132,7 +132,7 @@ function getLogLineClass(log: string): string {
   if (/\[WARN(ING)?\]/.test(log)) {
     return "text-amber-800 dark:text-amber-400 font-semibold";
   }
-  return "text-emerald-400/80 hover:text-emerald-300";
+  return "text-emerald-900/80 dark:text-emerald-400/80 hover:text-emerald-800 dark:hover:text-emerald-300";
 }
 
 interface MaintenanceSettingsProps {
@@ -212,9 +212,9 @@ function OrphanedTablesConfirmDialog({
           id="orphan-tables-confirm-body"
           className="mb-3 text-sm text-neutral-700 dark:text-neutral-300"
         >
-          These tables were left behind by uninstalled plugins and matched no
-          installed plugin on this site. This cannot be undone — back up your
-          database first.
+          These tables match no installed plugin on this site, but a table can
+          still belong to a plugin with a different name. This cannot be undone
+          — back up your database first.
         </p>
         <ul
           className="bg-background dark:bg-card/30 mb-4 max-h-40 space-y-1 overflow-y-auto rounded-lg p-3 font-mono text-xs"
@@ -230,7 +230,7 @@ function OrphanedTablesConfirmDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="border-border hover:bg-secondary focus-visible:ring-swiss-navy rounded-xl border px-4 py-2 text-sm font-black text-neutral-700 focus-visible:ring-2 focus-visible:outline-none"
+            className="border-border hover:bg-secondary focus-visible:ring-swiss-navy rounded-xl border px-4 py-2 text-sm font-black text-neutral-700 focus-visible:ring-2 focus-visible:outline-none dark:text-neutral-400"
           >
             Cancel
           </button>
@@ -338,8 +338,29 @@ export function MaintenanceSettings({
   useEffect(() => {
     fetchLogs();
     fetchCacheStatus();
-    const interval = setInterval(fetchLogs, 5000);
-    return () => clearInterval(interval);
+
+    // Polls /system-logs every 15s, gated on document.visibilityState —
+    // skipped while the tab is hidden/backgrounded, since the result is
+    // never seen there and each call still deserialises two 500-entry log
+    // rings server-side. Resumes immediately on visibilitychange back to
+    // visible rather than waiting out the rest of the interval.
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchLogs();
+      }
+    }, 15000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchLogs();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const doMaintenance = async (action: string) => {
@@ -476,7 +497,7 @@ export function MaintenanceSettings({
       {/* Maintenance Tools */}
       <Card className="p-6">
         <div className="border-border dark:border-border mb-4 flex items-center gap-2 border-b pb-4">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          <AlertTriangle className="h-4 w-4 text-amber-700" />
           <h3 className="text-base font-semibold">Maintenance Tools</h3>
         </div>
         <div className="space-y-3">
@@ -487,7 +508,9 @@ export function MaintenanceSettings({
             >
               <div>
                 <p className="text-sm font-medium">{tool.label}</p>
-                <p className="mt-0.5 text-xs text-neutral-700">{tool.desc}</p>
+                <p className="mt-0.5 text-xs text-neutral-700 dark:text-neutral-400">
+                  {tool.desc}
+                </p>
               </div>
               <Button
                 variant="outline"
@@ -507,8 +530,8 @@ export function MaintenanceSettings({
         <div className="border-border dark:border-border mb-4 flex items-center gap-2 border-b pb-4">
           <Trash2 className="h-4 w-4 text-red-500" />
           <h3 className="text-base font-semibold">Database Cleanup</h3>
-          <span className="ml-auto text-xs text-neutral-500">
-            Removes orphaned data that accumulates over time
+          <span className="ml-auto text-xs text-neutral-700 dark:text-neutral-300">
+            Removes data that accumulates over time
           </span>
         </div>
         <div className="space-y-3">
@@ -519,7 +542,9 @@ export function MaintenanceSettings({
             >
               <div>
                 <p className="text-sm font-medium">{tool.label}</p>
-                <p className="mt-0.5 text-xs text-neutral-700">{tool.desc}</p>
+                <p className="mt-0.5 text-xs text-neutral-700 dark:text-neutral-400">
+                  {tool.desc}
+                </p>
               </div>
               <Button
                 variant="outline"
@@ -552,8 +577,9 @@ export function MaintenanceSettings({
         <div className="bg-background dark:bg-card/30 border-border dark:border-border flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1.5">
             <p className="text-sm font-medium">Clear Site Cache</p>
-            <p className="text-xs text-neutral-700">
-              Purge all server and plugin caches. Detected:{" "}
+            <p className="text-xs text-neutral-700 dark:text-neutral-400">
+              Clears the detected cache plugin's cache and any detected hosting
+              cache, plus the object cache and the PHP code cache. Detected:{" "}
               <span className="dark:text-foreground font-semibold text-neutral-900">
                 {cacheStatus
                   ? cacheStatus.plugin ||
@@ -563,7 +589,7 @@ export function MaintenanceSettings({
               </span>
             </p>
             {cacheStatus && (
-              <div className="mt-1 flex flex-wrap gap-3 text-xs text-neutral-600">
+              <div className="mt-1 flex flex-wrap gap-3 text-xs text-neutral-600 dark:text-neutral-400">
                 <span>
                   Object Cache:{" "}
                   <span className="font-medium">
@@ -577,7 +603,7 @@ export function MaintenanceSettings({
                   </span>
                 </span>
                 {cacheStatus.cooldown_remaining > 0 && (
-                  <span className="font-medium text-amber-600">
+                  <span className="font-medium text-amber-800 dark:text-amber-600">
                     Cooldown: {cacheStatus.cooldown_remaining}s
                   </span>
                 )}
@@ -603,10 +629,10 @@ export function MaintenanceSettings({
       <Card className="overflow-hidden p-0">
         <div className="border-border dark:border-border bg-background dark:bg-card/50 flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-2">
-            <Terminal className="h-4 w-4 text-neutral-700" />
+            <Terminal className="h-4 w-4 text-neutral-700 dark:text-neutral-500" />
             <h3 className="text-base font-semibold">System Logs</h3>
-            <span className="ml-1 text-xs tracking-widest text-neutral-700 uppercase">
-              Live · 5s refresh
+            <span className="ml-1 text-xs tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
+              Live · 15s refresh
             </span>
           </div>
           <button
@@ -615,13 +641,13 @@ export function MaintenanceSettings({
             title="Refresh logs"
           >
             <RefreshCw
-              className={`h-4 w-4 text-neutral-700 ${loadingLogs ? "animate-spin" : ""}`}
+              className={`h-4 w-4 text-neutral-700 dark:text-neutral-500 ${loadingLogs ? "animate-spin" : ""}`}
             />
           </button>
         </div>
         <div className="bg-card h-64 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed">
           {logs.length === 0 ? (
-            <div className="pt-8 text-center text-xs tracking-widest text-neutral-700 uppercase italic">
+            <div className="pt-8 text-center text-xs tracking-widest text-neutral-700 uppercase italic dark:text-neutral-400">
               No log entries found.
             </div>
           ) : (
@@ -631,7 +657,9 @@ export function MaintenanceSettings({
                   key={i}
                   className={`flex gap-3 transition-colors ${getLogLineClass(log)}`}
                 >
-                  <span className="shrink-0 text-neutral-600">[{i + 1}]</span>
+                  <span className="shrink-0 text-neutral-600 dark:text-neutral-400">
+                    [{i + 1}]
+                  </span>
                   <span>{log}</span>
                 </div>
               ))}

@@ -27,9 +27,10 @@ describe("SecurityLogsPanel.tsx — event-count wording matches the endpoint", (
     expect(SOURCE).not.toContain("most recent 50");
   });
 
-  it('states the endpoint\'s actual limit ("the most recent 20")', () => {
+  it('states the endpoint\'s actual limit ("the 20 most recent") without a severity qualifier', () => {
     expect(SOURCE).toContain(
-      "Only the most recent 20 high-priority security events are shown here."
+      "Only the 20 most recent security events are shown here."
     );
+    expect(SOURCE).not.toContain("high-priority");
   });
 });

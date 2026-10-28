@@ -35,7 +35,7 @@ const R = window.React;
 
 if (!R) {
   throw new Error(
-    "SwissSuite AI: window.React is missing. WordPress's own 'react' " +
+    "SwissSuite Security Backup and SEO: window.React is missing. WordPress's own 'react' " +
       "script did not load before this plugin's bundle ran — check the " +
       "dependency array on the wp_enqueue_script() call in " +
       "class-swisswpsuite-admin.php (must include 'react')."

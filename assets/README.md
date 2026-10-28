@@ -1,6 +1,6 @@
-# SwissSuite AI — WP.org SVN Assets
+# SwissSuite Security Backup and SEO — WP.org SVN Assets
 
-This folder contains the WordPress.org directory assets for SwissSuite AI. These files go into the `/assets/` directory of the WP.org SVN repository — **not** into the plugin zip.
+This folder contains the WordPress.org directory assets for SwissSuite Security Backup and SEO. These files go into the `/assets/` directory of the WP.org SVN repository — **not** into the plugin zip.
 
 ---
 

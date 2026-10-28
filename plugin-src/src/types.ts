@@ -1,10 +1,9 @@
 /**
- * SwissSuite AI - WordPress Security, Backup & SEO Plugin
+ * SwissSuite Security Backup and SEO - WordPress Plugin
  *
  * @package   SwissSuite_AI
  * @author    Swisswpsecure Team <info@swisswpsecure.com>
  * @license   GPL-2.0+
- * @link      https://swisswpsecure.com
  * @copyright 2026 Swisswpsecure Team
  */
 
@@ -71,6 +70,15 @@ export interface SeoScanResult {
   /** Ceiling for `seo_score` if every fixable item were fixed. */
   max_achievable_seo_score: number;
   /**
+   * R15 L5b (2026-09-22): true only when the
+   * `swisswpsuite_seo_description_meta_keys` filter resolved to an empty
+   * array — `non_compliant_items`/`details.*` are then computed with zero
+   * description keys to check against (a misconfiguration signal). Optional
+   * because it was added after the initial shape; absent means false
+   * (older backend or a build predating this field).
+   */
+  description_keys_missing?: boolean;
+  /**
    * Legacy content+image "optimization completion" sub-metric — PRESERVED
    * for `details`/ceiling-UI backward compatibility. No longer the page's
    * headline number as of G1 (2026-08-11) — use `seo_score` for that.
@@ -95,7 +103,7 @@ export interface SecurityLog {
   event: string;
   created_at: string;
   severity: "low" | "medium" | "high";
-  blocked: boolean | number; // DB returns 0/1 (number)
+  blocked: boolean | number; // GET /security/logs returns 1 (blocked) or 0 (logged only) as an integer
 }
 
 export interface SecurityStatus {
@@ -122,6 +130,19 @@ export interface SecurityStatus {
   };
   /** ISO-ish timestamp of the most recent real (non-self-test) WAF block, or null if none. */
   last_block_at?: string | null;
+  /**
+   * Outcome of the latest core file check, returned by GET /security/status.
+   * `result` is 'not_run' until a check has finished and 'error' when the
+   * official checksums could not be fetched; `enabled` mirrors the daily check
+   * toggle. Optional so a response without it reads as 'not_run'.
+   */
+  core_integrity?: {
+    result: "not_run" | "clean" | "issues" | "error";
+    issues_found: number;
+    informational_found: number;
+    checked_at: string | null;
+    enabled: boolean;
+  };
 }
 
 export interface BackupArchive {
@@ -129,7 +150,7 @@ export interface BackupArchive {
   date: string;
   timestamp: number;
   size: string;
-  type: "full" | "files" | "db";
+  type: "full" | "files" | "db" | "unknown";
   url: string;
 }
 
@@ -225,10 +246,11 @@ export interface ScanHistoryRecord {
   scan_id: string;
   scanned_at: string;
   /**
-   * 'security_audit' is this package's own signature+posture scan — the
-   * only value this package's writer stores (persist_security_audit_
-   * history() in class-swisswpsuite-scan-orchestrator.php). A stored row
-   * carrying any other value is one this package did not write.
+   * 'security_audit' is this package's own signature+posture scan and
+   * 'malware_deep' a finished manual Deep Scan — the two values this
+   * package's writer stores (record_completed_scan() in
+   * class-swisswpsuite-scan-orchestrator.php). A stored row carrying any
+   * other value is one this package did not write.
    *
    * The trailing `(string & {})` keeps 'security_audit' as an autocomplete
    * suggestion while still accepting any other string a different writer
@@ -316,6 +338,19 @@ export interface SystemLogsWarning {
 // SecurityHub component types (Phase 5 — HIGH-33)
 // ---------------------------------------------------------------------------
 
+/**
+ * One server-level rule block for the site-root .htaccess file.
+ *
+ * `rules` is the exact text to paste: "# BEGIN <marker>", the rule lines,
+ * "# END <marker>". `present` is true when a "# BEGIN <marker>" line is
+ * already in the file.
+ */
+export interface HardeningServerRules {
+  marker: string;
+  rules: string;
+  present: boolean;
+}
+
 /** A single hardening option returned by GET /hardening/status */
 export interface HardeningOption {
   key: string;
@@ -343,6 +378,14 @@ export interface HardeningOption {
    * (GET /hardening/status) counterpart of that write-path field.
    */
   htaccess_warning?: string;
+  /**
+   * The block to paste into the site-root .htaccess file for this option, and
+   * whether it is already there. Present only on options that have a
+   * server-level rule. Absent entirely on hosts that do not read .htaccess
+   * (Nginx), with the same semantic as `htaccess_warning` above: a pasted
+   * block would have no effect there, so nothing is offered.
+   */
+  server_rules?: HardeningServerRules;
 }
 
 /**
@@ -361,6 +404,45 @@ export interface HardeningToggleResponse {
   message?: string;
   upgrade_required?: boolean;
   htaccess_warning?: string;
+  /**
+   * Blocks to paste into the site-root .htaccess file after this toggle: one
+   * entry when the option was switched on, and one when it was switched off
+   * while its block is still in the file. Absent when there is nothing to
+   * paste or remove.
+   */
+  server_rules?: HardeningServerRules[];
+}
+
+/**
+ * Response from POST /hardening/apply-all. HTTP 200 in every case.
+ *
+ * `success === true` iff `failed.length === 0`. `warnings` is present ONLY
+ * when non-empty and is orthogonal to `failed` — a warning (a server-level
+ * .htaccess rule that could not be written, while PHP-level enforcement is
+ * still active) is NOT a failure. `applied + failed.length === 8` for the
+ * current recommended set.
+ */
+export interface HardeningApplyAllResponse {
+  success: boolean;
+  applied: number;
+  /** Option keys that did NOT apply. Empty array on full success. */
+  failed: string[];
+  /** option key => 'enabled' | the toggle_option() error message. */
+  results: Record<string, string>;
+  /** option key => .htaccess warning message. Present only when non-empty. */
+  warnings?: Record<string, string>;
+  message: string;
+  /**
+   * Subset of `failed` whose `toggle_option()` error code is
+   * `manual_action_required` (the everyday Nginx/OpenLiteSpeed
+   * `block_php_uploads` decline — expected by design on those hosts, not a
+   * real failure the admin needs to act on beyond the server-config note
+   * already in `message`). Every other key in `failed` (a genuine write
+   * failure) is not in this array. Optional: a build that omits this
+   * field is treated as `[]`, which routes to the error path rather than
+   * assuming a warning that cannot be confirmed.
+   */
+  manual_action?: string[];
 }
 
 /**
@@ -430,6 +512,8 @@ export interface BackupEngineStatus {
   created_at?: number;
   /** Unix timestamp of the last state update. */
   updated_at?: number;
+  /** Database object names the dump omitted. Absent or empty when nothing was omitted. */
+  db_skipped_objects?: string[];
 }
 
 /**
@@ -487,9 +571,10 @@ export interface AbandonedPluginItem {
    * Why this plugin was flagged.
    * - "closed": Plugin was explicitly closed/removed on WordPress.org (real security risk).
    * - "not_found": Plugin was never submitted to WordPress.org (informational, not a risk).
+   * - "lookup_failed": WordPress.org gave no usable answer for this plugin, so it was not checked.
    * Absent for legacy cached results before v2.9.27.9.
    */
-  reason?: "closed" | "not_found";
+  reason?: "closed" | "not_found" | "lookup_failed";
   /** Date the plugin was closed on WordPress.org. Only present when reason === "closed". */
   closed_date?: string | null;
 }
@@ -593,6 +678,12 @@ export interface SmtpSettings {
   fromEmail: string;
   fromName: string;
   hasPassword: boolean;
+  /**
+   * True when a password is stored but cannot currently be decrypted, so
+   * mail sends through PHP's unauthenticated `mail()` fallback until it is
+   * re-entered. Always false when `hasPassword` is false.
+   */
+  passwordUnreadable: boolean;
 }
 
 export interface SmtpSettingsSavePayload {
@@ -610,6 +701,15 @@ export interface SmtpSettingsSaveResponse {
   success: boolean;
   message?: string;
   hasPassword?: boolean;
+  /**
+   * Same predicate GET /smtp/settings uses, re-computed against whatever is
+   * stored after this save (a freshly written password, or an existing one
+   * left untouched). Callers must sync `passwordUnreadable` from this field
+   * rather than assuming a successful save always makes the password
+   * readable -- a save that didn't touch the password leaves an existing
+   * unreadable one unreadable.
+   */
+  passwordUnreadable?: boolean;
 }
 
 export interface SmtpTestDiagnostics {
@@ -684,6 +784,8 @@ export interface SmtpWpCronStatus {
   last_scan_run_ts: number;
   disable_wp_cron: boolean;
   alternate_wp_cron: boolean;
+  /** False when scheduled scan reports are switched off. Absent on older servers. */
+  scan_report_enabled?: boolean;
 }
 
 /**
@@ -867,6 +969,36 @@ export interface ScanReportConfig {
   } | null;
   /** Unix timestamp of the next scheduled scan, or null when no schedule is active. */
   next_scheduled_ts: number | null;
+}
+
+/** One finding row as the daily report e-mail shows it (top 5, severity order). */
+export interface ScanReportPreviewFinding {
+  severity: "critical" | "high" | "medium" | "low" | "info";
+  title: string;
+  /** Empty string when the finding carries no description; shown as a dash. */
+  description: string;
+}
+
+/**
+ * Data the daily scan report e-mail is built from.
+ * Returned by GET /security/scan/report-preview.
+ */
+export interface ScanReportPreview {
+  success: boolean;
+  /** False when no scan result is stored yet. */
+  has_scan: boolean;
+  /** Grade letter (A-F), or empty string when there is no scan. */
+  grade: string;
+  summary: string;
+  findings: ScanReportPreviewFinding[];
+  /** Number of findings in the scan; findings[] holds at most 5. */
+  total_findings: number;
+  /** Unix timestamp of the next scheduled report, or null. */
+  next_scheduled_ts: number | null;
+  /** False when scheduled scan reports are switched off. Absent on older servers. */
+  scan_report_enabled?: boolean;
+  /** Headings of the extra sections appended to the e-mail. */
+  sections: { heading: string }[];
 }
 
 // ---------------------------------------------------------------------------

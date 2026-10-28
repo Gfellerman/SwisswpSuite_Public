@@ -137,14 +137,14 @@ const AllowedIpsTable: React.FC<AllowedIpsTableProps> = ({
   <div className="glass-panel rounded-3xl p-8">
     <div className="mb-6 flex items-center justify-between">
       <div>
-        <h3 className="text-swiss-navy text-xl font-black tracking-tight uppercase">
+        <h3 className="text-swiss-navy dark:text-foreground text-xl font-black tracking-tight uppercase">
           Allowed IPs
         </h3>
-        <p className="mt-1 text-sm font-black tracking-widest text-neutral-700 uppercase">
+        <p className="mt-1 text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
           IPs permanently trusted — never auto-blocked by login protection
         </p>
         {currentIp ? (
-          <p className="mt-2 text-xs font-bold text-neutral-700">
+          <p className="mt-2 text-xs font-bold text-neutral-700 dark:text-neutral-400">
             Your current IP:{" "}
             <code className="bg-secondary rounded-md px-2 py-0.5 font-mono">
               {currentIp}
@@ -153,7 +153,7 @@ const AllowedIpsTable: React.FC<AllowedIpsTableProps> = ({
               <button
                 type="button"
                 onClick={() => onAllow(currentIp)}
-                className="text-swiss-navy hover:text-brand-accent ml-3 underline transition-colors"
+                className="text-swiss-navy dark:text-foreground hover:text-brand-accent ml-3 underline transition-colors"
               >
                 Allow this IP
               </button>
@@ -189,10 +189,10 @@ const AllowedIpsTable: React.FC<AllowedIpsTableProps> = ({
       <table className="w-full text-left">
         <thead className="bg-background/50">
           <tr>
-            <th className="px-6 py-4 text-xs font-black tracking-widest text-neutral-700 uppercase">
+            <th className="px-6 py-4 text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
               IP Address
             </th>
-            <th className="px-6 py-4 text-right text-xs font-black tracking-widest text-neutral-700 uppercase">
+            <th className="px-6 py-4 text-right text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
               Actions
             </th>
           </tr>
@@ -202,7 +202,7 @@ const AllowedIpsTable: React.FC<AllowedIpsTableProps> = ({
             <tr>
               <td
                 colSpan={2}
-                className="px-6 py-16 text-center text-sm font-black tracking-widest text-neutral-700 uppercase backdrop-blur-sm"
+                className="px-6 py-16 text-center text-sm font-black tracking-widest text-neutral-700 uppercase backdrop-blur-sm dark:text-neutral-400"
               >
                 No IPs allowlisted yet
               </td>
@@ -210,7 +210,7 @@ const AllowedIpsTable: React.FC<AllowedIpsTableProps> = ({
           ) : (
             allowedIps.map((ip) => (
               <tr key={ip} className="hover:bg-background/50 transition-all">
-                <td className="text-swiss-navy px-6 py-4 text-sm font-black">
+                <td className="text-swiss-navy dark:text-foreground px-6 py-4 text-sm font-black">
                   {ip}
                   {currentIp === ip ? (
                     <Badge className="ml-3 border-emerald-200 bg-emerald-50 text-xs font-black tracking-widest text-emerald-700 uppercase">
@@ -222,7 +222,7 @@ const AllowedIpsTable: React.FC<AllowedIpsTableProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="hover:text-brand-accent rounded-lg text-neutral-700"
+                    className="rounded-lg text-neutral-700 hover:text-red-800 dark:text-neutral-400"
                     onClick={() => onRemove(ip)}
                   >
                     Remove
@@ -257,11 +257,17 @@ const BlockedIpsTable: React.FC<BlockedIpsTableProps> = ({
   <div className="glass-panel rounded-3xl p-8">
     <div className="mb-10 flex items-center justify-between">
       <div>
-        <h3 className="text-swiss-navy text-xl font-black tracking-tight uppercase">
+        <h3 className="text-swiss-navy dark:text-foreground text-xl font-black tracking-tight uppercase">
           Blocked IPs
         </h3>
-        <p className="mt-1 text-sm font-black tracking-widest text-neutral-700 uppercase">
-          IP addresses currently blocked from accessing your site
+        <p className="dark:text-foreground mt-1 text-sm font-black tracking-widest text-neutral-700 uppercase">
+          IP addresses you have blocked by hand
+        </p>
+        <p className="dark:text-foreground mt-2 max-w-xl text-xs leading-relaxed font-medium text-neutral-700">
+          The firewall also blocks an address by itself for 30 minutes after
+          repeated attacks, and too many failed logins lock an address out for
+          15 minutes. Those blocks are not listed here and end on their own;
+          adding the address to Allowed IPs lifts them at once.
         </p>
       </div>
       <div className="flex gap-4">
@@ -292,10 +298,10 @@ const BlockedIpsTable: React.FC<BlockedIpsTableProps> = ({
       <table className="w-full text-left">
         <thead className="bg-background/50">
           <tr>
-            <th className="px-6 py-4 text-xs font-black tracking-widest text-neutral-700 uppercase">
+            <th className="px-6 py-4 text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
               IP Address
             </th>
-            <th className="px-6 py-4 text-right text-xs font-black tracking-widest text-neutral-700 uppercase">
+            <th className="px-6 py-4 text-right text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
               Actions
             </th>
           </tr>
@@ -305,7 +311,7 @@ const BlockedIpsTable: React.FC<BlockedIpsTableProps> = ({
             <tr>
               <td
                 colSpan={2}
-                className="px-6 py-20 text-center text-sm font-black tracking-widest text-neutral-700 uppercase backdrop-blur-sm"
+                className="px-6 py-20 text-center text-sm font-black tracking-widest text-neutral-700 uppercase backdrop-blur-sm dark:text-neutral-400"
               >
                 No blocked IPs yet
               </td>
@@ -314,10 +320,12 @@ const BlockedIpsTable: React.FC<BlockedIpsTableProps> = ({
             bannedIps.map((ip) => {
               return (
                 <tr key={ip} className="hover:bg-background/50 transition-all">
-                  <td className="text-swiss-navy px-6 py-4 text-sm font-black">
+                  <td className="text-swiss-navy dark:text-foreground px-6 py-4 text-sm font-black">
                     {ip}
-                    <Badge className="ml-3 border-amber-200 bg-amber-50 text-xs font-black tracking-widest text-amber-700 uppercase">
-                      Auto
+                    <Badge
+                      className={`ml-3 text-xs font-black tracking-widest uppercase ${bannedIpTypes[ip] === "auto" ? "border-amber-200 bg-amber-50 text-amber-700" : ""}`}
+                    >
+                      {bannedIpTypes[ip] === "auto" ? "Auto" : "Manual"}
                     </Badge>
                     {blockedIpExtraLinks.map((ExtraLink, i) => (
                       <ExtraLink key={i} ip={ip} />
@@ -327,7 +335,7 @@ const BlockedIpsTable: React.FC<BlockedIpsTableProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="hover:text-brand-accent rounded-lg text-neutral-700"
+                      className="rounded-lg text-neutral-700 hover:text-red-800 dark:text-neutral-400"
                       onClick={() => onUnban(ip)}
                     >
                       Release
@@ -355,16 +363,16 @@ const QuarantinedFilesTable: React.FC<QuarantinedFilesTableProps> = ({
   onDelete,
 }) => (
   <div className="glass-panel rounded-3xl p-8">
-    <h3 className="text-swiss-navy mb-2 text-xl font-black tracking-tight uppercase">
+    <h3 className="text-swiss-navy dark:text-foreground mb-2 text-xl font-black tracking-tight uppercase">
       Quarantined Files
     </h3>
-    <p className="mb-10 text-sm font-black tracking-widest text-neutral-700 uppercase">
+    <p className="mb-10 text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
       Files moved to a safe, isolated location — not deleted
     </p>
 
     <div className="border-border dark:border-border/10 bg-card dark:bg-secondary overflow-auto rounded-2xl border">
       <table className="w-full text-left">
-        <thead className="bg-background/50 text-xs font-black tracking-widest text-neutral-700 uppercase">
+        <thead className="bg-background/50 text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
           <tr>
             <th className="px-6 py-4">ID</th>
             <th className="px-6 py-4">File Path</th>
@@ -377,7 +385,7 @@ const QuarantinedFilesTable: React.FC<QuarantinedFilesTableProps> = ({
             <tr>
               <td
                 colSpan={4}
-                className="px-6 py-20 text-center text-sm font-black tracking-widest text-neutral-700 uppercase backdrop-blur-sm"
+                className="px-6 py-20 text-center text-sm font-black tracking-widest text-neutral-700 uppercase backdrop-blur-sm dark:text-neutral-400"
               >
                 No files in quarantine.
               </td>
@@ -388,27 +396,27 @@ const QuarantinedFilesTable: React.FC<QuarantinedFilesTableProps> = ({
                 key={file.id}
                 className="hover:bg-background/50 border-border border-t"
               >
-                <td className="text-swiss-navy px-6 py-4 text-sm font-black">
+                <td className="text-swiss-navy dark:text-foreground px-6 py-4 text-sm font-black">
                   #{file.id}
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-swiss-navy max-w-xs truncate text-sm font-black">
+                  <div className="text-swiss-navy dark:text-foreground max-w-xs truncate text-sm font-black">
                     {file.original_path}
                   </div>
-                  <div className="mt-1 text-xs font-medium tracking-widest text-neutral-700 uppercase">
+                  <div className="mt-1 text-xs font-medium tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
                     {file.date}
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <Badge className="rounded-xl border-none bg-orange-50 text-xs font-black text-orange-600 uppercase">
-                    POTENTIAL SHELL
+                  <Badge className="rounded-xl border-none bg-orange-50 text-xs font-black text-orange-700 uppercase dark:bg-orange-950 dark:text-orange-500">
+                    Flagged by a scan
                   </Badge>
                 </td>
                 <td className="space-x-2 px-6 py-4 text-right">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="rounded-lg text-xs font-black tracking-widest text-emerald-600 uppercase hover:bg-emerald-50"
+                    className="rounded-lg text-xs font-black tracking-widest text-emerald-700 uppercase hover:bg-emerald-50 dark:text-emerald-500"
                     onClick={() => onRestore(file.id)}
                   >
                     Restore
@@ -416,7 +424,7 @@ const QuarantinedFilesTable: React.FC<QuarantinedFilesTableProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-brand-accent rounded-lg text-xs font-black tracking-widest uppercase hover:bg-red-50"
+                    className="text-brand-accent rounded-lg text-xs font-black tracking-widest uppercase hover:bg-red-50 dark:text-red-400"
                     onClick={() => onDelete(file.id)}
                   >
                     Purge
@@ -441,16 +449,17 @@ const IgnoredPathsTable: React.FC<IgnoredPathsTableProps> = ({
   onUnIgnore,
 }) => (
   <div className="glass-panel rounded-3xl p-8">
-    <h3 className="text-swiss-navy mb-2 text-xl font-black tracking-tight uppercase">
+    <h3 className="text-swiss-navy dark:text-foreground mb-2 text-xl font-black tracking-tight uppercase">
       Ignored Paths
     </h3>
-    <p className="mb-10 text-sm font-black tracking-widest text-neutral-700 uppercase">
-      Paths excluded from automated scans
+    <p className="mb-10 text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
+      Paths excluded from automated scans (a file only while its content stays
+      the same)
     </p>
 
     <div className="grid gap-4">
       {paths.length === 0 ? (
-        <div className="border-border rounded-2xl border p-12 text-center text-sm font-black tracking-widest text-neutral-700 uppercase backdrop-blur-sm">
+        <div className="border-border rounded-2xl border p-12 text-center text-sm font-black tracking-widest text-neutral-700 uppercase backdrop-blur-sm dark:text-neutral-400">
           No paths excluded yet
         </div>
       ) : (
@@ -460,17 +469,17 @@ const IgnoredPathsTable: React.FC<IgnoredPathsTableProps> = ({
             className="bg-card border-border hover:bg-background group flex items-center justify-between rounded-2xl border p-5 transition-all"
           >
             <div className="flex items-center gap-4">
-              <div className="bg-secondary group-hover:bg-swiss-navy rounded-xl p-2 text-neutral-700 transition-all group-hover:text-white">
+              <div className="bg-secondary group-hover:bg-swiss-navy rounded-xl p-2 text-neutral-700 transition-all group-hover:text-white dark:text-neutral-400">
                 <EyeOff size={14} />
               </div>
-              <span className="text-swiss-navy max-w-2xl truncate font-mono text-sm font-bold">
+              <span className="text-swiss-navy dark:text-foreground max-w-2xl truncate font-mono text-sm font-bold">
                 {path}
               </span>
             </div>
             <Button
               onClick={() => onUnIgnore(path)}
               variant="ghost"
-              className="text-brand-accent rounded-xl text-xs font-black tracking-widest uppercase hover:bg-red-50"
+              className="text-brand-accent rounded-xl text-xs font-black tracking-widest uppercase hover:bg-red-50 dark:text-red-400"
             >
               Remove
             </Button>

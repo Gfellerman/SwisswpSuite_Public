@@ -88,7 +88,10 @@ function ToggleRow({
         >
           {label}
         </p>
-        <p id={descId} className="mt-0.5 text-xs text-neutral-700">
+        <p
+          id={descId}
+          className="mt-0.5 text-xs text-neutral-700 dark:text-neutral-400"
+        >
           {desc}
         </p>
       </div>
@@ -222,7 +225,7 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
             <h3 className="dark:text-foreground text-lg font-semibold text-neutral-900">
               SEO Settings
             </h3>
-            <p className="text-xs text-neutral-700">
+            <p className="text-xs text-neutral-700 dark:text-neutral-400">
               Control how your site appears when shared on social media
             </p>
           </div>
@@ -234,10 +237,11 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
             <p className="dark:text-foreground text-sm font-medium text-neutral-900">
               Default Social Image
             </p>
-            <p className="mt-0.5 text-xs text-neutral-700">
+            <p className="mt-0.5 text-xs text-neutral-700 dark:text-neutral-400">
               Shown when sharing pages that have no featured image (homepage,
-              blog listing, posts without thumbnails). Recommended size:
-              1200&times;630px.
+              blog listing, posts without thumbnails), while Basic SEO Meta Tags
+              is on and no dedicated SEO plugin (such as Yoast SEO or Rank Math)
+              is active. Recommended size: 1200&times;630px.
             </p>
           </div>
 
@@ -245,7 +249,7 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
           {attachmentId > 0 && (
             <div className="bg-background dark:bg-card/30 border-border dark:border-border rounded-xl border p-4">
               {isLoadingImage ? (
-                <div className="flex items-center gap-2 text-xs text-neutral-700">
+                <div className="flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-400">
                   <span
                     className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
                     aria-hidden="true"
@@ -264,7 +268,7 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
                   style={{ maxWidth: "300px", height: "auto" }}
                 />
               ) : (
-                <p className="text-xs text-neutral-500 italic">
+                <p className="text-xs text-neutral-600 italic dark:text-neutral-400">
                   Could not load image preview.
                 </p>
               )}
@@ -311,7 +315,7 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
             <h3 className="dark:text-foreground text-lg font-semibold text-neutral-900">
               Discoverability
             </h3>
-            <p className="text-xs text-neutral-700">
+            <p className="text-xs text-neutral-700 dark:text-neutral-400">
               Endpoints that publish site content for search engines and AI
               crawlers — off by default
             </p>
@@ -321,7 +325,7 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
         <div>
           <ToggleRow
             label="XML Sitemap (/sitemap.xml)"
-            desc="Lists your published pages so search engines can discover and index them. Includes every public post type on this site."
+            desc="Lists your published pages so search engines can discover and index them. Includes every public post type on this site except media attachment pages."
             checked={settings.sitemapEnabled ?? false}
             onChange={(v) => handleToggleSave("sitemapEnabled", v)}
             isSaving={savingToggle === "sitemapEnabled"}
@@ -351,7 +355,7 @@ export function SeoSettings({ settings, onSave }: SeoSettingsProps) {
             <h3 className="dark:text-foreground text-lg font-semibold text-neutral-900">
               Meta Tags
             </h3>
-            <p className="text-xs text-neutral-700">
+            <p className="text-xs text-neutral-700 dark:text-neutral-400">
               Basic on-page SEO tags, generated automatically — off by default
             </p>
           </div>

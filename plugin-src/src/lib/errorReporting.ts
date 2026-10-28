@@ -1,10 +1,9 @@
 /**
- * SwissSuite AI - WordPress Security, Backup & SEO Plugin
+ * SwissSuite Security Backup and SEO - WordPress Plugin
  *
  * @package   SwissSuite_AI
  * @author    Swisswpsecure Team <info@swisswpsecure.com>
  * @license   GPL-2.0+
- * @link      https://swisswpsecure.com
  * @copyright 2026 Swisswpsecure Team
  */
 

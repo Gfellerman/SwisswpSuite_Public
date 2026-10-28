@@ -24,7 +24,7 @@ const RD = window.ReactDOM;
 
 if (!RD) {
   throw new Error(
-    "SwissSuite AI: window.ReactDOM is missing. WordPress's own " +
+    "SwissSuite Security Backup and SEO: window.ReactDOM is missing. WordPress's own " +
       "'react-dom' script did not load before this plugin's bundle ran — " +
       "check the dependency array on the wp_enqueue_script() call in " +
       "class-swisswpsuite-admin.php (must include 'react-dom')."

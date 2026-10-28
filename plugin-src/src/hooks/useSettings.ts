@@ -26,7 +26,7 @@ export interface SwissSettings {
   // counter that powers the Dashboard traffic chart. No IP/UA/URL/cookie
   // is ever stored or transmitted — see api-settings.php get_settings().
   pageviewTrackingEnabled?: boolean;
-  alertEmail?: string; // Email address for security alerts and diagnostic notifications
+  alertEmail?: string; // Email address for security alerts, backup and restore alerts, and diagnostic notifications
   // DIAG-EMAIL E-5 (VALIDATOR_DIAG_EMAIL.md §4 D6, v2.9.33.51+): cadence for
   // the ERROR/WARNING alert digest cron (swisswpsuite_alert_digest). CRITICAL
   // events still email immediately regardless of this setting — see the PHP
@@ -60,6 +60,12 @@ export interface SwissSettings {
   // C-01 partial: Encryption password state — PHP returns these in GET /settings
   hasEncryptionPassword?: boolean;
   encryptionPasswordCorrupted?: boolean;
+  // Wired to the `swisswpsuite_beta_features` option ('yes'/'no'). Gates the
+  // Sync/Migration beta sections on Pro's BackupsPage and the "Beta
+  // Features" toggle in Settings > General > General Preferences. Free's own
+  // BackupsPage does not read this field, but the option and the settings
+  // round-trip are shared across both editions.
+  betaFeatures?: boolean;
 }
 
 interface SettingsResponse {
@@ -78,6 +84,7 @@ interface SettingsResponse {
   llmsTxtEnabled?: boolean; // P1-06/F-11 — see SwissSettings.llmsTxtEnabled
   seoMetaInjectionEnabled?: boolean; // M6 — see SwissSettings.seoMetaInjectionEnabled
   firewallEnabled?: boolean; // DASH-2/Fix-C.1 — see SwissSettings.firewallEnabled
+  betaFeatures?: boolean; // see SwissSettings.betaFeatures
   // SET-031: Optimistic-concurrency token echoed on POST to detect two-tab conflicts.
   settings_version?: string;
 }
@@ -114,12 +121,37 @@ export function useSettings() {
           settings as SettingsResponse
         ).settings_version;
       }
-      return wpApi<{ success: boolean }>("/settings", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
+      // The response additionally carries the fresh settings_version
+      // computed by the backend after this save. Optional, so a server
+      // build that sends only `{success: true}` still degrades safely —
+      // onSuccess below simply has nothing new to write.
+      return wpApi<{ success: boolean; settings_version?: string }>(
+        "/settings",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      );
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // SET-F1: write the fresh settings_version into the ["settings"]
+      // cache BEFORE invalidating. Without this, a second updateSettings()
+      // call fired before invalidateQueries' background refetch lands
+      // would still read the STALE settings_version out of the cache and
+      // send it as `_settings_version` — the backend's optimistic-
+      // concurrency check then rejects it as a conflict (409) even though
+      // no other session touched anything; this fix closes that
+      // same-tab-rapid-save race. The subsequent invalidate is kept — other
+      // server-derived fields still need a real refetch.
+      if (data.settings_version) {
+        queryClient.setQueryData(
+          ["settings"],
+          (prev: SettingsResponse | undefined) =>
+            prev
+              ? { ...prev, settings_version: data.settings_version }
+              : prev
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ["settings"] });
     },
     onError: (err: any) => {

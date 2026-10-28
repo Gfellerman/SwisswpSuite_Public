@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you believe you have found a security vulnerability in SwissSuite AI, please report it privately rather than opening a public GitHub issue.
+If you believe you have found a security vulnerability in SwissSuite Security Backup and SEO, please report it privately rather than opening a public GitHub issue.
 
 - **Email:** info@swisswpsecure.com
 - **Website:** https://www.swisswpsecure.com
@@ -21,4 +21,4 @@ Only the latest version published on the WordPress.org Plugin Directory is suppo
 
 ## Scope
 
-This policy covers the SwissSuite AI plugin as published on WordPress.org and its published source in this repository. It does not cover third-party plugins, themes, or hosting environments.
+This policy covers the SwissSuite Security Backup and SEO plugin as published on WordPress.org and its published source in this repository. It does not cover third-party plugins, themes, or hosting environments.

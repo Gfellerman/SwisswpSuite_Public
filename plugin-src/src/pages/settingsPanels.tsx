@@ -35,6 +35,7 @@ export const settingsScreenPanels: SettingsScreenPanel[] = [
   {
     tab: "general",
     id: "smtp",
+    requiresSettings: false,
     render: () => <SmtpSettings />,
   },
   {
@@ -72,6 +73,7 @@ export const settingsScreenPanels: SettingsScreenPanel[] = [
   {
     tab: "diagnostics",
     id: "diagnostics",
+    requiresSettings: false,
     render: () => <SelfCheckPanel />,
   },
 ];

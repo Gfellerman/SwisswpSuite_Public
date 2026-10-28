@@ -8,7 +8,7 @@ import type { ScanHistoryRecord, SentinelLayer1Finding } from "../../../types";
 export function buildScanSummaryTitle(
   _record: ScanHistoryRecord | null | undefined
 ): string {
-  return "Quick Scan Complete";
+  return "Scan Complete";
 }
 
 /**

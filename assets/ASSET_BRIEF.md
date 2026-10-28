@@ -1,6 +1,6 @@
-# SwissSuite AI — WP.org Asset Production Brief
+# SwissSuite Security Backup and SEO — WP.org Asset Production Brief
 
-This brief contains every spec a designer (freelancer, in-house, or Canva user) needs to produce all WP.org directory assets without follow-up questions. It covers only what the **SwissSuite AI** Free plugin actually does — malware scanning, a firewall, hardening, local backup and restore, and on-page SEO. Once the images described here exist, add an `== Screenshots ==` section to `readme.txt` listing them in order, and update `assets/README.md`'s file table from TODO to done.
+This brief contains every spec a designer (freelancer, in-house, or Canva user) needs to produce all WP.org directory assets without follow-up questions. It covers only what the **SwissSuite Security Backup and SEO** Free plugin actually does — malware scanning, a firewall, hardening, local backup and restore, and on-page SEO. Once the images described here exist, add an `== Screenshots ==` section to `readme.txt` listing them in order, and update `assets/README.md`'s file table from TODO to done.
 
 ---
 
@@ -56,7 +56,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
 │      with                On-Page SEO.                │UI│ │UI│ │UI│        │
 │   Swiss cross            ──────────────────           │ 1│ │ 2│ │ 3│        │
 │                          One Plugin.                 └──┘ └──┘ └──┘        │
-│   SwissSuite AI                                                          │
+│   SwissSuite Security Backup and SEO                                     │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
    Dark Swiss Navy gradient background (#0A1628 → #1A2A45)
@@ -69,7 +69,7 @@ WP.org requires two banner files. The high-DPI variant is shown to retina users;
   - Shield + Swiss cross mark, ~140 px tall on the standard banner (280 px on retina)
   - Shield body in Swiss Navy with 2 px Swiss Red stroke
   - Swiss cross inside the shield in pure white (#FFFFFF)
-  - Below the mark: "SwissSuite AI" in Inter Bold, white, ~28 px (standard) / ~56 px (retina)
+  - Below the mark: "SwissSuite Security Backup and SEO" in Inter Bold, white, ~20 px (standard) / ~40 px (retina) — longer name than before, so the point size steps down to keep it on one line
 - **Centre block (tagline):**
   - Line 1: "Security. Backup. On-Page SEO." — Inter ExtraBold, white, ~32 px (standard) / ~64 px (retina), tight line height
   - Divider rule: 60 px wide, 2 px tall, Swiss Red, beneath line 1

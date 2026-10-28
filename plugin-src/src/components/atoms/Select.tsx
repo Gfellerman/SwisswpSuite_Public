@@ -49,7 +49,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className={cn("space-y-1.5", fullWidth && "w-full", className)}>
         {label && (
-          <label className="text-neutral-700foreground ml-1 text-xs font-semibold tracking-wider uppercase">
+          <label className="ml-1 text-xs font-semibold tracking-wider uppercase">
             {label}
           </label>
         )}
@@ -92,9 +92,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         </div>
 
         {helperText && !error && (
-          <p className="text-neutral-700foreground ml-1 text-xs font-medium">
-            {helperText}
-          </p>
+          <p className="ml-1 text-xs font-medium">{helperText}</p>
         )}
 
         {error && (

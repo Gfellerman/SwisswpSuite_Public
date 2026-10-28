@@ -6,7 +6,8 @@
  * Backend contract (existing GET /settings response):
  *   - hasEncryptionPassword: boolean — a password is currently stored
  *   - encryptionPasswordCorrupted: boolean — the stored ciphertext cannot be
- *     decrypted (likely AUTH_KEY/SECURE_AUTH_KEY rotation since it was set)
+ *     decrypted (the plugin's own stored encryption key was regenerated, lost,
+ *     or the password was saved before this key scheme existed)
  *
  * Backend contract (POST /settings):
  *   - { encryptionPassword, encryptionPasswordConfirm }   — set a new password
@@ -41,7 +42,12 @@ interface EncryptionSettingsProps {
 }
 
 const INPUT_CLASS =
-  "w-full px-4 py-3 min-h-[44px] rounded-lg border border-border bg-background text-neutral-900 dark:text-foreground placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm";
+  "w-full px-4 py-3 min-h-[44px] rounded-lg border border-border bg-background text-neutral-900 dark:text-foreground placeholder:text-neutral-600 dark:placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm";
+
+// Asked only when a password is already stored: replacing it leaves earlier
+// backups encrypted with the old one.
+const REPLACE_PASSWORD_CONFIRM =
+  "Replace the encryption password? Backups made before this change can only be restored with the current password, so keep a copy of it.";
 
 export function EncryptionSettings({
   settings,
@@ -68,6 +74,9 @@ export function EncryptionSettings({
       } else if (password !== confirm) {
         toast.error("Password and confirmation do not match");
       }
+      return;
+    }
+    if (hasPassword && !window.confirm(REPLACE_PASSWORD_CONFIRM)) {
       return;
     }
     setIsSaving(true);
@@ -133,7 +142,7 @@ export function EncryptionSettings({
           <span className="text-sm font-medium text-red-700 dark:text-red-300">
             Encryption key corrupted
           </span>
-          <span className="text-xs text-red-600 dark:text-red-400">
+          <span className="text-xs text-red-700 dark:text-red-400">
             — re-enter password to fix
           </span>
         </div>
@@ -154,7 +163,7 @@ export function EncryptionSettings({
           <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
             Encryption active
           </span>
-          <span className="text-xs text-emerald-600 dark:text-emerald-400">
+          <span className="text-xs text-emerald-700 dark:text-emerald-400">
             — backups stored as .zip.enc files
           </span>
         </div>
@@ -174,7 +183,7 @@ export function EncryptionSettings({
         <span className="dark:text-foreground text-sm font-medium text-neutral-700">
           Not configured
         </span>
-        <span className="text-xs text-neutral-500">
+        <span className="text-xs text-neutral-600 dark:text-neutral-400">
           — backups are stored as plain ZIPs
         </span>
       </div>
@@ -195,8 +204,8 @@ export function EncryptionSettings({
           <h3 className="dark:text-foreground text-lg font-semibold text-neutral-900">
             Backup Encryption
           </h3>
-          <p className="text-xs text-neutral-700">
-            Encrypt every backup archive at rest with a password only you know
+          <p className="text-xs text-neutral-700 dark:text-neutral-400">
+            Encrypt every backup archive at rest with a password you choose
           </p>
         </div>
         <Badge variant="neutral">Optional</Badge>
@@ -204,27 +213,34 @@ export function EncryptionSettings({
 
       {/* Description */}
       <div className="space-y-3">
-        <p className="text-sm text-neutral-700">
+        <p className="text-sm text-neutral-700 dark:text-neutral-400">
           When enabled, every new backup ZIP is encrypted with your password
           using AES-256-CBC (or XChaCha20-Poly1305 when Sodium is available) and
           saved with a <code className="font-mono text-xs">.zip.enc</code>{" "}
           {ENCRYPTION_DESCRIPTION_TAIL}
         </p>
-        <ul className="space-y-1.5 text-sm text-neutral-700">
+        <ul className="space-y-1.5 text-sm text-neutral-700 dark:text-neutral-400">
           <li className="flex items-start gap-2">
-            <span className="mt-1 shrink-0 font-black text-emerald-500">✓</span>
+            <span className="mt-1 shrink-0 font-black text-emerald-700 dark:text-emerald-500">
+              ✓
+            </span>
             <span>
               Strong key derivation: PBKDF2-SHA256 with 310,000 iterations
             </span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="mt-1 shrink-0 font-black text-emerald-500">✓</span>
+            <span className="mt-1 shrink-0 font-black text-emerald-700 dark:text-emerald-500">
+              ✓
+            </span>
             <span>
-              Password is stored encrypted at rest using your WordPress salts
+              Password is stored encrypted at rest using a key the plugin
+              generates and keeps in your site's database
             </span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="mt-1 shrink-0 font-black text-amber-500">!</span>
+            <span className="mt-1 shrink-0 font-black text-amber-800 dark:text-amber-500">
+              !
+            </span>
             <span>
               <strong>Save your password somewhere safe</strong> — encrypted
               backups <em>cannot</em> be recovered without it
@@ -267,7 +283,7 @@ export function EncryptionSettings({
             <button
               type="button"
               onClick={() => setShowPwd((v) => !v)}
-              className="dark:hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-2 text-neutral-500 hover:text-neutral-700 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
+              className="dark:hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-2 text-neutral-600 hover:text-neutral-700 focus:ring-2 focus:ring-blue-500/50 focus:outline-none dark:text-neutral-400"
               aria-label={showPwd ? "Hide password" : "Show password"}
             >
               {showPwd ? (
@@ -277,7 +293,10 @@ export function EncryptionSettings({
               )}
             </button>
           </div>
-          <p id="encryption-password-hint" className="text-xs text-neutral-500">
+          <p
+            id="encryption-password-hint"
+            className="text-xs text-neutral-600 dark:text-neutral-400"
+          >
             Use a long, memorable phrase. Minimum 8 characters.
           </p>
         </div>
@@ -307,7 +326,7 @@ export function EncryptionSettings({
           {passwordsMismatch && (
             <p
               id="encryption-password-mismatch"
-              className="text-xs text-red-600 dark:text-red-400"
+              className="text-xs text-red-700 dark:text-red-400"
               role="alert"
             >
               Passwords do not match
@@ -371,7 +390,7 @@ export function EncryptionSettings({
       </div>
 
       {/* Footer note */}
-      <p className="border-border border-t pt-3 text-xs text-neutral-500">
+      <p className="border-border border-t pt-3 text-xs text-neutral-600 dark:text-neutral-400">
         Existing plain-ZIP backups stay as-is. Only NEW backups created after
         you save a password will be encrypted.
       </p>

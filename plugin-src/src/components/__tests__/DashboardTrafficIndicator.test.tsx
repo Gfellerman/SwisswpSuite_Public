@@ -222,7 +222,7 @@ describe("Dashboard traffic-chart legend indicators (DASH-1/DASH-2 Fix A.1/C.2)"
     vi.clearAllMocks();
   });
 
-  it("F-11 (REAUDIT_DASH_R1.md round 2): does not paint 'No visits yet' while GET /settings is still pending, even though /stats has already resolved with all-zero visits", async () => {
+  it("F-11 (REAUDIT_DASH_R1.md round 2): does not paint 'No page views yet' while GET /settings is still pending, even though /stats has already resolved with all-zero visits", async () => {
     let resolveSettings!: (value: unknown) => void;
     const pendingSettings = new Promise((resolve) => {
       resolveSettings = resolve;
@@ -253,7 +253,7 @@ describe("Dashboard traffic-chart legend indicators (DASH-1/DASH-2 Fix A.1/C.2)"
     // Pre-fix, `pageviewTrackingOff` read `undefined?.x === false` (=
     // false), so `visitsAllZero` went true off the now-loaded 7-entry
     // all-zero traffic_data and painted "No visits yet" one frame early.
-    expect(screen.queryByText(/no visits yet/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/no page views yet/i)).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /tracking is off/i })
     ).not.toBeInTheDocument();
@@ -272,7 +272,7 @@ describe("Dashboard traffic-chart legend indicators (DASH-1/DASH-2 Fix A.1/C.2)"
     expect(offBadge).toHaveTextContent(/tracking off/i);
   }, 10000);
 
-  it("A-1: shows 'tracking off' next to Visits when pageviewTrackingEnabled is false, even though traffic_data always has 7 zero-value entries", async () => {
+  it("A-1: shows 'tracking off' next to Page views when pageviewTrackingEnabled is false, even though traffic_data always has 7 zero-value entries", async () => {
     setupWpApiMock({
       visitsAllZero: true,
       settings: { pageviewTrackingEnabled: false, firewallEnabled: true },
@@ -284,9 +284,9 @@ describe("Dashboard traffic-chart legend indicators (DASH-1/DASH-2 Fix A.1/C.2)"
     });
     expect(offBadge).toHaveTextContent(/tracking off/i);
 
-    // Must NOT fall through to the "no visits yet" wording — off beats
+    // Must NOT fall through to the "no page views yet" wording — off beats
     // no-data, per the validator's corrected design (§1 Fix A).
-    expect(screen.queryByText(/no visits yet/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/no page views yet/i)).not.toBeInTheDocument();
 
     // One-click, no-reload navigation to Settings (AJAX-SPA rule) — not a
     // page reload or external link.
@@ -294,14 +294,14 @@ describe("Dashboard traffic-chart legend indicators (DASH-1/DASH-2 Fix A.1/C.2)"
     expect(onNavigate).toHaveBeenCalledWith("settings");
   }, 10000);
 
-  it("shows 'No visits yet' when tracking is ON but every traffic_data entry has visits: 0", async () => {
+  it("shows 'No page views yet' when tracking is ON but every traffic_data entry has visits: 0", async () => {
     setupWpApiMock({
       visitsAllZero: true,
       settings: { pageviewTrackingEnabled: true, firewallEnabled: true },
     });
     renderDashboard();
 
-    expect(await screen.findByText(/no visits yet/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no page views yet/i)).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /tracking is off/i })
     ).not.toBeInTheDocument();

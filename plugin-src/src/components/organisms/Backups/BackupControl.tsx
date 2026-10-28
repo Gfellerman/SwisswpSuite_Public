@@ -47,6 +47,81 @@ export const BackupControl: React.FC = () => {
   // it here adds no extra network round-trip.
   const { settings: appSettings } = useSettings();
   const encryptionActive = Boolean(appSettings?.hasEncryptionPassword);
+
+  // Folders left out of every backup. The key and response shape are shared
+  // with the automations panel, so a change made in either place shows in both.
+  const { data: excludeListData } = useQuery<BackupExcludePathsResponse>({
+    queryKey: ["backup-exclude-paths"],
+    queryFn: () =>
+      wpApi<BackupExcludePathsResponse>("/backup/local/exclude-paths"),
+    staleTime: 60_000,
+  });
+  const listedFolders = excludeListData?.data?.exclude_paths;
+  const excludedFolders: string[] = Array.isArray(listedFolders)
+    ? listedFolders
+    : [];
+  const [includingFolder, setIncludingFolder] = useState<string | null>(null);
+  // Set once a folder has been saved back into backups. The activated button
+  // leaves the page when the refreshed list drops that folder, so keyboard focus
+  // then moves to the next "Include again" button, or to "Save backup now".
+  const [focusAfterInclude, setFocusAfterInclude] = useState<string | null>(
+    null
+  );
+  const backupActionsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (
+      focusAfterInclude === null ||
+      excludedFolders.includes(focusAfterInclude)
+    ) {
+      return;
+    }
+    setFocusAfterInclude(null);
+    // Only take focus when the removed button left it on the page body; a user
+    // who already moved elsewhere keeps their place.
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
+    const root = backupActionsRef.current;
+    const next =
+      root?.querySelector<HTMLButtonElement>("button[data-include-again]") ??
+      root?.querySelector<HTMLButtonElement>(
+        'button[aria-label="Save backup now"]'
+      );
+    next?.focus();
+  }, [focusAfterInclude, excludedFolders]);
+
+  // Puts one folder back into backups. The save replaces the whole list, so the
+  // list is read again first: a folder excluded elsewhere since this panel
+  // loaded must not be dropped by this save.
+  const handleIncludeAgain = useCallback(
+    async (dir: string) => {
+      if (includingFolder !== null) return;
+      setIncludingFolder(dir);
+      setFocusAfterInclude(null);
+      try {
+        const current = await wpApi<BackupExcludePathsResponse>(
+          "/backup/local/exclude-paths"
+        );
+        const latest: string[] = Array.isArray(current?.data?.exclude_paths)
+          ? current.data.exclude_paths
+          : [];
+        await wpApi("/backup/local/exclude-paths", {
+          method: "POST",
+          body: JSON.stringify({ paths: latest.filter((p) => p !== dir) }),
+        });
+        setFocusAfterInclude(dir);
+        await queryClient.invalidateQueries({
+          queryKey: ["backup-exclude-paths"],
+        });
+        toast.success(`${dir} will be included in your next backup.`);
+      } catch (err) {
+        toast.error(`Could not include ${dir} again. Please try again.`);
+        console.warn("[BackupControl] exclude-paths update failed:", err);
+      } finally {
+        setIncludingFolder(null);
+      }
+    },
+    [queryClient, includingFolder]
+  );
   const [scope, setScope] = useState<"full" | "db" | "files">("full");
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
 
@@ -124,7 +199,26 @@ export const BackupControl: React.FC = () => {
         terminatedJobIds.current.add(engineStatus.job_id);
       setEngineJobId(null);
       queryClient.invalidateQueries({ queryKey: ["backups"] });
-      toast.success("Backup completed successfully.");
+      // A "complete" status is not an unqualified success — errors[] can hold
+      // recorded skips (e.g. archive files that could not be added) and
+      // db_skipped_objects holds database objects the dump omitted. Either
+      // one means something was left out of the backup, which the user
+      // needs to see rather than a plain "completed successfully". Only rows
+      // tagged action "skipped" count: a transient note that was retried
+      // (action "retried") left nothing out, and every db_skipped_objects
+      // entry also has a matching errors[] row tagged "db_skipped" that must
+      // not be counted twice. errors[] holds at most the 50 newest rows, so
+      // the count can be lower than the real number — hence "at least".
+      const skipped =
+        engineStatus.errors.filter((e) => e.action === "skipped").length +
+        (engineStatus.db_skipped_objects?.length ?? 0);
+      if (skipped > 0) {
+        toast.warning(
+          `Backup completed with at least ${skipped} item(s) skipped.`
+        );
+      } else {
+        toast.success("Backup completed successfully.");
+      }
     } else if (engineStatus.status === "failed") {
       const errMsg =
         engineStatus.errors.length > 0
@@ -335,8 +429,7 @@ export const BackupControl: React.FC = () => {
     icon: React.ElementType;
     activeColor: string;
     activeBg: string;
-    iconActiveBg: string;
-    iconActiveText: string;
+    iconActive: string;
     borderActive: string;
     ringActive: string;
   }[] = [
@@ -344,16 +437,16 @@ export const BackupControl: React.FC = () => {
       id: "full",
       label: "Everything",
       badge: "Recommended",
-      // P1-01/R-01 fix (ARS Round C): database restore IS available for this
-      // backup type — restore_backup_set() imports the embedded dump when one
-      // is found, taking a safety copy of the current database first.
+      // STEP 4.2 (v2.9.33.61): this build restores files only. The
+      // database copy inside a backup is never imported, so this
+      // description must not promise otherwise (WP.org R15 transparency
+      // doctrine — the user must always know what is going on).
       description:
-        "The complete copy of your site — posts, images, plugins, themes, and all settings. Restoring this backup restores your files and, when the archive includes a database dump, your database too — a safety copy of your current database is saved first.",
+        "A copy of your site — posts, images, plugins, themes, and all settings. Restoring this backup restores your files; the database copy inside it is not imported, so your current database is not replaced.",
       icon: HardDrive,
       activeColor: "emerald",
       activeBg: "bg-emerald-50/10",
-      iconActiveBg: "bg-emerald-100",
-      iconActiveText: "text-emerald-700",
+      iconActive: "bg-emerald-100 text-emerald-800",
       borderActive: "border-emerald-500",
       ringActive: "ring-emerald-500",
     },
@@ -361,13 +454,15 @@ export const BackupControl: React.FC = () => {
       id: "db",
       label: "Content Only",
       badge: "Faster",
+      // STEP 4.2 (v2.9.33.61): the resulting .sql file is a database
+      // backup this build never restores for you — say so, rather than
+      // implying a one-click "quick save" the restore flow can't deliver.
       description:
-        "Backs up your posts, pages, and settings — but not your images or design. Good for a quick save before editing content.",
+        "A copy of your posts, pages, and settings as a database file — but not your images or design. This plugin does not import that database back for you; you would use your hosting provider's database tool (for example phpMyAdmin) to bring it back yourself.",
       icon: Database,
       activeColor: "blue",
       activeBg: "bg-blue-50/10",
-      iconActiveBg: "bg-blue-100",
-      iconActiveText: "text-blue-700",
+      iconActive: "bg-blue-100 text-blue-700",
       borderActive: "border-blue-500",
       ringActive: "ring-blue-500",
     },
@@ -380,8 +475,7 @@ export const BackupControl: React.FC = () => {
       icon: FileText,
       activeColor: "amber",
       activeBg: "bg-amber-50/10",
-      iconActiveBg: "bg-amber-100",
-      iconActiveText: "text-amber-700",
+      iconActive: "bg-amber-100 text-amber-800",
       borderActive: "border-amber-500",
       ringActive: "ring-amber-500",
     },
@@ -392,7 +486,7 @@ export const BackupControl: React.FC = () => {
       {/* ── Heading ─────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <h2 className="dark:text-foreground flex items-center gap-2 text-xl font-semibold text-gray-900">
-          <HardDrive className="h-6 w-6 text-emerald-500" aria-hidden="true" />
+          <HardDrive className="h-6 w-6 text-emerald-600" aria-hidden="true" />
           Save a Backup
         </h2>
       </div>
@@ -445,7 +539,7 @@ export const BackupControl: React.FC = () => {
           )}
 
           {/* Non-blocking notice — page can stay open but doesn't need to */}
-          <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50/10 px-4 py-2 text-amber-600">
+          <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50/10 px-4 py-2 text-amber-800 dark:text-amber-500">
             <AlertTriangle className="h-4 w-4" aria-hidden="true" />
             <span className="text-sm font-medium">
               Backup runs on the server — you can navigate away safely.
@@ -457,7 +551,7 @@ export const BackupControl: React.FC = () => {
             engineStatus.progress.percent < 5 &&
             engineStatus?.tick_count != null &&
             engineStatus.tick_count > 10 && (
-              <div className="text-muted-foreground bg-muted/50 border-border rounded-lg border px-4 py-3 text-xs">
+              <div className="text-muted-foreground bg-muted/50 border-border rounded-lg border px-4 py-3 text-xs dark:text-neutral-400">
                 <p className="mb-1 font-semibold">Backup seems slow?</p>
                 <p>
                   Your hosting may be throttling background tasks. For best
@@ -513,18 +607,8 @@ export const BackupControl: React.FC = () => {
             />
           </div>
           <h3 className="dark:text-foreground text-lg font-medium text-gray-900">
-            Generating Archive...
+            Starting backup...
           </h3>
-          <p className="text-muted-foreground max-w-md text-center text-sm">
-            Compressing files and database. This process runs on the server and
-            may take several minutes depending on your site size.
-          </p>
-          <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50/10 px-4 py-2 text-amber-600">
-            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-            <span className="text-sm font-medium">
-              Please do not close this tab.
-            </span>
-          </div>
           {/* ── Cancel button ──────────────────────────────────── */}
           <Button
             variant="danger"
@@ -598,26 +682,28 @@ export const BackupControl: React.FC = () => {
                 >
                   <div className="mb-2 flex items-center gap-3">
                     <div
-                      className={`rounded-lg p-2 ${isSelected ? `${type.iconActiveBg} ${type.iconActiveText}` : "bg-secondary text-gray-600"}`}
+                      className={`rounded-lg p-2 ${isSelected ? type.iconActive : "bg-secondary text-gray-600 dark:text-gray-400"}`}
                     >
                       <Icon className="h-5 w-5" aria-hidden="true" />
                     </div>
-                    <span className="dark:text-foreground text-sm font-medium text-gray-900">
-                      {type.label}
-                    </span>
-                    {type.badge && (
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                          type.badge === "Recommended"
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                            : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                        }`}
-                      >
-                        {type.badge}
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="dark:text-foreground text-sm font-medium text-gray-900">
+                        {type.label}
                       </span>
-                    )}
+                      {type.badge && (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            type.badge === "Recommended"
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                              : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                          }`}
+                        >
+                          {type.badge}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-muted-foreground text-xs">
+                  <p className="text-muted-foreground text-xs dark:text-neutral-300">
                     {type.description}
                   </p>
                 </div>
@@ -626,7 +712,10 @@ export const BackupControl: React.FC = () => {
           </div>
 
           {/* ── Create button + encryption status ────────────────── */}
-          <div className="flex flex-col items-center gap-2 pt-2">
+          <div
+            ref={backupActionsRef}
+            className="flex flex-col items-center gap-2 pt-2"
+          >
             <Button
               variant="primary"
               size="lg"
@@ -638,6 +727,41 @@ export const BackupControl: React.FC = () => {
             >
               Save Backup Now
             </Button>
+            {excludedFolders.length > 0 && (
+              <div className="w-full pt-1 text-xs">
+                <p
+                  id="backup-excluded-folders-heading"
+                  className="text-muted-foreground"
+                >
+                  Left out of every backup:
+                </p>
+                <ul
+                  role="list"
+                  className="mt-1 space-y-1"
+                  aria-labelledby="backup-excluded-folders-heading"
+                >
+                  {excludedFolders.map((dir) => (
+                    <li key={dir} className="flex items-center gap-2">
+                      <FolderX
+                        size={12}
+                        className="shrink-0 text-amber-700"
+                        aria-hidden="true"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleIncludeAgain(dir)}
+                        data-include-again=""
+                        aria-disabled={includingFolder !== null}
+                        className="min-h-[24px] min-w-0 rounded px-1 text-left font-semibold text-blue-700 underline hover:text-blue-900 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-60 dark:text-blue-300 dark:hover:text-blue-200 dark:focus-visible:ring-blue-300"
+                      >
+                        Include{" "}
+                        <code className="font-mono break-all">{dir}</code> again
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {/* Encryption-active badge — drawn from useSettings(). Hidden when
                 encryption is disabled so the UI stays uncluttered for the
                 default (non-encrypted) flow. */}
@@ -689,7 +813,7 @@ export const BackupControl: React.FC = () => {
                 </div>
                 <h2
                   id="nested-install-dialog-title"
-                  className="text-swiss-navy text-lg leading-snug font-bold"
+                  className="text-swiss-navy dark:text-foreground text-lg leading-snug font-bold"
                 >
                   Separate WordPress install detected
                 </h2>
@@ -698,7 +822,7 @@ export const BackupControl: React.FC = () => {
                 type="button"
                 onClick={handleNestedDialogCancel}
                 aria-label="Cancel and do not create backup"
-                className="hover:text-swiss-navy hover:bg-secondary focus:ring-swiss-navy/50 shrink-0 rounded-xl border border-transparent p-2 text-neutral-400 transition-all focus:ring-2 focus:outline-none"
+                className="hover:text-swiss-navy dark:hover:text-foreground hover:bg-secondary focus:ring-swiss-navy/50 shrink-0 rounded-xl border border-transparent p-2 text-neutral-600 transition-all focus:ring-2 focus:outline-none dark:text-neutral-400"
               >
                 <X size={18} aria-hidden="true" />
               </button>
@@ -708,7 +832,7 @@ export const BackupControl: React.FC = () => {
             <div className="space-y-4 p-6">
               <p
                 id="nested-install-dialog-desc"
-                className="text-sm leading-relaxed text-neutral-700"
+                className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-400"
               >
                 We found a separate WordPress install inside your site that is
                 not yet excluded from backups. Including it can make your backup
@@ -736,9 +860,10 @@ export const BackupControl: React.FC = () => {
                 ))}
               </ul>
 
-              <p className="text-xs leading-relaxed text-neutral-500">
-                Excluding it keeps your backups lean. You can always re-include
-                it later from the backup exclusions panel.
+              <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
+                Excluding it keeps your backups lean. Excluded folders are
+                listed under the Save Backup Now button, where you can include
+                them again.
               </p>
             </div>
 
@@ -749,7 +874,7 @@ export const BackupControl: React.FC = () => {
                 type="button"
                 onClick={handleNestedDialogCancel}
                 disabled={nestedDialog.isSaving}
-                className="hover:bg-secondary focus:ring-swiss-navy/50 order-last inline-flex items-center justify-center rounded-full bg-transparent px-5 py-2.5 text-sm font-semibold text-neutral-600 transition-all hover:text-neutral-900 focus:ring-2 focus:outline-none sm:order-first"
+                className="hover:bg-secondary focus:ring-swiss-navy/50 order-last inline-flex items-center justify-center rounded-full bg-transparent px-5 py-2.5 text-sm font-semibold text-neutral-600 transition-all hover:text-neutral-900 focus:ring-2 focus:outline-none sm:order-first dark:text-neutral-400 dark:hover:text-neutral-400"
               >
                 Cancel
               </button>
@@ -759,7 +884,7 @@ export const BackupControl: React.FC = () => {
                 type="button"
                 onClick={handleIncludeEverything}
                 disabled={nestedDialog.isSaving}
-                className="border-border bg-secondary hover:bg-muted focus:ring-swiss-navy/50 inline-flex items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold text-neutral-700 transition-all focus:ring-2 focus:outline-none"
+                className="border-border bg-secondary hover:bg-muted focus:ring-swiss-navy/50 inline-flex items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold text-neutral-700 transition-all focus:ring-2 focus:outline-none dark:text-neutral-400"
               >
                 Include everything
               </button>

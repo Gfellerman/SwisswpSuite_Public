@@ -12,13 +12,13 @@ export interface BackupSectionDef {
 }
 
 export const BACKUP_PAGE_DESCRIPTION =
-  "Back up and restore your WordPress site";
+  "Back up your WordPress site and restore its files";
 
 export const BACKUP_SECTIONS: BackupSectionDef[] = [
   {
     id: "backup",
     label: "Backups",
     icon: HardDrive,
-    desc: "Save and restore copies of your site",
+    desc: "Save copies of your site and restore their files",
   },
 ];

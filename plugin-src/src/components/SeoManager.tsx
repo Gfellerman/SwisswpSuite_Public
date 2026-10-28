@@ -57,7 +57,8 @@ const SeoManager: React.FC = () => {
   const [scanning, setScanning] = useState(false);
   const [showNonCompliantDetails, setShowNonCompliantDetails] = useState(false);
 
-  const { apiUrl, nonce, homeUrl } = window.swisswpsuiteData || {};
+  const { apiUrl, nonce, sitemapUrl, llmsTxtUrl } =
+    window.swisswpsuiteData || {};
 
   // A-3 (ARS Round C Phase 1b, F-08 handoff/lane4_seomanager.md): the
   // "Your Sitemap" modal previously showed an unconditional "Sitemap
@@ -79,8 +80,16 @@ const SeoManager: React.FC = () => {
   // cannot fire).
   const llmsTxtEnabled = seoManagerSettings?.llmsTxtEnabled ?? false;
 
+  // The addresses the sitemap and the guide are served at come from the server
+  // (they differ between pretty and plain permalinks). A value that is missing
+  // renders no link and no address of our own making.
+  const sitemapAddress = typeof sitemapUrl === "string" ? sitemapUrl : "";
+  const llmsAddress = typeof llmsTxtUrl === "string" ? llmsTxtUrl : "";
+  const llmsAtClause = llmsAddress ? ` at ${llmsAddress}` : "";
+
   const handleScan = async () => {
     setScanning(true);
+    setScanResult(null);
     setActiveModal("scan");
     setShowNonCompliantDetails(false);
     try {
@@ -131,7 +140,7 @@ const SeoManager: React.FC = () => {
     <div className="animate-in fade-in min-w-0 space-y-12 pb-20 duration-700">
       <SectionHeader
         title="SEO & Search Visibility"
-        description="Improve how your site appears in search engines and AI assistants. Run an SEO Health Check, generate your Sitemap, and create an AI Assistant Guide below."
+        description="Improve how your site appears in search engines and AI assistants. Run an SEO Health Check, check your Sitemap, and create an AI Assistant Guide below."
         action={
           <div className="flex flex-wrap gap-4">
             <Button
@@ -195,7 +204,7 @@ const SeoManager: React.FC = () => {
             <div className="shrink-0 px-10 pt-10 pb-0">
               <h3
                 id="seo-audit-title"
-                className="text-swiss-navy mb-8 text-2xl font-black tracking-tight uppercase"
+                className="text-swiss-navy dark:text-foreground mb-8 text-2xl font-black tracking-tight uppercase"
               >
                 SEO Health Report
               </h3>
@@ -205,8 +214,11 @@ const SeoManager: React.FC = () => {
             <div className="custom-scrollbar flex-1 overflow-y-auto px-10 pb-6">
               {scanning ? (
                 <div className="flex flex-col items-center gap-6 py-12">
-                  <Loader className="text-swiss-navy animate-spin" size={48} />
-                  <span className="text-sm font-black tracking-widest text-neutral-700 uppercase">
+                  <Loader
+                    className="text-swiss-navy dark:text-foreground animate-spin"
+                    size={48}
+                  />
+                  <span className="text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
                     Checking your SEO coverage...
                   </span>
                 </div>
@@ -222,18 +234,18 @@ const SeoManager: React.FC = () => {
                       this page. */}
                   <div className="glass-panel bg-background/50 flex items-center justify-between rounded-3xl p-6">
                     <div>
-                      <div className="text-swiss-navy text-4xl font-black">
+                      <div className="text-swiss-navy dark:text-foreground text-4xl font-black">
                         {scanResult.seo_score}
                         <span className="text-foreground text-xl">/100</span>
                       </div>
-                      <div className="mt-2 text-xs font-black tracking-widest text-neutral-700 uppercase">
+                      <div className="mt-2 text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
                         Overall SEO Score
                       </div>
                       {scanResult.seo_score < 100 &&
                         scanResult.max_achievable_seo_score < 100 && (
-                          <div className="mt-1 text-[11px] font-medium text-neutral-500">
+                          <div className="mt-1 text-[11px] font-medium text-neutral-600 dark:text-neutral-400">
                             Realistic ceiling:{" "}
-                            <span className="text-swiss-navy font-black">
+                            <span className="text-swiss-navy dark:text-foreground font-black">
                               {scanResult.max_achievable_seo_score}
                             </span>
                             /100 given site content
@@ -241,7 +253,7 @@ const SeoManager: React.FC = () => {
                         )}
                     </div>
                     <div
-                      className={`flex h-16 w-16 items-center justify-center rounded-2xl ${scanResult.seo_score >= 80 ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}
+                      className={`flex h-16 w-16 items-center justify-center rounded-2xl ${scanResult.seo_score >= 80 ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-500" : "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-500"}`}
                     >
                       <PieChart size={32} />
                     </div>
@@ -253,20 +265,20 @@ const SeoManager: React.FC = () => {
                   <div className="grid grid-cols-3 gap-3">
                     {(
                       [
-                        ["on_page", "On-Page"],
+                        ["on_page", "Meta Coverage"],
                         ["technical", "Technical"],
-                        ["content", "Content"],
+                        ["content", "Image Alt Text"],
                       ] as const
                     ).map(([key, label]) => (
                       <div
                         key={key}
                         className="bg-secondary rounded-2xl p-4 text-center"
                       >
-                        <div className="text-swiss-navy text-xl font-black">
+                        <div className="text-swiss-navy dark:text-foreground text-xl font-black">
                           {scanResult.seo_breakdown[key]}
                           <span className="text-foreground text-xs">%</span>
                         </div>
-                        <div className="mt-1 text-[10px] font-black tracking-widest text-neutral-500 uppercase">
+                        <div className="mt-1 text-[10px] font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-300">
                           {label}
                         </div>
                       </div>
@@ -305,19 +317,17 @@ const SeoManager: React.FC = () => {
                             className="border-border hover:bg-background space-y-3 rounded-2xl border p-4 transition-all"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-swiss-navy text-sm font-black tracking-tight uppercase">
+                              <span className="text-swiss-navy dark:text-foreground text-sm font-black tracking-tight uppercase">
                                 {labelMap[key] ?? key}
                               </span>
                               <Badge
-                                className={`${needsAction ? "text-brand-accent bg-red-50" : "bg-emerald-50 text-emerald-600"} border-none px-3 py-1.5 text-xs font-black uppercase`}
+                                className={`${needsAction ? "text-brand-accent bg-red-50 dark:bg-red-950 dark:text-red-400" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-500"} border-none px-3 py-1.5 text-xs font-black uppercase`}
                               >
-                                {needsAction
-                                  ? `${actionableCount} Needs Attention`
-                                  : "All Good"}
+                                {needsAction ? "Needs Attention" : "All Good"}
                               </Badge>
                             </div>
                             {thinCount > 0 && (
-                              <p className="text-[11px] leading-relaxed text-neutral-500">
+                              <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400">
                                 + {thinCount} thin content{" "}
                                 {key === "image" ? "files" : "pages"} (
                                 {SEO_THIN_COUNT_NOTE})
@@ -347,12 +357,12 @@ const SeoManager: React.FC = () => {
                         }
                         className="border-border hover:bg-background flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all"
                       >
-                        <span className="text-xs font-black tracking-widest text-neutral-700 uppercase">
+                        <span className="text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
                           Items Needing Attention
                         </span>
                         <ChevronRight
                           size={16}
-                          className={`text-neutral-400 transition-transform duration-200 ${showNonCompliantDetails ? "rotate-90" : ""}`}
+                          className={`text-neutral-500 transition-transform duration-200 ${showNonCompliantDetails ? "rotate-90" : ""}`}
                         />
                       </button>
 
@@ -365,11 +375,11 @@ const SeoManager: React.FC = () => {
                             <div>
                               <div className="mb-2 flex items-center gap-2">
                                 <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                                <span className="text-[11px] font-black tracking-widest text-amber-700 uppercase">
+                                <span className="text-[11px] font-black tracking-widest text-amber-800 uppercase dark:text-amber-600">
                                   {SEO_THIN_CONTENT_HEADING}
                                 </span>
                               </div>
-                              <p className="mb-3 text-[11px] leading-relaxed text-neutral-500">
+                              <p className="mb-3 text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400">
                                 {SEO_THIN_CONTENT_NOTE}
                               </p>
                               <div className="space-y-1.5">
@@ -378,18 +388,18 @@ const SeoManager: React.FC = () => {
                                   .map((item) => (
                                     <div
                                       key={item.id}
-                                      className="flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50/50 p-2.5"
+                                      className="flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50/50 p-2.5 dark:bg-amber-950/50"
                                     >
                                       <div className="flex min-w-0 items-center gap-2">
                                         <FileText
                                           size={13}
-                                          className="shrink-0 text-amber-600"
+                                          className="shrink-0 text-amber-700"
                                         />
-                                        <span className="truncate text-[11px] font-bold text-neutral-800">
+                                        <span className="truncate text-[11px] font-bold text-neutral-800 dark:text-neutral-400">
                                           {item.title}
                                         </span>
                                       </div>
-                                      <span className="ml-2 shrink-0 text-xs font-black tracking-widest text-neutral-400 uppercase">
+                                      <span className="ml-2 shrink-0 text-xs font-black tracking-widest text-neutral-600 uppercase dark:text-neutral-400">
                                         {item.desc_length} chars
                                       </span>
                                     </div>
@@ -405,7 +415,7 @@ const SeoManager: React.FC = () => {
                             <div>
                               <div className="mb-2 flex items-center gap-2">
                                 <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                                <span className="text-[11px] font-black tracking-widest text-red-700 uppercase">
+                                <span className="text-[11px] font-black tracking-widest text-red-700 uppercase dark:text-red-400">
                                   Missing Metadata — Action Required
                                 </span>
                               </div>
@@ -415,7 +425,7 @@ const SeoManager: React.FC = () => {
                                   .map((item) => (
                                     <div
                                       key={item.id}
-                                      className="flex items-center justify-between rounded-xl border border-red-100 bg-red-50/50 p-2.5"
+                                      className="flex items-center justify-between rounded-xl border border-red-100 bg-red-50/50 p-2.5 dark:bg-red-950/50"
                                     >
                                       <div className="flex min-w-0 items-center gap-2">
                                         {item.type === "image" ? (
@@ -429,12 +439,14 @@ const SeoManager: React.FC = () => {
                                             className="shrink-0 text-red-600"
                                           />
                                         )}
-                                        <span className="truncate text-[11px] font-bold text-neutral-800">
+                                        <span className="truncate text-[11px] font-bold text-neutral-800 dark:text-neutral-400">
                                           {item.title}
                                         </span>
                                       </div>
-                                      <span className="ml-2 shrink-0 text-xs font-black tracking-widest text-red-500 uppercase">
-                                        No description
+                                      <span className="ml-2 shrink-0 text-xs font-black tracking-widest text-red-700 uppercase dark:text-red-400">
+                                        {item.type === "image"
+                                          ? "No alt text"
+                                          : "No description"}
                                       </span>
                                     </div>
                                   ))}
@@ -450,7 +462,7 @@ const SeoManager: React.FC = () => {
                               <div className="mb-2 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                                  <span className="text-[11px] font-black tracking-widest text-orange-700 uppercase">
+                                  <span className="text-[11px] font-black tracking-widest text-orange-700 uppercase dark:text-orange-600">
                                     {SEO_SHORT_DESCRIPTION_HEADING}
                                   </span>
                                 </div>
@@ -462,7 +474,7 @@ const SeoManager: React.FC = () => {
                                   />
                                 ))}
                               </div>
-                              <p className="mb-3 text-[11px] leading-relaxed text-neutral-500">
+                              <p className="mb-3 text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400">
                                 {SEO_SHORT_DESCRIPTION_NOTE}
                               </p>
                               <div className="space-y-1.5">
@@ -471,18 +483,18 @@ const SeoManager: React.FC = () => {
                                   .map((item) => (
                                     <div
                                       key={item.id}
-                                      className="flex items-center justify-between rounded-xl border border-orange-100 bg-orange-50/50 p-2.5"
+                                      className="flex items-center justify-between rounded-xl border border-orange-100 bg-orange-50/50 p-2.5 dark:bg-orange-950/50"
                                     >
                                       <div className="flex min-w-0 items-center gap-2">
                                         <FileText
                                           size={13}
                                           className="shrink-0 text-orange-600"
                                         />
-                                        <span className="truncate text-[11px] font-bold text-neutral-800">
+                                        <span className="truncate text-[11px] font-bold text-neutral-800 dark:text-neutral-400">
                                           {item.title}
                                         </span>
                                       </div>
-                                      <span className="ml-2 shrink-0 text-xs font-black tracking-widest text-neutral-400 uppercase">
+                                      <span className="ml-2 shrink-0 text-xs font-black tracking-widest text-neutral-600 uppercase dark:text-neutral-400">
                                         {item.desc_length} chars
                                       </span>
                                     </div>
@@ -496,15 +508,15 @@ const SeoManager: React.FC = () => {
                   )}
 
                   {/* What To Do Next */}
-                  <div className="bg-swiss-navy text-foreground dark:text-foreground group relative overflow-hidden rounded-3xl p-6">
+                  <div className="bg-swiss-navy dark:text-foreground group relative overflow-hidden rounded-3xl p-6 text-neutral-400">
                     <div className="bg-secondary dark:bg-secondary absolute top-0 right-0 -mt-12 -mr-12 h-24 w-24 rounded-full" />
                     <div className="relative z-10 flex gap-4">
                       <Sparkles
                         size={18}
-                        className="text-brand-accent shrink-0 animate-pulse"
+                        className="shrink-0 animate-pulse text-red-600 dark:text-red-400"
                       />
                       <div className="flex-1">
-                        <span className="text-foreground/50 mb-1 block text-xs font-black tracking-widest uppercase">
+                        <span className="mb-1 block text-xs font-black tracking-widest text-neutral-400 uppercase dark:text-neutral-200">
                           What To Do Next
                         </span>
                         <p className="text-xs leading-relaxed font-medium opacity-90">
@@ -538,7 +550,7 @@ const SeoManager: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-brand-accent flex flex-col items-center gap-4 rounded-2xl border border-red-100 bg-red-50 p-8 text-center">
+                <div className="text-brand-accent flex flex-col items-center gap-4 rounded-2xl border border-red-100 bg-red-50 p-8 text-center dark:bg-red-950 dark:text-red-400">
                   <AlertTriangle size={32} />
                   <span className="text-sm font-black tracking-widest uppercase">
                     Health Check Failed — Please Try Again
@@ -551,7 +563,7 @@ const SeoManager: React.FC = () => {
             <div className="border-border bg-card flex shrink-0 justify-end border-t px-10 py-6">
               <Button
                 variant="ghost"
-                className="hover:text-swiss-navy text-sm font-black tracking-widest text-neutral-700 uppercase"
+                className="hover:text-swiss-navy text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400"
                 onClick={() => setActiveModal(null)}
                 aria-label="Close SEO health check"
               >
@@ -587,63 +599,65 @@ const SeoManager: React.FC = () => {
             }}
           >
             <div className="p-10 text-center">
-              <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-emerald-50 text-emerald-600">
+              <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-500">
                 <Layout size={36} />
               </div>
               <h3
                 id="seo-sitemap-title"
-                className="text-swiss-navy mb-4 text-2xl font-black tracking-tight uppercase"
+                className="text-swiss-navy dark:text-foreground mb-4 text-2xl font-black tracking-tight uppercase"
               >
                 Your Sitemap
               </h3>
-              <p className="mb-10 text-sm font-black tracking-widest text-neutral-700 uppercase">
+              <p className="mb-10 text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
                 Helps Google discover and index your pages
               </p>
 
               <div className="space-y-6">
                 {seoSettingsLoading ? (
                   <div className="border-border bg-background rounded-2xl border p-5 text-center">
-                    <span className="text-sm font-medium text-neutral-700">
+                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-400">
                       Checking sitemap status…
                     </span>
                   </div>
                 ) : sitemapEnabled ? (
-                  <div className="flex items-center justify-between rounded-2xl border border-emerald-100/50 bg-emerald-50/50 p-5">
-                    <span className="text-sm font-black tracking-widest text-emerald-800 uppercase">
+                  <div className="flex items-center justify-between rounded-2xl border border-emerald-100/50 bg-emerald-50/50 p-5 dark:bg-emerald-950/50">
+                    <span className="text-sm font-black tracking-widest text-emerald-800 uppercase dark:text-emerald-500">
                       Sitemap Active
                     </span>
-                    <div className="text-foreground dark:text-foreground rounded-full bg-emerald-500 p-1">
+                    <div className="text-foreground rounded-full bg-emerald-500 p-1 dark:text-neutral-800">
                       <Check size={12} />
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-amber-100/50 bg-amber-50/50 p-5 text-center">
-                    <span className="text-sm font-medium text-amber-800">
+                  <div className="rounded-2xl border border-amber-100/50 bg-amber-50/50 p-5 text-center dark:bg-amber-950/50">
+                    <span className="text-sm font-medium text-amber-800 dark:text-amber-600">
                       Enable the XML sitemap in Settings → SEO.
                     </span>
                   </div>
                 )}
 
-                <div className="bg-card border-border group flex items-center justify-between rounded-2xl border p-5 font-mono text-sm shadow-xl">
-                  <span className="mr-4 truncate font-bold tracking-tight text-neutral-700 uppercase transition-colors group-hover:text-emerald-400">
-                    {homeUrl ? `${homeUrl}/sitemap.xml` : "/sitemap.xml"}
-                  </span>
-                  <a
-                    href={homeUrl ? `${homeUrl}/sitemap.xml` : "/sitemap.xml"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-secondary dark:bg-card/10 dark:text-foreground hover:text-foreground dark:hover:text-foreground flex h-10 w-10 items-center justify-center rounded-xl font-black text-neutral-900 transition-all hover:bg-emerald-500"
-                    title="Open sitemap in a new tab"
-                  >
-                    <ExternalLink size={16} />
-                  </a>
-                </div>
+                {sitemapAddress ? (
+                  <div className="bg-card border-border group flex items-center justify-between rounded-2xl border p-5 font-mono text-sm shadow-xl">
+                    <span className="mr-4 truncate font-bold tracking-tight text-neutral-700 uppercase transition-colors group-hover:text-emerald-700 dark:text-neutral-400 dark:group-hover:text-emerald-400">
+                      {sitemapAddress}
+                    </span>
+                    <a
+                      href={sitemapAddress}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-secondary dark:bg-card/10 dark:text-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-xl font-black text-neutral-900 transition-all hover:bg-emerald-500 dark:hover:text-neutral-800"
+                      title="Open sitemap in a new tab"
+                    >
+                      <ExternalLink size={16} />
+                    </a>
+                  </div>
+                ) : null}
 
                 <div className="bg-background border-border rounded-2xl border p-6 text-left">
-                  <h5 className="mb-2 text-xs font-black tracking-widest text-neutral-700 uppercase">
+                  <h5 className="mb-2 text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
                     What This Does
                   </h5>
-                  <p className="text-xs leading-relaxed font-medium text-neutral-700 italic">
+                  <p className="text-xs leading-relaxed font-medium text-neutral-700 italic dark:text-neutral-400">
                     Your sitemap lists all your products, posts, and pages so
                     Google and Bing can find and index them quickly. Submit it
                     to Google Search Console for faster ranking.
@@ -653,7 +667,7 @@ const SeoManager: React.FC = () => {
               <div className="mt-10 flex justify-end">
                 <Button
                   variant="ghost"
-                  className="hover:text-swiss-navy text-sm font-black tracking-widest text-neutral-700 uppercase"
+                  className="hover:text-swiss-navy text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400"
                   onClick={() => setActiveModal(null)}
                 >
                   Close
@@ -690,48 +704,73 @@ const SeoManager: React.FC = () => {
           >
             <div className="border-border bg-background/50 flex items-center justify-between border-b p-10">
               <div className="flex items-center gap-4">
-                <div className="bg-swiss-navy text-swiss-navy flex h-12 w-12 items-center justify-center rounded-2xl">
+                <div className="bg-swiss-navy dark:text-foreground flex h-12 w-12 items-center justify-center rounded-2xl text-blue-400">
                   <FileText size={24} />
                 </div>
                 <div>
                   <h3
                     id="seo-llm-title"
-                    className="text-swiss-navy text-xl font-black tracking-tight uppercase"
+                    className="text-swiss-navy dark:text-foreground text-xl font-black tracking-tight uppercase"
                   >
                     AI Assistant Guide (llms.txt)
                   </h3>
-                  <p className="mt-0.5 text-xs font-black tracking-widest text-neutral-700 uppercase">
+                  <p className="mt-0.5 text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
                     Helps AI assistants and search engines understand your site
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setActiveModal(null)}
-                className="text-foreground hover:text-swiss-navy rounded-2xl p-3 transition-all"
+                className="text-foreground hover:text-swiss-navy dark:hover:text-foreground rounded-2xl p-3 transition-all"
               >
                 <X size={28} />
               </button>
             </div>
 
             <div className="custom-scrollbar overflow-y-auto p-10">
-              <div className="glass-panel bg-swiss-navy text-foreground dark:text-foreground relative mb-10 overflow-hidden rounded-[2rem] p-8">
+              <div className="glass-panel bg-swiss-navy dark:text-foreground relative mb-10 overflow-hidden rounded-[2rem] p-8 text-neutral-400">
                 <div className="bg-secondary dark:bg-secondary absolute top-0 right-0 -mt-16 -mr-16 h-32 w-32 rounded-full" />
-                <h4 className="text-foreground/50 relative z-10 mb-4 flex items-center gap-2 text-sm font-black tracking-widest uppercase">
-                  <Activity size={14} className="text-brand-accent" /> How To
-                  Use This
+                <h4 className="relative z-10 mb-4 flex items-center gap-2 text-sm font-black tracking-widest text-neutral-400 uppercase dark:text-neutral-200">
+                  <Activity
+                    size={14}
+                    className="text-red-600 dark:text-red-400"
+                  />{" "}
+                  How To Use This
                 </h4>
                 <p className="relative z-10 text-sm leading-relaxed font-medium italic opacity-90">
-                  Copy the code below and create a WordPress page titled
-                  "llms.txt" — paste this content as plain text. This tells AI
-                  crawlers (such as GPTBot, Google Bard, and others) what your
-                  site is about, improving how your business appears in
-                  AI-generated answers.
+                  {llmsTxtEnabled ? (
+                    <>
+                      This plugin publishes the text below{llmsAtClause}. It
+                      tells AI crawlers (such as GPTBot and others) what your
+                      site is about, improving how your business appears in
+                      AI-generated answers. After you change the switch, the
+                      address can take a few seconds to start working.
+                    </>
+                  ) : (
+                    <>
+                      The text below is a preview. This plugin publishes it
+                      {llmsAtClause} once "AI Assistant Guide (/llms.txt)" is
+                      turned on in{" "}
+                      <a
+                        href="#/settings?tab=seo"
+                        className="underline underline-offset-2 hover:text-red-400 dark:hover:text-red-300"
+                      >
+                        Settings &gt; SEO
+                      </a>
+                      . It tells AI crawlers (such as GPTBot and others) what
+                      your site is about, improving how your business appears in
+                      AI-generated answers.
+                    </>
+                  )}
                 </p>
               </div>
 
               {generatingLlm ? (
-                <div className="flex flex-col items-center justify-center gap-6 py-24 text-neutral-700">
-                  <Loader className="text-swiss-navy animate-spin" size={48} />
+                <div className="flex flex-col items-center justify-center gap-6 py-24 text-neutral-700 dark:text-neutral-400">
+                  <Loader
+                    className="text-swiss-navy dark:text-foreground animate-spin"
+                    size={48}
+                  />
                   <span className="text-sm font-black tracking-widest uppercase">
                     Generating your AI guide...
                   </span>
@@ -741,11 +780,11 @@ const SeoManager: React.FC = () => {
                   <textarea
                     readOnly
                     value={llmContent}
-                    className="bg-card border-border focus:ring-swiss-navy custom-scrollbar h-[32rem] w-full resize-none rounded-3xl border p-8 font-mono text-sm text-emerald-400 shadow-2xl outline-none focus:ring-2"
+                    className="bg-card border-border focus:ring-swiss-navy custom-scrollbar h-[32rem] w-full resize-none rounded-3xl border p-8 font-mono text-sm text-emerald-700 shadow-2xl outline-none focus:ring-2 dark:text-emerald-400"
                   />
                   <button
                     onClick={handleCopyLlm}
-                    className="bg-card dark:bg-card/10 dark:text-foreground hover:text-foreground dark:hover:text-foreground border-border dark:border-border/10 absolute top-6 right-6 flex h-12 w-12 items-center justify-center rounded-2xl border text-neutral-900 shadow-lg transition-all hover:scale-110 hover:bg-emerald-500"
+                    className="bg-card dark:bg-card/10 dark:text-foreground hover:text-foreground border-border dark:border-border/10 absolute top-6 right-6 flex h-12 w-12 items-center justify-center rounded-2xl border text-neutral-900 shadow-lg transition-all hover:scale-110 hover:bg-emerald-500 dark:hover:text-neutral-800"
                     title="Copy to clipboard"
                   >
                     {copied ? (
@@ -762,17 +801,21 @@ const SeoManager: React.FC = () => {
             </div>
             <div className="border-border bg-background/50 flex items-center justify-between border-t p-8">
               {llmsTxtEnabled ? (
-                <a
-                  href={`${homeUrl}/llms.txt`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-swiss-navy hover:text-brand-accent flex items-center gap-2 text-sm font-black tracking-widest uppercase transition-all"
-                >
-                  <ExternalLink size={14} /> Check Live File
-                </a>
+                llmsAddress ? (
+                  <a
+                    href={llmsAddress}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-swiss-navy dark:text-foreground hover:text-brand-accent flex items-center gap-2 text-sm font-black tracking-widest uppercase transition-all dark:hover:text-red-400"
+                  >
+                    <ExternalLink size={14} /> Check Live File
+                  </a>
+                ) : (
+                  <span />
+                )
               ) : (
                 <span
-                  className="flex cursor-not-allowed items-center gap-2 text-sm font-black tracking-widest text-neutral-700 uppercase"
+                  className="flex cursor-not-allowed items-center gap-2 text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400"
                   title="Enable the llms.txt feature to publish this file first"
                 >
                   <ExternalLink size={14} aria-hidden="true" />
@@ -786,7 +829,7 @@ const SeoManager: React.FC = () => {
               )}
               <Button
                 variant="ghost"
-                className="hover:text-swiss-navy text-sm font-black tracking-widest text-neutral-700 uppercase"
+                className="hover:text-swiss-navy text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400"
                 onClick={() => setActiveModal(null)}
               >
                 Close

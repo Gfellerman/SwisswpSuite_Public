@@ -123,13 +123,13 @@ const ToggleRow: React.FC<ToggleRowProps> = ({
       <div className="min-w-0 flex-1">
         <label
           htmlFor={id}
-          className="cursor-pointer text-sm font-black text-neutral-800 select-none"
+          className="cursor-pointer text-sm font-black text-neutral-800 select-none dark:text-neutral-400"
         >
           {label}
         </label>
         {/* WCAG 1.4.3: text-neutral-500 on white is ~3.5:1 (FAIL) → text-neutral-600 is ~5.9:1 (PASS) */}
         {description && (
-          <p className="mt-0.5 text-xs leading-relaxed font-medium text-neutral-600">
+          <p className="mt-0.5 text-xs leading-relaxed font-medium text-neutral-600 dark:text-neutral-400">
             {description}
           </p>
         )}
@@ -295,14 +295,18 @@ export const ScanReportSettingsPanel: React.FC<
       {/* Section header */}
       <div className="flex items-center gap-3">
         <div className="bg-secondary shrink-0 rounded-xl p-2.5">
-          <BellRing size={18} className="text-swiss-navy" aria-hidden="true" />
+          <BellRing
+            size={18}
+            className="text-swiss-navy dark:text-foreground"
+            aria-hidden="true"
+          />
         </div>
         <div>
-          <h3 className="text-swiss-navy text-sm font-black tracking-tight uppercase">
+          <h3 className="text-swiss-navy dark:text-foreground text-sm font-black tracking-tight uppercase">
             Scheduled Scan Report
           </h3>
           {/* WCAG 1.4.3: text-neutral-500 on white is ~3.5:1 (FAIL) → text-neutral-600 is ~5.9:1 (PASS) */}
-          <p className="mt-0.5 text-xs font-medium text-neutral-600">
+          <p className="mt-0.5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
             Configure automated email reports after each scheduled scan. Changes
             save instantly.
           </p>
@@ -310,7 +314,7 @@ export const ScanReportSettingsPanel: React.FC<
         {isSaving && (
           <Loader2
             size={14}
-            className="ml-auto shrink-0 animate-spin text-neutral-400"
+            className="ml-auto shrink-0 animate-spin text-neutral-600 dark:text-neutral-400"
             aria-label="Saving…"
           />
         )}
@@ -327,7 +331,7 @@ export const ScanReportSettingsPanel: React.FC<
         <ToggleRow
           id={`${emailId}-enabled`}
           label="Enable scheduled email reports"
-          description="Send an email after each scheduled scan summarising the grade, key findings, and recommended actions."
+          description="Send an email after each scheduled scan summarising the grade and the most important findings."
           checked={enabledLocal}
           disabled={isSaving}
           onChange={handleToggleEnabled}
@@ -340,13 +344,17 @@ export const ScanReportSettingsPanel: React.FC<
         <div className="flex flex-col gap-2">
           <label
             htmlFor={emailId}
-            className="flex items-center gap-1.5 text-sm font-black text-neutral-800"
+            className="flex items-center gap-1.5 text-sm font-black text-neutral-800 dark:text-neutral-400"
           >
-            <Mail size={14} className="text-neutral-400" aria-hidden="true" />
+            <Mail
+              size={14}
+              className="text-neutral-600 dark:text-neutral-400"
+              aria-hidden="true"
+            />
             Report email address
           </label>
           {/* WCAG 1.4.3: text-neutral-500 on white is ~3.5:1 (FAIL) → text-neutral-600 is ~5.9:1 (PASS) */}
-          <p className="text-xs font-medium text-neutral-600">
+          <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
             Scan reports will be sent to this address. Saved automatically when
             you leave the field.
           </p>
@@ -363,7 +371,7 @@ export const ScanReportSettingsPanel: React.FC<
             aria-describedby={emailError ? `${emailId}-error` : undefined}
             aria-invalid={!!emailError}
             className={[
-              "bg-background w-full rounded-xl border px-4 py-2.5 text-sm font-medium text-neutral-800 placeholder-neutral-400",
+              "bg-background dark:text-foreground w-full rounded-xl border px-4 py-2.5 text-sm font-medium text-neutral-800",
               "focus-visible:ring-swiss-navy transition-colors duration-200 focus:outline-none focus-visible:ring-2",
               emailError
                 ? "border-red-400"
@@ -387,11 +395,11 @@ export const ScanReportSettingsPanel: React.FC<
         {/* Test-send button */}
         <div className="flex flex-col gap-3">
           <div>
-            <p className="text-sm font-black text-neutral-800">
+            <p className="text-sm font-black text-neutral-800 dark:text-neutral-400">
               Send a test email
             </p>
             {/* WCAG 1.4.3: text-neutral-500 on white is ~3.5:1 (FAIL) → text-neutral-600 is ~5.9:1 (PASS) */}
-            <p className="mt-0.5 text-xs font-medium text-neutral-600">
+            <p className="mt-0.5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
               Sends a sample report to the configured address so you can check
               formatting and delivery.
               {cooldownMs > 0 && (
@@ -413,7 +421,7 @@ export const ScanReportSettingsPanel: React.FC<
                 ? `Test email rate limited — try again in ${formatCountdown(cooldownMs)}`
                 : "Send test scan report email"
             }
-            className="bg-secondary border-border hover:bg-card hover:border-swiss-navy/40 focus-visible:ring-swiss-navy inline-flex items-center gap-2 self-start rounded-xl border px-4 py-2.5 text-xs font-black tracking-[0.08em] text-neutral-700 uppercase transition-all duration-200 focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="bg-secondary border-border hover:bg-card hover:border-swiss-navy/40 focus-visible:ring-swiss-navy inline-flex items-center gap-2 self-start rounded-xl border px-4 py-2.5 text-xs font-black tracking-[0.08em] text-neutral-700 uppercase transition-all duration-200 focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:text-neutral-400"
           >
             {testSendStatus === "sending" ? (
               <Loader2 size={13} className="animate-spin" aria-hidden="true" />

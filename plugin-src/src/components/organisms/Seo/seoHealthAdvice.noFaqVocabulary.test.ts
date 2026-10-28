@@ -30,7 +30,7 @@ describe("seoHealthAdvice.tsx (Free) — no FAQ vocabulary in source", () => {
   it("positive control: still carries its own Free advice wording", () => {
     // Proves the search itself can find something before trusting a zero.
     expect(SOURCE).toContain("Thin Content");
-    expect(SOURCE).toContain("150-character target");
+    expect(SOURCE).toContain("shorter than the target");
   });
 
   it('never mentions "FAQ" in any casing', () => {

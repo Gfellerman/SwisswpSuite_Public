@@ -86,7 +86,7 @@ describe("DashboardLayout — navigation is the fixed Free set, with no tier bad
   // not read window.swisswpsuiteData at all. These assertions lock that:
   // no fixture value can make a tier badge, a locked/disabled nav item, or
   // an entry outside the five static destinations (Dashboard, Security,
-  // SEO, Backup, Settings) appear.
+  // SEO, Backups, Settings) appear.
   function stampPayload() {
     (window as any).swisswpsuiteData = {
       license: { tier_name: "Free" },
@@ -111,12 +111,44 @@ describe("DashboardLayout — navigation is the fixed Free set, with no tier bad
       "Dashboard",
       "Security",
       "SEO",
-      "Backup",
+      "Backups",
       "Settings",
     ]);
     expect(navLabels).not.toContain("Sync");
     expect(navLabels).not.toContain("Migration");
     expect(navLabels).not.toContain("AI Content");
+  });
+
+  it("names the backup destination 'Backups' in the sidebar and in the page header on /backups", () => {
+    stampPayload();
+    const { container } = render(
+      React.createElement(
+        MemoryRouter,
+        { initialEntries: ["/backups"] },
+        React.createElement(
+          Routes,
+          null,
+          React.createElement(Route, {
+            path: "/",
+            element: React.createElement(DashboardLayout),
+            children: React.createElement(Route, {
+              path: "backups",
+              element: React.createElement(
+                "div",
+                null,
+                "backups route content"
+              ),
+            }),
+          })
+        )
+      )
+    );
+
+    const link = Array.from(container.querySelectorAll("nav a")).find((a) =>
+      (a.getAttribute("href") || "").endsWith("/backups")
+    );
+    expect(link?.textContent).toBe("Backups");
+    expect(container.querySelector("h1")?.textContent).toBe("Backups");
   });
 
   it("renders no tier badge", () => {
@@ -145,7 +177,7 @@ describe("DashboardLayout — sidebar wordmark rebrand ('SwissWP…' rendering r
   // second test below proves that: it stamps an arbitrary, unrelated
   // payload shape and confirms the wordmark and tagline are unchanged —
   // nothing in window.swisswpsuiteData can affect which tagline renders.
-  it("renders the SwissSuite AI wordmark and this build's tagline, no SwissWP token", () => {
+  it("renders the SwissSuite wordmark and this build's tagline, no SwissWP token", () => {
     (window as any).swisswpsuiteData = {
       license: { tier_name: "Free" },
     };

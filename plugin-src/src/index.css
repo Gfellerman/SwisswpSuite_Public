@@ -226,6 +226,12 @@
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
   }
+  /* Default placeholder colour for every field in the app: the theme's muted
+     text colour reads at 4.5:1 or more on the page and card backgrounds in
+     both themes. A placeholder:* utility on a field still replaces it. */
+  #swisswpsuite-app-root ::placeholder {
+    color: var(--muted-foreground);
+  }
 }
 
 /* High-specificity override for Run Full Scan button — beats WP admin button resets */
@@ -238,4 +244,17 @@
 #wpwrap .swps-cta-dark:hover,
 .swps-cta-dark:hover {
   background-color: #142240 !important;
+}
+
+/* WordPress admin stylesheets are not in a cascade layer, so inside the app
+   they would beat every utility class (an unlayered rule wins over a layered
+   one whatever its specificity). Revert their declarations inside the app
+   root so its own styles apply. SVG is left out: its drawing attributes
+   (fill, stroke) are presentational hints, and WordPress styles no SVG. */
+#swisswpsuite-app-root,
+#swisswpsuite-app-root :not(svg, svg *),
+#swisswpsuite-app-root :not(svg, svg *)::before,
+#swisswpsuite-app-root :not(svg, svg *)::after,
+#swisswpsuite-app-root ::placeholder {
+  all: revert-layer;
 }

@@ -14,7 +14,7 @@
  * No tokens stored, no settings changed, no legal liability.
  */
 import React from "react";
-import { ShieldCheck, ExternalLink, CheckCircle2, AlertTriangle, Info } from "lucide-react";
+import { ShieldCheck, CheckCircle2, AlertTriangle, Info } from "lucide-react";
 import { Badge } from "../../ui/Badge";
 
 // ---------------------------------------------------------------------------
@@ -30,7 +30,10 @@ interface CloudShieldPanelProps {
   cloudflareCountryHeader: boolean;
   /** Current hardening options status */
   headersActive: boolean;
+  /** The firewall is on and blocking requests (not Detection Only Mode). */
   wafActive: boolean;
+  /** The firewall is on but only records requests (Detection Only Mode). */
+  wafDetectionOnly?: boolean;
   botBlockingActive: boolean;
   versionHidingActive: boolean;
 }
@@ -38,10 +41,6 @@ interface CloudShieldPanelProps {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-/** Cloudflare's own documentation page on restoring the real visitor IP. */
-const CF_PROXIED_IP_DOC_URL =
-  "https://developers.cloudflare.com/support/troubleshooting/restoring-visitor-ips/restoring-original-visitor-ips/";
 
 const RECOMMENDED_SETTINGS = [
   {
@@ -91,7 +90,7 @@ function getHeaderHandlingFacts() {
     {
       label: "Trusted proxy validation",
       description:
-        "The CF-Connecting-IP header is only trusted when the request itself originates from one of Cloudflare's published IP ranges. A header claiming to be from Cloudflare is ignored if the connection did not come from one of those ranges.",
+        "The CF-Connecting-IP header is only trusted when the request itself comes from one of the Cloudflare IPv4 ranges listed in the plugin. A header claiming to be from Cloudflare is ignored if the connection did not come from one of those ranges.",
     },
   ];
 }
@@ -103,11 +102,15 @@ function getHeaderHandlingFacts() {
 function computeSecurityScore(props: CloudShieldPanelProps): {
   grade: string;
   score: number;
-  breakdown: { label: string; active: boolean }[];
+  breakdown: { label: string; active: boolean; detectionOnly?: boolean }[];
 } {
   const checks = [
     { label: "Security Headers", active: props.headersActive },
-    { label: "Application Firewall", active: props.wafActive },
+    {
+      label: "Application Firewall",
+      active: props.wafActive,
+      detectionOnly: !props.wafActive && props.wafDetectionOnly === true,
+    },
     { label: "Cloud Protection", active: props.cloudflareDetected },
     { label: "Bot Blocking", active: props.botBlockingActive },
     { label: "Version Hiding", active: props.versionHidingActive },
@@ -143,12 +146,12 @@ const SecurityScoreCard: React.FC<{ data: CloudShieldPanelProps }> = ({
 
   return (
     <div className="glass-panel rounded-2xl p-8">
-      <h4 className="text-swiss-navy mb-6 text-xs font-black tracking-widest uppercase">
+      <h4 className="text-swiss-navy dark:text-foreground mb-6 text-xs font-black tracking-widest uppercase">
         Security Score
       </h4>
       <div className="mb-6 flex items-center gap-6">
         <div
-          className={`text-foreground flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-black ${
+          className={`text-foreground flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-black dark:text-neutral-800 ${
             grade === "A"
               ? "bg-emerald-500"
               : grade === "B"
@@ -162,7 +165,7 @@ const SecurityScoreCard: React.FC<{ data: CloudShieldPanelProps }> = ({
         </div>
         <div>
           <p className="text-foreground text-lg font-black">{score}%</p>
-          <p className="text-sm text-neutral-700">
+          <p className="text-sm text-neutral-700 dark:text-neutral-400">
             {GRADE_RUBRIC[grade] || ""}
           </p>
         </div>
@@ -173,14 +176,21 @@ const SecurityScoreCard: React.FC<{ data: CloudShieldPanelProps }> = ({
             key={item.label}
             className="flex items-center justify-between text-sm"
           >
-            <span className="font-medium text-neutral-700">{item.label}</span>
+            <span className="font-medium text-neutral-700 dark:text-neutral-400">
+              {item.label}
+            </span>
             {item.active ? (
-              <span className="flex items-center gap-1 text-xs font-black tracking-widest text-emerald-600 uppercase">
+              <span className="flex items-center gap-1 text-xs font-black tracking-widest text-emerald-800 uppercase dark:text-emerald-600">
                 <CheckCircle2 size={14} aria-hidden="true" />
                 Active
               </span>
+            ) : item.detectionOnly ? (
+              <span className="flex items-center gap-1 text-xs font-black tracking-widest text-amber-800 uppercase dark:text-amber-400">
+                <AlertTriangle size={14} aria-hidden="true" />
+                Detection only
+              </span>
             ) : (
-              <span className="flex items-center gap-1 text-xs font-black tracking-widest text-amber-600 uppercase">
+              <span className="flex items-center gap-1 text-xs font-black tracking-widest text-amber-800 uppercase dark:text-amber-600">
                 <AlertTriangle size={14} aria-hidden="true" />
                 Not detected
               </span>
@@ -189,12 +199,15 @@ const SecurityScoreCard: React.FC<{ data: CloudShieldPanelProps }> = ({
         ))}
       </div>
       <div className="border-border mt-6 border-t pt-4">
-        <p className="text-xs font-black tracking-widest text-neutral-700 uppercase">
+        <p className="text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
           Score Rubric
         </p>
         <div className="mt-2 space-y-1">
           {Object.entries(GRADE_RUBRIC).map(([g, desc]) => (
-            <p key={g} className="text-xs text-neutral-700">
+            <p
+              key={g}
+              className="text-xs text-neutral-700 dark:text-neutral-400"
+            >
               <span className="font-black">{g}:</span> {desc}
             </p>
           ))}
@@ -212,7 +225,7 @@ const SecurityScoreCard: React.FC<{ data: CloudShieldPanelProps }> = ({
  */
 const HeaderHandlingSection: React.FC = () => (
   <div className="glass-panel rounded-2xl p-8">
-    <h4 className="text-swiss-navy mb-6 text-xs font-black tracking-widest uppercase">
+    <h4 className="text-swiss-navy dark:text-foreground mb-6 text-xs font-black tracking-widest uppercase">
       Header Handling
     </h4>
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -224,41 +237,33 @@ const HeaderHandlingSection: React.FC = () => (
           <div className="mb-2 flex items-center gap-2">
             <CheckCircle2
               size={14}
-              className="shrink-0 text-emerald-500"
+              className="shrink-0 text-emerald-700"
               aria-hidden="true"
             />
             <span className="text-foreground text-xs font-black tracking-widest uppercase">
               {fact.label}
             </span>
           </div>
-          <p className="text-sm leading-relaxed text-neutral-700">
+          <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-400">
             {fact.description}
           </p>
         </div>
       ))}
     </div>
     <div className="border-border mt-6 border-t pt-4">
-      <p className="text-xs font-black tracking-widest text-neutral-700 uppercase">
+      <p className="text-xs font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
         How to verify
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-neutral-700">
-        The clearest check is whether IP addresses recorded elsewhere in
-        Security (banned IPs, rate-limit entries) show real visitor
-        addresses rather than one of Cloudflare's own edge IPs repeated for
-        every request. If every entry shows the same address, the header is
-        present but is not yet being trusted for this request.
+      <p className="mt-2 text-sm leading-relaxed text-neutral-700 dark:text-neutral-400">
+        The clearest check is whether the Origin addresses in the Security Event
+        Log (Logs tab) and "Your current IP" under Quarantine → Allowed IPs show
+        real visitor addresses rather than one of Cloudflare's own edge IPs
+        repeated for every request. If every entry shows the same address, the
+        header is present but is not yet being trusted for this request.
       </p>
-      <p className="mt-3 text-sm leading-relaxed text-neutral-700">
-        Reference:{" "}
-        <a
-          href={CF_PROXIED_IP_DOC_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-swiss-navy inline-flex items-center gap-1 font-black underline hover:no-underline"
-        >
-          Cloudflare's documentation on restoring the original visitor IP
-          <ExternalLink size={12} aria-hidden="true" />
-        </a>
+      <p className="mt-3 text-sm leading-relaxed text-neutral-700 dark:text-neutral-400">
+        See Cloudflare's own documentation on restoring original visitor IPs
+        (Support → Troubleshooting → Restoring visitor IPs).
       </p>
     </div>
   </div>
@@ -277,10 +282,10 @@ export const CloudShieldPanel: React.FC<CloudShieldPanelProps> = (props) => {
       <div className="animate-in fade-in slide-in-from-right-4 space-y-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h3 className="text-swiss-navy text-xl font-black tracking-tight uppercase">
+            <h3 className="text-swiss-navy dark:text-foreground text-xl font-black tracking-tight uppercase">
               Cloud Protection
             </h3>
-            <p className="mt-1 text-sm font-black tracking-widest text-neutral-700 uppercase">
+            <p className="mt-1 text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
               Cloudflare detected — your site has an extra layer of defense
             </p>
           </div>
@@ -303,7 +308,7 @@ export const CloudShieldPanel: React.FC<CloudShieldPanelProps> = (props) => {
               <h4 className="text-foreground text-sm font-black">
                 Cloud Protection Active
               </h4>
-              <p className="text-sm text-neutral-700">
+              <p className="text-sm text-neutral-700 dark:text-neutral-400">
                 Traffic is filtered through Cloudflare before reaching your
                 server.
               </p>
@@ -319,7 +324,7 @@ export const CloudShieldPanel: React.FC<CloudShieldPanelProps> = (props) => {
 
         {/* Recommended Settings — configuration reference for an active integration */}
         <div className="glass-panel rounded-2xl p-8">
-          <h4 className="text-swiss-navy mb-6 text-xs font-black tracking-widest uppercase">
+          <h4 className="text-swiss-navy dark:text-foreground mb-6 text-xs font-black tracking-widest uppercase">
             Recommended Cloudflare Settings
           </h4>
           <div className="space-y-4">
@@ -331,10 +336,10 @@ export const CloudShieldPanel: React.FC<CloudShieldPanelProps> = (props) => {
                 <span className="text-foreground w-48 shrink-0 text-xs font-black tracking-widest uppercase">
                   {setting.title}
                 </span>
-                <Badge className="bg-swiss-navy/10 text-swiss-navy border-swiss-navy/20 shrink-0 text-xs font-black tracking-widest uppercase">
+                <Badge className="bg-swiss-navy/10 text-swiss-navy dark:text-foreground border-swiss-navy/20 shrink-0 text-xs font-black tracking-widest uppercase">
                   {setting.value}
                 </Badge>
-                <span className="text-sm text-neutral-700">
+                <span className="text-sm text-neutral-700 dark:text-neutral-400">
                   {setting.why}
                 </span>
               </div>
@@ -346,15 +351,13 @@ export const CloudShieldPanel: React.FC<CloudShieldPanelProps> = (props) => {
         <div className="bg-background border-border flex items-start gap-3 rounded-xl border p-4">
           <Info
             size={16}
-            className="mt-0.5 shrink-0 text-neutral-700"
+            className="mt-0.5 shrink-0 text-neutral-700 dark:text-neutral-500"
             aria-hidden="true"
           />
-          <p className="text-xs leading-relaxed text-neutral-700">
-            Cloudflare is an independent third-party service not affiliated
-            with SwissSuite. This page is provided for reference only —
-            SwissSuite does not manage your Cloudflare account or settings.
-            Full application-level security protection works with or
-            without it.
+          <p className="text-xs leading-relaxed text-neutral-700 dark:text-neutral-400">
+            Cloudflare is an independent third-party service not affiliated with
+            SwissSuite. This page is provided for reference only — SwissSuite
+            does not manage your Cloudflare account or settings.
           </p>
         </div>
       </div>
@@ -368,22 +371,24 @@ export const CloudShieldPanel: React.FC<CloudShieldPanelProps> = (props) => {
     <div className="animate-in fade-in slide-in-from-right-4 space-y-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h3 className="text-swiss-navy text-xl font-black tracking-tight uppercase">
+          <h3 className="text-swiss-navy dark:text-foreground text-xl font-black tracking-tight uppercase">
             Cloud Protection
           </h3>
-          <p className="mt-1 text-sm font-black tracking-widest text-neutral-700 uppercase">
+          <p className="mt-1 text-sm font-black tracking-widest text-neutral-700 uppercase dark:text-neutral-400">
             Cloudflare not detected on this site
           </p>
         </div>
       </div>
 
       <div className="glass-panel rounded-2xl p-8">
-        <p className="text-sm leading-relaxed text-neutral-700">
-          SwissSuite did not find a Cloudflare CF-Connecting-IP or CF-Ray
-          header on the request that loaded this page. SwissSuite protects
-          this site at the application level (firewall, login protection,
-          bot blocking) regardless of whether a reverse proxy is in front of
-          it. The section below describes what this plugin does with the
+        <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-400">
+          SwissSuite did not find a Cloudflare CF-Connecting-IP or CF-Ray header
+          on the request this page made to the site. SwissSuite's own
+          protections (firewall, login protection, bot blocking) run whether or
+          not a reverse proxy is in front of the site; behind a proxy other than
+          Cloudflare they can see the proxy's address instead of each visitor's.
+          The Security Score below shows whether the firewall and bot blocking
+          are on. The section below describes what this plugin does with the
           Cloudflare proxy headers whenever one is present.
         </p>
       </div>
@@ -398,15 +403,13 @@ export const CloudShieldPanel: React.FC<CloudShieldPanelProps> = (props) => {
       <div className="bg-background border-border flex items-start gap-3 rounded-xl border p-4">
         <Info
           size={16}
-          className="mt-0.5 shrink-0 text-neutral-700"
+          className="mt-0.5 shrink-0 text-neutral-700 dark:text-neutral-500"
           aria-hidden="true"
         />
-        <p className="text-xs leading-relaxed text-neutral-700">
-          Cloudflare is an independent third-party service not affiliated
-          with SwissSuite. This page is provided for reference only —
-          SwissSuite does not manage a Cloudflare account or settings on
-          your behalf, and full application-level security protection works
-          with or without a reverse proxy in front of the site.
+        <p className="text-xs leading-relaxed text-neutral-700 dark:text-neutral-400">
+          Cloudflare is an independent third-party service not affiliated with
+          SwissSuite. This page is provided for reference only — SwissSuite does
+          not manage a Cloudflare account or settings on your behalf.
         </p>
       </div>
     </div>

@@ -20,7 +20,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
             {title}
           </h2>
           {description && (
-            <p className="mt-1 text-[12px] font-bold tracking-[0.2em] text-neutral-700 uppercase">
+            <p className="mt-1 text-[12px] font-bold tracking-[0.2em] text-neutral-700 uppercase dark:text-neutral-400">
               {description}
             </p>
           )}

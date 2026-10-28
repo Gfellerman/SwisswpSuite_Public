@@ -1,34 +1,26 @@
 /**
- * ScanReportPreviewModal — Email report HTML preview (v2.9.28.0)
+ * ScanReportPreviewModal — Scan report preview (v2.9.28.0)
  *
- * Displays a sandboxed iframe preview of the scheduled scan email report.
+ * Displays the data the scheduled scan email report is built from, rendered
+ * with the app's own components (no HTML markup from the backend).
  *
  * WCAG / ARIA requirements:
  *  - role="dialog" + aria-modal="true" + aria-labelledby
  *  - Focus trap: Tab/Shift+Tab cycles within modal; Escape closes
  *  - Return focus to the trigger element on close (WCAG 2.4.3)
  *  - Backdrop click closes the modal
- *
- * Security:
- *  - iframe sandbox="allow-same-origin" — no scripts execute in preview
+ *  - Scroll region: tabIndex=0 + role="region" + aria-label, so keyboard
+ *    users can scroll it and the focus trap can cycle through it (WCAG 2.1.1/2.1.2)
  *
  * Focus trap pattern mirrors SentinelM5ConsentModal (the established codebase pattern).
  */
 
 import React, { useCallback, useEffect, useRef } from "react";
 import { X, Mail } from "lucide-react";
+import type { ScanReportPreview } from "../../../types";
+import { SentinelGradeBadge } from "../Sentinel/SentinelGradeBadge";
 
 // ── Focusable selector — same as SentinelM5ConsentModal for consistency ──────
-//
-// WHY iframes are handled via tabindex="0" rather than adding "iframe" here:
-// Native iframes are natively focusable (they appear in the browser tab order)
-// but they are NOT matched by the standard FOCUSABLE_SELECTOR — an iframe has
-// no [href], no role, and no tabindex attribute by default. Without an explicit
-// tabindex="0", when the user Tabs from the last matched element (the Close
-// button) the trap would not see the iframe as the "last" node and focus would
-// leak out of the dialog. Adding tabindex="0" to the iframe is the minimal fix:
-// it becomes matched by the [tabindex]:not([tabindex="-1"]) rule and the trap
-// cycles correctly. (WCAG 2.1.2)
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -38,21 +30,34 @@ const FOCUSABLE_SELECTOR =
 interface ScanReportPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  /**
-   * Raw HTML string for the email preview — rendered via iframe srcDoc.
-   * Using srcDoc (not src) avoids a cross-origin fetch: the PHP endpoint
-   * returns the HTML body directly in the JSON envelope, so we inject it
-   * inline. sandbox="allow-same-origin" prevents script execution.
-   */
-  previewHtml: string | null;
+  /** Report data from GET /security/scan/report-preview, or null. */
+  preview: ScanReportPreview | null;
 }
+
+// Severity presentation — AA pairs copied from ScanHistoricalRecord.tsx:12-26.
+const SEVERITY_LABEL: Record<string, string> = {
+  critical: "Critical",
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+  info: "Info",
+};
+const SEVERITY_CLASS: Record<string, string> = {
+  critical: "border-red-200 bg-red-50 text-red-700",
+  high: "border-orange-200 bg-orange-50 text-orange-800",
+  medium: "border-amber-200 bg-amber-50 text-amber-700",
+  low: "border-blue-200 bg-blue-50 text-blue-700",
+  info: "border-neutral-200 bg-neutral-50 text-neutral-600",
+};
+const GRADES = ["A", "B", "C", "D", "F"] as const;
+type Grade = (typeof GRADES)[number];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const ScanReportPreviewModal: React.FC<ScanReportPreviewModalProps> = ({
   isOpen,
   onClose,
-  previewHtml,
+  preview,
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   /**
@@ -162,7 +167,7 @@ export const ScanReportPreviewModal: React.FC<ScanReportPreviewModalProps> = ({
             </div>
             <h2
               id="scan-preview-modal-title"
-              className="text-swiss-navy text-base font-black tracking-tight uppercase"
+              className="text-swiss-navy dark:text-foreground text-base font-black tracking-tight uppercase"
             >
               Email Report Preview
             </h2>
@@ -172,38 +177,110 @@ export const ScanReportPreviewModal: React.FC<ScanReportPreviewModalProps> = ({
             type="button"
             onClick={handleClose}
             aria-label="Close email report preview"
-            className="hover:text-swiss-navy hover:bg-background focus-visible:ring-swiss-navy shrink-0 rounded-xl border border-transparent p-2 text-neutral-400 transition-all focus-visible:ring-2 focus-visible:outline-none"
+            className="hover:text-swiss-navy dark:hover:text-foreground hover:bg-background focus-visible:ring-swiss-navy shrink-0 rounded-xl border border-transparent p-2 text-neutral-600 transition-all focus-visible:ring-2 focus-visible:outline-none dark:text-neutral-400"
           >
             <X size={18} aria-hidden="true" />
           </button>
         </div>
 
-        {/* Iframe preview body */}
-        <div className="flex-1 overflow-hidden p-4">
-          {previewHtml ? (
-            <iframe
-              // srcDoc injects the HTML string directly — no cross-origin fetch needed.
-              // The PHP endpoint returns {success: true, html: "..."} so we use the
-              // string value here, not a URL.
-              srcDoc={previewHtml}
-              title="Scan email report preview"
-              // sandbox="allow-same-origin" — permits the iframe to read same-origin
-              // cookies/localStorage if needed for relative links, but blocks all script
-              // execution. No allow-scripts — this is display-only HTML.
-              sandbox="allow-same-origin"
-              // WCAG 2.1.2: tabindex="0" makes the iframe appear in the FOCUSABLE_SELECTOR
-              // query ([tabindex]:not([tabindex="-1"])), so the focus trap correctly cycles
-              // through it. Without this, Tab from the "Close" footer button would find the
-              // iframe as "next" natively but the trap's querySelectorAll would not count it,
-              // causing focus to escape the dialog to background content.
-              tabIndex={0}
-              className="border-border focus-visible:ring-swiss-navy h-full min-h-[400px] w-full rounded-xl border bg-white focus-visible:ring-2 focus-visible:outline-none"
-              aria-label="Email report HTML preview"
-            />
+        {/*
+          Scroll region: tabIndex=0 + role="region" + aria-label keeps a focusable
+          node here (the [tabindex] selector matches it, same role the iframe used
+          to play in the focus trap) and lets keyboard users scroll the region
+          (WCAG 2.1.1).
+        */}
+        <div
+          className="flex-1 overflow-y-auto p-6"
+          tabIndex={0}
+          role="region"
+          aria-label="Report preview"
+        >
+          {preview && preview.has_scan ? (
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center gap-4">
+                {(GRADES as readonly string[]).includes(preview.grade) && (
+                  <SentinelGradeBadge grade={preview.grade as Grade} size="md" />
+                )}
+                <p className="text-sm text-neutral-700">{preview.summary}</p>
+              </div>
+              {preview.findings.length > 0 ? (
+                <table className="w-full border-collapse text-left text-sm">
+                  <caption className="sr-only">
+                    Findings included in the report
+                  </caption>
+                  <thead>
+                    <tr className="border-border border-b">
+                      <th scope="col" className="p-2 font-bold text-neutral-700">
+                        Severity
+                      </th>
+                      <th scope="col" className="p-2 font-bold text-neutral-700">
+                        Issue
+                      </th>
+                      <th scope="col" className="p-2 font-bold text-neutral-700">
+                        Description
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.findings.map((f, i) => (
+                      <tr key={i} className="border-border border-b">
+                        <td className="p-2">
+                          <span
+                            className={`inline-block rounded border px-2 py-0.5 text-xs font-bold ${
+                              SEVERITY_CLASS[f.severity] ?? SEVERITY_CLASS.info
+                            }`}
+                          >
+                            {SEVERITY_LABEL[f.severity] ?? SEVERITY_LABEL.info}
+                          </span>
+                        </td>
+                        <td className="p-2 font-medium text-neutral-900">
+                          {f.title || "—"}
+                        </td>
+                        <td className="p-2 text-neutral-700">
+                          {f.description || "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-sm font-bold text-emerald-700">
+                  No issues found in this scan.
+                </p>
+              )}
+              {preview.total_findings > 5 && (
+                <p className="text-xs text-neutral-600">
+                  Showing top 5 of {preview.total_findings} findings.
+                </p>
+              )}
+              <p className="text-xs text-neutral-600">
+                <strong>Next scheduled scan:</strong>{" "}
+                {preview.scan_report_enabled === false
+                  ? "Off"
+                  : preview.next_scheduled_ts
+                    ? new Date(
+                        preview.next_scheduled_ts * 1000
+                      ).toLocaleString()
+                    : "Not scheduled"}
+              </p>
+              {preview.sections.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-neutral-700">
+                    Also in the e-mail:
+                  </p>
+                  <ul className="list-disc pl-5 text-sm text-neutral-700">
+                    {preview.sections.map((s, i) => (
+                      <li key={i}>{s.heading}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           ) : (
-            <div className="bg-secondary border-border flex h-[400px] items-center justify-center rounded-xl border">
-              <p className="text-sm font-medium text-neutral-500">
-                No preview available.
+            <div className="bg-secondary border-border flex h-40 items-center justify-center rounded-xl border p-4">
+              <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                No scan results yet. Run a scan to see what the daily report
+                will contain.
               </p>
             </div>
           )}
@@ -214,7 +291,7 @@ export const ScanReportPreviewModal: React.FC<ScanReportPreviewModalProps> = ({
           <button
             type="button"
             onClick={handleClose}
-            className="hover:bg-secondary focus-visible:ring-swiss-navy inline-flex items-center justify-center rounded-full bg-transparent px-6 py-3 text-xs font-black tracking-[0.15em] text-neutral-700 uppercase transition-all duration-500 hover:text-neutral-900 focus-visible:ring-2 focus-visible:outline-none active:scale-95"
+            className="hover:bg-secondary focus-visible:ring-swiss-navy dark:hover:text-foreground inline-flex items-center justify-center rounded-full bg-transparent px-6 py-3 text-xs font-black tracking-[0.15em] text-neutral-700 uppercase transition-all duration-500 hover:text-neutral-900 focus-visible:ring-2 focus-visible:outline-none active:scale-95 dark:text-neutral-400"
           >
             Close
           </button>

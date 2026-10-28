@@ -16,6 +16,18 @@ interface SwissWPSuiteData {
   version: string;
   /** Site administrator address, used as the default alert recipient. */
   adminEmail?: string;
+  /**
+   * Where the XML sitemap is served: /sitemap.xml with pretty permalinks, the
+   * query-variable form with plain permalinks. Absent when the page was
+   * rendered by an older plugin copy; the SEO screen then shows no sitemap link.
+   */
+  sitemapUrl?: string;
+  /**
+   * Where the AI assistant guide (llms.txt) is served: /llms.txt with pretty
+   * permalinks, the query-variable form with plain permalinks. Absent when the
+   * page was rendered by an older plugin copy; the SEO screen then shows no link.
+   */
+  llmsTxtUrl?: string;
 }
 
 interface Window {
