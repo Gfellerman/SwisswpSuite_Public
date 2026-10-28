@@ -21,7 +21,7 @@ plugin-src/
 ├── package.json           dependency manifest
 ├── package-lock.json      locked dependency versions
 ├── postcss.config.js      PostCSS (Tailwind + autoprefixer) configuration
-└── tailwind.config.js     Tailwind CSS v4 theme configuration
+└── tailwind.config.js     not read by the build (the theme is the @theme block in src/index.css)
 ```
 
 ## Prerequisites
@@ -35,9 +35,10 @@ plugin-src/
 
 ## Build
 
-This tree builds a single plugin's admin app — there is no build-time
-switch and no environment variable that changes what gets
-compiled. From inside this directory:
+This tree builds a single plugin's admin app. Its `vite.config.ts` uses
+one environment variable of its own, `SWISSWPSUITE_OVERLAY`; leave it
+unset (the default) and `src/` is the only source compiled. From inside
+this directory:
 
 ```bash
 npm ci
@@ -100,7 +101,7 @@ tree's own `src/`, and rebuilding here simply omits that dead weight.
 
 `package-lock.json` in this directory was generated fresh, from this exact
 `package.json`, at publication time. npm resolves each dependency's caret
-range (e.g. `^19.2.3`) to the latest version satisfying it *at the moment
+range (e.g. `^18.3.1`) to the latest version satisfying it *at the moment
 `npm install`/`npm ci` runs* — so a lockfile generated today can pin
 slightly newer transitive/patch versions than whatever produced a
 previously-shipped, already-compiled `assets/` bundle. WordPress.org
@@ -116,12 +117,11 @@ packages to taste.
 
 This is the frontend admin-interface source only. It compiles into static
 JS/CSS assets that the plugin's PHP backend enqueues inside the WordPress
-admin. The plugin itself — including this compiled output — is distributed
-through:
+admin. The plugin itself — including this compiled output — is intended
+for the WordPress.org Plugin Directory
+(https://wordpress.org/plugins/swisssuite-ai/ once listed); the company
+site is https://www.swisswpsecure.com/.
 
-- The plugin on WordPress.org: https://wordpress.org/plugins/swisssuite-ai/
-- The company site: https://www.swisswpsecure.com/
-
-See this repository's top-level `readme.txt` (`== Source Code ==` section)
-for the canonical pointer to this directory from the plugin's own
-WordPress.org listing.
+See this repository's top-level `readme.txt` (`== Source Code ==` section),
+the readme that ships inside the plugin, for the canonical pointer to this
+directory.
