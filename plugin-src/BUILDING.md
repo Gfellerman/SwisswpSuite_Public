@@ -83,19 +83,19 @@ plugin zip around the resulting `assets/` output. That wrapper script, and
 the rest of the PHP backend, are not part of this repository — see "Where
 this fits" below.
 
-## Why the rebuilt CSS differs from the shipped `assets/app-*.css`
+## The rebuilt CSS matches the shipped stylesheet
 
-The JS bundle you get from `npm run build` above is byte-for-byte
-identical to the one in the shipped release zip. The CSS is not, and this
-is expected and benign: the actual release build runs Tailwind v4's
-automatic class-name detection over the **whole plugin directory**, not
-just `plugin-src/`, so the shipped stylesheet is a strict superset of a
-`plugin-src`-only rebuild. The extra utility classes come from English
-words that happen to appear in PHP comments and PHP-side test files
-elsewhere in the plugin (Tailwind's scanner has no way to tell a class
-name apart from an ordinary word in a comment, so it includes anything
-that looks like one) — none of them are referenced anywhere in this
-tree's own `src/`, and rebuilding here simply omits that dead weight.
+`npm run build` writes four files into `assets/`: `entry-app-*.js`,
+`assets/app-*.css`, `manifest.json` and `index.html`. The first three
+are the files that ship, and they are byte-for-byte identical to the
+files in the Free release zip this tree was published with. `index.html`
+is not shipped. This was checked with this tree's own
+`package-lock.json`; read "Lockfile provenance" below before you compare
+with any other release. `src/index.css` tells Tailwind to read class
+names only from the non-test files under `src/`
+(`@import "tailwindcss" source("./")` and the three `@source not`
+lines). With `SWISSWPSUITE_OVERLAY` unset, as described above, no file
+outside `src/` can add a utility rule to the stylesheet.
 
 ## Lockfile provenance (read before comparing output to a shipped release)
 
