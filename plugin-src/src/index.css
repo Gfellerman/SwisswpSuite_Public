@@ -1,4 +1,7 @@
-@import "tailwindcss";
+@import "tailwindcss" source("./");
+@source not "./**/__tests__/**";
+@source not "./**/*.test.*";
+@source not "./**/*.spec.*";
 
 /* Register swiss brand colors as Tailwind v4 theme tokens so the compiler
    generates bg-swiss-navy, text-swiss-navy, border-swiss-navy etc. as utilities.

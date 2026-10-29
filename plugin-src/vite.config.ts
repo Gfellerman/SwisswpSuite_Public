@@ -140,6 +140,35 @@ function expandShortenedLinks(): Plugin {
   };
 }
 
+/**
+ * Overlay build only. `src/index.css` limits Tailwind's class scan to `src/`
+ * (`source("./")`), so the overlay's own components would get no CSS. When
+ * SWISSWPSUITE_OVERLAY is set, append `@source` lines for the overlay tree to
+ * the stylesheet before Tailwind runs. The Free build never loads this plugin,
+ * so its CSS depends only on the published `src/`.
+ */
+function tailwindOverlaySource(overlayDir: string): Plugin {
+  const entry = path.resolve(__dirname, "src/index.css");
+  const rel = path
+    .relative(path.dirname(entry), overlayDir)
+    .split(path.sep)
+    .join("/");
+  return {
+    name: "swisswpsuite-tailwind-overlay-source",
+    enforce: "pre",
+    transform(code, id) {
+      if (id.split("?")[0] !== entry) return null;
+      const extra = [
+        `@source "${rel}";`,
+        `@source not "${rel}/**/__tests__/**";`,
+        `@source not "${rel}/**/*.test.*";`,
+        `@source not "${rel}/**/*.spec.*";`,
+      ].join("\n");
+      return { code: `${code}\n${extra}\n`, map: null };
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   const env = loadEnv(mode, ".", "");
@@ -154,7 +183,9 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [
-      ...(OVERLAY_DIR ? [sourceOverlay(OVERLAY_DIR)] : []),
+      ...(OVERLAY_DIR
+        ? [sourceOverlay(OVERLAY_DIR), tailwindOverlaySource(OVERLAY_DIR)]
+        : []),
       react(),
       expandShortenedLinks(),
       // Reads the files Vite has already written to `outDir` (its
