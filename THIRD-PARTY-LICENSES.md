@@ -58,7 +58,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## lucide-react
 
-Version: 1.63.0
+Version: 1.64.0
 
 ISC License
 
